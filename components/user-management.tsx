@@ -217,7 +217,7 @@ export default function UserManagement() {
         <div className="space-y-4">
           {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
-            const isAdmin = user.email === "admin@martialarts.com"
+            const isAdmin = user.email === "acmyma@gmail.com"
 
             return (
               <div

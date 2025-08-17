@@ -20,7 +20,7 @@ export default async function AdminVideosPage() {
     .eq("id", user.id)
     .single()
 
-  if (!userProfile?.is_approved || userProfile.email !== "admin@martialarts.com") {
+  if (!userProfile?.is_approved || userProfile.email !== "acmyma@gmail.com") {
     redirect("/")
   }
 

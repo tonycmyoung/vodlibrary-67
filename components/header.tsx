@@ -21,7 +21,7 @@ interface HeaderProps {
 export default function Header({ user }: HeaderProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const isAdmin = user.email === "admin@martialarts.com"
+  const isAdmin = user.email === "acmyma@gmail.com"
   const isStudentView = searchParams.get("admin-view") === "student"
   const isProfilePage = typeof window !== "undefined" && window.location.pathname === "/profile"
   const showAdminView = isAdmin && (isStudentView || isProfilePage)

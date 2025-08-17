@@ -41,7 +41,7 @@ export default async function ProfilePage() {
     .select("id", { count: "exact" })
     .eq("user_id", user.id)
 
-  const isAdmin = user.email === "admin@martialarts.com"
+  const isAdmin = user.email === "acmyma@gmail.com"
 
   const userWithStats = {
     ...userProfile,

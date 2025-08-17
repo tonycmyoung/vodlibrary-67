@@ -53,8 +53,8 @@ export default async function PendingApprovalPage() {
             <p>This usually takes 24-48 hours.</p>
             <p className="mt-2">
               Questions? Contact us at{" "}
-              <a href="mailto:admin@martialarts.com" className="text-red-400 hover:text-red-300">
-                admin@martialarts.com
+              <a href="mailto:acmyma@gmail.com" className="text-red-400 hover:text-red-300">
+                acmyma@gmail.com
               </a>
             </p>
           </div>

@@ -198,7 +198,7 @@ export async function approveUser(userId: string) {
       .eq("id", currentUser.user.id)
       .single()
 
-    if (!adminCheck?.is_approved || adminCheck.email !== "admin@martialarts.com") {
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
       return { error: "Not authorized" }
     }
 
@@ -228,7 +228,7 @@ export async function createAdminUser() {
 
   try {
     const { data, error } = await supabase.auth.signUp({
-      email: "admin@martialarts.com",
+      email: "acmyma@gmail.com",
       password: "admin123",
       options: {
         emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000",
@@ -261,7 +261,7 @@ export async function createAdminUser() {
       }
     }
 
-    return { success: "Admin user created! You can now sign in with admin@martialarts.com / admin123" }
+    return { success: "Admin user created! You can now sign in with acmyma@gmail.com / admin123" }
   } catch (error) {
     console.error("Create admin user error:", error)
     return { error: "An unexpected error occurred" }
@@ -343,7 +343,7 @@ export async function deleteUserCompletely(userId: string, userEmail: string) {
       .eq("id", currentUser.user.id)
       .single()
 
-    if (!adminCheck?.is_approved || adminCheck.email !== "admin@martialarts.com") {
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
       return { error: "Not authorized" }
     }
 

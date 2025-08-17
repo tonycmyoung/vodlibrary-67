@@ -52,7 +52,7 @@ export default function SetupAdminPage() {
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
             <p>
-              <strong>Email:</strong> admin@martialarts.com
+              <strong>Email:</strong> acmyma@gmail.com
             </p>
             <p>
               <strong>Password:</strong> admin123

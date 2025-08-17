@@ -71,7 +71,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    const isAdminEmail = session.user.email === "admin@martialarts.com"
+    const isAdminEmail = session.user.email === "acmyma@gmail.com"
 
     // Admin users bypass approval checks and get redirected to admin dashboard
     // unless they explicitly want to view the student interface

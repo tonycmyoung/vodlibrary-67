@@ -14,7 +14,7 @@ export default async function AdminDashboard() {
     redirect("/auth/login")
   }
 
-  if (user.email !== "admin@martialarts.com") {
+  if (user.email !== "acmyma@gmail.com") {
     redirect("/")
   }
 
