@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Check, X, Mail, Calendar, Loader2, User, GraduationCap } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
-import { approveUser } from "@/lib/actions"
+import { approveUser, rejectUser, fetchPendingUsers } from "@/lib/actions"
 
 interface PendingUser {
   id: string
@@ -23,27 +22,26 @@ export default function PendingUsers() {
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    fetchPendingUsers()
-  }, [])
-
-  const fetchPendingUsers = async () => {
+  const fetchPendingUsersData = async () => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, email, full_name, teacher, school, created_at")
-        .eq("is_approved", false)
-        .order("created_at", { ascending: false })
+      const result = await fetchPendingUsers()
 
-      if (error) throw error
+      if (result.error) {
+        console.error("Error fetching pending users:", result.error)
+        return
+      }
 
-      setPendingUsers(data || [])
+      setPendingUsers(result.data || [])
     } catch (error) {
       console.error("Error fetching pending users:", error)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchPendingUsersData()
+  }, [])
 
   const handleApproveUser = async (userId: string) => {
     setProcessingUsers((prev) => new Set(prev).add(userId))
@@ -73,10 +71,12 @@ export default function PendingUsers() {
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      // In a real implementation, you might want to delete the user or mark as rejected
-      const { error } = await supabase.from("users").delete().eq("id", userId)
+      const result = await rejectUser(userId)
 
-      if (error) throw error
+      if (result.error) {
+        console.error("Error rejecting user:", result.error)
+        return
+      }
 
       // Remove user from pending list
       setPendingUsers((prev) => prev.filter((user) => user.id !== userId))

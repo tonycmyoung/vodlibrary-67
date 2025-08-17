@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { Resend } from "resend"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -139,6 +140,20 @@ export async function signUp(prevState: any, formData: FormData) {
       }
 
       console.log("[v0] User profile created successfully")
+
+      try {
+        console.log("[v0] Sending email notification to administrator")
+        await sendNewUserNotification({
+          userEmail: email.toString(),
+          fullName: fullName.toString(),
+          teacher: teacher.toString(),
+          school: school.toString(),
+        })
+        console.log("[v0] Email notification sent successfully")
+      } catch (emailError) {
+        console.error("[v0] Email notification failed:", emailError)
+        // Don't fail the signup if email fails
+      }
     }
 
     console.log("[v0] SignUp process completed successfully")
@@ -183,7 +198,24 @@ export async function signOut() {
 
 export async function approveUser(userId: string) {
   const cookieStore = cookies()
-  const supabase = createServerClient({ cookies: () => cookieStore })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
   try {
     const { data: currentUser } = await supabase.auth.getUser()
@@ -224,7 +256,24 @@ export async function approveUser(userId: string) {
 
 export async function createAdminUser() {
   const cookieStore = cookies()
-  const supabase = createServerClient({ cookies: () => cookieStore })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -329,7 +378,24 @@ export async function updateProfile(data: {
 export async function deleteUserCompletely(userId: string, userEmail: string) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerClient({ cookies: () => cookieStore })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
 
     // Verify admin authorization
     const { data: currentUser } = await supabase.auth.getUser()
@@ -373,4 +439,167 @@ export async function deleteUserCompletely(userId: string, userEmail: string) {
     console.error("Complete user deletion error:", error)
     return { error: "An unexpected error occurred during deletion" }
   }
+}
+
+export async function rejectUser(userId: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    // Verify admin authorization
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminCheck } = await supabase
+      .from("users")
+      .select("email, is_approved")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
+      return { error: "Not authorized" }
+    }
+
+    // Use service role client for deletion
+    const { createClient } = await import("@supabase/supabase-js")
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Delete from database first
+    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
+
+    if (dbError) {
+      console.error("Database deletion error:", dbError)
+      return { error: "Failed to reject user" }
+    }
+
+    // Delete from Supabase auth
+    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error("Auth deletion error:", authError)
+      // Database record is already deleted, but auth user remains
+    }
+
+    return { success: "User rejected and removed successfully" }
+  } catch (error) {
+    console.error("Reject user error:", error)
+    return { error: "An unexpected error occurred during rejection" }
+  }
+}
+
+export async function fetchPendingUsers() {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    // Verify admin authorization
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated", data: [] }
+    }
+
+    const { data: adminCheck } = await supabase
+      .from("users")
+      .select("email, is_approved")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
+      return { error: "Not authorized", data: [] }
+    }
+
+    // Fetch pending users
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, email, full_name, teacher, school, created_at")
+      .eq("is_approved", false)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      return { error: error.message, data: [] }
+    }
+
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error("Fetch pending users error:", error)
+    return { error: "An unexpected error occurred", data: [] }
+  }
+}
+
+async function sendNewUserNotification({
+  userEmail,
+  fullName,
+  teacher,
+  school,
+}: {
+  userEmail: string
+  fullName: string
+  teacher: string
+  school: string
+}) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("[v0] RESEND_API_KEY not configured, skipping email notification")
+    return
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const emailContent = `
+    <h2>New User Registration Requires Approval</h2>
+    <p>A new user has registered and is waiting for approval:</p>
+    
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+      <p><strong>Name:</strong> ${fullName}</p>
+      <p><strong>Email:</strong> ${userEmail}</p>
+      <p><strong>Teacher:</strong> ${teacher}</p>
+      <p><strong>School:</strong> ${school}</p>
+    </div>
+    
+    <p>Please log in to the admin panel to approve or review this user registration.</p>
+    
+    <p><a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/admin" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Admin Panel</a></p>
+  `
+
+  await resend.emails.send({
+    from: process.env.FROM_EMAIL || "noreply@yourdomain.com",
+    to: "acmyma@gmail.com",
+    subject: `New User Registration: ${fullName}`,
+    html: emailContent,
+  })
 }
