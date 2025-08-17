@@ -23,6 +23,7 @@ interface Video {
   duration_seconds: number | null
   is_published: boolean
   created_at: string
+  recorded: string | null
   categories: Array<{
     id: string
     name: string
@@ -53,6 +54,7 @@ export default function VideoManagement() {
     thumbnail_url: "",
     duration_seconds: "",
     is_published: true,
+    recorded: "",
     category_ids: [] as string[],
   })
 
@@ -130,6 +132,7 @@ export default function VideoManagement() {
       thumbnail_url: "",
       duration_seconds: "",
       is_published: true,
+      recorded: "",
       category_ids: [],
     })
     setEditingVideo(null)
@@ -146,6 +149,7 @@ export default function VideoManagement() {
         thumbnail_url: formData.thumbnail_url || null,
         duration_seconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
         is_published: formData.is_published,
+        recorded: formData.recorded || "Unset",
       }
 
       let videoId: string
@@ -200,6 +204,7 @@ export default function VideoManagement() {
       thumbnail_url: video.thumbnail_url || "",
       duration_seconds: video.duration_seconds?.toString() || "",
       is_published: video.is_published,
+      recorded: video.recorded === "Unset" ? "" : video.recorded || "",
       category_ids: video.categories.map((c) => c.id),
     })
     setIsAddDialogOpen(true)
@@ -403,6 +408,15 @@ export default function VideoManagement() {
                           </SelectContent>
                         </Select>
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Recorded</label>
+                        <Input
+                          value={formData.recorded}
+                          onChange={(e) => setFormData({ ...formData, recorded: e.target.value })}
+                          className="bg-gray-800 border-gray-600 text-white"
+                          placeholder="e.g., 2023 (leave blank for 'Unset')"
+                        />
+                      </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-300 mb-2">Categories</label>
                         <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-3 bg-gray-800 border border-gray-600 rounded-md">
@@ -518,6 +532,7 @@ export default function VideoManagement() {
                         <Clock className="w-3 h-3" />
                         <span>{formatDuration(video.duration_seconds)}</span>
                       </div>
+                      {video.recorded && video.recorded !== "Unset" && <span>Recorded: {video.recorded}</span>}
                       <span>Added {formatDate(video.created_at)}</span>
                       <div className="flex flex-wrap gap-1">
                         {video.categories.map((category) =>

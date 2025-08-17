@@ -16,6 +16,7 @@ interface Video {
   thumbnail_url: string | null
   duration_seconds: number | null
   created_at: string
+  recorded: string | null
   categories: Array<{
     id: string
     name: string
@@ -133,7 +134,7 @@ export default function VideoCardList({ video }: VideoCardListProps) {
             {video.description && <p className="text-gray-400 text-xs line-clamp-1 mb-2">{video.description}</p>}
 
             <div className="flex flex-wrap gap-1">
-              {validCategories.slice(0, 2).map((category) => (
+              {validCategories.map((category) => (
                 <Badge
                   key={category.id}
                   variant="outline"
@@ -146,9 +147,10 @@ export default function VideoCardList({ video }: VideoCardListProps) {
                   {category?.name || "Uncategorized"}
                 </Badge>
               ))}
-              {validCategories.length > 2 && (
+              {/* Recorded field display after categories */}
+              {video.recorded && video.recorded !== "Unset" && (
                 <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-400">
-                  +{validCategories.length - 2}
+                  {video.recorded}
                 </Badge>
               )}
             </div>

@@ -9,22 +9,21 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
 import { useSearchParams } from "next/navigation"
 
-interface Video {
-  id: string
-  title: string
-  description: string | null
-  video_url: string
-  duration_seconds: number | null
-  created_at: string
-  categories: Array<{
-    id: string
-    name: string
-    color: string
-  }>
-}
-
 interface VideoPlayerProps {
-  video: Video
+  video: {
+    id: string
+    title: string
+    description: string | null
+    video_url: string
+    duration_seconds: number | null
+    created_at: string
+    recorded: string | null
+    categories: Array<{
+      id: string
+      name: string
+      color: string
+    }>
+  }
 }
 
 export default function VideoPlayer({ video }: VideoPlayerProps) {
@@ -194,6 +193,13 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>Added {formatDate(video.created_at)}</span>
                 </div>
+
+                {video.recorded && video.recorded !== "Unset" && (
+                  <div className="flex items-center text-gray-400 text-sm">
+                    {/* Video icon is removed to avoid redeclaration */}
+                    <span>Recorded {video.recorded}</span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">

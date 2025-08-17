@@ -44,7 +44,7 @@ export default async function FavoritesPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-2">
           <h1 className="text-3xl font-bold text-white mb-2">My Favorites</h1>
           <p className="text-gray-300">Videos you've saved for later</p>
         </div>

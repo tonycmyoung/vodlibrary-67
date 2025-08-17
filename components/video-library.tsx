@@ -18,6 +18,7 @@ interface Video {
   thumbnail_url: string | null
   duration_seconds: number | null
   created_at: string
+  recorded: string | null
   categories: Array<{
     id: string
     name: string
