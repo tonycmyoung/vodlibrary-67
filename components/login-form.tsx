@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Shield } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -47,7 +47,7 @@ export default function LoginForm() {
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
       <CardHeader className="space-y-4 text-center">
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-          <Shield className="w-8 h-8 text-white" />
+          <span className="text-white font-bold text-2xl">武</span>
         </div>
         <CardTitle className="text-3xl font-bold text-white">Welcome Back</CardTitle>
         <CardDescription className="text-gray-300 text-lg">Sign in to access the TY Kobudo Library</CardDescription>

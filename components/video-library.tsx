@@ -6,6 +6,7 @@ import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
 import ViewToggle from "@/components/view-toggle"
 import CategoryFilter from "@/components/category-filter"
+import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Loader2 } from "lucide-react"
@@ -39,6 +40,18 @@ export default function VideoLibrary() {
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("videoLibrarySortBy") || "title"
+    }
+    return "title"
+  })
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("videoLibrarySortOrder") as "asc" | "desc") || "asc"
+    }
+    return "asc"
+  })
   const [view, setView] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("videoLibraryView") as "grid" | "list") || "grid"
@@ -85,7 +98,17 @@ export default function VideoLibrary() {
       query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false })
+    if (sortBy !== "recorded") {
+      query = query.order(sortBy, { ascending: sortOrder === "asc" })
+      if (sortBy !== "title") {
+        query = query.order("title", { ascending: true })
+      }
+    } else {
+      // For recorded field, just order by created_at to get consistent base ordering
+      query = query.order("created_at", { ascending: false })
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error("Error fetching videos:", error)
@@ -148,6 +171,45 @@ export default function VideoLibrary() {
       })
     }
 
+    filteredVideos.sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          // Handle "Unset", null, and empty values consistently
+          aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
+          bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (sortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && sortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
+
     setVideos(filteredVideos)
     setLoading(false)
   }
@@ -161,6 +223,55 @@ export default function VideoLibrary() {
   const handleViewChange = (newView: "grid" | "list") => {
     setView(newView)
     localStorage.setItem("videoLibraryView", newView)
+  }
+
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+
+    localStorage.setItem("videoLibrarySortBy", newSortBy)
+    localStorage.setItem("videoLibrarySortOrder", newSortOrder)
+
+    const sortedVideos = [...videos].sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (newSortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          // Handle "Unset", null, and empty values consistently
+          aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
+          bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (newSortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && newSortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
+
+    setVideos(sortedVideos)
   }
 
   return (
@@ -177,7 +288,10 @@ export default function VideoLibrary() {
               className="pl-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
             />
           </div>
-          <ViewToggle view={view} onViewChange={handleViewChange} />
+          <div className="flex items-center gap-4">
+            <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+            <ViewToggle view={view} onViewChange={handleViewChange} />
+          </div>
         </div>
 
         <CategoryFilter

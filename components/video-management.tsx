@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import SortControl from "@/components/sort-control"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, Trash2, Clock, Loader2, Wand2, Pencil } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
-import { extractVideoMetadata, formatDuration as formatVideoDuration } from "@/lib/video-utils"
+import { extractVideoMetadata } from "@/lib/video-utils"
 
 interface Video {
   id: string
@@ -45,8 +46,19 @@ export default function VideoManagement() {
   const [loading, setLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("videoManagementSortBy") || "title"
+    }
+    return "title"
+  })
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("videoManagementSortOrder") as "asc" | "desc") || "asc"
+    }
+    return "asc"
+  })
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -58,7 +70,6 @@ export default function VideoManagement() {
     category_ids: [] as string[],
   })
 
-  // State for auto-fill loading
   const [isAutoFilling, setIsAutoFilling] = useState(false)
 
   useEffect(() => {
@@ -68,7 +79,7 @@ export default function VideoManagement() {
 
   useEffect(() => {
     filterVideos()
-  }, [videos, searchQuery])
+  }, [videos, searchQuery]) // Removed sort dependencies
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name")
@@ -111,16 +122,54 @@ export default function VideoManagement() {
   }
 
   const filterVideos = () => {
-    if (!searchQuery) {
-      setFilteredVideos(videos)
-      return
+    let filtered = videos
+
+    if (searchQuery) {
+      filtered = videos.filter(
+        (video) =>
+          video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     }
 
-    const filtered = videos.filter(
-      (video) =>
-        video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        video.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          aValue = a.recorded === "Unset" || !a.recorded ? "" : a.recorded
+          bValue = b.recorded === "Unset" || !b.recorded ? "" : b.recorded
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (sortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && sortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
+
     setFilteredVideos(filtered)
   }
 
@@ -271,6 +320,64 @@ export default function VideoManagement() {
     }
   }
 
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+
+    localStorage.setItem("videoManagementSortBy", newSortBy)
+    localStorage.setItem("videoManagementSortOrder", newSortOrder)
+
+    let filtered = videos
+
+    if (searchQuery) {
+      filtered = videos.filter(
+        (video) =>
+          video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    }
+
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (newSortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          aValue = a.recorded === "Unset" || !a.recorded ? "" : a.recorded
+          bValue = b.recorded === "Unset" || !b.recorded ? "" : b.recorded
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (newSortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && newSortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
+
+    setFilteredVideos(filtered)
+  }
+
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -301,6 +408,7 @@ export default function VideoManagement() {
                   className="pl-10 bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-purple-500"
                 />
               </div>
+              <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={resetForm} className="bg-purple-600 hover:bg-purple-700 text-white">
@@ -312,10 +420,10 @@ export default function VideoManagement() {
                   <DialogHeader>
                     <DialogTitle>{editingVideo ? "Edit Video" : "Add New Video"}</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
                         <Input
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -324,7 +432,7 @@ export default function VideoManagement() {
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
                         <Textarea
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -333,7 +441,7 @@ export default function VideoManagement() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Video URL</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Video URL</label>
                         <div className="flex space-x-2">
                           <Input
                             value={formData.video_url}
@@ -358,7 +466,7 @@ export default function VideoManagement() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
                           Thumbnail URL
                           {formData.thumbnail_url && formData.thumbnail_url.startsWith("data:") && (
                             <span className="text-xs text-blue-400 ml-2">(Auto-generated)</span>
@@ -372,29 +480,7 @@ export default function VideoManagement() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Duration (seconds)
-                          {formData.duration_seconds && (
-                            <span className="text-xs text-gray-400 ml-2">
-                              ({formatVideoDuration(Number.parseInt(formData.duration_seconds))})
-                            </span>
-                          )}
-                        </label>
-                        <Input
-                          type="number"
-                          value={formData.duration_seconds}
-                          onChange={(e) => setFormData({ ...formData, duration_seconds: e.target.value })}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="300 or auto-detected"
-                        />
-                        {formData.video_url.includes("drive.google.com") && (
-                          <p className="text-xs text-yellow-400 mt-1">
-                            ⚠️ Google Drive videos require manual duration entry (cannot be auto-detected)
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
                         <Select
                           value={formData.is_published.toString()}
                           onValueChange={(value) => setFormData({ ...formData, is_published: value === "true" })}
@@ -409,7 +495,7 @@ export default function VideoManagement() {
                         </Select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Recorded</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Recorded</label>
                         <Input
                           value={formData.recorded}
                           onChange={(e) => setFormData({ ...formData, recorded: e.target.value })}
@@ -418,8 +504,8 @@ export default function VideoManagement() {
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Categories</label>
-                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-3 bg-gray-800 border border-gray-600 rounded-md">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Categories</label>
+                        <div className="grid grid-cols-3 gap-2 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md">
                           {categories.map((category) => (
                             <label key={category.id} className="flex items-center space-x-2 cursor-pointer">
                               <input
@@ -460,7 +546,7 @@ export default function VideoManagement() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-end space-x-2 pt-4">
+                    <div className="flex justify-end space-x-2 pt-2">
                       <Button
                         type="button"
                         variant="outline"

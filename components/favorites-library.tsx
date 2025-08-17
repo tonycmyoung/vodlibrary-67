@@ -6,6 +6,7 @@ import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
 import ViewToggle from "@/components/view-toggle"
 import CategoryFilter from "@/components/category-filter"
+import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Heart, Loader2, Search } from "lucide-react"
@@ -40,6 +41,18 @@ export default function FavoritesLibrary() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
   const [loading, setLoading] = useState(true)
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("favoritesLibrarySortBy") || "title"
+    }
+    return "title"
+  })
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("favoritesLibrarySortOrder") as "asc" | "desc") || "asc"
+    }
+    return "asc"
+  })
   const [view, setView] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("favoritesLibraryView") as "grid" | "list") || "grid"
@@ -54,7 +67,7 @@ export default function FavoritesLibrary() {
 
   useEffect(() => {
     filterVideos()
-  }, [selectedCategories, searchQuery, filterMode, allFavoriteVideos])
+  }, [selectedCategories, searchQuery, filterMode, allFavoriteVideos, sortBy, sortOrder])
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name")
@@ -94,6 +107,44 @@ export default function FavoritesLibrary() {
         return matches
       })
     }
+
+    filteredVideos.sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
+          bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (sortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && sortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
 
     setFavoriteVideos(filteredVideos)
   }
@@ -188,6 +239,80 @@ export default function FavoritesLibrary() {
     localStorage.setItem("favoritesLibraryView", newView)
   }
 
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+
+    localStorage.setItem("favoritesLibrarySortBy", newSortBy)
+    localStorage.setItem("favoritesLibrarySortOrder", newSortOrder)
+
+    let filteredVideos = [...allFavoriteVideos]
+
+    // Apply search filter
+    if (searchQuery) {
+      filteredVideos = filteredVideos.filter(
+        (video) =>
+          video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (video.description && video.description.toLowerCase().includes(searchQuery.toLowerCase())),
+      )
+    }
+
+    // Apply category filter
+    if (selectedCategories.length > 0) {
+      filteredVideos = filteredVideos.filter((video) => {
+        const videoCategories = video.categories.map((cat) => cat.id)
+        let matches = false
+        if (filterMode === "AND") {
+          matches = selectedCategories.every((selectedId) => videoCategories.includes(selectedId))
+        } else {
+          matches = selectedCategories.some((selectedId) => videoCategories.includes(selectedId))
+        }
+        return matches
+      })
+    }
+
+    // Apply sorting with new parameters
+    filteredVideos.sort((a, b) => {
+      let aValue: any, bValue: any
+
+      switch (newSortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
+          bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+      }
+
+      let result = 0
+      if (newSortOrder === "asc") {
+        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+
+      // If primary sort values are equal and not sorting by title, use title as secondary sort
+      if (result === 0 && newSortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+      }
+
+      return result
+    })
+
+    setFavoriteVideos(filteredVideos)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -228,7 +353,10 @@ export default function FavoritesLibrary() {
               className="pl-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
             />
           </div>
-          <ViewToggle view={view} onViewChange={handleViewChange} />
+          <div className="flex items-center gap-4">
+            <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+            <ViewToggle view={view} onViewChange={handleViewChange} />
+          </div>
         </div>
 
         <CategoryFilter
