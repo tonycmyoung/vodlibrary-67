@@ -15,6 +15,8 @@ interface UserProfileProps {
     id: string
     email: string
     full_name: string | null
+    teacher: string | null
+    school: string | null
     created_at: string
     profile_image_url: string | null
     favorite_count: number
@@ -29,6 +31,8 @@ export default function UserProfile({ user }: UserProfileProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     full_name: user.full_name || "",
+    teacher: user.teacher || "",
+    school: user.school || "",
     profile_image_url: user.profile_image_url || "",
   })
 
@@ -98,6 +102,8 @@ export default function UserProfile({ user }: UserProfileProps) {
         userId: user.id,
         email: user.email,
         fullName: formData.full_name || null,
+        teacher: formData.teacher || null,
+        school: formData.school || null,
         profileImageUrl: formData.profile_image_url || null,
       })
 
@@ -119,6 +125,8 @@ export default function UserProfile({ user }: UserProfileProps) {
   const handleCancel = () => {
     setFormData({
       full_name: user.full_name || "",
+      teacher: user.teacher || "",
+      school: user.school || "",
       profile_image_url: user.profile_image_url || "",
     })
     setImagePreview(null)
@@ -147,6 +155,18 @@ export default function UserProfile({ user }: UserProfileProps) {
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       placeholder="Full name"
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                    <Input
+                      value={formData.teacher}
+                      onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
+                      placeholder="Teacher"
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                    <Input
+                      value={formData.school}
+                      onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                      placeholder="School/Dojo"
                       className="bg-gray-800 border-gray-600 text-white"
                     />
                     <div className="space-y-2">
@@ -312,6 +332,18 @@ export default function UserProfile({ user }: UserProfileProps) {
                 <span className="text-white">{user.email}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact admin if needed.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Teacher</label>
+              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                <span className="text-white">{user.teacher || "Not specified"}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">School/Dojo</label>
+              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                <span className="text-white">{user.school || "Not specified"}</span>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Account Status</label>

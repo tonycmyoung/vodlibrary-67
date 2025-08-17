@@ -37,6 +37,8 @@ export async function signIn(prevState: any, formData: FormData) {
 }
 
 export async function signUp(prevState: any, formData: FormData) {
+  console.log("[v0] SignUp process started")
+
   if (!formData) {
     return { error: "Form data is missing" }
   }
@@ -44,15 +46,20 @@ export async function signUp(prevState: any, formData: FormData) {
   const email = formData.get("email")
   const password = formData.get("password")
   const fullName = formData.get("fullName")
+  const teacher = formData.get("teacher")
+  const school = formData.get("school")
 
-  if (!email || !password || !fullName) {
-    return { error: "Email, password, and full name are required" }
+  console.log("[v0] SignUp form data:", { email, fullName, teacher, school })
+
+  if (!email || !password || !fullName || !teacher || !school) {
+    return { error: "All fields are required" }
   }
 
   const cookieStore = cookies()
   const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
+    console.log("[v0] Creating Supabase auth user")
     const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
@@ -67,30 +74,44 @@ export async function signUp(prevState: any, formData: FormData) {
     })
 
     if (error) {
+      console.log("[v0] Supabase auth error:", error)
       return { error: error.message }
     }
 
+    console.log("[v0] Supabase auth user created:", data.user?.id)
+
     if (data.user) {
+      console.log("[v0] Creating user profile in database")
       const { createClient } = await import("@supabase/supabase-js")
       const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-      const { error: profileError } = await serviceSupabase.from("users").insert({
+      const profileData = {
         id: data.user.id,
         email: data.user.email,
         full_name: fullName.toString(),
+        teacher: teacher.toString(),
+        school: school.toString(),
         is_approved: false,
-      })
+      }
+
+      console.log("[v0] Profile data to insert:", profileData)
+
+      const { error: profileError } = await serviceSupabase.from("users").insert(profileData)
 
       if (profileError) {
-        console.error("Profile creation error:", profileError)
+        console.error("[v0] Profile creation error:", profileError)
+        return { error: "Failed to create user profile. Please try again." }
       }
+
+      console.log("[v0] User profile created successfully")
     }
 
+    console.log("[v0] SignUp process completed successfully")
     return {
       success: "Check your email to confirm your account, then you can sign in.",
     }
   } catch (error) {
-    console.error("Sign up error:", error)
+    console.error("[v0] Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
@@ -119,7 +140,6 @@ export async function approveUser(userId: string) {
       return { error: "Not authenticated" }
     }
 
-    // Check if current user is admin
     const { data: adminCheck } = await supabase
       .from("users")
       .select("email, is_approved")
@@ -201,28 +221,30 @@ export async function updateProfile(data: {
   email: string
   fullName: string | null
   profileImageUrl: string | null
+  teacher?: string | null
+  school?: string | null
 }) {
   try {
     const cookieStore = cookies()
     const supabase = createServerActionClient({ cookies: () => cookieStore })
 
-    // Verify current user is authenticated
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user || currentUser.user.id !== data.userId) {
       return { error: "Not authorized" }
     }
 
-    // Use service role client to update profile
     const { createClient } = await import("@supabase/supabase-js")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const { error } = await serviceSupabase
-      .from("users")
-      .update({
-        full_name: data.fullName,
-        profile_image_url: data.profileImageUrl,
-      })
-      .eq("id", data.userId)
+    const updateData: any = {
+      full_name: data.fullName,
+      profile_image_url: data.profileImageUrl,
+    }
+
+    if (data.teacher !== undefined) updateData.teacher = data.teacher
+    if (data.school !== undefined) updateData.school = data.school
+
+    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", data.userId)
 
     if (error) {
       return { error: error.message }
@@ -232,5 +254,54 @@ export async function updateProfile(data: {
   } catch (error) {
     console.error("Profile update error:", error)
     return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function deleteUserCompletely(userId: string, userEmail: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerActionClient({ cookies: () => cookieStore })
+
+    // Verify admin authorization
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminCheck } = await supabase
+      .from("users")
+      .select("email, is_approved")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminCheck?.is_approved || adminCheck.email !== "admin@martialarts.com") {
+      return { error: "Not authorized" }
+    }
+
+    // Use service role client for complete deletion
+    const { createClient } = await import("@supabase/supabase-js")
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Delete from database first
+    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
+
+    if (dbError) {
+      console.error("Database deletion error:", dbError)
+      return { error: "Failed to delete user from database" }
+    }
+
+    // Delete from Supabase auth
+    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error("Auth deletion error:", authError)
+      // Note: Database record is already deleted, but auth user remains
+      return { error: "User database record deleted, but auth user deletion failed" }
+    }
+
+    return { success: "User completely deleted from both database and authentication" }
+  } catch (error) {
+    console.error("Complete user deletion error:", error)
+    return { error: "An unexpected error occurred during deletion" }
   }
 }

@@ -86,6 +86,32 @@ export default function SignUpForm() {
               />
             </div>
             <div className="space-y-2">
+              <label htmlFor="teacher" className="block text-sm font-medium text-gray-300">
+                Teacher
+              </label>
+              <Input
+                id="teacher"
+                name="teacher"
+                type="text"
+                placeholder="Your teacher's name"
+                required
+                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="school" className="block text-sm font-medium text-gray-300">
+                School
+              </label>
+              <Input
+                id="school"
+                name="school"
+                type="text"
+                placeholder="Your school/dojo name"
+                required
+                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+              />
+            </div>
+            <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email
               </label>

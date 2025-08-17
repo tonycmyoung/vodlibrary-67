@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, UserCheck, UserX, Mail, Calendar, Loader2 } from "lucide-react"
+import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import { deleteUserCompletely } from "@/lib/actions"
 
-interface User {
+interface UserInterface {
   id: string
   email: string
   full_name: string | null
+  teacher: string | null
+  school: string | null
   created_at: string
   is_approved: boolean
   approved_at: string | null
@@ -20,8 +23,8 @@ interface User {
 }
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<UserInterface[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
@@ -38,7 +41,7 @@ export default function UserManagement() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, full_name, created_at, is_approved, approved_at, profile_image_url")
+        .select("id, email, full_name, teacher, school, created_at, is_approved, approved_at, profile_image_url")
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -60,24 +63,29 @@ export default function UserManagement() {
     const filtered = users.filter(
       (user) =>
         user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.school?.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     setFilteredUsers(filtered)
   }
 
   const toggleUserApproval = async (userId: string, currentStatus: boolean) => {
+    console.log("[v0] Approval process started:", { userId, currentStatus, newStatus: !currentStatus })
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
-          is_approved: !currentStatus,
-          approved_at: !currentStatus ? new Date().toISOString() : null,
-        })
-        .eq("id", userId)
+      const updateData = {
+        is_approved: !currentStatus,
+        approved_at: !currentStatus ? new Date().toISOString() : null,
+      }
+      console.log("[v0] Updating user with data:", updateData)
+
+      const { error, data } = await supabase.from("users").update(updateData).eq("id", userId).select() // Added select to see what was updated
 
       if (error) throw error
+
+      console.log("[v0] Database update result:", data)
 
       setUsers((prev) =>
         prev.map((user) =>
@@ -90,8 +98,39 @@ export default function UserManagement() {
             : user,
         ),
       )
+
+      console.log("[v0] User approval updated successfully")
     } catch (error) {
-      console.error("Error updating user approval:", error)
+      console.error("[v0] Error updating user approval:", error)
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  const deleteUser = async (userId: string, userEmail: string) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to permanently delete the user "${userEmail}"? This will remove both their account and database record. This action cannot be undone.`,
+    )
+
+    if (!confirmDelete) return
+
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const result = await deleteUserCompletely(userId, userEmail)
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete user")
+      }
+
+      setUsers((prev) => prev.filter((user) => user.id !== userId))
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      alert("Failed to delete user. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -155,6 +194,8 @@ export default function UserManagement() {
         <div className="space-y-4">
           {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
+            const isAdmin = user.email === "admin@martialarts.com"
+
             return (
               <div
                 key={user.id}
@@ -174,21 +215,31 @@ export default function UserManagement() {
                   <div>
                     <div className="flex items-center space-x-2 mb-1">
                       <h4 className="font-medium text-white">{user.full_name || "No name provided"}</h4>
-                      <Badge
-                        variant={user.is_approved ? "default" : "outline"}
-                        className={
-                          user.is_approved
-                            ? "bg-green-600 text-white"
-                            : "border-yellow-600 text-yellow-400 bg-transparent"
-                        }
-                      >
-                        {user.is_approved ? "Approved" : "Pending"}
-                      </Badge>
+                      {isAdmin ? (
+                        <Badge className="bg-purple-600 text-white">Administrator</Badge>
+                      ) : (
+                        <Badge
+                          variant={user.is_approved ? "default" : "outline"}
+                          className={
+                            user.is_approved
+                              ? "bg-green-600 text-white"
+                              : "border-yellow-600 text-yellow-400 bg-transparent"
+                          }
+                        >
+                          {user.is_approved ? "Approved" : "Pending"}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
                       <div className="flex items-center space-x-1">
                         <Mail className="w-3 h-3" />
                         <span>{user.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>Teacher: {user.teacher || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>School: {user.school || "Not specified"}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-3 h-3" />
@@ -205,31 +256,52 @@ export default function UserManagement() {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant={user.is_approved ? "outline" : "default"}
-                    onClick={() => toggleUserApproval(user.id, user.is_approved)}
-                    disabled={isProcessing}
-                    className={
-                      user.is_approved
-                        ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }
-                  >
-                    {isProcessing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : user.is_approved ? (
-                      <>
-                        <UserX className="w-4 h-4 mr-1" />
-                        Revoke
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="w-4 h-4 mr-1" />
-                        Approve
-                      </>
-                    )}
-                  </Button>
+                  {!isAdmin && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant={user.is_approved ? "outline" : "default"}
+                        onClick={() => toggleUserApproval(user.id, user.is_approved)}
+                        disabled={isProcessing}
+                        className={
+                          user.is_approved
+                            ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                            : "bg-green-600 hover:bg-green-700 text-white"
+                        }
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : user.is_approved ? (
+                          <>
+                            <UserX className="w-4 h-4 mr-1" />
+                            Revoke
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Approve
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteUser(user.id, user.email)}
+                        disabled={isProcessing}
+                        className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             )

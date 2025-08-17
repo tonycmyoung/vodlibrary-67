@@ -24,16 +24,26 @@ export default async function Home() {
     redirect("/auth/login")
   }
 
+  console.log("[v0] Home page - Auth user ID:", user.id)
+  console.log("[v0] Home page - Auth user email:", user.email)
+
   // Check if user is approved
-  const { data: userProfile } = await supabase
+  const { data: userProfile, error } = await supabase
     .from("users")
     .select("is_approved, full_name, profile_image_url")
     .eq("id", user.id)
     .single()
 
+  console.log("[v0] Home page - Database query result:", userProfile)
+  console.log("[v0] Home page - Database query error:", error)
+  console.log("[v0] Home page - User approval status:", userProfile?.is_approved)
+
   if (!userProfile?.is_approved) {
+    console.log("[v0] Home page - Redirecting to pending approval")
     redirect("/pending-approval")
   }
+
+  console.log("[v0] Home page - User is approved, showing video library")
 
   const userWithEmail = {
     ...userProfile,

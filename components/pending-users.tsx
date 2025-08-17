@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Check, X, Mail, Calendar, Loader2 } from "lucide-react"
+import { Check, X, Mail, Calendar, Loader2, User, GraduationCap } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { approveUser } from "@/lib/actions"
 
@@ -13,6 +13,8 @@ interface PendingUser {
   id: string
   email: string
   full_name: string | null
+  teacher: string | null
+  school: string | null
   created_at: string
 }
 
@@ -29,7 +31,7 @@ export default function PendingUsers() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, full_name, created_at")
+        .select("id, email, full_name, teacher, school, created_at")
         .eq("is_approved", false)
         .order("created_at", { ascending: false })
 
@@ -174,6 +176,16 @@ export default function PendingUsers() {
                         <div className="flex items-center space-x-1">
                           <Calendar className="w-3 h-3" />
                           <span>{formatDate(user.created_at)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
+                        <div className="flex items-center space-x-1">
+                          <User className="w-3 h-3" />
+                          <span>Teacher: {user.teacher || "Not specified"}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <GraduationCap className="w-3 h-3" />
+                          <span>School: {user.school || "Not specified"}</span>
                         </div>
                       </div>
                     </div>

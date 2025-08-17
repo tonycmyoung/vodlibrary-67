@@ -27,7 +27,7 @@ export default async function ProfilePage() {
   // Check if user is approved and get full profile
   const { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, email, created_at, profile_image_url")
+    .select("is_approved, full_name, email, teacher, school, created_at, profile_image_url")
     .eq("id", user.id)
     .single()
 
