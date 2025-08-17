@@ -30,7 +30,7 @@ export default async function Home() {
   // Check if user is approved
   const { data: userProfile, error } = await supabase
     .from("users")
-    .select("is_approved, full_name, profile_image_url")
+    .select("is_approved, full_name, profile_image_url, role")
     .eq("id", user.id)
     .single()
 

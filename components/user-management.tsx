@@ -16,6 +16,7 @@ interface UserInterface {
   full_name: string | null
   teacher: string | null
   school: string | null
+  role: string | null
   created_at: string
   is_approved: boolean
   approved_at: string | null
@@ -41,7 +42,7 @@ export default function UserManagement() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, full_name, teacher, school, created_at, is_approved, approved_at, profile_image_url")
+        .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -65,7 +66,8 @@ export default function UserManagement() {
         user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.school?.toLowerCase().includes(searchQuery.toLowerCase()),
+        user.school?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.role?.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     setFilteredUsers(filtered)
   }
@@ -131,6 +133,27 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Error deleting user:", error)
       alert("Failed to delete user. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  const updateUserRole = async (userId: string, newRole: string) => {
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const { error } = await supabase.from("users").update({ role: newRole }).eq("id", userId)
+
+      if (error) throw error
+
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user)))
+    } catch (error) {
+      console.error("Error updating user role:", error)
+      alert("Failed to update user role. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -218,16 +241,23 @@ export default function UserManagement() {
                       {isAdmin ? (
                         <Badge className="bg-purple-600 text-white">Administrator</Badge>
                       ) : (
-                        <Badge
-                          variant={user.is_approved ? "default" : "outline"}
-                          className={
-                            user.is_approved
-                              ? "bg-green-600 text-white"
-                              : "border-yellow-600 text-yellow-400 bg-transparent"
-                          }
-                        >
-                          {user.is_approved ? "Approved" : "Pending"}
-                        </Badge>
+                        <>
+                          <Badge
+                            variant={user.is_approved ? "default" : "outline"}
+                            className={
+                              user.is_approved
+                                ? "bg-green-600 text-white"
+                                : "border-yellow-600 text-yellow-400 bg-transparent"
+                            }
+                          >
+                            {user.is_approved ? "Approved" : "Pending"}
+                          </Badge>
+                          <Badge
+                            className={user.role === "Teacher" ? "bg-blue-600 text-white" : "bg-gray-600 text-white"}
+                          >
+                            {user.role || "Student"}
+                          </Badge>
+                        </>
                       )}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
@@ -258,6 +288,16 @@ export default function UserManagement() {
                 <div className="flex items-center space-x-2">
                   {!isAdmin && (
                     <>
+                      <select
+                        value={user.role || "Student"}
+                        onChange={(e) => updateUserRole(user.id, e.target.value)}
+                        disabled={isProcessing}
+                        className="px-3 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                      </select>
+
                       <Button
                         size="sm"
                         variant={user.is_approved ? "outline" : "default"}

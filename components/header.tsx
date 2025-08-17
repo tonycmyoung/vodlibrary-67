@@ -6,19 +6,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LogOut, User, Heart, Settings } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 
 interface HeaderProps {
   user: {
     full_name: string | null
     is_approved: boolean
     email?: string
-    profile_image_url?: string | null // Added profile_image_url to interface
+    profile_image_url?: string | null
+    role?: string | null
   }
 }
 
 export default function Header({ user }: HeaderProps) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const isAdmin = user.email === "admin@martialarts.com"
   const isStudentView = searchParams.get("admin-view") === "student"
   const isProfilePage = typeof window !== "undefined" && window.location.pathname === "/profile"
@@ -33,12 +35,8 @@ export default function Header({ user }: HeaderProps) {
     : "U"
 
   const handleProfileClick = () => {
-    window.location.href = "/profile"
+    router.push("/profile")
   }
-
-  const handleButtonClick = () => {}
-
-  const handleButtonHover = () => {}
 
   return (
     <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-red-800/30">
@@ -82,12 +80,7 @@ export default function Header({ user }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="relative h-12 w-12 rounded-full p-0 hover:bg-yellow-400/30 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/50 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-yellow-400"
-                onClick={handleButtonClick}
-                onMouseEnter={handleButtonHover}
-                style={{
-                  cursor: "pointer",
-                }}
+                className="relative h-12 w-12 rounded-full p-0 hover:bg-yellow-400/30 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/50 transition-all duration-300 border-2 border-transparent hover:border-yellow-400"
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.profile_image_url || "/placeholder.svg"} alt={user.full_name || "User"} />
@@ -101,7 +94,7 @@ export default function Header({ user }: HeaderProps) {
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
                   <p className="font-medium text-white">{user.full_name}</p>
-                  <p className="text-xs text-gray-400">Student</p>
+                  <p className="text-xs text-gray-400">{user.role || "Student"}</p>
                 </div>
               </div>
               <DropdownMenuItem

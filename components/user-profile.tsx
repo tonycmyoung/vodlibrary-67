@@ -17,6 +17,7 @@ interface UserProfileProps {
     full_name: string | null
     teacher: string | null
     school: string | null
+    role: string | null
     created_at: string
     profile_image_url: string | null
     favorite_count: number
@@ -217,8 +218,16 @@ export default function UserProfile({ user }: UserProfileProps) {
                         <Mail className="w-4 h-4" />
                         <span>{user.email}</span>
                       </div>
-                      <Badge className={user.isAdmin ? "bg-purple-600 text-white" : "bg-green-600 text-white"}>
-                        {user.isAdmin ? "Administrator" : "Student"}
+                      <Badge
+                        className={
+                          user.isAdmin
+                            ? "bg-purple-600 text-white"
+                            : user.role === "Teacher"
+                              ? "bg-blue-600 text-white"
+                              : "bg-green-600 text-white"
+                        }
+                      >
+                        {user.isAdmin ? "Administrator" : user.role || "Student"}
                       </Badge>
                     </div>
                   </>
@@ -348,14 +357,28 @@ export default function UserProfile({ user }: UserProfileProps) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Account Status</label>
               <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <Badge className={user.isAdmin ? "bg-purple-600 text-white" : "bg-green-600 text-white"}>
-                  {user.isAdmin ? "System Administrator" : "Approved Student"}
+                <Badge
+                  className={
+                    user.isAdmin
+                      ? "bg-purple-600 text-white"
+                      : user.role === "Teacher"
+                        ? "bg-blue-600 text-white"
+                        : "bg-green-600 text-white"
+                  }
+                >
+                  {user.isAdmin
+                    ? "System Administrator"
+                    : user.role === "Teacher"
+                      ? "Approved Teacher"
+                      : "Approved Student"}
                 </Badge>
               </div>
               <p className="text-xs text-gray-400 mt-1">
                 {user.isAdmin
                   ? "You have full administrative access to the system."
-                  : "Your account has been approved for video access."}
+                  : user.role === "Teacher"
+                    ? "Your account has teacher privileges. Only administrators can change your role."
+                    : "Your account has been approved for video access. Only administrators can change your role."}
               </p>
             </div>
           </div>

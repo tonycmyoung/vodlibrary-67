@@ -1,6 +1,6 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -17,7 +17,24 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 
   const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -56,7 +73,24 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 
   const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
   try {
     console.log("[v0] Creating Supabase auth user")
@@ -91,6 +125,7 @@ export async function signUp(prevState: any, formData: FormData) {
         full_name: fullName.toString(),
         teacher: teacher.toString(),
         school: school.toString(),
+        role: "Student",
         is_approved: false,
       }
 
@@ -118,7 +153,24 @@ export async function signUp(prevState: any, formData: FormData) {
 
 export async function signOut() {
   const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
   const { error } = await supabase.auth.signOut()
 
@@ -131,7 +183,7 @@ export async function signOut() {
 
 export async function approveUser(userId: string) {
   const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient({ cookies: () => cookieStore })
 
   try {
     const { data: currentUser } = await supabase.auth.getUser()
@@ -172,7 +224,7 @@ export async function approveUser(userId: string) {
 
 export async function createAdminUser() {
   const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient({ cookies: () => cookieStore })
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -226,7 +278,24 @@ export async function updateProfile(data: {
 }) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
 
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user || currentUser.user.id !== data.userId) {
@@ -260,7 +329,7 @@ export async function updateProfile(data: {
 export async function deleteUserCompletely(userId: string, userEmail: string) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
+    const supabase = createServerClient({ cookies: () => cookieStore })
 
     // Verify admin authorization
     const { data: currentUser } = await supabase.auth.getUser()

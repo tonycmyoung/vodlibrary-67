@@ -22,7 +22,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
   // Check if user is approved
   const { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, profile_image_url")
+    .select("is_approved, full_name, profile_image_url, role") // Added role field to query
     .eq("id", user.id)
     .single()
 

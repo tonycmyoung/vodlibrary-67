@@ -1,4 +1,4 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Check if Supabase environment variables are available
@@ -16,10 +16,28 @@ export async function updateSession(request: NextRequest) {
     })
   }
 
-  const res = NextResponse.next()
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
 
-  // Create a Supabase client configured to use cookies
-  const supabase = createMiddlewareClient({ req: request, res })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+        },
+      },
+    },
+  )
 
   // Check if this is an auth callback
   const requestUrl = new URL(request.url)
@@ -73,5 +91,5 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  return res
+  return supabaseResponse
 }
