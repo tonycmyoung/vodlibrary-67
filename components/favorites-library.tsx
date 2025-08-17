@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
+import VideoCardList from "@/components/video-card-list"
+import ViewToggle from "@/components/view-toggle"
 import { Heart, Loader2 } from "lucide-react"
 
 interface Video {
@@ -23,6 +25,12 @@ interface Video {
 export default function FavoritesLibrary() {
   const [favoriteVideos, setFavoriteVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<"grid" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("favoritesLibraryView") as "grid" | "list") || "grid"
+    }
+    return "grid"
+  })
 
   useEffect(() => {
     fetchFavoriteVideos()
@@ -58,7 +66,6 @@ export default function FavoritesLibrary() {
         return
       }
 
-      // Transform the data to group categories per video
       const videosWithCategories = data?.reduce((acc: Video[], favorite: any) => {
         const video = favorite.videos
         const existingVideo = acc.find((v) => v.id === video.id)
@@ -81,6 +88,11 @@ export default function FavoritesLibrary() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleViewChange = (newView: "grid" | "list") => {
+    setView(newView)
+    localStorage.setItem("favoritesLibraryView", newView)
   }
 
   if (loading) {
@@ -111,10 +123,24 @@ export default function FavoritesLibrary() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {favoriteVideos.map((video) => (
-        <VideoCard key={video.id} video={video} />
-      ))}
+    <div>
+      <div className="flex justify-end mb-6">
+        <ViewToggle view={view} onViewChange={handleViewChange} />
+      </div>
+
+      {view === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {favoriteVideos.map((video) => (
+            <VideoCard key={video.id} video={video} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {favoriteVideos.map((video) => (
+            <VideoCardList key={video.id} video={video} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

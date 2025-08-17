@@ -510,6 +510,9 @@ export default function VideoManagement() {
                         {video.is_published ? "Published" : "Draft"}
                       </Badge>
                     </div>
+                    {video.description && (
+                      <p className="text-sm text-gray-300 mb-2 line-clamp-2 max-w-md">{video.description}</p>
+                    )}
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />

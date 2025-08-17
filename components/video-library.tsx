@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
+import VideoCardList from "@/components/video-card-list"
+import ViewToggle from "@/components/view-toggle"
 import CategoryFilter from "@/components/category-filter"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -36,6 +38,12 @@ export default function VideoLibrary() {
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
+  const [view, setView] = useState<"grid" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("videoLibraryView") as "grid" | "list") || "grid"
+    }
+    return "grid"
+  })
 
   useEffect(() => {
     fetchCategories()
@@ -149,18 +157,26 @@ export default function VideoLibrary() {
     )
   }
 
+  const handleViewChange = (newView: "grid" | "list") => {
+    setView(newView)
+    localStorage.setItem("videoLibraryView", newView)
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Search and Filters */}
       <div className="mb-8 space-y-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search videos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
-          />
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search videos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
+            />
+          </div>
+          <ViewToggle view={view} onViewChange={handleViewChange} />
         </div>
 
         <CategoryFilter
@@ -207,7 +223,7 @@ export default function VideoLibrary() {
         )}
       </div>
 
-      {/* Video Grid */}
+      {/* Video Display */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-red-500" />
@@ -218,11 +234,21 @@ export default function VideoLibrary() {
           <p className="text-gray-400 text-lg">No videos found matching your criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {videos.map((video) => (
-            <VideoCard key={video.id} video={video} />
-          ))}
-        </div>
+        <>
+          {view === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {videos.map((video) => (
+                <VideoCard key={video.id} video={video} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {videos.map((video) => (
+                <VideoCardList key={video.id} video={video} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
