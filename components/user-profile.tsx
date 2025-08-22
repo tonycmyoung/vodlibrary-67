@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { User, Mail, Calendar, Heart, Edit, Save, X, Loader2, Upload } from "lucide-react"
+import { User, Mail, Calendar, Heart, Edit, Save, X, Loader2, Upload, Lock } from "lucide-react"
+import Link from "next/link"
 
 interface UserProfileProps {
   user: {
@@ -313,6 +314,16 @@ export default function UserProfile({ user }: UserProfileProps) {
                 <Heart className="w-4 h-4 mr-2" />
                 View My Favorites
               </a>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+            >
+              <Link href="/change-password">
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </Link>
             </Button>
             <Button
               asChild

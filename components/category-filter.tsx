@@ -10,23 +10,61 @@ interface Category {
   color: string
 }
 
+interface Performer {
+  id: string
+  name: string
+}
+
+interface FilterItem {
+  id: string
+  name: string
+  color: string
+  type: "category" | "recorded" | "performer"
+}
+
 interface CategoryFilterProps {
   categories: Category[]
+  recordedValues: string[]
+  performers: Performer[]
   selectedCategories: string[]
   onCategoryToggle: (categoryId: string) => void
 }
 
-export default function CategoryFilter({ categories, selectedCategories, onCategoryToggle }: CategoryFilterProps) {
+export default function CategoryFilter({
+  categories,
+  recordedValues,
+  performers,
+  selectedCategories,
+  onCategoryToggle,
+}: CategoryFilterProps) {
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
       onCategoryToggle(categoryId)
     })
   }
 
+  const filterItems: FilterItem[] = [
+    ...categories.map((cat) => ({ ...cat, type: "category" as const })),
+    ...performers.map((performer) => ({
+      id: `performer:${performer.id}`,
+      name: performer.name,
+      color: "#a855f7", // Purple color for performers
+      type: "performer" as const,
+    })),
+    ...recordedValues
+      .filter((value) => value && value !== "Unset")
+      .map((value) => ({
+        id: `recorded:${value}`,
+        name: value, // Removed "Recorded: " prefix for consistency
+        color: "#6b7280", // Gray color for recorded values
+        type: "recorded" as const,
+      })),
+  ]
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Filter by Category</h3>
+        <h3 className="text-lg font-semibold text-white">Filter by</h3>
         {selectedCategories.length > 0 && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-gray-400 hover:text-white">
             <X className="w-4 h-4 mr-1" />
@@ -36,11 +74,11 @@ export default function CategoryFilter({ categories, selectedCategories, onCateg
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {categories.map((category) => {
-          const isSelected = selectedCategories.includes(category.id)
+        {filterItems.map((item) => {
+          const isSelected = selectedCategories.includes(item.id)
           return (
             <Badge
-              key={category.id}
+              key={item.id}
               variant={isSelected ? "default" : "outline"}
               className={`cursor-pointer transition-all hover:scale-105 ${
                 isSelected
@@ -49,12 +87,12 @@ export default function CategoryFilter({ categories, selectedCategories, onCateg
               }`}
               style={
                 isSelected
-                  ? { backgroundColor: category.color, borderColor: category.color }
-                  : { borderColor: category.color + "40" }
+                  ? { backgroundColor: item.color, borderColor: item.color }
+                  : { borderColor: item.color + "40" }
               }
-              onClick={() => onCategoryToggle(category.id)}
+              onClick={() => onCategoryToggle(item.id)}
             >
-              {category.name}
+              {item.name}
             </Badge>
           )
         })}
@@ -62,7 +100,7 @@ export default function CategoryFilter({ categories, selectedCategories, onCateg
 
       {selectedCategories.length > 0 && (
         <div className="text-sm text-gray-400">
-          Showing videos in: {selectedCategories.length} categor{selectedCategories.length === 1 ? "y" : "ies"}
+          Showing videos matching: {selectedCategories.length} filter{selectedCategories.length === 1 ? "" : "s"}
         </div>
       )}
     </div>

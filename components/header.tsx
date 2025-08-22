@@ -2,8 +2,14 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Heart, Settings } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { LogOut, User, Heart, Settings, Lock } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -104,6 +110,13 @@ export default function Header({ user }: HeaderProps) {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                <Link href="/change-password" className="flex items-center">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Change Password
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
                 <form action={signOut}>
                   <button type="submit" className="flex items-center w-full">

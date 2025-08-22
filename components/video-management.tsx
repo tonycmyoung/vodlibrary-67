@@ -30,6 +30,10 @@ interface Video {
     name: string
     color: string
   }>
+  performers: Array<{
+    id: string
+    name: string
+  }>
 }
 
 interface Category {
@@ -38,9 +42,15 @@ interface Category {
   color: string
 }
 
+interface Performer {
+  id: string
+  name: string
+}
+
 export default function VideoManagement() {
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [performers, setPerformers] = useState<Performer[]>([])
   const [filteredVideos, setFilteredVideos] = useState<Video[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -68,6 +78,7 @@ export default function VideoManagement() {
     is_published: true,
     recorded: "",
     category_ids: [] as string[],
+    performer_ids: [] as string[],
   })
 
   const [isAutoFilling, setIsAutoFilling] = useState(false)
@@ -75,6 +86,7 @@ export default function VideoManagement() {
   useEffect(() => {
     fetchVideos()
     fetchCategories()
+    fetchPerformers()
   }, [])
 
   useEffect(() => {
@@ -92,6 +104,17 @@ export default function VideoManagement() {
     setCategories(data || [])
   }
 
+  const fetchPerformers = async () => {
+    const { data, error } = await supabase.from("performers").select("*").order("name")
+
+    if (error) {
+      console.error("Error fetching performers:", error)
+      return
+    }
+
+    setPerformers(data || [])
+  }
+
   const fetchVideos = async () => {
     try {
       const { data, error } = await supabase
@@ -101,6 +124,9 @@ export default function VideoManagement() {
           *,
           video_categories(
             categories(id, name, color)
+          ),
+          video_performers(
+            performers(id, name)
           )
         `,
         )
@@ -108,12 +134,14 @@ export default function VideoManagement() {
 
       if (error) throw error
 
-      const videosWithCategories = data?.map((video: any) => ({
+      const videosWithCategoriesAndPerformers = data?.map((video: any) => ({
         ...video,
         categories: video.video_categories?.map((vc: any) => vc.categories).filter((cat: any) => cat && cat.id) || [],
+        performers:
+          video.video_performers?.map((vp: any) => vp.performers).filter((perf: any) => perf && perf.id) || [],
       }))
 
-      setVideos(videosWithCategories || [])
+      setVideos(videosWithCategoriesAndPerformers || [])
     } catch (error) {
       console.error("Error fetching videos:", error)
     } finally {
@@ -147,6 +175,10 @@ export default function VideoManagement() {
         case "recorded":
           aValue = a.recorded === "Unset" || !a.recorded ? "" : a.recorded
           bValue = b.recorded === "Unset" || !b.recorded ? "" : b.recorded
+          break
+        case "performers":
+          aValue = a.performers.length > 0 ? a.performers.map((p) => p.name).join(", ") : ""
+          bValue = b.performers.length > 0 ? b.performers.map((p) => p.name).join(", ") : ""
           break
         default:
           aValue = a.title.toLowerCase()
@@ -183,6 +215,7 @@ export default function VideoManagement() {
       is_published: true,
       recorded: "",
       category_ids: [],
+      performer_ids: [],
     })
     setEditingVideo(null)
   }
@@ -233,6 +266,22 @@ export default function VideoManagement() {
         if (categoryError) throw categoryError
       }
 
+      // Update video performers
+      if (formData.performer_ids.length > 0) {
+        // Delete existing performers
+        await supabase.from("video_performers").delete().eq("video_id", videoId)
+
+        // Insert new performers
+        const performerInserts = formData.performer_ids.map((performerId) => ({
+          video_id: videoId,
+          performer_id: performerId,
+        }))
+
+        const { error: performerError } = await supabase.from("video_performers").insert(performerInserts)
+
+        if (performerError) throw performerError
+      }
+
       // Refresh videos
       await fetchVideos()
 
@@ -255,6 +304,7 @@ export default function VideoManagement() {
       is_published: video.is_published,
       recorded: video.recorded === "Unset" ? "" : video.recorded || "",
       category_ids: video.categories.map((c) => c.id),
+      performer_ids: video.performers.map((p) => p.id),
     })
     setIsAddDialogOpen(true)
   }
@@ -352,6 +402,10 @@ export default function VideoManagement() {
         case "recorded":
           aValue = a.recorded === "Unset" || !a.recorded ? "" : a.recorded
           bValue = b.recorded === "Unset" || !b.recorded ? "" : b.recorded
+          break
+        case "performers":
+          aValue = a.performers.length > 0 ? a.performers.map((p) => p.name).join(", ") : ""
+          bValue = b.performers.length > 0 ? b.performers.map((p) => p.name).join(", ") : ""
           break
         default:
           aValue = a.title.toLowerCase()
@@ -545,6 +599,41 @@ export default function VideoManagement() {
                           )}
                         </div>
                       </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Performers</label>
+                        <div className="grid grid-cols-3 gap-2 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md">
+                          {performers.map((performer) => (
+                            <label key={performer.id} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.performer_ids.includes(performer.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      performer_ids: [...formData.performer_ids, performer.id],
+                                    })
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      performer_ids: formData.performer_ids.filter((id) => id !== performer.id),
+                                    })
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-800"
+                              />
+                              <Badge variant="outline" className="text-xs border-purple-600 text-purple-400">
+                                {performer.name}
+                              </Badge>
+                            </label>
+                          ))}
+                          {performers.length === 0 && (
+                            <p className="text-gray-400 text-sm col-span-2">
+                              No performers available. Create performers first.
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex justify-end space-x-2 pt-2">
                       <Button
@@ -619,6 +708,9 @@ export default function VideoManagement() {
                         <span>{formatDuration(video.duration_seconds)}</span>
                       </div>
                       {video.recorded && video.recorded !== "Unset" && <span>Recorded: {video.recorded}</span>}
+                      {video.performers.length > 0 && (
+                        <span>Performers: {video.performers.map((p) => p.name).join(", ")}</span>
+                      )}
                       <span>Added {formatDate(video.created_at)}</span>
                       <div className="flex flex-wrap gap-1">
                         {video.categories.map((category) =>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Tags, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, Tags, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 
 interface Category {
@@ -258,14 +258,19 @@ export default function CategoryManagement() {
                   <h3 className="font-semibold text-white">{category.name}</h3>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Button size="sm" variant="ghost" onClick={() => handleEdit(category)}>
-                    <Edit className="w-4 h-4" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(category)}
+                    className="cursor-pointer hover:bg-gray-700"
+                  >
+                    <Pencil className="w-4 h-4" />
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => handleDelete(category.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

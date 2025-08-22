@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Settings, Users, Video, Tags, Home } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { LogOut, User, Settings, Users, Video, Tags, Home, Lock } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import Link from "next/link"
 
@@ -67,6 +73,13 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             <Tags className="w-4 h-4" />
             <span>Categories</span>
           </Link>
+          <Link
+            href="/admin/performers"
+            className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
+          >
+            <User className="w-4 h-4" />
+            <span>Performers</span>
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-4">
@@ -95,6 +108,13 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   Profile
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                <Link href="/change-password" className="flex items-center">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Change Password
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
                 <form action={signOut}>
                   <button type="submit" className="flex items-center w-full">

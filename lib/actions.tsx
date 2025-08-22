@@ -55,8 +55,6 @@ export async function signIn(prevState: any, formData: FormData) {
 }
 
 export async function signUp(prevState: any, formData: FormData) {
-  console.log("[v0] SignUp process started")
-
   if (!formData) {
     return { error: "Form data is missing" }
   }
@@ -66,8 +64,6 @@ export async function signUp(prevState: any, formData: FormData) {
   const fullName = formData.get("fullName")
   const teacher = formData.get("teacher")
   const school = formData.get("school")
-
-  console.log("[v0] SignUp form data:", { email, fullName, teacher, school })
 
   if (!email || !password || !fullName || !teacher || !school) {
     return { error: "All fields are required" }
@@ -94,7 +90,6 @@ export async function signUp(prevState: any, formData: FormData) {
   )
 
   try {
-    console.log("[v0] Creating Supabase auth user")
     const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
@@ -109,14 +104,10 @@ export async function signUp(prevState: any, formData: FormData) {
     })
 
     if (error) {
-      console.log("[v0] Supabase auth error:", error)
       return { error: error.message }
     }
 
-    console.log("[v0] Supabase auth user created:", data.user?.id)
-
     if (data.user) {
-      console.log("[v0] Creating user profile in database")
       const { createClient } = await import("@supabase/supabase-js")
       const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -130,38 +121,31 @@ export async function signUp(prevState: any, formData: FormData) {
         is_approved: false,
       }
 
-      console.log("[v0] Profile data to insert:", profileData)
-
       const { error: profileError } = await serviceSupabase.from("users").insert(profileData)
 
       if (profileError) {
-        console.error("[v0] Profile creation error:", profileError)
+        console.error("Profile creation error:", profileError)
         return { error: "Failed to create user profile. Please try again." }
       }
 
-      console.log("[v0] User profile created successfully")
-
       try {
-        console.log("[v0] Sending email notification to administrator")
         await sendNewUserNotification({
           userEmail: email.toString(),
           fullName: fullName.toString(),
           teacher: teacher.toString(),
           school: school.toString(),
         })
-        console.log("[v0] Email notification sent successfully")
       } catch (emailError) {
-        console.error("[v0] Email notification failed:", emailError)
+        console.error("Email notification failed:", emailError)
         // Don't fail the signup if email fails
       }
     }
 
-    console.log("[v0] SignUp process completed successfully")
     return {
       success: "Check your email to confirm your account, then you can sign in.",
     }
   } catch (error) {
-    console.error("[v0] Sign up error:", error)
+    console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
@@ -191,6 +175,25 @@ export async function signOut() {
 
   if (error) {
     console.error("Sign out error:", error.message)
+  } else {
+    try {
+      cookieStore.set("sb-access-token", "", {
+        expires: new Date(0),
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+      })
+      cookieStore.set("sb-refresh-token", "", {
+        expires: new Date(0),
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+      })
+    } catch (cookieError) {
+      // Cookie clearing completed
+    }
   }
 
   redirect("/auth/login")
@@ -574,7 +577,6 @@ async function sendNewUserNotification({
   school: string
 }) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn("[v0] RESEND_API_KEY not configured, skipping email notification")
     return
   }
 
@@ -602,4 +604,85 @@ async function sendNewUserNotification({
     subject: `New User Registration: ${fullName}`,
     html: emailContent,
   })
+}
+
+export async function changePassword(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const currentPassword = formData.get("currentPassword")
+  const newPassword = formData.get("newPassword")
+  const confirmPassword = formData.get("confirmPassword")
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { error: "All password fields are required" }
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { error: "New passwords do not match" }
+  }
+
+  if (newPassword.toString().length < 6) {
+    return { error: "New password must be at least 6 characters long" }
+  }
+
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
+
+  try {
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return { error: "Auth session missing!" }
+    }
+
+    const { createClient } = await import("@supabase/supabase-js")
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Update password using admin API (server-side, no BroadcastChannel issues)
+    const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(user.id, {
+      password: newPassword.toString(),
+    })
+
+    if (updateError) {
+      return { error: updateError.message || "Failed to update password" }
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: newPassword.toString(),
+    })
+
+    if (signInError) {
+      // Password was updated but session refresh failed - user will need to login manually
+      return { error: "Password updated but session refresh failed. Please log in again." }
+    }
+
+    return { success: "Password updated successfully" }
+  } catch (error) {
+    console.error("Change password error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
 }

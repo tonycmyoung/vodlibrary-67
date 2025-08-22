@@ -25,6 +25,10 @@ interface Video {
     name: string
     color: string
   }>
+  performers: Array<{
+    id: string
+    name: string
+  }>
 }
 
 interface Category {
@@ -33,9 +37,16 @@ interface Category {
   color: string
 }
 
+interface Performer {
+  id: string
+  name: string
+}
+
 export default function VideoLibrary() {
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [performers, setPerformers] = useState<Performer[]>([])
+  const [recordedValues, setRecordedValues] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -61,6 +72,7 @@ export default function VideoLibrary() {
 
   useEffect(() => {
     fetchCategories()
+    fetchPerformers()
     fetchVideos()
   }, [])
 
@@ -79,6 +91,17 @@ export default function VideoLibrary() {
     setCategories(data || [])
   }
 
+  const fetchPerformers = async () => {
+    const { data, error } = await supabase.from("performers").select("*").order("name")
+
+    if (error) {
+      console.error("Error fetching performers:", error)
+      return
+    }
+
+    setPerformers(data || [])
+  }
+
   const fetchVideos = async () => {
     setLoading(true)
 
@@ -89,6 +112,9 @@ export default function VideoLibrary() {
         *,
         video_categories!inner(
           categories(id, name, color)
+        ),
+        video_performers(
+          performers(id, name)
         )
       `,
       )
@@ -98,13 +124,13 @@ export default function VideoLibrary() {
       query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
     }
 
-    if (sortBy !== "recorded") {
+    if (sortBy !== "recorded" && sortBy !== "performers") {
       query = query.order(sortBy, { ascending: sortOrder === "asc" })
       if (sortBy !== "title") {
         query = query.order("title", { ascending: true })
       }
     } else {
-      // For recorded field, just order by created_at to get consistent base ordering
+      // For recorded and performers fields, just order by created_at to get consistent base ordering
       query = query.order("created_at", { ascending: false })
     }
 
@@ -116,10 +142,11 @@ export default function VideoLibrary() {
       return
     }
 
-    const videosWithCategories = data?.reduce((acc: Video[], video: any) => {
+    const videosWithCategoriesAndPerformers = data?.reduce((acc: Video[], video: any) => {
       const existingVideo = acc.find((v) => v.id === video.id)
 
       const videoCategories = video.video_categories || []
+      const videoPerformers = video.video_performers || []
 
       if (existingVideo) {
         videoCategories.forEach((videoCategory: any) => {
@@ -132,8 +159,20 @@ export default function VideoLibrary() {
             }
           }
         })
+
+        videoPerformers.forEach((videoPerformer: any) => {
+          const performer = videoPerformer.performers
+
+          if (performer && performer.id && performer.name) {
+            const performerExists = existingVideo.performers.some((perf) => perf.id === performer.id)
+            if (!performerExists) {
+              existingVideo.performers.push(performer)
+            }
+          }
+        })
       } else {
         const categories: Array<{ id: string; name: string; color: string }> = []
+        const performers: Array<{ id: string; name: string }> = []
 
         videoCategories.forEach((videoCategory: any) => {
           const category = videoCategory.categories
@@ -146,28 +185,85 @@ export default function VideoLibrary() {
           }
         })
 
+        videoPerformers.forEach((videoPerformer: any) => {
+          const performer = videoPerformer.performers
+
+          if (performer && performer.id && performer.name) {
+            const performerExists = performers.some((perf) => perf.id === performer.id)
+            if (!performerExists) {
+              performers.push(performer)
+            }
+          }
+        })
+
         acc.push({
           ...video,
           categories,
+          performers,
         })
       }
 
       return acc
     }, [])
 
-    let filteredVideos = videosWithCategories || []
+    let filteredVideos = videosWithCategoriesAndPerformers || []
+
+    const uniqueRecorded = [...new Set(filteredVideos.map((v) => v.recorded).filter((r) => r && r !== "Unset"))]
+    setRecordedValues(uniqueRecorded)
+
     if (selectedCategories.length > 0) {
       filteredVideos = filteredVideos.filter((video) => {
         const videoCategories = video.categories.map((cat) => cat.id)
+        const videoPerformers = video.performers.map((perf) => perf.id)
 
-        let matches = false
-        if (filterMode === "AND") {
-          matches = selectedCategories.every((selectedId) => videoCategories.includes(selectedId))
-        } else {
-          matches = selectedCategories.some((selectedId) => videoCategories.includes(selectedId))
+        const selectedCategoryIds = selectedCategories.filter(
+          (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
+        )
+        const selectedRecordedValues = selectedCategories
+          .filter((id) => id.startsWith("recorded:"))
+          .map((id) => id.replace("recorded:", ""))
+        const selectedPerformerIds = selectedCategories
+          .filter((id) => id.startsWith("performer:"))
+          .map((id) => id.replace("performer:", ""))
+
+        let categoryMatches = selectedCategoryIds.length === 0 ? true : false
+        let recordedMatches = selectedRecordedValues.length === 0 ? true : false
+        let performerMatches = selectedPerformerIds.length === 0 ? true : false
+
+        if (selectedCategoryIds.length > 0) {
+          if (filterMode === "AND") {
+            categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
+          } else {
+            categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+          }
         }
 
-        return matches
+        if (selectedRecordedValues.length > 0) {
+          recordedMatches = selectedRecordedValues.includes(video.recorded || "")
+        }
+
+        if (selectedPerformerIds.length > 0) {
+          if (filterMode === "AND") {
+            performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
+          } else {
+            performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
+          }
+        }
+
+        // Apply filter mode logic across all filter types
+        const activeFilters = [
+          selectedCategoryIds.length > 0 ? categoryMatches : null,
+          selectedRecordedValues.length > 0 ? recordedMatches : null,
+          selectedPerformerIds.length > 0 ? performerMatches : null,
+        ].filter((match) => match !== null)
+
+        if (activeFilters.length === 0) return true
+
+        if (filterMode === "AND") {
+          return activeFilters.every((match) => match === true)
+        } else {
+          return activeFilters.some((match) => match === true)
+        }
       })
     }
 
@@ -187,6 +283,22 @@ export default function VideoLibrary() {
           // Handle "Unset", null, and empty values consistently
           aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
           bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+          break
+        case "performers":
+          aValue =
+            a.performers.length > 0
+              ? a.performers
+                  .map((p) => p.name)
+                  .join(", ")
+                  .toLowerCase()
+              : ""
+          bValue =
+            b.performers.length > 0
+              ? b.performers
+                  .map((p) => p.name)
+                  .join(", ")
+                  .toLowerCase()
+              : ""
           break
         default:
           aValue = a.title.toLowerCase()
@@ -249,6 +361,22 @@ export default function VideoLibrary() {
           aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
           bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
           break
+        case "performers":
+          aValue =
+            a.performers.length > 0
+              ? a.performers
+                  .map((p) => p.name)
+                  .join(", ")
+                  .toLowerCase()
+              : ""
+          bValue =
+            b.performers.length > 0
+              ? b.performers
+                  .map((p) => p.name)
+                  .join(", ")
+                  .toLowerCase()
+              : ""
+          break
         default:
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
@@ -296,6 +424,8 @@ export default function VideoLibrary() {
 
         <CategoryFilter
           categories={categories}
+          recordedValues={recordedValues}
+          performers={performers}
           selectedCategories={selectedCategories}
           onCategoryToggle={handleCategoryToggle}
         />

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Heart, Clock, Calendar } from "lucide-react"
+import { ArrowLeft, Heart, Clock, Calendar, User } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
 import { useSearchParams } from "next/navigation"
@@ -22,6 +22,10 @@ interface VideoPlayerProps {
       id: string
       name: string
       color: string
+    }>
+    performers: Array<{
+      id: string
+      name: string
     }>
   }
 }
@@ -196,8 +200,14 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
                 {video.recorded && video.recorded !== "Unset" && (
                   <div className="flex items-center text-gray-400 text-sm">
-                    {/* Video icon is removed to avoid redeclaration */}
                     <span>Recorded {video.recorded}</span>
+                  </div>
+                )}
+
+                {video.performers && video.performers.length > 0 && (
+                  <div className="flex items-center text-gray-400 text-sm">
+                    <User className="w-4 h-4 mr-2" />
+                    <span>{video.performers.map((p) => p.name).join(", ")}</span>
                   </div>
                 )}
               </div>
@@ -217,6 +227,19 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   ))}
                 </div>
               </div>
+
+              {video.performers && video.performers.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-gray-300 mb-2">Performers</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {video.performers.map((performer) => (
+                      <Badge key={performer.id} variant="outline" className="border-purple-600 text-purple-400">
+                        {performer.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

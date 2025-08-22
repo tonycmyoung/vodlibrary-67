@@ -22,6 +22,10 @@ interface Video {
     name: string
     color: string
   }>
+  performers: Array<{
+    id: string
+    name: string
+  }>
 }
 
 interface VideoCardListProps {
@@ -147,7 +151,18 @@ export default function VideoCardList({ video }: VideoCardListProps) {
                   {category?.name || "Uncategorized"}
                 </Badge>
               ))}
-              {/* Recorded field display after categories */}
+              {video.performers &&
+                video.performers.length > 0 &&
+                video.performers.map((performer) => (
+                  <Badge
+                    key={performer.id}
+                    variant="outline"
+                    className="text-xs px-1 py-0 h-4 border-purple-600 text-purple-400"
+                  >
+                    {performer.name}
+                  </Badge>
+                ))}
+              {/* Recorded field display after performers */}
               {video.recorded && video.recorded !== "Unset" && (
                 <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-400">
                   {video.recorded}
