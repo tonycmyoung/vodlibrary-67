@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Bell, X } from "lucide-react"
+import { Bell, X, Check, Trash2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
@@ -84,6 +84,48 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     }
   }
 
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id)
+
+      if (unreadIds.length === 0) return
+
+      const { error } = await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds)
+
+      if (error) {
+        console.error("Error marking all notifications as read:", error)
+        return
+      }
+
+      // Update local state
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      setUnreadCount(0)
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error)
+    }
+  }
+
+  const deleteAll = async () => {
+    try {
+      const notificationIds = notifications.map((n) => n.id)
+
+      if (notificationIds.length === 0) return
+
+      const { error } = await supabase.from("notifications").delete().in("id", notificationIds)
+
+      if (error) {
+        console.error("Error deleting all notifications:", error)
+        return
+      }
+
+      // Update local state
+      setNotifications([])
+      setUnreadCount(0)
+    } catch (error) {
+      console.error("Error deleting all notifications:", error)
+    }
+  }
+
   useEffect(() => {
     fetchNotifications()
 
@@ -139,8 +181,38 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
         sideOffset={5}
       >
         <div className="p-3 border-b border-gray-700">
-          <h3 className="font-semibold text-white">Notifications</h3>
-          {unreadCount > 0 && <p className="text-xs text-gray-400">{unreadCount} unread</p>}
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-white">Notifications</h3>
+              {unreadCount > 0 && <p className="text-xs text-gray-400">{unreadCount} unread</p>}
+            </div>
+            {notifications.length > 0 && (
+              <div className="flex flex-col gap-1">
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllAsRead}
+                    className="h-6 px-2 text-xs text-gray-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                    title="Mark all as read"
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    All read
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={deleteAll}
+                  className="h-6 px-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                  title="Delete all notifications"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Clear all
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {notifications.length === 0 ? (
@@ -178,7 +250,8 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
                         variant="ghost"
                         size="sm"
                         onClick={() => markAsRead(notification.id)}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                        title="Mark as read"
                       >
                         ✓
                       </Button>
@@ -187,7 +260,8 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteNotification(notification.id)}
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-400"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                      title="Delete notification"
                     >
                       <X className="h-3 w-3" />
                     </Button>
