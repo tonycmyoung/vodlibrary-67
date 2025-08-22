@@ -49,8 +49,12 @@ export default function LoginForm() {
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
           <span className="text-white font-bold text-2xl">武</span>
         </div>
-        <CardTitle className="text-3xl font-bold text-white">Welcome Back</CardTitle>
-        <CardDescription className="text-gray-300 text-lg">Sign in to access the TY Kobudo Library</CardDescription>
+        <CardTitle className="text-3xl font-bold text-white">{"TY Kobudo Library\nWelcome Back"}</CardTitle>
+        <CardDescription className="text-gray-300 text-lg whitespace-pre-line">
+          {
+            "This library is invite-only, for Matayoshi/Okinawa Kobudo Australia Students.\nSign in, or request an account, below."
+          }
+        </CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -94,7 +98,7 @@ export default function LoginForm() {
           <div className="text-center text-gray-400">
             Don't have an account?{" "}
             <Link href="/auth/sign-up" className="text-red-400 hover:text-red-300 hover:underline">
-              Sign up
+              Request one
             </Link>
           </div>
         </form>
