@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 import { signIn } from "@/lib/actions"
 
 function SubmitButton() {
@@ -37,11 +36,11 @@ export default function LoginForm() {
   const [state, formAction] = useActionState(signIn, null)
 
   // Handle successful login by redirecting
-  useEffect(() => {
-    if (state?.success) {
-      router.push("/")
-    }
-  }, [state, router])
+  // useEffect(() => {
+  //   if (state?.success) {
+  //     router.push("/")
+  //   }
+  // }, [state, router])
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">

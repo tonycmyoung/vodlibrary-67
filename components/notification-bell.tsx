@@ -1,0 +1,203 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Bell, X } from "lucide-react"
+import { createBrowserClient } from "@/lib/supabase/client"
+import { fetchNotificationsWithSenders } from "@/lib/actions"
+import { formatDistanceToNow } from "date-fns"
+
+interface Notification {
+  id: string
+  sender_id: string
+  message: string
+  is_read: boolean
+  created_at: string
+  sender: {
+    full_name: string | null
+    email: string
+  } | null
+}
+
+interface NotificationBellProps {
+  userId: string
+  isAdmin?: boolean
+}
+
+export default function NotificationBell({ userId, isAdmin = false }: NotificationBellProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+  const supabase = createBrowserClient()
+
+  const fetchNotifications = async () => {
+    try {
+      const result = await fetchNotificationsWithSenders(userId)
+
+      if (result.error) {
+        console.error("Error fetching notifications:", result.error)
+        return
+      }
+
+      setNotifications(result.data)
+      setUnreadCount(result.data.filter((n) => !n.is_read).length)
+    } catch (error) {
+      console.error("Error fetching notifications:", error)
+    }
+  }
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId)
+
+      if (error) {
+        console.error("Error marking notification as read:", error)
+        return
+      }
+
+      // Update local state
+      setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n)))
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error("Error marking notification as read:", error)
+    }
+  }
+
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      const { error } = await supabase.from("notifications").delete().eq("id", notificationId)
+
+      if (error) {
+        console.error("Error deleting notification:", error)
+        return
+      }
+
+      // Update local state
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      setUnreadCount((prev) => {
+        const notification = notifications.find((n) => n.id === notificationId)
+        return notification && !notification.is_read ? Math.max(0, prev - 1) : prev
+      })
+    } catch (error) {
+      console.error("Error deleting notification:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchNotifications()
+
+    // Set up real-time subscription for new notifications
+    const channel = supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${userId}`,
+        },
+        () => {
+          fetchNotifications()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
+
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`relative p-2 rounded-full transition-all duration-200 ${
+            isAdmin
+              ? "hover:bg-purple-600/20 hover:ring-2 hover:ring-purple-500/50"
+              : "hover:bg-yellow-400/20 hover:ring-2 hover:ring-yellow-400/50"
+          }`}
+        >
+          <Bell className="h-5 w-5 text-gray-300" />
+          {unreadCount > 0 && (
+            <span
+              className={`absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs font-bold text-white flex items-center justify-center ${
+                isAdmin ? "bg-purple-600" : "bg-red-600"
+              }`}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="w-80 bg-gray-900 border-gray-700 max-h-96 overflow-y-auto"
+        align="end"
+        sideOffset={5}
+      >
+        <div className="p-3 border-b border-gray-700">
+          <h3 className="font-semibold text-white">Notifications</h3>
+          {unreadCount > 0 && <p className="text-xs text-gray-400">{unreadCount} unread</p>}
+        </div>
+
+        {notifications.length === 0 ? (
+          <div className="p-4 text-center text-gray-400">
+            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No notifications yet</p>
+          </div>
+        ) : (
+          <div className="max-h-64 overflow-y-auto">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-3 border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${
+                  !notification.is_read ? "bg-gray-800/30" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs font-medium text-gray-300">
+                        From: {notification.sender?.full_name || "Unknown"}
+                      </p>
+                      {!notification.is_read && (
+                        <div className={`w-2 h-2 rounded-full ${isAdmin ? "bg-purple-500" : "bg-red-500"}`} />
+                      )}
+                    </div>
+                    <p className="text-sm text-white break-words">{notification.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {!notification.is_read && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => markAsRead(notification.id)}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      >
+                        ✓
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteNotification(notification.id)}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-400"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}

@@ -9,13 +9,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Heart, Settings, Lock } from "lucide-react"
+import { LogOut, User, Heart, Settings, Lock, MessageSquare } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
+import NotificationBell from "@/components/notification-bell"
 
 interface HeaderProps {
   user: {
+    id: string
     full_name: string | null
     is_approved: boolean
     email?: string
@@ -82,6 +84,8 @@ export default function Header({ user }: HeaderProps) {
         </nav>
 
         <div className="flex items-center space-x-4">
+          <NotificationBell userId={user.id} isAdmin={isAdmin} />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -109,6 +113,12 @@ export default function Header({ user }: HeaderProps) {
               >
                 <User className="mr-2 h-4 w-4" />
                 Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                <Link href="/contact" className="flex items-center">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Contact Admin
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
                 <Link href="/change-password" className="flex items-center">

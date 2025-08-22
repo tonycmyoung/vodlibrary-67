@@ -7,12 +7,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Settings, Users, Video, Tags, Home, Lock } from "lucide-react"
+import { LogOut, User, Settings, Users, Video, Tags, Home, Lock, Bell } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import Link from "next/link"
+import NotificationBell from "@/components/notification-bell"
 
 interface AdminHeaderProps {
   user: {
+    id: string
     full_name: string | null
     email: string
     is_approved: boolean
@@ -80,9 +82,18 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             <User className="w-4 h-4" />
             <span>Performers</span>
           </Link>
+          <Link
+            href="/admin/notifications"
+            className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-4">
+          <NotificationBell userId={user.id} isAdmin={true} />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

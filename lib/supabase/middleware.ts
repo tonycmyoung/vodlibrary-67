@@ -51,7 +51,17 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Refresh session if expired - required for Server Components
-  await supabase.auth.getSession()
+  try {
+    await supabase.auth.getSession()
+  } catch (error) {
+    // If session refresh fails (e.g., invalid refresh token), clear cookies and redirect to login
+    console.log("[v0] Session refresh failed, redirecting to login:", error)
+    const response = NextResponse.redirect(new URL("/auth/login", request.url))
+    // Clear all auth-related cookies
+    response.cookies.delete("sb-access-token")
+    response.cookies.delete("sb-refresh-token")
+    return response
+  }
 
   // Protected routes - redirect to login if not authenticated
   const isAuthRoute =
@@ -62,9 +72,20 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = request.nextUrl.pathname === "/pending-approval" || request.nextUrl.pathname === "/setup-admin"
 
   if (!isAuthRoute && !isPublicRoute) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    let session
+    try {
+      const {
+        data: { session: sessionData },
+      } = await supabase.auth.getSession()
+      session = sessionData
+    } catch (error) {
+      // If we can't get session data, redirect to login
+      console.log("[v0] Failed to get session for protected route, redirecting to login:", error)
+      const response = NextResponse.redirect(new URL("/auth/login", request.url))
+      response.cookies.delete("sb-access-token")
+      response.cookies.delete("sb-refresh-token")
+      return response
+    }
 
     if (!session) {
       const redirectUrl = new URL("/auth/login", request.url)

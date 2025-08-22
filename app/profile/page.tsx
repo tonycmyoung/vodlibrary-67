@@ -52,8 +52,12 @@ export default async function ProfilePage() {
   }
 
   const userForHeader = {
-    ...userProfile,
+    id: user.id, // Always use the authenticated user's ID
     email: user.email,
+    full_name: userProfile?.full_name || null,
+    profile_image_url: userProfile?.profile_image_url || null,
+    role: userProfile?.role || null,
+    is_approved: userProfile?.is_approved || false,
   }
 
   return (

@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { Resend } from "resend"
+import { createClient } from "@supabase/supabase-js"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -47,10 +48,18 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: true }
-  } catch (error) {
-    console.error("Login error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError || !session) {
+      return { error: "Failed to establish session" }
+    }
+
+    redirect("/")
+  } catch (error: any) {
+    return { error: error.message || "An unexpected error occurred" }
   }
 }
 
@@ -108,7 +117,6 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (data.user) {
-      const { createClient } = await import("@supabase/supabase-js")
       const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
       const profileData = {
@@ -295,7 +303,6 @@ export async function createAdminUser() {
     }
 
     if (data.user) {
-      const { createClient } = await import("@supabase/supabase-js")
       const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
       const { error: profileError } = await serviceSupabase.from("users").insert({
@@ -354,7 +361,6 @@ export async function updateProfile(data: {
       return { error: "Not authorized" }
     }
 
-    const { createClient } = await import("@supabase/supabase-js")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const updateData: any = {
@@ -417,7 +423,6 @@ export async function deleteUserCompletely(userId: string, userEmail: string) {
     }
 
     // Use service role client for complete deletion
-    const { createClient } = await import("@supabase/supabase-js")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Delete from database first
@@ -483,7 +488,6 @@ export async function rejectUser(userId: string) {
     }
 
     // Use service role client for deletion
-    const { createClient } = await import("@supabase/supabase-js")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Delete from database first
@@ -565,6 +569,63 @@ export async function fetchPendingUsers() {
   }
 }
 
+export async function fetchNotificationsWithSenders(userId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Fetch notifications for the user
+    const { data: notifications, error: notificationsError } = await serviceSupabase
+      .from("notifications")
+      .select("id, sender_id, message, is_read, created_at, is_broadcast")
+      .eq("recipient_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+
+    if (notificationsError) {
+      console.error("[v0] Error fetching notifications:", notificationsError)
+      return { error: "Failed to fetch notifications", data: [] }
+    }
+
+    if (!notifications || notifications.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    // Get unique sender IDs
+    const senderIds = [...new Set(notifications.map((n) => n.sender_id).filter(Boolean))]
+
+    // Fetch sender information using service role client (bypasses RLS)
+    const { data: senders, error: sendersError } = await serviceSupabase
+      .from("users")
+      .select("id, full_name, email")
+      .in("id", senderIds)
+
+    if (sendersError) {
+      console.error("[v0] Error fetching senders:", sendersError)
+      return { error: "Failed to fetch sender information", data: [] }
+    }
+
+    // Create sender lookup map
+    const sendersMap = (senders || []).reduce(
+      (acc, sender) => {
+        acc[sender.id] = sender
+        return acc
+      },
+      {} as Record<string, any>,
+    )
+
+    // Combine notifications with sender info
+    const notificationsWithSenders = notifications.map((notification) => ({
+      ...notification,
+      sender: sendersMap[notification.sender_id] || null,
+    }))
+
+    return { success: true, data: notificationsWithSenders }
+  } catch (error) {
+    console.error("[v0] Error in fetchNotificationsWithSenders:", error)
+    return { error: "An unexpected error occurred", data: [] }
+  }
+}
+
 async function sendNewUserNotification({
   userEmail,
   fullName,
@@ -604,6 +665,306 @@ async function sendNewUserNotification({
     subject: `New User Registration: ${fullName}`,
     html: emailContent,
   })
+}
+
+async function sendNotificationEmail({
+  recipientEmail,
+  recipientName,
+  senderName,
+  message,
+  isFromAdmin = false,
+}: {
+  recipientEmail: string
+  recipientName: string | null
+  senderName: string | null
+  message: string
+  isFromAdmin?: boolean
+}) {
+  if (!process.env.RESEND_API_KEY) {
+    return
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
+        <p style="color: #f0f0f0; margin: 5px 0 0 0;">New Message Notification</p>
+      </div>
+      
+      <div style="padding: 30px; background: #ffffff;">
+        <h2 style="color: #333; margin-top: 0;">You have a new message!</h2>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isFromAdmin ? "#6f42c1" : "#dc3545"};">
+          <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+            <strong>From:</strong> ${senderName || "Unknown User"} ${isFromAdmin ? "(Administrator)" : ""}
+          </p>
+          <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
+            "${message}"
+          </p>
+        </div>
+        
+        <p style="color: #666; margin: 20px 0;">
+          To view and respond to this message, please log in to your account:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
+             style="background: ${isFromAdmin ? "#6f42c1" : "#dc3545"}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            View Message
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated notification from TY Kobudo Library. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  `
+
+  await resend.emails.send({
+    from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
+    to: recipientEmail,
+    subject: `New Message from ${isFromAdmin ? "Administrator" : senderName || "TY Kobudo Library"}`,
+    html: emailContent,
+  })
+}
+
+async function sendBroadcastNotificationEmail({
+  recipientEmail,
+  recipientName,
+  message,
+}: {
+  recipientEmail: string
+  recipientName: string | null
+  message: string
+}) {
+  if (!process.env.RESEND_API_KEY) {
+    return
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
+        <p style="color: #f0f0f0; margin: 5px 0 0 0;">Important Announcement</p>
+      </div>
+      
+      <div style="padding: 30px; background: #ffffff;">
+        <h2 style="color: #333; margin-top: 0;">Message from Administrator</h2>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6f42c1;">
+          <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
+            ${message}
+          </p>
+        </div>
+        
+        <p style="color: #666; margin: 20px 0;">
+          This message has been sent to all users. Please log in to your account to view it:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
+             style="background: #6f42c1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            View Message
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated notification from TY Kobudo Library. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  `
+
+  await resend.emails.send({
+    from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
+    to: recipientEmail,
+    subject: "Important Message from TY Kobudo Library Administrator",
+    html: emailContent,
+  })
+}
+
+export async function sendNotificationWithEmail({
+  recipientId,
+  message,
+  isBroadcast = false,
+}: {
+  recipientId?: string
+  message: string
+  isBroadcast?: boolean
+}) {
+  try {
+    console.log("[v0] sendNotificationWithEmail called with:", { recipientId, message, isBroadcast })
+
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Get current user (sender)
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      console.log("[v0] No authenticated user found")
+      return { error: "Not authenticated" }
+    }
+    console.log("[v0] Current user found:", currentUser.user.id)
+
+    // Get sender info using service role client
+    const { data: senderInfo } = await serviceSupabase
+      .from("users")
+      .select("full_name, email")
+      .eq("id", currentUser.user.id)
+      .single()
+    console.log("[v0] Sender info:", senderInfo)
+
+    if (isBroadcast) {
+      // Get all approved users for broadcast using service role client
+      const { data: users } = await serviceSupabase
+        .from("users")
+        .select("id, email, full_name")
+        .eq("is_approved", true)
+        .neq("id", currentUser.user.id) // Don't send to sender
+
+      if (!users || users.length === 0) {
+        return { error: "No users to send broadcast to" }
+      }
+
+      // Create notifications for all users using service role client
+      const notifications = users.map((user) => ({
+        sender_id: currentUser.user!.id,
+        recipient_id: user.id,
+        message: message.trim(),
+        is_read: false,
+        is_broadcast: true,
+      }))
+
+      const { error: notificationError } = await serviceSupabase.from("notifications").insert(notifications)
+
+      if (notificationError) {
+        return { error: "Failed to send broadcast notifications" }
+      }
+
+      // Send emails to all users
+      const emailPromises = users.map((user) =>
+        sendBroadcastNotificationEmail({
+          recipientEmail: user.email,
+          recipientName: user.full_name,
+          message: message.trim(),
+        }).catch((error) => {
+          console.error(`Failed to send email to ${user.email}:`, error)
+        }),
+      )
+
+      await Promise.allSettled(emailPromises)
+
+      return { success: `Broadcast sent to ${users.length} users` }
+    } else {
+      // Individual message
+      if (!recipientId) {
+        console.log("[v0] No recipient ID provided")
+        return { error: "Recipient ID required for individual message" }
+      }
+
+      let actualRecipientId = recipientId
+      if (recipientId === "admin") {
+        console.log("[v0] Looking for admin user")
+        const { data: adminUser, error: adminError } = await serviceSupabase
+          .from("users")
+          .select("id, email")
+          .or("role.eq.admin,email.eq.acmyma@gmail.com")
+          .eq("is_approved", true)
+          .limit(1)
+          .single()
+
+        console.log("[v0] Admin lookup result:", { adminUser, adminError })
+
+        if (!adminUser) {
+          console.log("[v0] No admin user found")
+          return { error: "No admin user found. Please ensure an admin user exists." }
+        }
+        actualRecipientId = adminUser.id
+        console.log("[v0] Using admin user ID:", actualRecipientId)
+      }
+
+      // Get recipient info using the actual recipient ID and service role client
+      console.log("[v0] Looking up recipient info for ID:", actualRecipientId)
+      const { data: recipientInfo, error: recipientError } = await serviceSupabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", actualRecipientId)
+        .single()
+
+      console.log("[v0] Recipient lookup result:", { recipientInfo, recipientError })
+
+      if (!recipientInfo) {
+        console.log("[v0] Recipient not found")
+        return { error: "Recipient not found" }
+      }
+
+      console.log("[v0] Creating notification in database")
+      const { error: notificationError } = await serviceSupabase.from("notifications").insert({
+        sender_id: currentUser.user.id,
+        recipient_id: actualRecipientId,
+        message: message.trim(),
+        is_read: false,
+        is_broadcast: false,
+      })
+
+      console.log("[v0] Notification creation result:", { notificationError })
+
+      if (notificationError) {
+        console.log("[v0] Failed to create notification:", notificationError.message)
+        return { error: "Failed to send notification" }
+      }
+
+      // Send email
+      console.log("[v0] Attempting to send email")
+      try {
+        await sendNotificationEmail({
+          recipientEmail: recipientInfo.email,
+          recipientName: recipientInfo.full_name,
+          senderName: senderInfo?.full_name || null,
+          message: message.trim(),
+          isFromAdmin: senderInfo?.email === "acmyma@gmail.com",
+        })
+        console.log("[v0] Email sent successfully")
+      } catch (emailError) {
+        console.error("[v0] Failed to send notification email:", emailError)
+        // Don't fail the notification if email fails
+      }
+
+      console.log("[v0] Message sent successfully")
+      return { success: "Message sent successfully" }
+    }
+  } catch (error) {
+    console.error("[v0] Error in sendNotificationWithEmail:", error)
+    return { error: "An unexpected error occurred" }
+  }
 }
 
 export async function changePassword(prevState: any, formData: FormData) {
@@ -658,7 +1019,6 @@ export async function changePassword(prevState: any, formData: FormData) {
       return { error: "Auth session missing!" }
     }
 
-    const { createClient } = await import("@supabase/supabase-js")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Update password using admin API (server-side, no BroadcastChannel issues)
