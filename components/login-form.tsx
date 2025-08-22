@@ -51,7 +51,7 @@ export default function LoginForm() {
         <CardTitle className="text-3xl font-bold text-white">{"TY Kobudo Library\nWelcome Back"}</CardTitle>
         <CardDescription className="text-gray-300 text-lg whitespace-pre-line">
           {
-            "This library is invite-only, for Matayoshi/Okinawa Kobudo Australia Students.\nSign in, or request an account, below."
+            "This library is invite-only for\nMatayoshi/Okinawa Kobudo Australia Students.\nSign in, or request an account, below."
           }
         </CardDescription>
       </CardHeader>
