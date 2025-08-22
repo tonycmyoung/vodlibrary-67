@@ -681,10 +681,22 @@ async function sendNotificationEmail({
   isFromAdmin?: boolean
 }) {
   if (!process.env.RESEND_API_KEY) {
+    console.log("[v0] No RESEND_API_KEY found, skipping email")
     return
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY)
+
+  console.log("[v0] Email parameters:", {
+    recipientEmail,
+    recipientName,
+    senderName,
+    isFromAdmin,
+    messageLength: message.length,
+  })
+
+  const emailSubject = `New Message from ${isFromAdmin ? "Administrator" : senderName || "TY Kobudo Library"}`
+  console.log("[v0] Email subject:", emailSubject)
 
   const emailContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -725,12 +737,40 @@ async function sendNotificationEmail({
     </div>
   `
 
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
-    to: recipientEmail,
-    subject: `New Message from ${isFromAdmin ? "Administrator" : senderName || "TY Kobudo Library"}`,
-    html: emailContent,
-  })
+  console.log("[v0] Attempting to send email via Resend")
+  console.log("[v0] From address:", process.env.FROM_EMAIL || "noreply@tykobudolibrary.com")
+  console.log("[v0] To address:", recipientEmail)
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
+      to: recipientEmail,
+      subject: emailSubject,
+      html: emailContent,
+    })
+
+    console.log("[v0] Resend API response:", result)
+
+    if (result.error) {
+      console.error("[v0] Resend API returned error:", result.error)
+      throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`)
+    }
+
+    if (!result.data?.id) {
+      console.error("[v0] Resend API returned no message ID")
+      throw new Error("Email sending failed - no message ID returned")
+    }
+
+    console.log("[v0] Email send successful, message ID:", result.data.id)
+  } catch (error) {
+    console.error("[v0] Resend API error:", error)
+    console.error("[v0] Error details:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    })
+    throw error
+  }
 }
 
 async function sendBroadcastNotificationEmail({
@@ -955,6 +995,11 @@ export async function sendNotificationWithEmail({
         console.log("[v0] Email sent successfully")
       } catch (emailError) {
         console.error("[v0] Failed to send notification email:", emailError)
+        console.error("[v0] Email error details:", {
+          message: emailError.message,
+          recipientEmail: recipientInfo.email,
+          isFromAdmin: senderInfo?.email === "acmyma@gmail.com",
+        })
         // Don't fail the notification if email fails
       }
 
