@@ -699,42 +699,67 @@ async function sendNotificationEmail({
   console.log("[v0] Email subject:", emailSubject)
 
   const emailContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
-        <p style="color: #f0f0f0; margin: 5px 0 0 0;">New Message Notification</p>
-      </div>
-      
-      <div style="padding: 30px; background: #ffffff;">
-        <h2 style="color: #333; margin-top: 0;">You have a new message!</h2>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isFromAdmin ? "#6f42c1" : "#dc3545"};">
-          <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-            <strong>From:</strong> ${senderName || "Unknown User"} ${isFromAdmin ? "(Administrator)" : ""}
-          </p>
-          <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
-            "${message}"
-          </p>
-        </div>
-        
-        <p style="color: #666; margin: 20px 0;">
-          To view and respond to this message, please log in to your account:
-        </p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
-             style="background: ${isFromAdmin ? "#6f42c1" : "#dc3545"}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-            View Message
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-          This is an automated notification from TY Kobudo Library. Please do not reply to this email.
-        </p>
-      </div>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${emailSubject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                                <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
+                                <p style="color: #f0f0f0; margin: 5px 0 0 0;">New Message Notification</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 30px; background: #ffffff;">
+                                <h2 style="color: #333; margin-top: 0;">You have a new message!</h2>
+                                <p style="color: #666; margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
+                                    Hello ${recipientName || "there"}, you've received a new message in your TY Kobudo Library account.
+                                </p>
+                                
+                                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isFromAdmin ? "#6f42c1" : "#dc3545"};">
+                                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; font-weight: bold;">
+                                        From: ${senderName || "Unknown User"}${isFromAdmin ? " (Administrator)" : ""}
+                                    </p>
+                                    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
+                                        <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
+                                            "${message}"
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <p style="color: #666; margin: 20px 0; font-size: 16px;">
+                                    To view and respond to this message, please log in to your account:
+                                </p>
+                                
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
+                                       style="background: ${isFromAdmin ? "#6f42c1" : "#dc3545"}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                                        View Message
+                                    </a>
+                                </div>
+                                
+                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                                
+                                <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+                                    This is an automated notification from TY Kobudo Library.<br>
+                                    Please do not reply to this email.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
   `
 
   console.log("[v0] Attempting to send email via Resend")
@@ -818,7 +843,8 @@ async function sendBroadcastNotificationEmail({
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         
         <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-          This is an automated notification from TY Kobudo Library. Please do not reply to this email.
+          This is an automated notification from TY Kobudo Library.<br>
+          Please do not reply to this email.
         </p>
       </div>
     </div>
