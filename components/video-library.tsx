@@ -9,7 +9,7 @@ import CategoryFilter from "@/components/category-filter"
 import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Loader2 } from "lucide-react"
+import { Search, Loader2, X } from "lucide-react"
 
 interface Video {
   id: string
@@ -49,6 +49,7 @@ export default function VideoLibrary() {
   const [recordedValues, setRecordedValues] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
   const [sortBy, setSortBy] = useState<string>(() => {
@@ -78,7 +79,15 @@ export default function VideoLibrary() {
 
   useEffect(() => {
     fetchVideos()
-  }, [selectedCategories, searchQuery, filterMode])
+  }, [selectedCategories, debouncedSearchQuery, filterMode])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300) // 300ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name")
@@ -105,225 +114,240 @@ export default function VideoLibrary() {
   const fetchVideos = async () => {
     setLoading(true)
 
-    let query = supabase
-      .from("videos")
-      .select(
-        `
-        *,
-        video_categories!inner(
-          categories(id, name, color)
-        ),
-        video_performers(
-          performers(id, name)
+    try {
+      const query = supabase
+        .from("videos")
+        .select(
+          `
+          *,
+          video_categories!inner(
+            categories(id, name, color)
+          ),
+          video_performers(
+            performers(id, name)
+          )
+        `,
         )
-      `,
-      )
-      .eq("is_published", true)
+        .eq("is_published", true)
 
-    if (searchQuery) {
-      query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
-    }
+      const { data, error } = await query
 
-    if (sortBy !== "recorded" && sortBy !== "performers") {
-      query = query.order(sortBy, { ascending: sortOrder === "asc" })
-      if (sortBy !== "title") {
-        query = query.order("title", { ascending: true })
+      if (error) {
+        console.error("Error fetching videos:", error)
+        setLoading(false)
+        return
       }
-    } else {
-      // For recorded and performers fields, just order by created_at to get consistent base ordering
-      query = query.order("created_at", { ascending: false })
-    }
 
-    const { data, error } = await query
+      const videosWithCategoriesAndPerformers = data?.reduce((acc: Video[], video: any) => {
+        const existingVideo = acc.find((v) => v.id === video.id)
 
-    if (error) {
+        const videoCategories = video.video_categories || []
+        const videoPerformers = video.video_performers || []
+
+        if (existingVideo) {
+          videoCategories.forEach((videoCategory: any) => {
+            const category = videoCategory.categories
+
+            if (category && category.id && category.name) {
+              const categoryExists = existingVideo.categories.some((cat) => cat.id === category.id)
+              if (!categoryExists) {
+                existingVideo.categories.push(category)
+              }
+            }
+          })
+
+          videoPerformers.forEach((videoPerformer: any) => {
+            const performer = videoPerformer.performers
+
+            if (performer && performer.id && performer.name) {
+              const performerExists = existingVideo.performers.some((perf) => perf.id === performer.id)
+              if (!performerExists) {
+                existingVideo.performers.push(performer)
+              }
+            }
+          })
+        } else {
+          const categories: Array<{ id: string; name: string; color: string }> = []
+          const performers: Array<{ id: string; name: string }> = []
+
+          videoCategories.forEach((videoCategory: any) => {
+            const category = videoCategory.categories
+
+            if (category && category.id && category.name) {
+              const categoryExists = categories.some((cat) => cat.id === category.id)
+              if (!categoryExists) {
+                categories.push(category)
+              }
+            }
+          })
+
+          videoPerformers.forEach((videoPerformer: any) => {
+            const performer = videoPerformer.performers
+
+            if (performer && performer.id && performer.name) {
+              const performerExists = performers.some((perf) => perf.id === performer.id)
+              if (!performerExists) {
+                performers.push(performer)
+              }
+            }
+          })
+
+          acc.push({
+            ...video,
+            categories,
+            performers,
+          })
+        }
+
+        return acc
+      }, [])
+
+      let filteredVideos = videosWithCategoriesAndPerformers || []
+
+      const uniqueRecorded = [...new Set(filteredVideos.map((v) => v.recorded).filter((r) => r && r !== "Unset"))]
+      setRecordedValues(uniqueRecorded)
+
+      if (debouncedSearchQuery) {
+        console.log("[v0] Before performer filtering, videos count:", filteredVideos.length)
+        filteredVideos = filteredVideos.filter((video) => {
+          const titleMatch = video.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+          const descriptionMatch =
+            video.description?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || false
+          const performerMatch = video.performers.some((performer) =>
+            performer.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
+          )
+
+          console.log(
+            "[v0] Video:",
+            video.title,
+            "Performers:",
+            video.performers.map((p) => p.name),
+            "Performer match:",
+            performerMatch,
+          )
+
+          return titleMatch || descriptionMatch || performerMatch
+        })
+        console.log("[v0] After performer filtering, videos count:", filteredVideos.length)
+      }
+
+      if (selectedCategories.length > 0) {
+        filteredVideos = filteredVideos.filter((video) => {
+          const videoCategories = video.categories.map((cat) => cat.id)
+          const videoPerformers = video.performers.map((perf) => perf.id)
+
+          const selectedCategoryIds = selectedCategories.filter(
+            (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
+          )
+          const selectedRecordedValues = selectedCategories
+            .filter((id) => id.startsWith("recorded:"))
+            .map((id) => id.replace("recorded:", ""))
+          const selectedPerformerIds = selectedCategories
+            .filter((id) => id.startsWith("performer:"))
+            .map((id) => id.replace("performer:", ""))
+
+          let categoryMatches = selectedCategoryIds.length === 0 ? true : false
+          let recordedMatches = selectedRecordedValues.length === 0 ? true : false
+          let performerMatches = selectedPerformerIds.length === 0 ? true : false
+
+          if (selectedCategoryIds.length > 0) {
+            if (filterMode === "AND") {
+              categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
+            } else {
+              categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+            }
+          }
+
+          if (selectedRecordedValues.length > 0) {
+            recordedMatches = selectedRecordedValues.includes(video.recorded || "")
+          }
+
+          if (selectedPerformerIds.length > 0) {
+            if (filterMode === "AND") {
+              performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
+            } else {
+              performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
+            }
+          }
+
+          // Apply filter mode logic across all filter types
+          const activeFilters = [
+            selectedCategoryIds.length > 0 ? categoryMatches : null,
+            selectedRecordedValues.length > 0 ? recordedMatches : null,
+            selectedPerformerIds.length > 0 ? performerMatches : null,
+          ].filter((match) => match !== null)
+
+          if (activeFilters.length === 0) return true
+
+          if (filterMode === "AND") {
+            return activeFilters.every((match) => match === true)
+          } else {
+            return activeFilters.some((match) => match === true)
+          }
+        })
+      }
+
+      filteredVideos.sort((a, b) => {
+        let aValue: any, bValue: any
+
+        switch (sortBy) {
+          case "title":
+            aValue = a.title.toLowerCase()
+            bValue = b.title.toLowerCase()
+            break
+          case "created_at":
+            aValue = new Date(a.created_at).getTime()
+            bValue = new Date(b.created_at).getTime()
+            break
+          case "recorded":
+            // Handle "Unset", null, and empty values consistently
+            aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
+            bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
+            break
+          case "performers":
+            aValue =
+              a.performers.length > 0
+                ? a.performers
+                    .map((p) => p.name)
+                    .join(", ")
+                    .toLowerCase()
+                : ""
+            bValue =
+              b.performers.length > 0
+                ? b.performers
+                    .map((p) => p.name)
+                    .join(", ")
+                    .toLowerCase()
+                : ""
+            break
+          default:
+            aValue = a.title.toLowerCase()
+            bValue = b.title.toLowerCase()
+        }
+
+        let result = 0
+        if (sortOrder === "asc") {
+          result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+        } else {
+          result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+        }
+
+        // If primary sort values are equal and not sorting by title, use title as secondary sort
+        if (result === 0 && sortBy !== "title") {
+          const aTitle = a.title.toLowerCase()
+          const bTitle = b.title.toLowerCase()
+          result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+        }
+
+        return result
+      })
+
+      setVideos(filteredVideos)
+      setLoading(false)
+    } catch (error) {
       console.error("Error fetching videos:", error)
       setLoading(false)
-      return
     }
-
-    const videosWithCategoriesAndPerformers = data?.reduce((acc: Video[], video: any) => {
-      const existingVideo = acc.find((v) => v.id === video.id)
-
-      const videoCategories = video.video_categories || []
-      const videoPerformers = video.video_performers || []
-
-      if (existingVideo) {
-        videoCategories.forEach((videoCategory: any) => {
-          const category = videoCategory.categories
-
-          if (category && category.id && category.name) {
-            const categoryExists = existingVideo.categories.some((cat) => cat.id === category.id)
-            if (!categoryExists) {
-              existingVideo.categories.push(category)
-            }
-          }
-        })
-
-        videoPerformers.forEach((videoPerformer: any) => {
-          const performer = videoPerformer.performers
-
-          if (performer && performer.id && performer.name) {
-            const performerExists = existingVideo.performers.some((perf) => perf.id === performer.id)
-            if (!performerExists) {
-              existingVideo.performers.push(performer)
-            }
-          }
-        })
-      } else {
-        const categories: Array<{ id: string; name: string; color: string }> = []
-        const performers: Array<{ id: string; name: string }> = []
-
-        videoCategories.forEach((videoCategory: any) => {
-          const category = videoCategory.categories
-
-          if (category && category.id && category.name) {
-            const categoryExists = categories.some((cat) => cat.id === category.id)
-            if (!categoryExists) {
-              categories.push(category)
-            }
-          }
-        })
-
-        videoPerformers.forEach((videoPerformer: any) => {
-          const performer = videoPerformer.performers
-
-          if (performer && performer.id && performer.name) {
-            const performerExists = performers.some((perf) => perf.id === performer.id)
-            if (!performerExists) {
-              performers.push(performer)
-            }
-          }
-        })
-
-        acc.push({
-          ...video,
-          categories,
-          performers,
-        })
-      }
-
-      return acc
-    }, [])
-
-    let filteredVideos = videosWithCategoriesAndPerformers || []
-
-    const uniqueRecorded = [...new Set(filteredVideos.map((v) => v.recorded).filter((r) => r && r !== "Unset"))]
-    setRecordedValues(uniqueRecorded)
-
-    if (selectedCategories.length > 0) {
-      filteredVideos = filteredVideos.filter((video) => {
-        const videoCategories = video.categories.map((cat) => cat.id)
-        const videoPerformers = video.performers.map((perf) => perf.id)
-
-        const selectedCategoryIds = selectedCategories.filter(
-          (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
-        )
-        const selectedRecordedValues = selectedCategories
-          .filter((id) => id.startsWith("recorded:"))
-          .map((id) => id.replace("recorded:", ""))
-        const selectedPerformerIds = selectedCategories
-          .filter((id) => id.startsWith("performer:"))
-          .map((id) => id.replace("performer:", ""))
-
-        let categoryMatches = selectedCategoryIds.length === 0 ? true : false
-        let recordedMatches = selectedRecordedValues.length === 0 ? true : false
-        let performerMatches = selectedPerformerIds.length === 0 ? true : false
-
-        if (selectedCategoryIds.length > 0) {
-          if (filterMode === "AND") {
-            categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
-          } else {
-            categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
-          }
-        }
-
-        if (selectedRecordedValues.length > 0) {
-          recordedMatches = selectedRecordedValues.includes(video.recorded || "")
-        }
-
-        if (selectedPerformerIds.length > 0) {
-          if (filterMode === "AND") {
-            performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
-          } else {
-            performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
-          }
-        }
-
-        // Apply filter mode logic across all filter types
-        const activeFilters = [
-          selectedCategoryIds.length > 0 ? categoryMatches : null,
-          selectedRecordedValues.length > 0 ? recordedMatches : null,
-          selectedPerformerIds.length > 0 ? performerMatches : null,
-        ].filter((match) => match !== null)
-
-        if (activeFilters.length === 0) return true
-
-        if (filterMode === "AND") {
-          return activeFilters.every((match) => match === true)
-        } else {
-          return activeFilters.some((match) => match === true)
-        }
-      })
-    }
-
-    filteredVideos.sort((a, b) => {
-      let aValue: any, bValue: any
-
-      switch (sortBy) {
-        case "title":
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
-          break
-        case "created_at":
-          aValue = new Date(a.created_at).getTime()
-          bValue = new Date(b.created_at).getTime()
-          break
-        case "recorded":
-          // Handle "Unset", null, and empty values consistently
-          aValue = !a.recorded || a.recorded === "Unset" ? "" : a.recorded.toLowerCase()
-          bValue = !b.recorded || b.recorded === "Unset" ? "" : b.recorded.toLowerCase()
-          break
-        case "performers":
-          aValue =
-            a.performers.length > 0
-              ? a.performers
-                  .map((p) => p.name)
-                  .join(", ")
-                  .toLowerCase()
-              : ""
-          bValue =
-            b.performers.length > 0
-              ? b.performers
-                  .map((p) => p.name)
-                  .join(", ")
-                  .toLowerCase()
-              : ""
-          break
-        default:
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
-      }
-
-      let result = 0
-      if (sortOrder === "asc") {
-        result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
-      } else {
-        result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
-      }
-
-      // If primary sort values are equal and not sorting by title, use title as secondary sort
-      if (result === 0 && sortBy !== "title") {
-        const aTitle = a.title.toLowerCase()
-        const bTitle = b.title.toLowerCase()
-        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
-      }
-
-      return result
-    })
-
-    setVideos(filteredVideos)
-    setLoading(false)
   }
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -413,8 +437,18 @@ export default function VideoLibrary() {
               placeholder="Search videos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
+              className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
             />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />

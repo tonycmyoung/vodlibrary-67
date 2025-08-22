@@ -114,7 +114,8 @@ export default function FavoritesLibrary() {
       filteredVideos = filteredVideos.filter(
         (video) =>
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (video.description && video.description.toLowerCase().includes(searchQuery.toLowerCase())),
+          (video.description && video.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          video.performers.some((performer) => performer.name.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     }
 
@@ -364,7 +365,8 @@ export default function FavoritesLibrary() {
       filteredVideos = filteredVideos.filter(
         (video) =>
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (video.description && video.description.toLowerCase().includes(searchQuery.toLowerCase())),
+          (video.description && video.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          video.performers.some((performer) => performer.name.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     }
 

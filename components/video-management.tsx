@@ -156,7 +156,8 @@ export default function VideoManagement() {
       filtered = videos.filter(
         (video) =>
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          video.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+          video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.performers.some((performer) => performer.name.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     }
 
@@ -383,7 +384,8 @@ export default function VideoManagement() {
       filtered = videos.filter(
         (video) =>
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          video.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+          video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.performers.some((performer) => performer.name.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     }
 
