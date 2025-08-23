@@ -57,7 +57,7 @@ export default async function VideoPage({ params }: VideoPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
-      <Header user={{ ...userProfile, email: user.email }} />
+      <Header user={{ ...userProfile, id: user.id, email: user.email }} />
       <VideoPlayer video={videoWithCategories} />
     </div>
   )

@@ -231,17 +231,25 @@ export default function AdminNotificationManagement() {
         <CardContent className="space-y-4">
           <div className="flex space-x-4">
             <Button
-              variant={messageType === "individual" ? "default" : "outline"}
+              variant={messageType === "individual" ? "default" : "ghost"}
               onClick={() => setMessageType("individual")}
-              className="flex items-center space-x-2"
+              className={`flex items-center space-x-2 ${
+                messageType === "individual"
+                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
             >
               <User className="w-4 h-4" />
               <span>Individual</span>
             </Button>
             <Button
-              variant={messageType === "broadcast" ? "default" : "outline"}
+              variant={messageType === "broadcast" ? "default" : "ghost"}
               onClick={() => setMessageType("broadcast")}
-              className="flex items-center space-x-2"
+              className={`flex items-center space-x-2 ${
+                messageType === "broadcast"
+                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
             >
               <Users className="w-4 h-4" />
               <span>Broadcast to All</span>

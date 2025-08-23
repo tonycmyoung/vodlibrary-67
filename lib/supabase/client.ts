@@ -9,8 +9,47 @@ export const isSupabaseConfigured =
 
 export { createBrowserClient }
 
-// Create a singleton instance of the Supabase client for Client Components
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-)
+const createMockClient = () => ({
+  auth: {
+    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    signInWithPassword: () => Promise.resolve({ data: { user: null }, error: { message: "Supabase not configured" } }),
+    signUp: () => Promise.resolve({ data: { user: null }, error: { message: "Supabase not configured" } }),
+    signOut: () => Promise.resolve({ error: null }),
+    resetPasswordForEmail: () => Promise.resolve({ data: {}, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+  },
+  from: () => ({
+    select: () => ({ data: [], error: null }),
+    insert: () => ({ data: [], error: null }),
+    update: () => ({ data: [], error: null }),
+    delete: () => ({ data: [], error: null }),
+  }),
+})
+
+export function createClient() {
+  if (!isSupabaseConfigured) {
+    console.warn("[v0] Supabase environment variables not configured, using mock client")
+    return createMockClient() as any
+  }
+
+  try {
+    return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  } catch (error) {
+    console.error("[v0] Failed to create Supabase client:", error)
+    return createMockClient() as any
+  }
+}
+
+export const supabase = (() => {
+  if (!isSupabaseConfigured) {
+    console.warn("[v0] Supabase not configured, using mock client")
+    return createMockClient() as any
+  }
+
+  try {
+    return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  } catch (error) {
+    console.error("[v0] Failed to create Supabase singleton:", error)
+    return createMockClient() as any
+  }
+})()

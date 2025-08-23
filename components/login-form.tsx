@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
@@ -9,6 +11,8 @@ import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions"
+import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -34,6 +38,36 @@ function SubmitButton() {
 export default function LoginForm() {
   const router = useRouter()
   const [state, formAction] = useActionState(signIn, null)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetMessage, setResetMessage] = useState("")
+  const [resetError, setResetError] = useState("")
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetEmail) {
+      setResetError("Please enter your email address")
+      return
+    }
+
+    setIsResetting(true)
+    setResetError("")
+    setResetMessage("")
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+
+    setIsResetting(false)
+
+    if (error) {
+      setResetError("Failed to send reset email. Please try again.")
+    } else {
+      setResetMessage("Password reset email sent! Check your inbox.")
+      setResetEmail("")
+    }
+  }
 
   // Handle successful login by redirecting
   // useEffect(() => {
@@ -64,6 +98,15 @@ export default function LoginForm() {
             </div>
           )}
 
+          {resetMessage && (
+            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
+              {resetMessage}
+            </div>
+          )}
+          {resetError && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">{resetError}</div>
+          )}
+
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
@@ -76,6 +119,8 @@ export default function LoginForm() {
                 placeholder="you@example.com"
                 required
                 className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -93,6 +138,17 @@ export default function LoginForm() {
           </div>
 
           <SubmitButton />
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={isResetting}
+              className="text-red-400 hover:text-red-300 hover:underline text-sm disabled:opacity-50"
+            >
+              {isResetting ? "Sending..." : "Forgot your password?"}
+            </button>
+          </div>
 
           <div className="text-center text-gray-400">
             Don't have an account?{" "}

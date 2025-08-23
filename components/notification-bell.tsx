@@ -33,6 +33,11 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
 
   const fetchNotifications = async () => {
     try {
+      if (!userId || userId === "undefined" || userId.trim() === "") {
+        console.error("[v0] NotificationBell: Invalid userId provided:", userId)
+        return
+      }
+
       const result = await fetchNotificationsWithSenders(userId)
 
       if (result.error) {
@@ -127,6 +132,11 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
   }
 
   useEffect(() => {
+    if (!userId || userId === "undefined" || userId.trim() === "") {
+      console.error("[v0] NotificationBell useEffect: Invalid userId, skipping fetch:", userId)
+      return
+    }
+
     fetchNotifications()
 
     // Set up real-time subscription for new notifications
