@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
+import { addPerformer, updatePerformer, deletePerformer } from "@/lib/actions"
 
 interface Performer {
   id: string
@@ -63,16 +64,27 @@ export default function PerformerManagement() {
     if (!newPerformerName.trim()) return
 
     try {
-      const { error } = await supabase.from("performers").insert([{ name: newPerformerName.trim() }])
+      console.log("[v0] Adding performer:", newPerformerName)
+      console.log("[v0] Current user session:", await supabase.auth.getUser())
 
-      if (error) throw error
+      const result = await addPerformer(newPerformerName)
+      console.log("[v0] Add performer result:", result)
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
       setMessage({ type: "success", text: "Performer added successfully" })
       setNewPerformerName("")
       await fetchPerformers()
     } catch (error) {
-      console.error("Error adding performer:", error)
-      setMessage({ type: "error", text: "Failed to add performer" })
+      console.error("[v0] Error adding performer:", error)
+      console.log("[v0] Error details:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      })
+      setMessage({ type: "error", text: `Error adding performer: ${error.message}` })
     }
   }
 
@@ -85,9 +97,11 @@ export default function PerformerManagement() {
     if (!editingPerformer || !editName.trim()) return
 
     try {
-      const { error } = await supabase.from("performers").update({ name: editName.trim() }).eq("id", editingPerformer)
+      const result = await updatePerformer(editingPerformer, editName)
 
-      if (error) throw error
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
       setEditingPerformer(null)
       setEditName("")
@@ -105,15 +119,11 @@ export default function PerformerManagement() {
     }
 
     try {
-      // First delete all video_performer relationships
-      const { error: relationError } = await supabase.from("video_performers").delete().eq("performer_id", performer.id)
+      const result = await deletePerformer(performer.id)
 
-      if (relationError) throw relationError
-
-      // Then delete the performer
-      const { error: performerError } = await supabase.from("performers").delete().eq("id", performer.id)
-
-      if (performerError) throw performerError
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
       setMessage({ type: "success", text: "Performer deleted successfully" })
       await fetchPerformers()

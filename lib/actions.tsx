@@ -601,7 +601,7 @@ export async function fetchNotificationsWithSenders(userId: string) {
     // Fetch sender information using service role client (bypasses RLS)
     const { data: senders, error: sendersError } = await serviceSupabase
       .from("users")
-      .select("id, full_name, email")
+      .select("id, full_name, email, profile_image_url")
       .in("id", senderIds)
 
     if (sendersError) {
@@ -922,20 +922,60 @@ export async function inviteUser(email: string) {
     // Use service role client for admin operations
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Invite user using admin API
-    const { data, error } = await serviceSupabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
-    })
+    try {
+      const { data: existingUser, error: checkError } = await serviceSupabase
+        .from("users")
+        .select("id, email, is_approved")
+        .eq("email", email.toLowerCase())
+        .not("is_approved", "is", null) // Only users who have completed registration
+        .single()
 
-    if (error) {
-      console.error("Invite user error:", error)
-      return { error: error.message }
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking existing user:", checkError)
+        return { error: "Failed to validate user" }
+      }
+
+      if (existingUser) {
+        return { error: "This user is already registered. No invitation needed." }
+      }
+
+      const { data: authUsers, error: authError } = await serviceSupabase.auth.admin.listUsers()
+
+      if (authError) {
+        console.error("Error checking auth users:", authError)
+        return { error: "Failed to validate user" }
+      }
+
+      const existingAuthUser = authUsers.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())
+
+      if (existingAuthUser) {
+        const { error: deleteError } = await serviceSupabase.auth.admin.deleteUser(existingAuthUser.id)
+
+        if (deleteError) {
+          console.error("Error deleting existing auth user:", deleteError)
+          return { error: "Failed to resend invitation" }
+        }
+      }
+
+      const { data, error } = await serviceSupabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+      })
+
+      if (error) {
+        console.error("Supabase invite error:", error.message)
+        return { error: "Failed to send invitation: " + error.message }
+      }
+
+      const successMessage = existingAuthUser ? "Invitation resent successfully" : "Invitation sent successfully"
+
+      return { success: successMessage, data }
+    } catch (inviteError: any) {
+      console.error("Invite process error:", inviteError.message)
+      return { error: "Failed to send invitation" }
     }
-
-    return { success: "Invitation sent successfully", data }
-  } catch (error) {
-    console.error("Invite user error:", error)
-    return { error: "An unexpected error occurred" }
+  } catch (error: any) {
+    console.error("General invite error:", error.message)
+    return { error: "Failed to send invitation" }
   }
 }
 
@@ -1513,4 +1553,148 @@ function parseCookieHeader(cookieHeader: string): { name: string; value: string;
     const [name, value] = cookie.trim().split("=")
     return { name: name.trim(), value: value?.trim() || "", options: {} }
   })
+}
+
+export async function addPerformer(name: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { error } = await serviceSupabase.from("performers").insert([{ name: name.trim() }])
+
+    if (error) {
+      console.error("Error adding performer:", error)
+      return { error: "Failed to add performer" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Unexpected error adding performer:", error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function updatePerformer(id: string, name: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { error } = await serviceSupabase.from("performers").update({ name: name.trim() }).eq("id", id)
+
+    if (error) {
+      console.error("Error updating performer:", error)
+      return { error: "Failed to update performer" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Unexpected error updating performer:", error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function deletePerformer(id: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return { error: "Not authenticated" }
+    }
+
+    // First delete all video_performer relationships
+    const { error: relationError } = await serviceSupabase.from("video_performers").delete().eq("performer_id", id)
+
+    if (relationError) {
+      console.error("Error deleting performer relationships:", relationError)
+      return { error: "Failed to delete performer relationships" }
+    }
+
+    // Then delete the performer
+    const { error: performerError } = await serviceSupabase.from("performers").delete().eq("id", id)
+
+    if (performerError) {
+      console.error("Error deleting performer:", performerError)
+      return { error: "Failed to delete performer" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Unexpected error deleting performer:", error)
+    return { error: "An unexpected error occurred" }
+  }
 }

@@ -109,7 +109,7 @@ export default function LoginForm() {
 
           <div className="space-y-3">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 leading-5">
                 Email
               </label>
               <Input
@@ -124,7 +124,7 @@ export default function LoginForm() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 leading-5">
                 Password
               </label>
               <Input
@@ -134,6 +134,9 @@ export default function LoginForm() {
                 required
                 className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500"
               />
+              <p className="text-xs text-gray-400 italic leading-3 mt-0">
+                min 6 characters with uppercase, lowercase, number, and symbol
+              </p>
             </div>
           </div>
 

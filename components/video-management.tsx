@@ -443,10 +443,10 @@ export default function VideoManagement() {
                   <DialogHeader>
                     <DialogTitle>{editingVideo ? "Edit Video" : "Add New Video"}</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                  <form onSubmit={handleSubmit} className="space-y-3 leading-5">
+                    <div className="grid grid-cols-2 gap-3 leading-5">
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-0">Title</label>
                         <Input
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -529,9 +529,9 @@ export default function VideoManagement() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-300 mb-1">Categories</label>
-                        <div className="grid grid-cols-3 gap-2 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md">
+                        <div className="grid grid-cols-3 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md leading-5 py-px gap-0">
                           {categories.map((category) => (
-                            <label key={category.id} className="flex items-center space-x-2 cursor-pointer">
+                            <label key={category.id} className="flex items-center space-x-2 cursor-pointer leading-7">
                               <input
                                 type="checkbox"
                                 checked={formData.category_ids.includes(category.id)}
@@ -571,7 +571,7 @@ export default function VideoManagement() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-300 mb-1">Performers</label>
-                        <div className="grid grid-cols-3 gap-2 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md">
+                        <div className="grid grid-cols-3 max-h-28 overflow-y-auto p-2 bg-gray-800 border border-gray-600 rounded-md py-px w-auto gap-0">
                           {performers.map((performer) => (
                             <label key={performer.id} className="flex items-center space-x-2 cursor-pointer">
                               <input
@@ -605,7 +605,7 @@ export default function VideoManagement() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-end space-x-2 pt-2">
+                    <div className="flex justify-end space-x-2 pt-0.5">
                       <Button
                         type="button"
                         variant="outline"
@@ -684,7 +684,7 @@ export default function VideoManagement() {
                       </Badge>
                     </div>
                     {video.description && (
-                      <p className="text-sm text-gray-300 mb-2 line-clamp-2 max-w-md">{video.description}</p>
+                      <p className="text-sm text-gray-300 mb-2 line-clamp-2 max-w-md w-auto">{video.description}</p>
                     )}
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
                       {video.recorded && video.recorded !== "Unset" && <span>Recorded: {video.recorded}</span>}

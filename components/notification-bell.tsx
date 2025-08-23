@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, X, Check, Trash2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
@@ -17,6 +18,7 @@ interface Notification {
   sender: {
     full_name: string | null
     email: string
+    profile_image_url: string | null // Added profile_image_url to interface
   } | null
 }
 
@@ -242,9 +244,20 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-xs font-medium text-gray-300">
-                        From: {notification.sender?.full_name || "Unknown"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage
+                            src={notification.sender?.profile_image_url || "/placeholder.svg"}
+                            alt={notification.sender?.full_name || "Unknown"}
+                          />
+                          <AvatarFallback className="text-xs bg-gray-600 text-gray-200">
+                            {(notification.sender?.full_name || "U").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <p className="text-xs font-medium text-gray-300">
+                          {notification.sender?.full_name || "Unknown"}
+                        </p>
+                      </div>
                       {!notification.is_read && (
                         <div className={`w-2 h-2 rounded-full ${isAdmin ? "bg-purple-500" : "bg-red-500"}`} />
                       )}

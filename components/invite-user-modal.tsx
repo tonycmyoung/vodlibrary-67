@@ -48,7 +48,7 @@ export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProp
         setMessage(result.error)
         setMessageType("error")
       } else {
-        setMessage("Invitation sent successfully!")
+        setMessage(result.success || "Invitation sent successfully!")
         setMessageType("success")
         setEmail("")
 

@@ -146,7 +146,7 @@ export default function PendingUsers() {
       </CardHeader>
       <CardContent>
         {pendingUsers.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="text-center leading-5 py-1.5">
             <p className="text-gray-400">No pending user approvals</p>
           </div>
         ) : (
