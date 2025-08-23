@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Trash2, Clock, Loader2, Wand2, Pencil } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { extractVideoMetadata } from "@/lib/video-utils"
+import { saveVideo } from "@/lib/actions"
 
 interface Video {
   id: string
@@ -82,6 +83,8 @@ export default function VideoManagement() {
   })
 
   const [isAutoFilling, setIsAutoFilling] = useState(false)
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     fetchVideos()
@@ -224,63 +227,30 @@ export default function VideoManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+
     try {
       const videoData = {
+        id: editingVideo?.id,
         title: formData.title,
         description: formData.description || null,
         video_url: formData.video_url,
         thumbnail_url: formData.thumbnail_url || null,
         duration_seconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
         is_published: formData.is_published,
-        recorded: formData.recorded || "Unset",
+        recorded: formData.recorded || null,
+        category_ids: formData.category_ids,
+        performer_ids: formData.performer_ids,
       }
 
-      let videoId: string
+      const result = await saveVideo(videoData)
 
-      if (editingVideo) {
-        // Update existing video
-        const { error } = await supabase.from("videos").update(videoData).eq("id", editingVideo.id)
-
-        if (error) throw error
-        videoId = editingVideo.id
-      } else {
-        // Create new video
-        const { data, error } = await supabase.from("videos").insert(videoData).select().single()
-
-        if (error) throw error
-        videoId = data.id
-      }
-
-      // Update video categories
-      if (formData.category_ids.length > 0) {
-        // Delete existing categories
-        await supabase.from("video_categories").delete().eq("video_id", videoId)
-
-        // Insert new categories
-        const categoryInserts = formData.category_ids.map((categoryId) => ({
-          video_id: videoId,
-          category_id: categoryId,
-        }))
-
-        const { error: categoryError } = await supabase.from("video_categories").insert(categoryInserts)
-
-        if (categoryError) throw categoryError
-      }
-
-      // Update video performers
-      if (formData.performer_ids.length > 0) {
-        // Delete existing performers
-        await supabase.from("video_performers").delete().eq("video_id", videoId)
-
-        // Insert new performers
-        const performerInserts = formData.performer_ids.map((performerId) => ({
-          video_id: videoId,
-          performer_id: performerId,
-        }))
-
-        const { error: performerError } = await supabase.from("video_performers").insert(performerInserts)
-
-        if (performerError) throw performerError
+      if (result.error) {
+        console.error("Error saving video:", result.error)
+        alert(`Error: ${result.error}`)
+        return
       }
 
       // Refresh videos
@@ -291,6 +261,9 @@ export default function VideoManagement() {
       resetForm()
     } catch (error) {
       console.error("Error saving video:", error)
+      alert("An unexpected error occurred while saving the video")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -346,6 +319,7 @@ export default function VideoManagement() {
     }
 
     setIsAutoFilling(true)
+    setThumbnailError(null)
     try {
       const metadata = await extractVideoMetadata(formData.video_url)
 
@@ -356,16 +330,9 @@ export default function VideoManagement() {
         thumbnail_url: metadata.thumbnail || prev.thumbnail_url,
         duration_seconds: metadata.duration ? Math.round(metadata.duration).toString() : prev.duration_seconds,
       }))
-
-      // Show helpful message for Google Drive videos
-      if (isGoogleDrive && !metadata.duration) {
-        alert(
-          "Thumbnail extracted successfully! Duration cannot be auto-detected for Google Drive videos - please enter it manually in seconds.",
-        )
-      }
     } catch (error) {
       console.error("Error extracting video metadata:", error)
-      alert("Could not extract video metadata. Please fill in manually.")
+      setThumbnailError("Could not extract video metadata. Please fill in manually.")
     } finally {
       setIsAutoFilling(false)
     }
@@ -534,6 +501,7 @@ export default function VideoManagement() {
                           className="bg-gray-800 border-gray-600 text-white"
                           placeholder="https://... or auto-generated"
                         />
+                        {thumbnailError && <p className="text-sm text-red-400 mt-1">{thumbnailError}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
@@ -643,11 +611,25 @@ export default function VideoManagement() {
                         variant="outline"
                         onClick={() => setIsAddDialogOpen(false)}
                         className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                        disabled={isSubmitting}
                       >
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white">
-                        {editingVideo ? "Update Video" : "Add Video"}
+                      <Button
+                        type="submit"
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            {editingVideo ? "Updating..." : "Adding..."}
+                          </>
+                        ) : editingVideo ? (
+                          "Update Video"
+                        ) : (
+                          "Add Video"
+                        )}
                       </Button>
                     </div>
                   </form>
@@ -665,7 +647,7 @@ export default function VideoManagement() {
             {filteredVideos.map((video) => (
               <div
                 key={video.id}
-                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700"
+                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 py-1"
               >
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-12 bg-gray-800 rounded flex items-center justify-center overflow-hidden">
@@ -705,10 +687,6 @@ export default function VideoManagement() {
                       <p className="text-sm text-gray-300 mb-2 line-clamp-2 max-w-md">{video.description}</p>
                     )}
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatDuration(video.duration_seconds)}</span>
-                      </div>
                       {video.recorded && video.recorded !== "Unset" && <span>Recorded: {video.recorded}</span>}
                       {video.performers.length > 0 && (
                         <span>Performers: {video.performers.map((p) => p.name).join(", ")}</span>

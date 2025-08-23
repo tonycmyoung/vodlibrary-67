@@ -252,7 +252,7 @@ export default function CategoryManagement() {
         {categories.map((category) => (
           <Card key={category.id} className="bg-black/60 border-gray-800 hover:border-purple-500/50 transition-colors">
             <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-0.5">
                 <div className="flex items-center space-x-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }} />
                   <h3 className="font-semibold text-white">{category.name}</h3>

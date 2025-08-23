@@ -26,6 +26,8 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
         return "Added Date"
       case "recorded":
         return "Recorded"
+      case "views":
+        return "Views"
       default:
         return "Name"
     }
@@ -47,6 +49,9 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
           </SelectItem>
           <SelectItem value="recorded" className="text-gray-300 hover:text-gray-900">
             Recorded
+          </SelectItem>
+          <SelectItem value="views" className="text-gray-300 hover:text-gray-900">
+            Views
           </SelectItem>
         </SelectContent>
       </Select>

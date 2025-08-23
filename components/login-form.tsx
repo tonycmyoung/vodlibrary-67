@@ -21,7 +21,7 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-medium rounded-lg h-[60px]"
+      className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-lg font-medium rounded-lg h-[48px]"
     >
       {pending ? (
         <>
@@ -91,7 +91,7 @@ export default function LoginForm() {
       </CardHeader>
 
       <CardContent>
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-3">
           {state?.error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
               {state.error}
@@ -107,7 +107,7 @@ export default function LoginForm() {
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">{resetError}</div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email
@@ -139,7 +139,7 @@ export default function LoginForm() {
 
           <SubmitButton />
 
-          <div className="text-center">
+          <div className="text-center mt-1">
             <button
               type="button"
               onClick={handleResetPassword}

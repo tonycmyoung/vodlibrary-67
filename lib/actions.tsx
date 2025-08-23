@@ -1,7 +1,7 @@
 "use server"
 
 import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
@@ -939,6 +939,343 @@ export async function inviteUser(email: string) {
   }
 }
 
+export async function saveVideo(videoData: any) {
+  console.log("[v0] saveVideo called with data:", JSON.stringify(videoData, null, 2))
+
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.log("[v0] saveVideo - No authenticated user:", userError)
+      return { error: "Not authenticated" }
+    }
+
+    console.log("[v0] saveVideo - User info:", {
+      id: user.id,
+      email: user.email,
+      role: user.user_metadata?.role,
+      app_metadata: user.app_metadata,
+    })
+
+    // Get user profile for additional context
+    const { data: userProfile, error: profileError } = await serviceSupabase
+      .from("users")
+      .select("role, is_approved, full_name")
+      .eq("id", user.id)
+      .single()
+
+    console.log("[v0] saveVideo - User profile:", userProfile, "Profile error:", profileError)
+
+    let videoId = videoData.id
+
+    if (videoId) {
+      console.log("[v0] saveVideo - Updating existing video:", videoId)
+      // Update existing video
+      const { error: updateError } = await serviceSupabase
+        .from("videos")
+        .update({
+          title: videoData.title,
+          description: videoData.description,
+          video_url: videoData.video_url,
+          thumbnail_url: videoData.thumbnail_url,
+          duration_seconds: videoData.duration_seconds,
+          is_published: videoData.is_published,
+          recorded: videoData.recorded,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", videoId)
+
+      if (updateError) {
+        console.error("[v0] saveVideo - Video update error:", updateError)
+        return { error: "Failed to update video" }
+      }
+    } else {
+      console.log("[v0] saveVideo - Creating new video")
+      // Create new video
+      const { data: newVideo, error: insertError } = await serviceSupabase
+        .from("videos")
+        .insert({
+          title: videoData.title,
+          description: videoData.description,
+          video_url: videoData.video_url,
+          thumbnail_url: videoData.thumbnail_url,
+          duration_seconds: videoData.duration_seconds,
+          is_published: videoData.is_published,
+          recorded: videoData.recorded,
+          created_by: user.id,
+        })
+        .select()
+        .single()
+
+      if (insertError || !newVideo) {
+        console.error("[v0] saveVideo - Video insert error:", insertError)
+        return { error: "Failed to create video" }
+      }
+
+      videoId = newVideo.id
+      console.log("[v0] saveVideo - Created new video with ID:", videoId)
+    }
+
+    // Update video categories
+    console.log("[v0] saveVideo - Processing categories:", videoData.category_ids)
+    if (videoData.category_ids.length > 0) {
+      // Delete existing categories
+      const { error: deleteCategoriesError } = await serviceSupabase
+        .from("video_categories")
+        .delete()
+        .eq("video_id", videoId)
+
+      if (deleteCategoriesError) {
+        console.error("[v0] saveVideo - Delete categories error:", deleteCategoriesError)
+      }
+
+      // Insert new categories
+      const categoryInserts = videoData.category_ids.map((categoryId: string) => ({
+        video_id: videoId,
+        category_id: categoryId,
+      }))
+
+      console.log("[v0] saveVideo - Inserting categories:", categoryInserts)
+      const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
+
+      if (categoryError) {
+        console.error("[v0] saveVideo - Category assignment error:", categoryError)
+        return { error: "Failed to assign categories" }
+      }
+    }
+
+    // Update video performers
+    console.log("[v0] saveVideo - Processing performers:", videoData.performer_ids)
+    if (videoData.performer_ids.length > 0) {
+      // Delete existing performers
+      console.log("[v0] saveVideo - Deleting existing performers for video:", videoId)
+      const { error: deletePerformersError } = await serviceSupabase
+        .from("video_performers")
+        .delete()
+        .eq("video_id", videoId)
+
+      if (deletePerformersError) {
+        console.error("[v0] saveVideo - Delete performers error:", deletePerformersError)
+      }
+
+      // Insert new performers
+      const performerInserts = videoData.performer_ids.map((performerId: string) => ({
+        video_id: videoId,
+        performer_id: performerId,
+      }))
+
+      console.log("[v0] saveVideo - Inserting performers:", performerInserts)
+      const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
+
+      if (performerError) {
+        console.error("[v0] saveVideo - Performer assignment error:", performerError)
+        console.log("[v0] saveVideo - Failed performer data:", {
+          videoId,
+          performerInserts,
+          userInfo: { id: user.id, email: user.email },
+          userProfile,
+        })
+        return { error: "Failed to assign performers" }
+      }
+    }
+
+    console.log("[v0] saveVideo - Successfully completed for video:", videoId)
+    return { success: true, videoId }
+  } catch (error) {
+    console.error("[v0] saveVideo - Unexpected error:", error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function incrementVideoViews(videoId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase
+      .from("videos")
+      .update({
+        views: serviceSupabase.raw("views + 1"),
+      })
+      .eq("id", videoId)
+
+    if (error) {
+      console.error("[v0] incrementVideoViews - Error:", error)
+      return { error: "Failed to increment views" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("[v0] incrementVideoViews - Unexpected error:", error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function trackUserLogin() {
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return parseCookieHeader(headers().get("Cookie") ?? "")
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => cookies().set(name, value, options))
+          },
+        },
+      },
+    )
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return { error: "User not authenticated" }
+    }
+
+    // Insert login record
+    const { error } = await supabase.from("user_logins").insert({
+      user_id: user.id,
+      login_time: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error("[v0] Error tracking login:", error)
+      return { error: "Failed to track login" }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("[v0] trackUserLogin error:", error)
+    return { error: "An unexpected error occurred tracking login" }
+  }
+}
+
+export async function getTelemetryData() {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Get current date and calculate week boundaries (Monday as week start)
+    const now = new Date()
+    const currentDay = now.getDay()
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Sunday = 0, so 6 days from Monday
+
+    const thisWeekStart = new Date(now)
+    thisWeekStart.setDate(now.getDate() - daysFromMonday)
+    thisWeekStart.setHours(0, 0, 0, 0)
+
+    const lastWeekStart = new Date(thisWeekStart)
+    lastWeekStart.setDate(thisWeekStart.getDate() - 7)
+
+    const lastWeekEnd = new Date(thisWeekStart)
+    lastWeekEnd.setMilliseconds(-1)
+
+    console.log("[v0] Telemetry date ranges:", {
+      thisWeekStart: thisWeekStart.toISOString(),
+      lastWeekStart: lastWeekStart.toISOString(),
+      lastWeekEnd: lastWeekEnd.toISOString(),
+    })
+
+    // Get total video views
+    const { data: totalViewsData, error: totalViewsError } = await serviceSupabase.from("videos").select("views")
+
+    if (totalViewsError) {
+      console.error("[v0] Error fetching total views:", totalViewsError)
+      return { error: "Failed to fetch total views" }
+    }
+
+    const totalViews = totalViewsData?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+
+    // Get video views this week (videos created this week)
+    const { data: thisWeekVideos, error: thisWeekError } = await serviceSupabase
+      .from("videos")
+      .select("views")
+      .gte("created_at", thisWeekStart.toISOString())
+
+    if (thisWeekError) {
+      console.error("[v0] Error fetching this week videos:", thisWeekError)
+      return { error: "Failed to fetch this week video data" }
+    }
+
+    const thisWeekViews = thisWeekVideos?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+
+    // Get video views last week (videos created last week)
+    const { data: lastWeekVideos, error: lastWeekError } = await serviceSupabase
+      .from("videos")
+      .select("views")
+      .gte("created_at", lastWeekStart.toISOString())
+      .lt("created_at", thisWeekStart.toISOString())
+
+    if (lastWeekError) {
+      console.error("[v0] Error fetching last week videos:", lastWeekError)
+      return { error: "Failed to fetch last week video data" }
+    }
+
+    const lastWeekViews = lastWeekVideos?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+
+    // Get user logins this week
+    const { data: thisWeekLogins, error: thisWeekLoginsError } = await serviceSupabase
+      .from("user_logins")
+      .select("user_id", { count: "exact" })
+      .gte("login_time", thisWeekStart.toISOString())
+
+    if (thisWeekLoginsError) {
+      console.error("[v0] Error fetching this week logins:", thisWeekLoginsError)
+      return { error: "Failed to fetch this week login data" }
+    }
+
+    // Get user logins last week
+    const { data: lastWeekLogins, error: lastWeekLoginsError } = await serviceSupabase
+      .from("user_logins")
+      .select("user_id", { count: "exact" })
+      .gte("login_time", lastWeekStart.toISOString())
+      .lt("login_time", thisWeekStart.toISOString())
+
+    if (lastWeekLoginsError) {
+      console.error("[v0] Error fetching last week logins:", lastWeekLoginsError)
+      return { error: "Failed to fetch last week login data" }
+    }
+
+    const telemetryData = {
+      totalViews,
+      thisWeekViews,
+      lastWeekViews,
+      thisWeekUserLogins: thisWeekLogins?.length || 0,
+      lastWeekUserLogins: lastWeekLogins?.length || 0,
+    }
+
+    console.log("[v0] Telemetry data:", telemetryData)
+    return { success: true, data: telemetryData }
+  } catch (error) {
+    console.error("[v0] getTelemetryData error:", error)
+    return { error: "An unexpected error occurred fetching telemetry data" }
+  }
+}
+
 async function sendNewUserNotification({
   userEmail,
   fullName,
@@ -1048,7 +1385,7 @@ async function sendNotificationEmail({
                                     </div>
                                 </div>
                                 
-                                <p style="color: #666; margin: 20px 0; font-size: 16px;">
+                                <p style="color: #666; margin: 20px 0;">
                                     To view and respond to this message, please log in to your account:
                                 </p>
                                 
@@ -1168,5 +1505,12 @@ async function sendBroadcastNotificationEmail({
     to: recipientEmail,
     subject: "Important Message from TY Kobudo Library Administrator",
     html: emailContent,
+  })
+}
+
+function parseCookieHeader(cookieHeader: string): { name: string; value: string; options: any }[] {
+  return cookieHeader.split(";").map((cookie) => {
+    const [name, value] = cookie.trim().split("=")
+    return { name: name.trim(), value: value?.trim() || "", options: {} }
   })
 }

@@ -222,7 +222,7 @@ export default function UserManagement() {
             return (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700"
+                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 leading-5 py-0.5"
               >
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-12 w-12">

@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Heart, Clock, Calendar, User } from "lucide-react"
+import { ArrowLeft, Heart, Calendar, User } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
 import { useSearchParams } from "next/navigation"
+import { incrementVideoViews } from "@/lib/actions"
 
 interface VideoPlayerProps {
   video: {
@@ -33,12 +34,17 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [isFavorited, setIsFavorited] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [viewCounted, setViewCounted] = useState(false)
   const searchParams = useSearchParams()
   const isAdminView = searchParams.get("admin-view") === "student"
 
   useEffect(() => {
     checkIfFavorited()
-  }, [video.id])
+    if (!viewCounted) {
+      incrementVideoViews(video.id)
+      setViewCounted(true)
+    }
+  }, [video.id, viewCounted])
 
   const checkIfFavorited = async () => {
     try {
@@ -188,11 +194,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               {video.description && <p className="text-gray-300 mb-4 leading-relaxed">{video.description}</p>}
 
               <div className="space-y-3">
-                <div className="flex items-center text-gray-400 text-sm">
-                  <Clock className="w-4 h-4 mr-2" />
-                  <span>{formatDuration(video.duration_seconds)}</span>
-                </div>
-
                 <div className="flex items-center text-gray-400 text-sm">
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>Added {formatDate(video.created_at)}</span>
