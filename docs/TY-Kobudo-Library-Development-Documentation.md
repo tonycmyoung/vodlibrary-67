@@ -399,6 +399,50 @@ npm run dev
 3. Set up custom domain (optional)
 4. Configure Supabase redirect URLs for production
 
+## Deployment Process
+
+### Phase 1: Deploy and Test with Vercel Domain
+
+**1. Setup Resend Domain Verification FIRST**
+- Add `tykobudo.com.au` as verified domain in Resend
+- Add required DNS records (SPF, DKIM, DMARC) to your domain
+- Wait for verification to complete
+
+**2. Update Environment Variables in Vercel**
+- `FROM_EMAIL` → Update to `noreply@tykobudo.com.au`
+- All other environment variables remain the same
+
+**3. Click 'Publish' Button** (creates `tykobudo.vercel.app`)
+
+**4. Update Supabase Configuration**
+- **Site URL**: Set to `https://tykobudo.vercel.app` 
+- **Redirect URLs**: Add `https://tykobudo.vercel.app/auth/callback`
+
+**5. Test Everything on tykobudo.vercel.app**
+- [ ] User registration and email confirmation
+- [ ] Password reset functionality  
+- [ ] Admin functions
+- [ ] Video management
+- [ ] Notifications (in-app and email)
+- [ ] Invite user functionality
+
+### Phase 2: Connect Custom Domain (After Testing)
+
+**6. Configure Custom Domain in Vercel**
+- Add `tykobudo.com.au` in Vercel project settings
+
+**7. Update DNS for Vercel** (follow Vercel's instructions)
+
+**8. Update Supabase Final Configuration**
+- **Site URL**: Change to `https://tykobudo.com.au`
+- **Redirect URLs**: Update to custom domain
+
+### Post-Deployment Verification
+- Verify all email templates work with custom domain
+- Test all authentication flows
+- Confirm admin functionality is working
+- Validate donation links and PayPal integration
+
 ## Security Considerations
 
 ### Data Protection
