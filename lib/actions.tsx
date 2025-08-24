@@ -4,7 +4,8 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { Resend } from "resend"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -18,25 +19,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
+  const supabase = createClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -117,7 +100,7 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (data.user) {
-      const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
       const profileData = {
         id: data.user.id,
@@ -303,7 +286,7 @@ export async function createAdminUser() {
     }
 
     if (data.user) {
-      const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
       const { error: profileError } = await serviceSupabase.from("users").insert({
         id: data.user.id,
@@ -361,7 +344,7 @@ export async function updateProfile(data: {
       return { error: "Not authorized" }
     }
 
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const updateData: any = {
       full_name: data.fullName,
@@ -423,7 +406,7 @@ export async function deleteUserCompletely(userId: string, userEmail: string) {
     }
 
     // Use service role client for complete deletion
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Delete from database first
     const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
@@ -488,7 +471,7 @@ export async function rejectUser(userId: string) {
     }
 
     // Use service role client for deletion
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Delete from database first
     const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
@@ -578,7 +561,7 @@ export async function fetchNotificationsWithSenders(userId: string) {
 
     let serviceSupabase
     try {
-      serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
     } catch (clientError) {
       console.error("[v0] Error creating Supabase client:", clientError)
       return { error: "Database connection failed", data: [] }
@@ -679,7 +662,7 @@ export async function sendNotificationWithEmail({
       },
     )
 
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Get current user (sender)
     const { data: currentUser } = await supabase.auth.getUser()
@@ -879,7 +862,7 @@ export async function changePassword(prevState: any, formData: FormData) {
       return { error: "Auth session missing!" }
     }
 
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Update password using admin API (server-side, no BroadcastChannel issues)
     const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(user.id, {
@@ -936,7 +919,7 @@ export async function inviteUser(email: string) {
     }
 
     // Use service role client for admin operations
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     try {
       const { data: existingUser, error: checkError } = await serviceSupabase
@@ -996,11 +979,11 @@ export async function inviteUser(email: string) {
 }
 
 function createServiceClient() {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  return createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
 function createServiceRoleClient() {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  return createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
 export async function saveVideo(formData: any) {
@@ -1100,25 +1083,39 @@ export async function saveVideo(formData: any) {
 }
 
 export async function incrementVideoViews(videoId: string) {
+  console.log("[v0] incrementVideoViews called for video:", videoId)
+
   try {
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const supabase = createClient()
 
-    const { error } = await serviceSupabase
+    console.log("[v0] Service client created successfully")
+
+    // Get current views count
+    const { data: currentVideo, error: fetchError } = await supabase
       .from("videos")
-      .update({
-        views: serviceSupabase.raw("views + 1"),
-      })
+      .select("views")
       .eq("id", videoId)
+      .single()
 
-    if (error) {
-      console.error("[v0] incrementVideoViews - Error:", error)
-      return { error: "Failed to increment views" }
+    if (fetchError) {
+      console.error("[v0] Error fetching current views:", fetchError)
+      return
     }
 
-    return { success: true }
+    console.log("[v0] Current views:", currentVideo?.views || 0)
+
+    // Increment views
+    const newViews = (currentVideo?.views || 0) + 1
+    const { error: updateError } = await supabase.from("videos").update({ views: newViews }).eq("id", videoId)
+
+    if (updateError) {
+      console.error("[v0] Error updating views:", updateError)
+      return
+    }
+
+    console.log("[v0] Successfully updated views to:", newViews)
   } catch (error) {
     console.error("[v0] incrementVideoViews - Unexpected error:", error)
-    return { error: "An unexpected error occurred" }
   }
 }
 
@@ -1166,7 +1163,7 @@ export async function trackUserLogin() {
 
 export async function getTelemetryData() {
   try {
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Get current date and calculate week boundaries (Monday as week start)
     const now = new Date()
@@ -1525,7 +1522,7 @@ export async function addPerformer(name: string) {
         },
       },
     )
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const {
       data: { user },
@@ -1570,7 +1567,7 @@ export async function updatePerformer(id: string, name: string) {
         },
       },
     )
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const {
       data: { user },
@@ -1615,7 +1612,7 @@ export async function deletePerformer(id: string) {
         },
       },
     )
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const {
       data: { user },

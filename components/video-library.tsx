@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
@@ -64,27 +64,68 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
-
-  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
-
-  const [sortBy, setSortBy] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(`${storagePrefix}SortBy`) || "title"
-    }
-    return "title"
-  })
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem(`${storagePrefix}SortOrder`) as "asc" | "desc") || "asc"
-    }
-    return "asc"
-  })
   const [view, setView] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem(`${storagePrefix}View`) as "grid" | "list") || "grid"
+      return (localStorage.getItem(`videoLibraryView`) as "grid" | "list") || "grid"
     }
     return "grid"
   })
+  const [sortBy, setSortBy] = useState<"title" | "created_at" | "recorded" | "performers">("title")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+
+  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
+
+  const [user, setUser] = useState<any>(null)
+
+  const processedData = useMemo(() => {
+    if (!allVideos.length) return { categories: [], performers: [], recordedValues: [] }
+
+    const categoryMap = new Map<string, Category>()
+    const performerMap = new Map<string, Performer>()
+    const recordedSet = new Set<string>()
+
+    // Single pass through all videos to extract unique categories, performers, and recorded values
+    allVideos.forEach((video) => {
+      // Extract categories
+      video.categories?.forEach((category) => {
+        if (category?.id && category?.name) {
+          categoryMap.set(category.id, category)
+        }
+      })
+
+      // Extract performers
+      video.performers?.forEach((performer) => {
+        if (performer?.id && performer?.name) {
+          performerMap.set(performer.id, performer)
+        }
+      })
+
+      // Extract recorded values
+      if (video.recorded && video.recorded !== "Unset") {
+        recordedSet.add(video.recorded)
+      }
+    })
+
+    return {
+      categories: Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      recordedValues: Array.from(recordedSet),
+    }
+  }, [allVideos])
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const {
+          data: { user: userData },
+        } = await supabase.auth.getUser()
+        setUser(userData)
+      } catch (error) {
+        console.error("Error getting user:", error)
+      }
+    }
+    getUser()
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -101,10 +142,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         let query
 
         if (favoritesOnly) {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser()
-
           if (!user) {
             setLoading(false)
             return
@@ -154,171 +191,48 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           return
         }
 
-        // Process the data to extract videos, categories, and performers
-        let videosWithCategoriesAndPerformers
-        const allCategories = new Map<string, Category>()
-        const allPerformers = new Map<string, Performer>()
+        const processVideos = (rawData: any[]) => {
+          const videoMap = new Map<string, Video>()
 
-        if (favoritesOnly) {
-          videosWithCategoriesAndPerformers = data?.reduce((acc: Video[], favorite: any) => {
-            const video = favorite.videos
-            const existingVideo = acc.find((v) => v.id === video.id)
+          rawData.forEach((item) => {
+            const video = favoritesOnly ? item.videos : item
 
-            const videoCategories = video.video_categories || []
-            const videoPerformers = video.video_performers || []
-
-            videoCategories.forEach((vc: any) => {
-              if (vc.categories && vc.categories.id) {
-                allCategories.set(vc.categories.id, vc.categories)
-              }
-            })
-            videoPerformers.forEach((vp: any) => {
-              if (vp.performers && vp.performers.id) {
-                allPerformers.set(vp.performers.id, vp.performers)
-              }
-            })
-
-            if (existingVideo) {
-              videoCategories.forEach((videoCategory: any) => {
-                const category = videoCategory.categories
-                if (category && category.id && category.name) {
-                  const categoryExists = existingVideo.categories.some((cat) => cat.id === category.id)
-                  if (!categoryExists) {
-                    existingVideo.categories.push(category)
-                  }
-                }
-              })
-
-              videoPerformers.forEach((videoPerformer: any) => {
-                const performer = videoPerformer.performers
-                if (performer && performer.id && performer.name) {
-                  const performerExists = existingVideo.performers.some((perf) => perf.id === performer.id)
-                  if (!performerExists) {
-                    existingVideo.performers.push(performer)
-                  }
-                }
-              })
-            } else {
-              const categories: Array<{ id: string; name: string; color: string }> = []
-              const performers: Array<{ id: string; name: string }> = []
-
-              videoCategories.forEach((videoCategory: any) => {
-                const category = videoCategory.categories
-                if (category && category.id && category.name) {
-                  const categoryExists = categories.some((cat) => cat.id === category.id)
-                  if (!categoryExists) {
-                    categories.push(category)
-                  }
-                }
-              })
-
-              videoPerformers.forEach((videoPerformer: any) => {
-                const performer = videoPerformer.performers
-                if (performer && performer.id && performer.name) {
-                  const performerExists = performers.some((perf) => perf.id === performer.id)
-                  if (!performerExists) {
-                    performers.push(performer)
-                  }
-                }
-              })
-
-              acc.push({
+            if (!videoMap.has(video.id)) {
+              videoMap.set(video.id, {
                 ...video,
-                categories,
-                performers,
+                categories: [],
+                performers: [],
               })
             }
 
-            return acc
-          }, [])
-        } else {
-          videosWithCategoriesAndPerformers = data?.reduce((acc: Video[], video: any) => {
-            const existingVideo = acc.find((v) => v.id === video.id)
+            const processedVideo = videoMap.get(video.id)!
 
-            const videoCategories = video.video_categories || []
-            const videoPerformers = video.video_performers || []
-
-            videoCategories.forEach((vc: any) => {
-              if (vc.categories && vc.categories.id) {
-                allCategories.set(vc.categories.id, vc.categories)
-              }
-            })
-            videoPerformers.forEach((vp: any) => {
-              if (vp.performers && vp.performers.id) {
-                allPerformers.set(vp.performers.id, vp.performers)
+            // Process categories efficiently
+            video.video_categories?.forEach((vc: any) => {
+              const category = vc.categories
+              if (category?.id && category?.name && !processedVideo.categories.some((c) => c.id === category.id)) {
+                processedVideo.categories.push(category)
               }
             })
 
-            if (existingVideo) {
-              videoCategories.forEach((videoCategory: any) => {
-                const category = videoCategory.categories
-                if (category && category.id && category.name) {
-                  const categoryExists = existingVideo.categories.some((cat) => cat.id === category.id)
-                  if (!categoryExists) {
-                    existingVideo.categories.push(category)
-                  }
-                }
-              })
+            // Process performers efficiently
+            video.video_performers?.forEach((vp: any) => {
+              const performer = vp.performers
+              if (performer?.id && performer?.name && !processedVideo.performers.some((p) => p.id === performer.id)) {
+                processedVideo.performers.push(performer)
+              }
+            })
+          })
 
-              videoPerformers.forEach((videoPerformer: any) => {
-                const performer = videoPerformer.performers
-                if (performer && performer.id && performer.name) {
-                  const performerExists = existingVideo.performers.some((perf) => perf.id === performer.id)
-                  if (!performerExists) {
-                    existingVideo.performers.push(performer)
-                  }
-                }
-              })
-            } else {
-              const categories: Array<{ id: string; name: string; color: string }> = []
-              const performers: Array<{ id: string; name: string }> = []
-
-              videoCategories.forEach((videoCategory: any) => {
-                const category = videoCategory.categories
-                if (category && category.id && category.name) {
-                  const categoryExists = categories.some((cat) => cat.id === category.id)
-                  if (!categoryExists) {
-                    categories.push(category)
-                  }
-                }
-              })
-
-              videoPerformers.forEach((videoPerformer: any) => {
-                const performer = videoPerformer.performers
-                if (performer && performer.id && performer.name) {
-                  const performerExists = performers.some((perf) => perf.id === performer.id)
-                  if (!performerExists) {
-                    performers.push(performer)
-                  }
-                }
-              })
-
-              acc.push({
-                ...video,
-                categories,
-                performers,
-              })
-            }
-
-            return acc
-          }, [])
+          return Array.from(videoMap.values())
         }
 
-        const allVideosData = videosWithCategoriesAndPerformers || []
+        const processedVideos = processVideos(data || [])
+        setAllVideos(processedVideos)
 
-        setAllVideos(allVideosData)
-        setCategories(Array.from(allCategories.values()).sort((a, b) => a.name.localeCompare(b.name)))
-        setPerformers(Array.from(allPerformers.values()).sort((a, b) => a.name.localeCompare(b.name)))
+        setCachedData(favoritesOnly ? "favoriteVideos" : "videos", processedVideos)
 
-        // Calculate recorded values
-        const uniqueRecorded = [...new Set(allVideosData.map((v) => v.recorded).filter((r) => r && r !== "Unset"))]
-        setRecordedValues(uniqueRecorded)
-
-        setCachedData("categories", Array.from(allCategories.values()))
-        setCachedData("performers", Array.from(allPerformers.values()))
-        setCachedData(favoritesOnly ? "favoriteVideos" : "videos", allVideosData)
-
-        filterAndSortVideos(allVideosData)
+        filterAndSortVideos(processedVideos)
         setLoading(false)
       } catch (error) {
         console.error("Error loading data:", error)
@@ -326,8 +240,18 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       }
     }
 
+    if (favoritesOnly && !user) {
+      return
+    }
+
     loadData()
-  }, [favoritesOnly])
+  }, [favoritesOnly, user])
+
+  useEffect(() => {
+    setCategories(processedData.categories)
+    setPerformers(processedData.performers)
+    setRecordedValues(processedData.recordedValues)
+  }, [processedData])
 
   useEffect(() => {
     if (allVideos.length > 0) {
@@ -380,18 +304,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   const loadFromCache = () => {
-    const cachedCategories = getCachedData("categories")
-    const cachedPerformers = getCachedData("performers")
     const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
 
-    if (cachedCategories) setCategories(cachedCategories)
-    if (cachedPerformers) setPerformers(cachedPerformers)
     if (cachedVideos) {
       setAllVideos(cachedVideos)
-      const uniqueRecorded = [
-        ...new Set(cachedVideos.map((v: Video) => v.recorded).filter((r: string | null) => r && r !== "Unset")),
-      ]
-      setRecordedValues(uniqueRecorded)
       filterAndSortVideos(cachedVideos)
     }
   }
@@ -558,7 +474,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy)
+    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers")
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)

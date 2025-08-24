@@ -50,17 +50,26 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url))
   }
 
-  // Refresh session if expired - required for Server Components
+  let session
   try {
-    await supabase.auth.getSession()
+    const {
+      data: { session: sessionData },
+    } = await supabase.auth.getSession()
+    session = sessionData
   } catch (error) {
-    // If session refresh fails (e.g., invalid refresh token), clear cookies and redirect to login
-    console.log("[v0] Session refresh failed, redirecting to login:", error)
-    const response = NextResponse.redirect(new URL("/auth/login", request.url))
-    // Clear all auth-related cookies
-    response.cookies.delete("sb-access-token")
-    response.cookies.delete("sb-refresh-token")
-    return response
+    // If session refresh fails, clear cookies and redirect to login for protected routes
+    console.log("[v0] Session refresh failed:", error)
+    const isAuthRoute =
+      request.nextUrl.pathname.startsWith("/auth/login") ||
+      request.nextUrl.pathname.startsWith("/auth/sign-up") ||
+      request.nextUrl.pathname === "/auth/callback"
+
+    if (!isAuthRoute) {
+      const response = NextResponse.redirect(new URL("/auth/login", request.url))
+      response.cookies.delete("sb-access-token")
+      response.cookies.delete("sb-refresh-token")
+      return response
+    }
   }
 
   // Protected routes - redirect to login if not authenticated
@@ -72,27 +81,12 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = request.nextUrl.pathname === "/pending-approval" || request.nextUrl.pathname === "/setup-admin"
 
   if (!isAuthRoute && !isPublicRoute) {
-    let session
-    try {
-      const {
-        data: { session: sessionData },
-      } = await supabase.auth.getSession()
-      session = sessionData
-    } catch (error) {
-      // If we can't get session data, redirect to login
-      console.log("[v0] Failed to get session for protected route, redirecting to login:", error)
-      const response = NextResponse.redirect(new URL("/auth/login", request.url))
-      response.cookies.delete("sb-access-token")
-      response.cookies.delete("sb-refresh-token")
-      return response
-    }
-
     if (!session) {
       const redirectUrl = new URL("/auth/login", request.url)
       return NextResponse.redirect(redirectUrl)
     }
 
-    const isAdminEmail = session.user.email === "acmyma@gmail.com"
+    const isAdminEmail = session.user.email === "acmyau@gmail.com"
 
     // Admin users bypass approval checks and get redirected to admin dashboard
     // unless they explicitly want to view the student interface
@@ -101,7 +95,6 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Check if user is approved (except for admin routes and admin users)
     if (!request.nextUrl.pathname.startsWith("/admin") && !isAdminEmail) {
       const { data: user } = await supabase.from("users").select("is_approved").eq("id", session.user.id).single()
 

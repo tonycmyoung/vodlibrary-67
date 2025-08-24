@@ -37,20 +37,31 @@ interface VideoCardProps {
 export default function VideoCard({ video }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!video || !video.id) {
+    const getUser = async () => {
+      try {
+        const {
+          data: { user: userData },
+        } = await supabase.auth.getUser()
+        setUser(userData)
+      } catch (error) {
+        console.error("Error getting user:", error)
+      }
+    }
+    getUser()
+  }, [])
+
+  useEffect(() => {
+    if (!video || !video.id || !user) {
       return
     }
     checkIfFavorited()
-  }, [video]) // Updated to use the entire video object as dependency
+  }, [video, user])
 
   const checkIfFavorited = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       if (!user) return
 
       const { data } = await supabase
@@ -62,7 +73,6 @@ export default function VideoCard({ video }: VideoCardProps) {
 
       setIsFavorited(!!data)
     } catch (error) {
-      // Not favorited or error - either way, not favorited
       setIsFavorited(false)
     }
   }
@@ -80,10 +90,6 @@ export default function VideoCard({ video }: VideoCardProps) {
     setIsLoading(true)
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       if (!user) return
 
       if (isFavorited) {
@@ -176,7 +182,6 @@ export default function VideoCard({ video }: VideoCardProps) {
                   {performer.name}
                 </Badge>
               ))}
-            {/* Recorded field display after performers */}
             {video.recorded && video.recorded !== "Unset" && (
               <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
                 {video.recorded}

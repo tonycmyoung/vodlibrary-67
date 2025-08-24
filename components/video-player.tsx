@@ -19,6 +19,7 @@ interface VideoPlayerProps {
     duration_seconds: number | null
     created_at: string
     recorded: string | null
+    isFavorited?: boolean
     categories: Array<{
       id: string
       name: string
@@ -32,40 +33,14 @@ interface VideoPlayerProps {
 }
 
 export default function VideoPlayer({ video }: VideoPlayerProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
+  const [isFavorited, setIsFavorited] = useState(video.isFavorited || false)
   const [isLoading, setIsLoading] = useState(false)
-  const [viewCounted, setViewCounted] = useState(false)
   const searchParams = useSearchParams()
   const isAdminView = searchParams.get("admin-view") === "student"
 
   useEffect(() => {
-    checkIfFavorited()
-    if (!viewCounted) {
-      incrementVideoViews(video.id)
-      setViewCounted(true)
-    }
-  }, [video.id, viewCounted])
-
-  const checkIfFavorited = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      const { data } = await supabase
-        .from("user_favorites")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("video_id", video.id)
-        .single()
-
-      setIsFavorited(!!data)
-    } catch (error) {
-      console.error("Error checking favorite status:", error)
-    }
-  }
+    incrementVideoViews(video.id)
+  }, [video.id])
 
   const toggleFavorite = async () => {
     setIsLoading(true)
@@ -152,7 +127,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
         {/* Video Player */}
         <div className="lg:col-span-2">
           <Card className="bg-black/60 border-gray-800 overflow-hidden">
-            <div className="aspect-video bg-gray-900">
+            <div className="aspect-video bg-gray-900 relative">
               {video.video_url ? (
                 <iframe
                   src={getEmbeddableVideoUrl(video.video_url)}
