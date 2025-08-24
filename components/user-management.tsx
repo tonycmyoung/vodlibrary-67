@@ -73,7 +73,6 @@ export default function UserManagement() {
   }
 
   const toggleUserApproval = async (userId: string, currentStatus: boolean) => {
-    console.log("[v0] Approval process started:", { userId, currentStatus, newStatus: !currentStatus })
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
@@ -81,13 +80,10 @@ export default function UserManagement() {
         is_approved: !currentStatus,
         approved_at: !currentStatus ? new Date().toISOString() : null,
       }
-      console.log("[v0] Updating user with data:", updateData)
 
-      const { error, data } = await supabase.from("users").update(updateData).eq("id", userId).select() // Added select to see what was updated
+      const { error, data } = await supabase.from("users").update(updateData).eq("id", userId).select()
 
       if (error) throw error
-
-      console.log("[v0] Database update result:", data)
 
       setUsers((prev) =>
         prev.map((user) =>
@@ -100,10 +96,8 @@ export default function UserManagement() {
             : user,
         ),
       )
-
-      console.log("[v0] User approval updated successfully")
     } catch (error) {
-      console.error("[v0] Error updating user approval:", error)
+      console.error("Error updating user approval:", error)
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)

@@ -208,7 +208,6 @@ export default function VideoLibrary() {
       setRecordedValues(uniqueRecorded)
 
       if (debouncedSearchQuery) {
-        console.log("[v0] Before performer filtering, videos count:", filteredVideos.length)
         filteredVideos = filteredVideos.filter((video) => {
           const titleMatch = video.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
           const descriptionMatch =
@@ -217,18 +216,8 @@ export default function VideoLibrary() {
             performer.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
           )
 
-          console.log(
-            "[v0] Video:",
-            video.title,
-            "Performers:",
-            video.performers.map((p) => p.name),
-            "Performer match:",
-            performerMatch,
-          )
-
           return titleMatch || descriptionMatch || performerMatch
         })
-        console.log("[v0] After performer filtering, videos count:", filteredVideos.length)
       }
 
       if (selectedCategories.length > 0) {

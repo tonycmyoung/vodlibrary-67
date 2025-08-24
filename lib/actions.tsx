@@ -979,12 +979,18 @@ export async function inviteUser(email: string) {
   }
 }
 
-export async function saveVideo(videoData: any) {
-  console.log("[v0] saveVideo called with data:", JSON.stringify(videoData, null, 2))
+function createServiceClient() {
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+}
 
+function createServiceRoleClient() {
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+}
+
+export async function saveVideo(formData: any) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerClient(
+    const regularSupabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -993,160 +999,87 @@ export async function saveVideo(videoData: any) {
             return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
           },
         },
       },
     )
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createServiceRoleClient()
 
+    // Get current user from regular client
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await regularSupabase.auth.getUser()
     if (userError || !user) {
-      console.log("[v0] saveVideo - No authenticated user:", userError)
-      return { error: "Not authenticated" }
+      return { error: "Authentication required" }
     }
 
-    console.log("[v0] saveVideo - User info:", {
-      id: user.id,
-      email: user.email,
-      role: user.user_metadata?.role,
-      app_metadata: user.app_metadata,
-    })
+    const isAdmin = user.email === "acmyma@gmail.com"
+    if (!isAdmin) {
+      return { error: "Admin access required" }
+    }
 
-    // Get user profile for additional context
-    const { data: userProfile, error: profileError } = await serviceSupabase
-      .from("users")
-      .select("role, is_approved, full_name")
-      .eq("id", user.id)
-      .single()
+    const { id, category_ids, performer_ids, ...videoFields } = formData
 
-    console.log("[v0] saveVideo - User profile:", userProfile, "Profile error:", profileError)
+    let videoResult
+    if (id) {
+      // Update existing video using service role client
+      const { data, error } = await serviceSupabase.from("videos").update(videoFields).eq("id", id).select().single()
 
-    let videoId = videoData.id
-
-    if (videoId) {
-      console.log("[v0] saveVideo - Updating existing video:", videoId)
-      // Update existing video
-      const { error: updateError } = await serviceSupabase
-        .from("videos")
-        .update({
-          title: videoData.title,
-          description: videoData.description,
-          video_url: videoData.video_url,
-          thumbnail_url: videoData.thumbnail_url,
-          duration_seconds: videoData.duration_seconds,
-          is_published: videoData.is_published,
-          recorded: videoData.recorded,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", videoId)
-
-      if (updateError) {
-        console.error("[v0] saveVideo - Video update error:", updateError)
-        return { error: "Failed to update video" }
-      }
+      if (error) throw error
+      videoResult = data
     } else {
-      console.log("[v0] saveVideo - Creating new video")
-      // Create new video
-      const { data: newVideo, error: insertError } = await serviceSupabase
+      // Create new video using service role client
+      const { data, error } = await serviceSupabase
         .from("videos")
         .insert({
-          title: videoData.title,
-          description: videoData.description,
-          video_url: videoData.video_url,
-          thumbnail_url: videoData.thumbnail_url,
-          duration_seconds: videoData.duration_seconds,
-          is_published: videoData.is_published,
-          recorded: videoData.recorded,
+          ...videoFields,
           created_by: user.id,
         })
         .select()
         .single()
 
-      if (insertError || !newVideo) {
-        console.error("[v0] saveVideo - Video insert error:", insertError)
-        return { error: "Failed to create video" }
-      }
-
-      videoId = newVideo.id
-      console.log("[v0] saveVideo - Created new video with ID:", videoId)
+      if (error) throw error
+      videoResult = data
     }
 
-    // Update video categories
-    console.log("[v0] saveVideo - Processing categories:", videoData.category_ids)
-    if (videoData.category_ids.length > 0) {
-      // Delete existing categories
-      const { error: deleteCategoriesError } = await serviceSupabase
-        .from("video_categories")
-        .delete()
-        .eq("video_id", videoId)
+    const videoId = videoResult.id
 
-      if (deleteCategoriesError) {
-        console.error("[v0] saveVideo - Delete categories error:", deleteCategoriesError)
-      }
+    // Handle categories
+    if (category_ids && category_ids.length > 0) {
+      // Delete existing categories
+      await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
 
       // Insert new categories
-      const categoryInserts = videoData.category_ids.map((categoryId: string) => ({
+      const categoryInserts = category_ids.map((category_id: string) => ({
         video_id: videoId,
-        category_id: categoryId,
+        category_id,
       }))
 
-      console.log("[v0] saveVideo - Inserting categories:", categoryInserts)
       const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
-
-      if (categoryError) {
-        console.error("[v0] saveVideo - Category assignment error:", categoryError)
-        return { error: "Failed to assign categories" }
-      }
+      if (categoryError) throw categoryError
     }
 
-    // Update video performers
-    console.log("[v0] saveVideo - Processing performers:", videoData.performer_ids)
-    if (videoData.performer_ids.length > 0) {
+    // Handle performers
+    if (performer_ids && performer_ids.length > 0) {
       // Delete existing performers
-      console.log("[v0] saveVideo - Deleting existing performers for video:", videoId)
-      const { error: deletePerformersError } = await serviceSupabase
-        .from("video_performers")
-        .delete()
-        .eq("video_id", videoId)
-
-      if (deletePerformersError) {
-        console.error("[v0] saveVideo - Delete performers error:", deletePerformersError)
-      }
+      await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
 
       // Insert new performers
-      const performerInserts = videoData.performer_ids.map((performerId: string) => ({
+      const performerInserts = performer_ids.map((performer_id: string) => ({
         video_id: videoId,
-        performer_id: performerId,
+        performer_id,
       }))
 
-      console.log("[v0] saveVideo - Inserting performers:", performerInserts)
       const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
-
-      if (performerError) {
-        console.error("[v0] saveVideo - Performer assignment error:", performerError)
-        console.log("[v0] saveVideo - Failed performer data:", {
-          videoId,
-          performerInserts,
-          userInfo: { id: user.id, email: user.email },
-          userProfile,
-        })
-        return { error: "Failed to assign performers" }
-      }
+      if (performerError) throw performerError
     }
 
-    console.log("[v0] saveVideo - Successfully completed for video:", videoId)
-    return { success: true, videoId }
-  } catch (error) {
-    console.error("[v0] saveVideo - Unexpected error:", error)
-    return { error: "An unexpected error occurred" }
+    return { success: id ? "Video updated successfully" : "Video created successfully" }
+  } catch (error: any) {
+    console.error("Error saving video:", error.message)
+    return { error: `Error saving video: ${error.message}` }
   }
 }
 
