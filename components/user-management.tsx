@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { deleteUserCompletely } from "@/lib/actions"
+import { formatDate } from "@/lib/utils/date"
 
 interface UserInterface {
   id: string
@@ -155,16 +156,6 @@ export default function UserManagement() {
         return newSet
       })
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
   }
 
   const getInitials = (name: string | null, email: string) => {

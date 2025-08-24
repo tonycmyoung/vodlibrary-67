@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Plus, Pencil, Trash2, Tags, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import { formatShortDate } from "@/lib/utils/date"
 
 interface Category {
   id: string
@@ -153,14 +154,6 @@ export default function CategoryManagement() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -286,7 +279,7 @@ export default function CategoryManagement() {
                   <Tags className="w-3 h-3" />
                   <span>{category.video_count || 0} videos</span>
                 </div>
-                <span>Created {formatDate(category.created_at)}</span>
+                <span>Created {formatShortDate(category.created_at)}</span>
               </div>
             </CardContent>
           </Card>

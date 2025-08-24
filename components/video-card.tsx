@@ -32,14 +32,16 @@ interface Video {
 
 interface VideoCardProps {
   video: Video
+  isFavorited?: boolean
 }
 
-export default function VideoCard({ video }: VideoCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
+export default function VideoCard({ video, isFavorited: initialIsFavorited = false }: VideoCardProps) {
+  const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
+    console.log("[v0] VideoCard mounted for video:", video.id, video.title)
     const getUser = async () => {
       try {
         const {
@@ -54,28 +56,8 @@ export default function VideoCard({ video }: VideoCardProps) {
   }, [])
 
   useEffect(() => {
-    if (!video || !video.id || !user) {
-      return
-    }
-    checkIfFavorited()
-  }, [video, user])
-
-  const checkIfFavorited = async () => {
-    try {
-      if (!user) return
-
-      const { data } = await supabase
-        .from("user_favorites")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("video_id", video.id)
-        .single()
-
-      setIsFavorited(!!data)
-    } catch (error) {
-      setIsFavorited(false)
-    }
-  }
+    setIsFavorited(initialIsFavorited)
+  }, [initialIsFavorited])
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "Unknown"
@@ -111,8 +93,19 @@ export default function VideoCard({ video }: VideoCardProps) {
 
   const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
 
+  const handleVideoClick = (e: React.MouseEvent) => {
+    console.log("[v0] Video card clicked:", video.id, video.title)
+    console.log("[v0] Navigating to:", `/video/${video.id}`)
+    console.log("[v0] Click event details:", {
+      target: e.target,
+      currentTarget: e.currentTarget,
+      defaultPrevented: e.defaultPrevented,
+      propagationStopped: e.isPropagationStopped?.(),
+    })
+  }
+
   return (
-    <Link href={`/video/${video.id}`}>
+    <Link href={`/video/${video.id}`} onClick={handleVideoClick}>
       <Card className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden">
         <div className="relative aspect-video bg-gray-900">
           {video.thumbnail_url ? (

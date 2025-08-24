@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { User, Mail, Calendar, Heart, Edit, Save, X, Loader2, Upload, Lock } from "lucide-react"
 import Link from "next/link"
+import { formatShortDate } from "@/lib/utils/date"
 
 interface UserProfileProps {
   user: {
@@ -45,14 +46,6 @@ export default function UserProfile({ user }: UserProfileProps) {
         .join("")
         .toUpperCase()
     : user.email[0].toUpperCase()
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -298,7 +291,7 @@ export default function UserProfile({ user }: UserProfileProps) {
                 <Calendar className="w-4 h-4 text-blue-400" />
                 <span>Member Since</span>
               </div>
-              <span className="text-white font-semibold">{formatDate(user.created_at)}</span>
+              <span className="text-white font-semibold">{formatShortDate(user.created_at)}</span>
             </div>
           </CardContent>
         </Card>

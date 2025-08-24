@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Check, X, Mail, Calendar, Loader2, User, GraduationCap } from "lucide-react"
 import { approveUser, rejectUser, fetchPendingUsers } from "@/lib/actions"
+import { formatDate } from "@/lib/utils/date"
 
 interface PendingUser {
   id: string
@@ -89,16 +90,6 @@ export default function PendingUsers() {
         return newSet
       })
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
   }
 
   const getInitials = (name: string | null, email: string) => {

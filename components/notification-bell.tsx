@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, X, Check, Trash2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
+import { formatTimeAgo } from "@/lib/utils/date"
 
 interface Notification {
   id: string
@@ -132,18 +133,6 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     }
   }
 
-  const formatTimeAgo = (dateString: string) => {
-    const now = new Date()
-    const date = new Date(dateString)
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-    if (diffInSeconds < 60) return "just now"
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-    return `${Math.floor(diffInSeconds / 2592000)} months ago`
-  }
-
   useEffect(() => {
     if (!userId || userId === "undefined" || userId.trim() === "") {
       console.error("[v0] NotificationBell useEffect: Invalid userId, skipping fetch:", userId)
@@ -152,19 +141,81 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
 
     fetchNotifications()
 
-    // Set up real-time subscription for new notifications
     const channel = supabase
       .channel("notifications")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT", // Only listen for new notifications
           schema: "public",
           table: "notifications",
           filter: `recipient_id=eq.${userId}`,
         },
-        () => {
-          fetchNotifications()
+        (payload) => {
+          // Process the realtime payload directly instead of refetching
+          const newNotification = payload.new as any
+          if (newNotification) {
+            // Add the new notification to the list
+            setNotifications((prev) => [
+              {
+                id: newNotification.id,
+                sender_id: newNotification.sender_id,
+                message: newNotification.message,
+                is_read: newNotification.is_read,
+                created_at: newNotification.created_at,
+                sender: null, // Will be populated by a single fetch if needed
+              },
+              ...prev,
+            ])
+
+            // Update unread count if it's unread
+            if (!newNotification.is_read) {
+              setUnreadCount((prev) => prev + 1)
+            }
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE", // Listen for read status changes
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updatedNotification = payload.new as any
+          if (updatedNotification) {
+            setNotifications((prev) =>
+              prev.map((n) => (n.id === updatedNotification.id ? { ...n, is_read: updatedNotification.is_read } : n)),
+            )
+
+            // Update unread count based on the change
+            const oldNotification = payload.old as any
+            if (oldNotification && !oldNotification.is_read && updatedNotification.is_read) {
+              setUnreadCount((prev) => Math.max(0, prev - 1))
+            }
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE", // Listen for deletions
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${userId}`,
+        },
+        (payload) => {
+          const deletedNotification = payload.old as any
+          if (deletedNotification) {
+            setNotifications((prev) => prev.filter((n) => n.id !== deletedNotification.id))
+
+            // Update unread count if deleted notification was unread
+            if (!deletedNotification.is_read) {
+              setUnreadCount((prev) => Math.max(0, prev - 1))
+            }
+          }
         },
       )
       .subscribe()

@@ -9,6 +9,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
 import { useSearchParams } from "next/navigation"
 import { incrementVideoViews } from "@/lib/actions"
+import { formatShortDate } from "@/lib/utils/date"
 
 interface VideoPlayerProps {
   video: {
@@ -74,14 +75,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
   }
 
   const getEmbeddableVideoUrl = (url: string) => {
@@ -171,7 +164,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               <div className="space-y-3">
                 <div className="flex items-center text-gray-400 text-sm">
                   <Calendar className="w-4 h-4 mr-2" />
-                  <span>Added {formatDate(video.created_at)}</span>
+                  <span>Added {formatShortDate(video.created_at)}</span>
                 </div>
 
                 {video.recorded && video.recorded !== "Unset" && (

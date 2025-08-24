@@ -56,6 +56,7 @@ const CACHE_DURATION = 60000 // 1 minute
 export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([])
   const [allVideos, setAllVideos] = useState<Video[]>([]) // Store unfiltered videos for recorded values calculation
+  const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<Category[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [recordedValues, setRecordedValues] = useState<string[]>([])
@@ -76,6 +77,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
 
   const [user, setUser] = useState<any>(null)
+  const [userLoading, setUserLoading] = useState(true)
 
   const processedData = useMemo(() => {
     if (!allVideos.length) return { categories: [], performers: [], recordedValues: [] }
@@ -115,6 +117,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
   useEffect(() => {
     const getUser = async () => {
+      setUserLoading(true)
       try {
         const {
           data: { user: userData },
@@ -122,6 +125,8 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         setUser(userData)
       } catch (error) {
         console.error("Error getting user:", error)
+      } finally {
+        setUserLoading(false)
       }
     }
     getUser()
@@ -142,6 +147,11 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         let query
 
         if (favoritesOnly) {
+          if (userLoading) {
+            setLoading(false)
+            return
+          }
+
           if (!user) {
             setLoading(false)
             return
@@ -230,6 +240,11 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         const processedVideos = processVideos(data || [])
         setAllVideos(processedVideos)
 
+        if (!favoritesOnly && user) {
+          const videoIds = processedVideos.map((video) => video.id)
+          await loadUserFavorites(videoIds)
+        }
+
         setCachedData(favoritesOnly ? "favoriteVideos" : "videos", processedVideos)
 
         filterAndSortVideos(processedVideos)
@@ -240,12 +255,39 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       }
     }
 
-    if (favoritesOnly && !user) {
+    if (favoritesOnly && userLoading) {
       return
     }
 
     loadData()
-  }, [favoritesOnly, user])
+  }, [favoritesOnly, user, userLoading])
+
+  const loadUserFavorites = async (videoIds: string[]) => {
+    if (!user || videoIds.length === 0) {
+      setUserFavorites(new Set())
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("user_favorites")
+        .select("video_id")
+        .eq("user_id", user.id)
+        .in("video_id", videoIds)
+
+      if (error) {
+        console.error("Error loading user favorites:", error)
+        setUserFavorites(new Set())
+        return
+      }
+
+      const favoriteVideoIds = new Set(data?.map((fav) => fav.video_id) || [])
+      setUserFavorites(favoriteVideoIds)
+    } catch (error) {
+      console.error("Error loading user favorites:", error)
+      setUserFavorites(new Set())
+    }
+  }
 
   useEffect(() => {
     setCategories(processedData.categories)
@@ -483,7 +525,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     filterAndSortVideos()
   }
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-red-500" />
@@ -588,12 +630,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-          <span className="ml-2 text-gray-300">Loading videos...</span>
-        </div>
-      ) : videos.length === 0 ? (
+      {videos.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-400 text-lg">
             {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
@@ -604,13 +641,13 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           {view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {videos.map((video) => (
-                <VideoCard key={video.id} video={video} />
+                <VideoCard key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
               ))}
             </div>
           ) : (
             <div className="space-y-2">
               {videos.map((video) => (
-                <VideoCardList key={video.id} video={video} />
+                <VideoCardList key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
               ))}
             </div>
           )}

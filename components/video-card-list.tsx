@@ -30,39 +30,16 @@ interface Video {
 
 interface VideoCardListProps {
   video: Video
+  isFavorited?: boolean
 }
 
-export default function VideoCardList({ video }: VideoCardListProps) {
-  const [isFavorited, setIsFavorited] = useState(false)
+export default function VideoCardList({ video, isFavorited: initialIsFavorited = false }: VideoCardListProps) {
+  const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (!video || !video.id) {
-      return
-    }
-    checkIfFavorited()
-  }, [video])
-
-  const checkIfFavorited = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      const { data } = await supabase
-        .from("user_favorites")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("video_id", video.id)
-        .single()
-
-      setIsFavorited(!!data)
-    } catch (error) {
-      setIsFavorited(false)
-    }
-  }
+    setIsFavorited(initialIsFavorited)
+  }, [initialIsFavorited])
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "Unknown"
