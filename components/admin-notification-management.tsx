@@ -35,6 +35,7 @@ interface UserOption {
   full_name: string | null
   email: string
   profile_image_url: string | null
+  is_approved: boolean
 }
 
 export default function AdminNotificationManagement() {
@@ -98,12 +99,59 @@ export default function AdminNotificationManagement() {
 
   const fetchUsers = async () => {
     try {
+      console.log("[v0] Fetching users for dropdown...")
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      console.log("[v0] Current session:", session)
+      console.log("[v0] JWT token:", session?.access_token)
+
+      // Parse JWT to see metadata
+      if (session?.access_token) {
+        try {
+          const payload = JSON.parse(atob(session.access_token.split(".")[1]))
+          console.log("[v0] JWT payload:", JSON.stringify(payload, null, 2))
+          console.log("[v0] JWT app_metadata:", payload.app_metadata)
+          console.log("[v0] JWT user_metadata:", payload.user_metadata)
+        } catch (e) {
+          console.log("[v0] Error parsing JWT:", e)
+        }
+      }
+
+      const { data: allUsers, error: allUsersError } = await supabase
+        .from("users")
+        .select("id, full_name, email, profile_image_url, is_approved")
+        .order("full_name", { ascending: true })
+
+      console.log("[v0] ALL users in database:", JSON.stringify(allUsers, null, 2))
+      console.log("[v0] Total users found:", allUsers?.length || 0)
+
+      if (allUsers) {
+        const acmyauUser = allUsers.find((u) => u.email === "acmyau@gmail.com")
+        console.log("[v0] acmyau@gmail.com user details:", acmyauUser)
+
+        const approvedUsers = allUsers.filter((u) => u.is_approved === true)
+        console.log(
+          "[v0] Approved users:",
+          approvedUsers.map((u) => ({ email: u.email, approved: u.is_approved })),
+        )
+
+        const nonAdminApproved = approvedUsers.filter((u) => u.email !== "acmyma@gmail.com")
+        console.log(
+          "[v0] Non-admin approved users:",
+          nonAdminApproved.map((u) => ({ email: u.email, approved: u.is_approved })),
+        )
+      }
+
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, profile_image_url")
+        .select("id, full_name, email, profile_image_url, is_approved")
         .eq("is_approved", true)
-        .neq("email", "acmyma@gmail.com") // Exclude admin from recipient list
+        .neq("email", "acmyma@gmail.com") // Re-added admin exclusion filter
         .order("full_name", { ascending: true })
+
+      console.log("[v0] Filtered users query result:", { data, error })
 
       if (error) {
         console.error("Error fetching users:", error)
@@ -206,15 +254,18 @@ export default function AdminNotificationManagement() {
     }
   }
 
-  const getInitials = (name: string | null, email: string) => {
-    if (name) {
+  const getInitials = (name: string | null, email: string | undefined) => {
+    if (name && name.trim()) {
       return name
         .split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
     }
-    return email[0].toUpperCase()
+    if (email && email.trim()) {
+      return email[0].toUpperCase()
+    }
+    return "?" // Added fallback for when both name and email are unavailable
   }
 
   const formatTimeAgo = (dateString: string) => {
@@ -275,19 +326,23 @@ export default function AdminNotificationManagement() {
                   <SelectValue placeholder="Choose a user..." />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id} className="text-white hover:bg-gray-700">
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={user.profile_image_url || "/placeholder.svg"} />
-                          <AvatarFallback className="bg-purple-600 text-white text-xs">
-                            {getInitials(user.full_name, user.email)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{user.full_name || user.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {users.length === 0 ? (
+                    <div className="p-2 text-gray-400 text-sm">No approved users available</div>
+                  ) : (
+                    users.map((user) => (
+                      <SelectItem key={user.id} value={user.id} className="text-white hover:bg-gray-700">
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={user.profile_image_url || "/placeholder.svg"} />
+                            <AvatarFallback className="bg-purple-600 text-white text-xs">
+                              {getInitials(user.full_name, user.email)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{user.full_name || user.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -383,7 +438,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={notification.sender?.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getInitials(notification.sender?.full_name, notification.sender?.email || "")}
+                              {getInitials(notification.sender?.full_name, notification.sender?.email)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium text-gray-300">
@@ -395,7 +450,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={notification.recipient?.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getInitials(notification.recipient?.full_name, notification.recipient?.email || "")}
+                              {getInitials(notification.recipient?.full_name, notification.recipient?.email)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium text-gray-300">

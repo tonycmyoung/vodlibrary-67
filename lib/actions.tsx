@@ -1414,6 +1414,13 @@ async function sendNotificationEmail({
 
     if (result.error) {
       console.error("[v0] Resend API returned error:", result.error)
+      if (
+        result.error.message &&
+        result.error.message.includes("You can only send testing emails to your own email address")
+      ) {
+        console.log("[v0] Resend is in testing mode - email delivery skipped but notification created successfully")
+        return
+      }
       throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`)
     }
 
@@ -1425,6 +1432,10 @@ async function sendNotificationEmail({
     console.log("[v0] Email send successful, message ID:", result.data.id)
   } catch (error) {
     console.error("[v0] Resend API error:", error)
+    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
+      console.log("[v0] Resend is in testing mode - email delivery skipped but notification created successfully")
+      return
+    }
     console.error("[v0] Error details:", {
       message: error.message,
       name: error.name,
@@ -1486,12 +1497,20 @@ async function sendBroadcastNotificationEmail({
     </div>
   `
 
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
-    to: recipientEmail,
-    subject: "Important Message from TY Kobudo Library Administrator",
-    html: emailContent,
-  })
+  try {
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
+      to: recipientEmail,
+      subject: "Important Message from TY Kobudo Library Administrator",
+      html: emailContent,
+    })
+  } catch (error) {
+    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
+      console.log("[v0] Resend is in testing mode - broadcast email delivery skipped")
+      return
+    }
+    throw error
+  }
 }
 
 function parseCookieHeader(cookieHeader: string): { name: string; value: string; options: any }[] {

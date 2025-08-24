@@ -212,12 +212,9 @@ export async function updateSession(request: NextRequest) {
           console.log("[v0] Admin access check - User role:", { user, error })
 
           if (error) {
-            console.log("[v0] Failed to fetch user data for admin access, allowing based on email")
-            // Fallback to email-based admin check if database fails
-            if (!isAdminEmail) {
-              const redirectUrl = new URL("/", request.url)
-              return NextResponse.redirect(redirectUrl)
-            }
+            console.log("[v0] Failed to fetch user data for admin access, denying access")
+            const redirectUrl = new URL("/", request.url)
+            return NextResponse.redirect(redirectUrl)
           } else if (user && user.role !== "Admin") {
             console.log("[v0] User does not have Admin role, current role:", user.role)
             setCachedUserApproval(session.user.id, user.is_approved, user.role)
@@ -227,11 +224,9 @@ export async function updateSession(request: NextRequest) {
             setCachedUserApproval(session.user.id, user.is_approved, user.role)
           }
         } catch (dbError) {
-          console.log("[v0] Admin role check failed, using email fallback:", dbError)
-          if (!isAdminEmail) {
-            const redirectUrl = new URL("/", request.url)
-            return NextResponse.redirect(redirectUrl)
-          }
+          console.log("[v0] Admin role check failed, denying access:", dbError)
+          const redirectUrl = new URL("/", request.url)
+          return NextResponse.redirect(redirectUrl)
         }
       }
     }

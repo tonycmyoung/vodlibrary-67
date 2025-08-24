@@ -118,18 +118,22 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
 
       if (notificationIds.length === 0) return
 
-      const { error } = await supabase.from("notifications").delete().in("id", notificationIds)
+      console.log("[v0] Attempting to delete notifications:", notificationIds)
+
+      const { error, data } = await supabase.from("notifications").delete().in("id", notificationIds).select()
 
       if (error) {
-        console.error("Error deleting all notifications:", error)
+        console.error("[v0] Error deleting all notifications:", error)
         return
       }
+
+      console.log("[v0] Successfully deleted notifications:", data)
 
       // Update local state
       setNotifications([])
       setUnreadCount(0)
     } catch (error) {
-      console.error("Error deleting all notifications:", error)
+      console.error("[v0] Error deleting all notifications:", error)
     }
   }
 
@@ -140,89 +144,6 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     }
 
     fetchNotifications()
-
-    const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT", // Only listen for new notifications
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_id=eq.${userId}`,
-        },
-        (payload) => {
-          // Process the realtime payload directly instead of refetching
-          const newNotification = payload.new as any
-          if (newNotification) {
-            // Add the new notification to the list
-            setNotifications((prev) => [
-              {
-                id: newNotification.id,
-                sender_id: newNotification.sender_id,
-                message: newNotification.message,
-                is_read: newNotification.is_read,
-                created_at: newNotification.created_at,
-                sender: null, // Will be populated by a single fetch if needed
-              },
-              ...prev,
-            ])
-
-            // Update unread count if it's unread
-            if (!newNotification.is_read) {
-              setUnreadCount((prev) => prev + 1)
-            }
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE", // Listen for read status changes
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updatedNotification = payload.new as any
-          if (updatedNotification) {
-            setNotifications((prev) =>
-              prev.map((n) => (n.id === updatedNotification.id ? { ...n, is_read: updatedNotification.is_read } : n)),
-            )
-
-            // Update unread count based on the change
-            const oldNotification = payload.old as any
-            if (oldNotification && !oldNotification.is_read && updatedNotification.is_read) {
-              setUnreadCount((prev) => Math.max(0, prev - 1))
-            }
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE", // Listen for deletions
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_id=eq.${userId}`,
-        },
-        (payload) => {
-          const deletedNotification = payload.old as any
-          if (deletedNotification) {
-            setNotifications((prev) => prev.filter((n) => n.id !== deletedNotification.id))
-
-            // Update unread count if deleted notification was unread
-            if (!deletedNotification.is_read) {
-              setUnreadCount((prev) => Math.max(0, prev - 1))
-            }
-          }
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [userId])
 
   return (
