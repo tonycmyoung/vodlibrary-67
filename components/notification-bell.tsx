@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, X, Check, Trash2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
-import { formatDistanceToNow } from "date-fns"
 
 interface Notification {
   id: string
@@ -131,6 +130,18 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     } catch (error) {
       console.error("Error deleting all notifications:", error)
     }
+  }
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date()
+    const date = new Date(dateString)
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (diffInSeconds < 60) return "just now"
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
+    return `${Math.floor(diffInSeconds / 2592000)} months ago`
   }
 
   useEffect(() => {
@@ -263,9 +274,7 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
                       )}
                     </div>
                     <p className="text-sm text-white break-words">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.created_at)}</p>
                   </div>
                   <div className="flex flex-col gap-1">
                     {!notification.is_read && (

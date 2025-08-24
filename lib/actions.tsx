@@ -576,7 +576,13 @@ export async function fetchNotificationsWithSenders(userId: string) {
       return { error: "Invalid user ID", data: [] }
     }
 
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    let serviceSupabase
+    try {
+      serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    } catch (clientError) {
+      console.error("[v0] Error creating Supabase client:", clientError)
+      return { error: "Database connection failed", data: [] }
+    }
 
     // Fetch notifications for the user
     const { data: notifications, error: notificationsError } = await serviceSupabase
@@ -598,11 +604,19 @@ export async function fetchNotificationsWithSenders(userId: string) {
     // Get unique sender IDs
     const senderIds = [...new Set(notifications.map((n) => n.sender_id).filter(Boolean))]
 
-    // Fetch sender information using service role client (bypasses RLS)
-    const { data: senders, error: sendersError } = await serviceSupabase
-      .from("users")
-      .select("id, full_name, email, profile_image_url")
-      .in("id", senderIds)
+    let senders, sendersError
+    try {
+      const result = await serviceSupabase
+        .from("users")
+        .select("id, full_name, email, profile_image_url")
+        .in("id", senderIds)
+
+      senders = result.data
+      sendersError = result.error
+    } catch (fetchError) {
+      console.error("[v0] Error fetching senders:", fetchError)
+      return { error: "Failed to fetch sender information", data: [] }
+    }
 
     if (sendersError) {
       console.error("[v0] Error fetching senders:", sendersError)
@@ -627,6 +641,8 @@ export async function fetchNotificationsWithSenders(userId: string) {
     return { success: true, data: notificationsWithSenders }
   } catch (error) {
     console.error("[v0] Error in fetchNotificationsWithSenders:", error)
+    console.error("[v0] Error type:", typeof error)
+    console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
     return { error: "An unexpected error occurred", data: [] }
   }
 }

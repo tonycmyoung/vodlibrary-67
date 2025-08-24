@@ -28,6 +28,7 @@ interface CategoryFilterProps {
   performers: Performer[]
   selectedCategories: string[]
   onCategoryToggle: (categoryId: string) => void
+  videoCount: number
 }
 
 export default function CategoryFilter({
@@ -36,12 +37,30 @@ export default function CategoryFilter({
   performers,
   selectedCategories,
   onCategoryToggle,
+  videoCount,
 }: CategoryFilterProps) {
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
       onCategoryToggle(categoryId)
     })
   }
+
+  const sortedRecordedValues = recordedValues
+    .filter((value) => value && value !== "Unset")
+    .sort((a, b) => {
+      const aIsYear = /^\d{4}$/.test(a)
+      const bIsYear = /^\d{4}$/.test(b)
+
+      if (aIsYear && bIsYear) {
+        return Number.parseInt(a) - Number.parseInt(b) // Years in chronological order
+      } else if (aIsYear && !bIsYear) {
+        return -1 // Years come before non-years
+      } else if (!aIsYear && bIsYear) {
+        return 1 // Non-years come after years
+      } else {
+        return a.localeCompare(b) // Non-years in alphabetical order
+      }
+    })
 
   const filterItems: FilterItem[] = [
     ...categories.map((cat) => ({ ...cat, type: "category" as const })),
@@ -51,14 +70,12 @@ export default function CategoryFilter({
       color: "#a855f7", // Purple color for performers
       type: "performer" as const,
     })),
-    ...recordedValues
-      .filter((value) => value && value !== "Unset")
-      .map((value) => ({
-        id: `recorded:${value}`,
-        name: value, // Removed "Recorded: " prefix for consistency
-        color: "#6b7280", // Gray color for recorded values
-        type: "recorded" as const,
-      })),
+    ...sortedRecordedValues.map((value) => ({
+      id: `recorded:${value}`,
+      name: value, // Removed "Recorded: " prefix for consistency
+      color: "#6b7280", // Gray color for recorded values
+      type: "recorded" as const,
+    })),
   ]
 
   return (
@@ -98,11 +115,18 @@ export default function CategoryFilter({
         })}
       </div>
 
-      {selectedCategories.length > 0 && (
-        <div className="text-sm text-gray-400">
-          Showing videos matching: {selectedCategories.length} filter{selectedCategories.length === 1 ? "" : "s"}
-        </div>
-      )}
+      <div className="text-sm text-gray-400">
+        {selectedCategories.length > 0 ? (
+          <>
+            Showing {videoCount} video{videoCount === 1 ? "" : "s"} matching: {selectedCategories.length} filter
+            {selectedCategories.length === 1 ? "" : "s"}
+          </>
+        ) : (
+          <>
+            Showing {videoCount} video{videoCount === 1 ? "" : "s"}
+          </>
+        )}
+      </div>
     </div>
   )
 }

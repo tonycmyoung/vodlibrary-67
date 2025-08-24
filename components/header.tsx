@@ -39,13 +39,6 @@ export default function Header({ user }: HeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
 
-  console.log("[v0] Header - User:", {
-    role: user.role,
-    email: user.email,
-    isAdmin: isAdmin,
-    fullName: user.full_name,
-  })
-
   const initials = user.full_name
     ? user.full_name
         .split(" ")
@@ -130,7 +123,6 @@ export default function Header({ user }: HeaderProps) {
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={() => {
-                    console.log("[v0] Invite User clicked - User:", user.email, "IsAdmin:", isAdmin)
                     setIsInviteModalOpen(true)
                   }}
                 >
