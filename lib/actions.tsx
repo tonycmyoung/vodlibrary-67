@@ -290,6 +290,12 @@ export async function approveUser(userId: string) {
       return { error: "Not authorized" }
     }
 
+    const { data: userToApprove } = await supabase.from("users").select("email, full_name").eq("id", userId).single()
+
+    if (!userToApprove) {
+      return { error: "User not found" }
+    }
+
     const { error } = await supabase
       .from("users")
       .update({
@@ -301,6 +307,16 @@ export async function approveUser(userId: string) {
 
     if (error) {
       return { error: error.message }
+    }
+
+    try {
+      await sendUserApprovalEmail({
+        recipientEmail: userToApprove.email,
+        recipientName: userToApprove.full_name,
+      })
+    } catch (emailError) {
+      console.error("Failed to send approval email:", emailError)
+      // Don't fail the approval if email fails
     }
 
     return { success: "User approved successfully" }
@@ -1575,6 +1591,122 @@ async function sendBroadcastNotificationEmail({
   } catch (error) {
     if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
       console.log("[v0] Resend is in testing mode - broadcast email delivery skipped")
+      return
+    }
+    throw error
+  }
+}
+
+async function sendUserApprovalEmail({
+  recipientEmail,
+  recipientName,
+}: {
+  recipientEmail: string
+  recipientName: string | null
+}) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log("No RESEND_API_KEY found, skipping approval email")
+    return
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const emailSubject = "Your TY Kobudo Library Account Has Been Approved!"
+
+  const emailContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${emailSubject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                                <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
+                                <p style="color: #f0f0f0; margin: 5px 0 0 0;">Account Approved</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 30px; background: #ffffff;">
+                                <h2 style="color: #333; margin-top: 0;">Welcome to the TY Kobudo Library!</h2>
+                                <p style="color: #666; margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
+                                    Hello ${recipientName || "there"}, great news! Your account has been approved by the administrator.
+                                </p>
+                                
+                                <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
+                                    <p style="margin: 0; color: #166534; font-size: 16px; line-height: 1.5; font-weight: bold;">
+                                        🎉 Your access to the martial arts video library is now active!
+                                    </p>
+                                </div>
+                                
+                                <p style="color: #666; margin: 20px 0; font-size: 16px; line-height: 1.5;">
+                                    You can now access all the exclusive martial arts training videos, techniques, and resources available in our library. 
+                                    This collection is specifically curated for Matayoshi/Okinawa Kobudo Australia students.
+                                </p>
+                                
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
+                                       style="background: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                                        Access Your Library
+                                    </a>
+                                </div>
+                                
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;">
+                                        <strong>What you can do now:</strong><br>
+                                        • Browse and watch training videos<br>
+                                        • Access technique demonstrations<br>
+                                        • View your favorites and track progress<br>
+                                        • Contact the administrator with questions
+                                    </p>
+                                </div>
+                                
+                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                                
+                                <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+                                    This is an automated notification from TY Kobudo Library.<br>
+                                    If you have any questions, please contact us at acmyma@gmail.com
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.FROM_EMAIL || "noreply@tykobudo.com.au",
+      to: recipientEmail,
+      subject: emailSubject,
+      html: emailContent,
+    })
+
+    if (result.error) {
+      if (
+        result.error.message &&
+        result.error.message.includes("You can only send testing emails to your own email address")
+      ) {
+        console.log("Resend is in testing mode - approval email delivery skipped")
+        return
+      }
+      throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`)
+    }
+
+    console.log("User approval email sent successfully, message ID:", result.data?.id)
+  } catch (error) {
+    console.error("Failed to send user approval email:", error)
+    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
+      console.log("Resend is in testing mode - approval email delivery skipped")
       return
     }
     throw error
