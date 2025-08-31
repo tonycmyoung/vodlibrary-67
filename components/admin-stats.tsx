@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Users, Video, UserCheck, Clock, TrendingUp, LogIn } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { getTelemetryData } from "@/lib/actions"
 
 interface Stats {
@@ -38,6 +38,7 @@ export default function AdminStats() {
 
   const fetchStats = async () => {
     try {
+      const supabase = createClient()
       const [usersResult, pendingResult, videosResult, categoriesResult, telemetryResult] = await Promise.all([
         supabase.from("users").select("id", { count: "exact" }),
         supabase.from("users").select("id", { count: "exact" }).eq("is_approved", false),

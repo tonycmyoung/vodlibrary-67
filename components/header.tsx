@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign } from "lucide-react"
-import { signOut } from "@/lib/actions"
+import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -38,6 +38,7 @@ export default function Header({ user }: HeaderProps) {
   const showAdminView = isAdmin && (isStudentView || isProfilePage)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   const initials = user.full_name
     ? user.full_name
@@ -49,6 +50,30 @@ export default function Header({ user }: HeaderProps) {
 
   const handleProfileClick = () => {
     router.push("/profile")
+  }
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return // Prevent multiple clicks
+
+    setIsSigningOut(true)
+    console.log("[v0] Starting client-side sign-out")
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        console.error("[v0] Sign out error:", error.message)
+      } else {
+        console.log("[v0] Sign out successful, redirecting...")
+        router.push("/auth/login")
+        router.refresh() // Refresh to clear any cached data
+      }
+    } catch (error) {
+      console.error("[v0] Sign out failed:", error)
+    } finally {
+      setIsSigningOut(false)
+    }
   }
 
   return (
@@ -149,13 +174,13 @@ export default function Header({ user }: HeaderProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
-                  <form action={signOut}>
-                    <button type="submit" className="flex items-center w-full">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </button>
-                  </form>
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {isSigningOut ? "Signing Out..." : "Sign Out"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

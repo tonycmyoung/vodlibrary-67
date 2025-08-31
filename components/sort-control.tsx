@@ -15,11 +15,15 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
   }
 
   const handleSortOrderToggle = () => {
-    onSortChange(sortBy, sortOrder === "asc" ? "desc" : "asc")
+    const newSortOrder = sortOrder === "asc" ? "desc" : "asc"
+    console.log("[v0] Sort direction toggle:", { currentSortOrder: sortOrder, newSortOrder, sortBy })
+    onSortChange(sortBy, newSortOrder)
   }
 
   const getSortLabel = (value: string) => {
     switch (value) {
+      case "category":
+        return "Category"
       case "title":
         return "Name"
       case "created_at":
@@ -29,7 +33,7 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
       case "views":
         return "Views"
       default:
-        return "Name"
+        return "Category"
     }
   }
 
@@ -41,6 +45,9 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-gray-900 border-gray-700">
+          <SelectItem value="category" className="text-gray-300 hover:text-gray-900">
+            Category
+          </SelectItem>
           <SelectItem value="title" className="text-gray-300 hover:text-gray-900">
             Name
           </SelectItem>
@@ -58,7 +65,7 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
       <button
         onClick={handleSortOrderToggle}
         className="p-2 bg-black/50 border border-gray-700 rounded-md hover:bg-gray-800 transition-colors"
-        title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+        title={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
       >
         <ArrowUpDown
           className={`w-4 h-4 text-gray-400 ${sortOrder === "desc" ? "rotate-180" : ""} transition-transform`}

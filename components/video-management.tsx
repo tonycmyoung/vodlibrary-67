@@ -11,8 +11,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { Plus, Search, Trash2, Clock, Loader2, Wand2, Pencil } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { extractVideoMetadata } from "@/lib/video-utils"
 import { saveVideo } from "@/lib/actions"
 
@@ -26,6 +35,7 @@ interface Video {
   is_published: boolean
   created_at: string
   recorded: string | null
+  views: number | null
   categories: Array<{
     id: string
     name: string
@@ -49,19 +59,29 @@ interface Performer {
 }
 
 export default function VideoManagement() {
+  const supabase = createClient()
+
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [filteredVideos, setFilteredVideos] = useState<Video[]>([])
+  const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      return Number.parseInt(localStorage.getItem("videoManagementItemsPerPage") || "10")
+    }
+    return 10
+  })
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
   const [sortBy, setSortBy] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("videoManagementSortBy") || "title"
+      return localStorage.getItem("videoManagementSortBy") || "category"
     }
-    return "title"
+    return "category"
   })
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
     if (typeof window !== "undefined") {
@@ -95,6 +115,10 @@ export default function VideoManagement() {
   useEffect(() => {
     filterVideos()
   }, [videos, searchQuery]) // Removed sort dependencies
+
+  useEffect(() => {
+    updatePaginatedVideos()
+  }, [filteredVideos, currentPage, itemsPerPage])
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("*").order("name")
@@ -168,6 +192,12 @@ export default function VideoManagement() {
       let aValue: any, bValue: any
 
       switch (sortBy) {
+        case "category":
+          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          aValue = aCats
+          bValue = bCats
+          break
         case "title":
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
@@ -196,7 +226,6 @@ export default function VideoManagement() {
         result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
       }
 
-      // If primary sort values are equal and not sorting by title, use title as secondary sort
       if (result === 0 && sortBy !== "title") {
         const aTitle = a.title.toLowerCase()
         const bTitle = b.title.toLowerCase()
@@ -207,6 +236,7 @@ export default function VideoManagement() {
     })
 
     setFilteredVideos(filtered)
+    setCurrentPage(1)
   }
 
   const resetForm = () => {
@@ -253,10 +283,8 @@ export default function VideoManagement() {
         return
       }
 
-      // Refresh videos
       await fetchVideos()
 
-      // Close dialog and reset form
       setIsAddDialogOpen(false)
       resetForm()
     } catch (error) {
@@ -360,6 +388,12 @@ export default function VideoManagement() {
       let aValue: any, bValue: any
 
       switch (newSortBy) {
+        case "category":
+          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          aValue = aCats
+          bValue = bCats
+          break
         case "title":
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
@@ -388,7 +422,6 @@ export default function VideoManagement() {
         result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
       }
 
-      // If primary sort values are equal and not sorting by title, use title as secondary sort
       if (result === 0 && newSortBy !== "title") {
         const aTitle = a.title.toLowerCase()
         const bTitle = b.title.toLowerCase()
@@ -400,6 +433,145 @@ export default function VideoManagement() {
 
     setFilteredVideos(filtered)
   }
+
+  const updatePaginatedVideos = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const paginated = filteredVideos.slice(startIndex, endIndex)
+    setPaginatedVideos(paginated)
+
+    console.log(
+      `[v0] Pagination update: page ${currentPage}, showing ${paginated.length} of ${filteredVideos.length} videos`,
+    )
+  }
+
+  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage)
+  const startItem = filteredVideos.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1
+  const endItem = Math.min(currentPage * itemsPerPage, filteredVideos.length)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    document.querySelector(".space-y-6")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: string) => {
+    const itemsPerPageNum = Number.parseInt(newItemsPerPage)
+    setItemsPerPage(itemsPerPageNum)
+    setCurrentPage(1)
+    localStorage.setItem("videoManagementItemsPerPage", newItemsPerPage)
+  }
+
+  const PaginationControls = () => (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4">
+      <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+            <SelectTrigger className="w-20 bg-gray-800 border-gray-600 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-600">
+              <SelectItem
+                value="5"
+                className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+              >
+                5
+              </SelectItem>
+              <SelectItem
+                value="10"
+                className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+              >
+                10
+              </SelectItem>
+              <SelectItem
+                value="20"
+                className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+              >
+                20
+              </SelectItem>
+              <SelectItem
+                value="50"
+                className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+              >
+                50
+              </SelectItem>
+              <SelectItem
+                value="100"
+                className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+              >
+                100
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-white">per page</span>
+        </div>
+        <div className="text-sm text-white whitespace-nowrap">
+          Showing {startItem}-{endItem} of {filteredVideos.length} videos
+        </div>
+      </div>
+      <div className="ml-auto">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                className={`text-white hover:bg-gray-700 ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              />
+            </PaginationItem>
+
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum: number
+              if (totalPages <= 5) {
+                pageNum = i + 1
+              } else if (currentPage <= 3) {
+                pageNum = i + 1
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i
+              } else {
+                pageNum = currentPage - 2 + i
+              }
+
+              return (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(pageNum)}
+                    isActive={currentPage === pageNum}
+                    className={`cursor-pointer text-white hover:bg-gray-700 ${
+                      currentPage === pageNum ? "bg-red-600 text-white hover:bg-red-700" : ""
+                    }`}
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            })}
+
+            {totalPages > 5 && currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <PaginationEllipsis className="text-white" />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => handlePageChange(totalPages)}
+                    className="cursor-pointer text-white hover:bg-gray-700"
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                className={`text-white hover:bg-gray-700 ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    </div>
+  )
 
   if (loading) {
     return (
@@ -416,7 +588,6 @@ export default function VideoManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header with search and add button */}
       <Card className="bg-black/60 border-gray-800">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -640,11 +811,12 @@ export default function VideoManagement() {
         </CardHeader>
       </Card>
 
-      {/* Videos list */}
+      {filteredVideos.length > 0 && <PaginationControls />}
+
       <Card className="bg-black/60 border-gray-800">
         <CardContent className="p-6">
           <div className="space-y-4">
-            {filteredVideos.map((video) => (
+            {paginatedVideos.map((video) => (
               <div
                 key={video.id}
                 className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 py-1"
@@ -657,7 +829,6 @@ export default function VideoManagement() {
                         alt={video.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          // Fallback to video icon if thumbnail fails to load
                           const target = e.target as HTMLImageElement
                           target.style.display = "none"
                           target.nextElementSibling?.classList.remove("hidden")
@@ -713,23 +884,26 @@ export default function VideoManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(video)}
-                    className="cursor-pointer hover:bg-gray-700"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(video.id)}
-                    className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                <div className="flex flex-col items-end space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(video)}
+                      className="cursor-pointer hover:bg-gray-700"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(video.id)}
+                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="text-sm text-gray-400 font-medium">{video.views || 0} views</div>
                 </div>
               </div>
             ))}
@@ -742,6 +916,8 @@ export default function VideoManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {filteredVideos.length > 0 && <PaginationControls />}
     </div>
   )
 }

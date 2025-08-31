@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, X, Check, Trash2 } from "lucide-react"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { formatTimeAgo } from "@/lib/utils/date"
 
@@ -31,7 +31,7 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
-  const supabase = createBrowserClient()
+  const supabase = createClient()
 
   const fetchNotifications = async () => {
     try {

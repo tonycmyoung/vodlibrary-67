@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Play, Clock, Heart } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 interface Video {
   id: string
@@ -19,6 +19,7 @@ interface Video {
   duration_seconds: number | null
   created_at: string
   recorded: string | null
+  views: number | null
   categories: Array<{
     id: string
     name: string
@@ -44,6 +45,7 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
     console.log("[v0] VideoCard mounted for video:", video.id, video.title)
     const getUser = async () => {
       try {
+        const supabase = createClient()
         const {
           data: { user: userData },
         } = await supabase.auth.getUser()
@@ -74,6 +76,7 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
     try {
       if (!user) return
 
+      const supabase = createClient()
       if (isFavorited) {
         await supabase.from("user_favorites").delete().eq("user_id", user.id).eq("video_id", video.id)
         setIsFavorited(false)
@@ -154,7 +157,7 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
 
           {video.description && <p className="text-gray-400 text-sm mb-3 line-clamp-2">{video.description}</p>}
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 mb-2">
             {validCategories.map((category) => (
               <Badge
                 key={category.id}
@@ -180,6 +183,11 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
                 {video.recorded}
               </Badge>
             )}
+          </div>
+
+          {/* View count display in bottom right */}
+          <div className="flex justify-end">
+            <div className="text-xs text-gray-400 font-medium">{video.views || 0} views</div>
           </div>
         </CardContent>
       </Card>

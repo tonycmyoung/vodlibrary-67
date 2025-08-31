@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
 import ViewToggle from "@/components/view-toggle"
@@ -9,6 +9,16 @@ import CategoryFilter from "@/components/category-filter"
 import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2, X, Heart } from "lucide-react"
 
 interface Video {
@@ -20,6 +30,7 @@ interface Video {
   duration_seconds: number | null
   created_at: string
   recorded: string | null
+  views: number | null
   categories: Array<{
     id: string
     name: string
@@ -54,6 +65,8 @@ const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
 export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
+  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
+
   const [videos, setVideos] = useState<Video[]>([])
   const [allVideos, setAllVideos] = useState<Video[]>([]) // Store unfiltered videos for recorded values calculation
   const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set())
@@ -65,19 +78,57 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
+
   const [view, setView] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem(`videoLibraryView`) as "grid" | "list") || "grid"
+      const storageKey = `${storagePrefix}View`
+      return (localStorage.getItem(storageKey) as "grid" | "list") || "grid"
     }
     return "grid"
   })
-  const [sortBy, setSortBy] = useState<"title" | "created_at" | "recorded" | "performers">("title")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
-  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
+  const [sortBy, setSortBy] = useState<"title" | "created_at" | "recorded" | "performers" | "category" | "views">(
+    () => {
+      if (typeof window !== "undefined") {
+        const storageKey = `${storagePrefix}SortBy`
+        return (
+          (localStorage.getItem(storageKey) as
+            | "title"
+            | "created_at"
+            | "recorded"
+            | "performers"
+            | "category"
+            | "views") || "category"
+        )
+      }
+      return "category"
+    },
+  )
+
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `${storagePrefix}SortOrder`
+      return (localStorage.getItem(storageKey) as "asc" | "desc") || "asc"
+    }
+    return "asc"
+  })
+
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `${storagePrefix}ItemsPerPage`
+      return Number.parseInt(localStorage.getItem(storageKey) || "10")
+    }
+    return 10
+  })
+
+  const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
 
   const [user, setUser] = useState<any>(null)
   const [userLoading, setUserLoading] = useState(true)
+
+  const supabase = createClient()
 
   const processedData = useMemo(() => {
     if (!allVideos.length) return { categories: [], performers: [], recordedValues: [] }
@@ -309,6 +360,163 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     return () => clearTimeout(timer)
   }, [searchQuery])
 
+  const totalPages = Math.ceil(videos.length / itemsPerPage)
+  const startItem = (currentPage - 1) * itemsPerPage + 1
+  const endItem = Math.min(currentPage * itemsPerPage, videos.length)
+
+  const PaginationControls = () => {
+    const showNavigation = totalPages > 1
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 min-w-0 flex-1">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-sm text-gray-400">Show</span>
+            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+              <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem
+                  value="5"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  5
+                </SelectItem>
+                <SelectItem
+                  value="10"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  10
+                </SelectItem>
+                <SelectItem
+                  value="20"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  20
+                </SelectItem>
+                <SelectItem
+                  value="50"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  50
+                </SelectItem>
+                <SelectItem
+                  value="100"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  100
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-400">per page</span>
+          </div>
+          <div className="text-sm text-gray-400 whitespace-nowrap">
+            Showing {startItem}-{endItem} of {videos.length} videos
+          </div>
+        </div>
+
+        {showNavigation && (
+          <div className="ml-auto">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                    className={`${currentPage <= 1 ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
+                  />
+                </PaginationItem>
+
+                {getVisiblePages().map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === "..." ? (
+                      <PaginationEllipsis className="text-gray-300" />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => handlePageChange(page as number)}
+                        isActive={currentPage === page}
+                        className={`${currentPage === page ? "bg-red-600 text-white hover:bg-red-700 hover:text-white" : "text-white hover:text-white"}`}
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                    className={`${currentPage >= totalPages ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
+    )
+  }
+
+  const handleViewChange = (newView: "grid" | "list") => {
+    setView(newView)
+    const storageKey = `${storagePrefix}View`
+    localStorage.setItem(storageKey, newView)
+  }
+
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+    console.log("[v0] handleSortChange called:", {
+      currentSortBy: sortBy,
+      newSortBy,
+      currentSortOrder: sortOrder,
+      newSortOrder,
+    })
+
+    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "views")
+    setSortOrder(newSortOrder)
+
+    localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
+    localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
+
+    console.log("[v0] Sort state updated, calling filterAndSortVideos")
+    filterAndSortVideos(
+      allVideos,
+      newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "views",
+      newSortOrder,
+    )
+  }
+
+  const getVisiblePages = () => {
+    const delta = 2
+    const range = []
+    const rangeWithDots = []
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i)
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...")
+    } else {
+      rangeWithDots.push(1)
+    }
+
+    rangeWithDots.push(...range)
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages)
+    } else {
+      rangeWithDots.push(totalPages)
+    }
+
+    return rangeWithDots
+  }
+
   const isCircuitBreakerOpen = () => {
     if (failureCount >= CIRCUIT_BREAKER_THRESHOLD) {
       const timeSinceLastFailure = Date.now() - lastFailureTime
@@ -378,7 +586,14 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     }
   }
 
-  const filterAndSortVideos = (videosToFilter = allVideos) => {
+  const filterAndSortVideos = (
+    videosToFilter = allVideos,
+    sortByOverride?: "title" | "created_at" | "recorded" | "performers" | "category" | "views",
+    sortOrderOverride?: "asc" | "desc",
+  ) => {
+    const currentSortBy = sortByOverride || sortBy
+    const currentSortOrder = sortOrderOverride || sortOrder
+
     let filteredVideos = [...videosToFilter]
 
     if (debouncedSearchQuery) {
@@ -399,7 +614,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         const videoPerformers = video.performers.map((perf) => perf.id)
 
         const selectedCategoryIds = selectedCategories.filter(
-          (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
+          (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:"),
         )
         const selectedRecordedValues = selectedCategories
           .filter((id) => id.startsWith("recorded:"))
@@ -407,10 +622,14 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         const selectedPerformerIds = selectedCategories
           .filter((id) => id.startsWith("performer:"))
           .map((id) => id.replace("performer:", ""))
+        const selectedViews = selectedCategories
+          .filter((id) => id.startsWith("views:"))
+          .map((id) => id.replace("views:", ""))
 
         let categoryMatches = selectedCategoryIds.length === 0 ? true : false
         let recordedMatches = selectedRecordedValues.length === 0 ? true : false
         let performerMatches = selectedPerformerIds.length === 0 ? true : false
+        let viewsMatches = selectedViews.length === 0 ? true : false
 
         if (selectedCategoryIds.length > 0) {
           if (filterMode === "AND") {
@@ -432,10 +651,21 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           }
         }
 
+        if (selectedViews.length > 0) {
+          const videoViews = video.views || 0
+          const selectedViewNumbers = selectedViews.map(Number)
+          if (filterMode === "AND") {
+            viewsMatches = selectedViewNumbers.every((selectedView) => videoViews >= selectedView)
+          } else {
+            viewsMatches = selectedViewNumbers.some((selectedView) => videoViews >= selectedView)
+          }
+        }
+
         const activeFilters = [
           selectedCategoryIds.length > 0 ? categoryMatches : null,
           selectedRecordedValues.length > 0 ? recordedMatches : null,
           selectedPerformerIds.length > 0 ? performerMatches : null,
+          selectedViews.length > 0 ? viewsMatches : null,
         ].filter((match) => match !== null)
 
         if (activeFilters.length === 0) return true
@@ -451,7 +681,11 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     filteredVideos.sort((a, b) => {
       let aValue: any, bValue: any
 
-      switch (sortBy) {
+      switch (currentSortBy) {
+        case "category":
+          aValue = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          bValue = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          break
         case "title":
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
@@ -480,50 +714,79 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                   .toLowerCase()
               : ""
           break
+        case "views":
+          aValue = a.views || 0
+          bValue = b.views || 0
+          break
         default:
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
+          aValue = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          bValue = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
       }
 
       let result = 0
-      if (sortOrder === "asc") {
+      if (currentSortOrder === "asc") {
         result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
       } else {
         result = aValue > bValue ? -1 : aValue < bValue ? 1 : 0
       }
 
-      if (result === 0 && sortBy !== "title") {
+      if (result === 0 && currentSortBy === "category") {
         const aTitle = a.title.toLowerCase()
         const bTitle = b.title.toLowerCase()
-        result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+        if (currentSortOrder === "asc") {
+          result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+        } else {
+          result = aTitle > bTitle ? -1 : aTitle < bTitle ? 1 : 0
+        }
+      }
+
+      // If categories are equal, use title as tertiary sort
+      if (result === 0 && currentSortBy !== "category") {
+        const aCategory = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+        const bCategory = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+        result = aCategory < bCategory ? -1 : aCategory > bCategory ? 1 : 0
+
+        // If categories are equal, use title as tertiary sort
+        if (result === 0) {
+          const aTitle = a.title.toLowerCase()
+          const bTitle = b.title.toLowerCase()
+          result = aTitle < bTitle ? -1 : aTitle > bTitle ? 1 : 0
+        }
       }
 
       return result
     })
 
     setVideos(filteredVideos)
+    setCurrentPage(1)
+    updatePaginatedVideos(filteredVideos, 1, itemsPerPage)
   }
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
-    )
+  const updatePaginatedVideos = (allFilteredVideos: Video[], page: number, perPage: number) => {
+    const startIndex = (page - 1) * perPage
+    const endIndex = startIndex + perPage
+    const paginated = allFilteredVideos.slice(startIndex, endIndex)
+    setPaginatedVideos(paginated)
   }
 
-  const handleViewChange = (newView: "grid" | "list") => {
-    setView(newView)
-    localStorage.setItem(`${storagePrefix}View`, newView)
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    updatePaginatedVideos(videos, page, itemsPerPage)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers")
-    setSortOrder(newSortOrder)
-
-    localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
-    localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
-
-    filterAndSortVideos()
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = Number.parseInt(value)
+    const storageKey = `${storagePrefix}ItemsPerPage`
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1)
+    localStorage.setItem(storageKey, value)
+    updatePaginatedVideos(videos, 1, newItemsPerPage)
   }
+
+  useEffect(() => {
+    updatePaginatedVideos(videos, currentPage, itemsPerPage)
+  }, [videos, currentPage, itemsPerPage])
 
   if (loading || userLoading) {
     return (
@@ -571,7 +834,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -638,19 +901,23 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         </div>
       ) : (
         <>
+          <PaginationControls />
+
           {view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {videos.map((video) => (
+              {paginatedVideos.map((video) => (
                 <VideoCard key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
               ))}
             </div>
           ) : (
             <div className="space-y-2">
-              {videos.map((video) => (
+              {paginatedVideos.map((video) => (
                 <VideoCardList key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
               ))}
             </div>
           )}
+
+          <PaginationControls />
         </>
       )}
     </div>

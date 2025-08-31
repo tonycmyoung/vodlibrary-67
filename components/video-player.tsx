@@ -21,6 +21,7 @@ interface VideoPlayerProps {
     created_at: string
     recorded: string | null
     isFavorited?: boolean
+    views?: number
     categories: Array<{
       id: string
       name: string
@@ -36,11 +37,16 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [isFavorited, setIsFavorited] = useState(video.isFavorited || false)
   const [isLoading, setIsLoading] = useState(false)
+  const [viewCount, setViewCount] = useState(video.views || 0)
   const searchParams = useSearchParams()
   const isAdminView = searchParams.get("admin-view") === "student"
 
   useEffect(() => {
-    incrementVideoViews(video.id)
+    const incrementViews = async () => {
+      await incrementVideoViews(video.id)
+      setViewCount((prev) => prev + 1)
+    }
+    incrementViews()
   }, [video.id])
 
   const toggleFavorite = async () => {
@@ -179,6 +185,8 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                     <span>{video.performers.map((p) => p.name).join(", ")}</span>
                   </div>
                 )}
+
+                <div className="text-xs text-gray-400 font-medium">{viewCount} views</div>
               </div>
 
               <div className="mt-6">

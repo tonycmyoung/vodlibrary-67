@@ -17,6 +17,7 @@ interface Video {
   duration_seconds: number | null
   created_at: string
   recorded: string | null
+  views: number | null
   categories: Array<{
     id: string
     name: string
@@ -81,8 +82,8 @@ export default function VideoCardList({ video, isFavorited: initialIsFavorited =
 
   return (
     <Link href={`/video/${video.id}`}>
-      <div className="group cursor-pointer bg-gray-900/50 border border-gray-800 hover:border-red-500/50 transition-all duration-200 hover:bg-gray-900/70 rounded-lg p-4">
-        <div className="flex items-center gap-2">
+      <div className="group cursor-pointer bg-gray-900/50 border border-gray-800 hover:border-red-500/50 transition-all duration-200 hover:bg-gray-900/70 rounded-lg p-4 flex">
+        <div className="flex items-center gap-2 flex-1">
           {/* Small thumbnail */}
           <div className="relative w-16 h-12 bg-gray-900 rounded overflow-hidden flex-shrink-0">
             {video.thumbnail_url ? (
@@ -148,16 +149,19 @@ export default function VideoCardList({ video, isFavorited: initialIsFavorited =
             </div>
           </div>
 
-          {/* Favorite button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80 flex-shrink-0"
-            onClick={toggleFavorite}
-            disabled={isLoading}
-          >
-            <Heart className={`w-4 h-4 ${isFavorited ? "fill-red-500 text-red-500" : "text-white"}`} />
-          </Button>
+          {/* Favorite button and view count */}
+          <div className="flex flex-col items-end space-y-2 flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80"
+              onClick={toggleFavorite}
+              disabled={isLoading}
+            >
+              <Heart className={`w-4 h-4 ${isFavorited ? "fill-red-500 text-red-500" : "text-white"}`} />
+            </Button>
+            <div className="text-xs text-gray-400 font-medium">{video.views || 0} views</div>
+          </div>
         </div>
       </div>
     </Link>
