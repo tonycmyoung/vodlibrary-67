@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Play, Clock, Heart } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { incrementVideoViews } from "@/lib/actions"
 
 interface Video {
   id: string
@@ -96,7 +97,7 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
 
   const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
 
-  const handleVideoClick = (e: React.MouseEvent) => {
+  const handleVideoClick = async (e: React.MouseEvent) => {
     console.log("[v0] Video card clicked:", video.id, video.title)
     console.log("[v0] Navigating to:", `/video/${video.id}`)
     console.log("[v0] Click event details:", {
@@ -105,6 +106,12 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
       defaultPrevented: e.defaultPrevented,
       propagationStopped: e.isPropagationStopped?.(),
     })
+
+    try {
+      await incrementVideoViews(video.id)
+    } catch (error) {
+      console.error("Error incrementing video views:", error)
+    }
   }
 
   return (

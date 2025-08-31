@@ -9,42 +9,55 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { deduplicateRequest } from "./request-cache"
 
 export async function signIn(prevState: any, formData: FormData) {
+  console.log("[v0] signIn function called")
+
   if (!formData) {
+    console.log("[v0] signIn error: Form data is missing")
     return { error: "Form data is missing" }
   }
 
   const email = formData.get("email")
   const password = formData.get("password")
 
+  console.log("[v0] signIn attempting login for email:", email)
+
   if (!email || !password) {
+    console.log("[v0] signIn error: Email and password are required")
     return { error: "Email and password are required" }
   }
 
   const supabase = createClient()
 
   try {
+    console.log("[v0] signIn calling supabase.auth.signInWithPassword")
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
     })
 
     if (error) {
+      console.log("[v0] signIn auth error:", error.message)
       return { error: error.message }
     }
 
+    console.log("[v0] signIn auth successful, getting session")
     const {
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession()
 
     if (sessionError || !session) {
+      console.log("[v0] signIn session error:", sessionError?.message || "No session")
       return { error: "Failed to establish session" }
     }
 
-    await trackUserLogin()
+    console.log("[v0] signIn session established, tracking login for user:", session.user.id)
+    await trackUserLogin(session.user.id)
 
+    console.log("[v0] signIn redirecting to home")
     redirect("/")
   } catch (error: any) {
+    console.log("[v0] signIn unexpected error:", error.message)
     return { error: error.message || "An unexpected error occurred" }
   }
 }
@@ -1158,24 +1171,8 @@ export async function saveVideo(formData: any) {
 }
 
 export async function incrementVideoViews(videoId: string) {
-  console.log("[v0] incrementVideoViews called for video:", videoId)
-
   try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get() {
-            return undefined
-          },
-          set() {},
-          remove() {},
-        },
-      },
-    )
-
-    console.log("[v0] Service client created successfully")
+    const supabase = createServiceRoleClient()
 
     // Get current views count
     const { data: currentVideo, error: fetchError } = await supabase
@@ -1185,44 +1182,38 @@ export async function incrementVideoViews(videoId: string) {
       .single()
 
     if (fetchError) {
-      console.error("[v0] Error fetching current views:", fetchError)
+      console.error("Error fetching current views:", fetchError)
       return
     }
 
-    console.log("[v0] Current views:", currentVideo?.views || 0)
-
-    // Increment views
     const newViews = (currentVideo?.views || 0) + 1
-    const { error: updateError } = await supabase.from("videos").update({ views: newViews }).eq("id", videoId)
+    const currentTimestamp = new Date().toISOString()
+
+    const { error: updateError } = await supabase
+      .from("videos")
+      .update({
+        views: newViews,
+        last_viewed: currentTimestamp,
+      })
+      .eq("id", videoId)
 
     if (updateError) {
-      console.error("[v0] Error updating views:", updateError)
+      console.error("Error updating views:", updateError)
       return
     }
-
-    console.log("[v0] Successfully updated views to:", newViews)
   } catch (error) {
-    console.error("[v0] incrementVideoViews - Unexpected error:", error)
+    console.error("incrementVideoViews - Unexpected error:", error)
   }
 }
 
-export async function trackUserLogin() {
+export async function trackUserLogin(userId: string) {
   try {
+    console.log("[v0] Tracking login for user:", userId)
+
     const supabase = createServiceRoleClient()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      console.log("[v0] No user found for login tracking")
-      return { error: "User not authenticated" }
-    }
-
-    console.log("[v0] Tracking login for user:", user.id)
-
-    // Insert login record
     const { error } = await supabase.from("user_logins").insert({
-      user_id: user.id,
+      user_id: userId,
       login_time: new Date().toISOString(),
     })
 
@@ -1243,130 +1234,99 @@ export async function getTelemetryData() {
   try {
     const serviceSupabase = createServiceRoleClient()
 
-    // Get current date and calculate week boundaries (Monday as week start)
-    const now = new Date()
-    const currentDay = now.getDay()
-    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Sunday = 0, so 6 days from Monday
+    const today = new Date()
+    const currentDay = today.getDay() // Sunday = 0, Monday = 1, etc.
 
-    const thisWeekStart = new Date(now)
-    thisWeekStart.setDate(now.getDate() - daysFromMonday)
-    thisWeekStart.setHours(0, 0, 0, 0)
+    // Calculate Monday of current week (date only)
+    const thisWeekStart = new Date(today)
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Sunday = 6 days from Monday
+    thisWeekStart.setDate(today.getDate() - daysFromMonday)
+
+    // Set to start of day for consistent date-only comparison
+    const thisWeekStartDate = thisWeekStart.toISOString().split("T")[0] // YYYY-MM-DD format
 
     const lastWeekStart = new Date(thisWeekStart)
     lastWeekStart.setDate(thisWeekStart.getDate() - 7)
+    const lastWeekStartDate = lastWeekStart.toISOString().split("T")[0] // YYYY-MM-DD format
 
-    const lastWeekEnd = new Date(thisWeekStart)
-    lastWeekEnd.setMilliseconds(-1)
+    const todayDate = today.toISOString().split("T")[0] // YYYY-MM-DD format
 
     console.log("[v0] Telemetry date ranges:", {
-      thisWeekStart: thisWeekStart.toISOString(),
-      lastWeekStart: lastWeekStart.toISOString(),
-      lastWeekEnd: lastWeekEnd.toISOString(),
+      thisWeekStart: thisWeekStartDate,
+      lastWeekStart: lastWeekStartDate,
+      today: todayDate,
     })
 
-    // Get total video views
-    const { data: totalViewsData, error: totalViewsError } = await serviceSupabase.from("videos").select("views")
+    const [totalViewsResult, thisWeekVideosResult, lastWeekVideosResult, thisWeekLoginsResult, lastWeekLoginsResult] =
+      await Promise.all([
+        // Total views across all videos
+        serviceSupabase
+          .from("videos")
+          .select("views")
+          .not("views", "is", null),
 
-    if (totalViewsError) {
-      console.error("[v0] Error fetching total views:", totalViewsError)
-      return { error: "Failed to fetch total views" }
-    }
+        // Videos viewed this week (using date-only comparison)
+        serviceSupabase
+          .from("videos")
+          .select("id")
+          .gte("last_viewed", thisWeekStartDate)
+          .lte("last_viewed", todayDate + "T23:59:59.999Z"),
 
-    const totalViews = totalViewsData?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+        // Videos viewed last week (using date-only comparison)
+        serviceSupabase
+          .from("videos")
+          .select("id")
+          .gte("last_viewed", lastWeekStartDate)
+          .lt("last_viewed", thisWeekStartDate),
 
-    // For weekly views, we need to track view increments, not video creation dates
-    // Since we don't have a view_history table, we'll approximate using video update patterns
-    // This is a limitation - ideally we'd track each view with timestamp
+        // User logins this week (using date-only comparison)
+        serviceSupabase
+          .from("user_logins")
+          .select("id", { count: "exact" })
+          .gte("login_time", thisWeekStartDate)
+          .lte("login_time", todayDate + "T23:59:59.999Z"),
 
-    // Get videos updated this week (likely from view increments)
-    const { data: thisWeekUpdatedVideos, error: thisWeekError } = await serviceSupabase
-      .from("videos")
-      .select("views, updated_at, created_at")
-      .gte("updated_at", thisWeekStart.toISOString())
+        // User logins last week (using date-only comparison)
+        serviceSupabase
+          .from("user_logins")
+          .select("id", { count: "exact" })
+          .gte("login_time", lastWeekStartDate)
+          .lt("login_time", thisWeekStartDate),
+      ])
 
-    if (thisWeekError) {
-      console.error("[v0] Error fetching this week updated videos:", thisWeekError)
-      return { error: "Failed to fetch this week video data" }
-    }
+    // Calculate total views
+    const totalViews = totalViewsResult.data?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
 
-    // Estimate this week's views by looking at videos that were updated this week
-    // This is an approximation since we don't have granular view tracking
-    let thisWeekViews = 0
-    if (thisWeekUpdatedVideos) {
-      for (const video of thisWeekUpdatedVideos) {
-        // If video was created this week, count all its views
-        const createdThisWeek = new Date(video.created_at) >= thisWeekStart
-        if (createdThisWeek) {
-          thisWeekViews += video.views || 0
-        } else {
-          // If video was updated but not created this week, estimate recent views
-          // This is imperfect but better than the previous logic
-          thisWeekViews += Math.min(video.views || 0, 5) // Conservative estimate
-        }
-      }
-    }
-
-    // Similar logic for last week
-    const { data: lastWeekUpdatedVideos, error: lastWeekError } = await serviceSupabase
-      .from("videos")
-      .select("views, updated_at, created_at")
-      .gte("updated_at", lastWeekStart.toISOString())
-      .lt("updated_at", thisWeekStart.toISOString())
-
-    if (lastWeekError) {
-      console.error("[v0] Error fetching last week updated videos:", lastWeekError)
-      return { error: "Failed to fetch last week video data" }
-    }
-
-    let lastWeekViews = 0
-    if (lastWeekUpdatedVideos) {
-      for (const video of lastWeekUpdatedVideos) {
-        const createdLastWeek =
-          new Date(video.created_at) >= lastWeekStart && new Date(video.created_at) < thisWeekStart
-        if (createdLastWeek) {
-          lastWeekViews += video.views || 0
-        } else {
-          lastWeekViews += Math.min(video.views || 0, 5) // Conservative estimate
-        }
-      }
-    }
-
-    // Get user logins this week - this should work correctly
-    const { data: thisWeekLogins, error: thisWeekLoginsError } = await serviceSupabase
-      .from("user_logins")
-      .select("user_id", { count: "exact" })
-      .gte("login_time", thisWeekStart.toISOString())
-
-    if (thisWeekLoginsError) {
-      console.error("[v0] Error fetching this week logins:", thisWeekLoginsError)
-      // Don't return error, just log it and continue with 0
-    }
-
-    // Get user logins last week
-    const { data: lastWeekLogins, error: lastWeekLoginsError } = await serviceSupabase
-      .from("user_logins")
-      .select("user_id", { count: "exact" })
-      .gte("login_time", lastWeekStart.toISOString())
-      .lt("login_time", thisWeekStart.toISOString())
-
-    if (lastWeekLoginsError) {
-      console.error("[v0] Error fetching last week logins:", lastWeekLoginsError)
-      // Don't return error, just log it and continue with 0
-    }
+    // Count unique videos viewed in each period
+    const thisWeekViews = thisWeekVideosResult.data?.length || 0
+    const lastWeekViews = lastWeekVideosResult.data?.length || 0
 
     const telemetryData = {
       totalViews,
       thisWeekViews,
       lastWeekViews,
-      thisWeekUserLogins: thisWeekLogins?.length || 0,
-      lastWeekUserLogins: lastWeekLogins?.length || 0,
+      thisWeekUserLogins: thisWeekLoginsResult.count || 0,
+      lastWeekUserLogins: lastWeekLoginsResult.count || 0,
     }
 
     console.log("[v0] Telemetry data:", telemetryData)
-    return { success: true, data: telemetryData }
+
+    return {
+      success: true,
+      data: telemetryData,
+    }
   } catch (error) {
-    console.error("[v0] getTelemetryData error:", error)
-    return { error: "An unexpected error occurred fetching telemetry data" }
+    console.error("[v0] Error fetching telemetry data:", error)
+    return {
+      success: false,
+      data: {
+        totalViews: 0,
+        thisWeekViews: 0,
+        lastWeekViews: 0,
+        thisWeekUserLogins: 0,
+        lastWeekUserLogins: 0,
+      },
+    }
   }
 }
 

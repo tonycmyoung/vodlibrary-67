@@ -95,7 +95,7 @@ export default function AdminStats() {
       bgColor: "bg-purple-500/10",
     },
     {
-      title: "Views This Week",
+      title: "Videos Viewed This Week",
       value: stats.thisWeekViews,
       subtitle: `Last week: ${stats.lastWeekViews}`,
       totalViews: stats.totalViews,
@@ -104,7 +104,7 @@ export default function AdminStats() {
       bgColor: "bg-emerald-500/10",
     },
     {
-      title: "User Logons This Week",
+      title: "Daily Logons This Week",
       value: stats.thisWeekUserLogins,
       subtitle: `Last week: ${stats.lastWeekUserLogins}`,
       icon: LogIn,
