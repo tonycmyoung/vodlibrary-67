@@ -29,7 +29,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700">
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />

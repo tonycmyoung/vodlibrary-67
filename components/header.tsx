@@ -9,13 +9,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign } from "lucide-react"
+import { LogOut, User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign, BookOpen } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
+import CurriculumModal from "@/components/curriculum-modal"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -38,6 +39,7 @@ export default function Header({ user }: HeaderProps) {
   const showAdminView = isAdmin && (isStudentView || isProfilePage)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
+  const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   const initials = user.full_name
@@ -156,6 +158,13 @@ export default function Header({ user }: HeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={() => setIsCurriculumModalOpen(true)}
+                >
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Curriculum
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={() => setIsDonationModalOpen(true)}
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
@@ -190,6 +199,7 @@ export default function Header({ user }: HeaderProps) {
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
       <DonationModal isOpen={isDonationModalOpen} onClose={() => setIsDonationModalOpen(false)} />
+      <CurriculumModal isOpen={isCurriculumModalOpen} onClose={() => setIsCurriculumModalOpen(false)} />
     </>
   )
 }
