@@ -75,8 +75,7 @@ export async function updateSession(request: NextRequest) {
   if (code) {
     // Exchange the code for a session
     await supabase.auth.exchangeCodeForSession(code)
-    // Redirect to home page after successful auth
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.redirect(new URL("/auth/login?confirmed=true", request.url))
   }
 
   let session
