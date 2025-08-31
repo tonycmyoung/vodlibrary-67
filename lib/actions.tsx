@@ -1171,7 +1171,7 @@ export async function trackUserLogin() {
 
 export async function getTelemetryData() {
   try {
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createClient()
 
     // Get current date and calculate week boundaries (Monday as week start)
     const now = new Date()

@@ -8,26 +8,26 @@ DROP POLICY IF EXISTS "Admins can manage video categories" ON video_categories;
 -- Create new policies that don't cause recursion
 CREATE POLICY "Admins can view all users" ON users
   FOR SELECT USING (
-    auth.email() = 'admin@martialarts.com'
+    auth.email() = 'acmyma@gmail.com'
   );
 
 CREATE POLICY "Admins can manage all videos" ON videos
   FOR ALL USING (
-    auth.email() = 'admin@martialarts.com'
+    auth.email() = 'acmyma@gmail.com'
   );
 
 CREATE POLICY "Admins can manage categories" ON categories
   FOR ALL USING (
-    auth.email() = 'admin@martialarts.com'
+    auth.email() = 'acmyma@gmail.com'
   );
 
 CREATE POLICY "Admins can manage video categories" ON video_categories
   FOR ALL USING (
-    auth.email() = 'admin@martialarts.com'
+    auth.email() = 'acmyma@gmail.com'
   );
 
 -- Add policy for admins to insert/update users (for user management)
 CREATE POLICY "Admins can manage all users" ON users
   FOR ALL USING (
-    auth.email() = 'admin@martialarts.com'
+    auth.email() = 'acmyma@gmail.com'
   );

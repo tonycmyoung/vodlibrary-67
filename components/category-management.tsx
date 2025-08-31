@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Plus, Pencil, Trash2, Tags, Loader2 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { formatShortDate } from "@/lib/utils/date"
 
 interface Category {
@@ -53,6 +53,7 @@ export default function CategoryManagement() {
 
   const fetchCategories = async () => {
     try {
+      const supabase = createClient()
       // Fetch categories with video count
       const { data, error } = await supabase
         .from("categories")
@@ -101,6 +102,7 @@ export default function CategoryManagement() {
     e.preventDefault()
 
     try {
+      const supabase = createClient()
       const categoryData = {
         name: formData.name,
         description: formData.description || null,
@@ -144,6 +146,7 @@ export default function CategoryManagement() {
     if (!confirm("Are you sure you want to delete this category? This will remove it from all videos.")) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase.from("categories").delete().eq("id", categoryId)
 
       if (error) throw error

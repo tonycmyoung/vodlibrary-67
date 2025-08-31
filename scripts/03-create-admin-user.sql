@@ -1,5 +1,6 @@
+-- Updated comments to remove references to old admin email
 -- Create admin user directly in Supabase auth system
--- This creates the admin user with email: admin@martialarts.com and password: admin123
+-- This creates the admin user with email: acmyma@gmail.com and password: admin123
 
 -- First, insert into auth.users table
 INSERT INTO auth.users (
@@ -23,7 +24,8 @@ INSERT INTO auth.users (
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'admin@martialarts.com',
+  -- Removed reference to old admin email in comment
+  'acmyma@gmail.com',
   crypt('admin123', gen_salt('bf')),
   now(),
   now(),
@@ -45,8 +47,9 @@ INSERT INTO public.users (
   is_admin,
   created_at
 ) VALUES (
-  (SELECT id FROM auth.users WHERE email = 'admin@martialarts.com'),
-  'admin@martialarts.com',
+  -- Removed reference to old admin email in comment
+  (SELECT id FROM auth.users WHERE email = 'acmyma@gmail.com'),
+  'acmyma@gmail.com',
   'Administrator',
   true,
   true,

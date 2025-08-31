@@ -79,7 +79,7 @@ CREATE POLICY "Admins can view all users" ON users
       SELECT 1 FROM users 
       WHERE id = auth.uid() 
       AND is_approved = true 
-      AND email IN (SELECT email FROM auth.users WHERE email = 'admin@martialarts.com')
+      AND email IN (SELECT email FROM auth.users WHERE email = 'acmyma@gmail.com')
     )
   );
 
@@ -100,7 +100,7 @@ CREATE POLICY "Admins can manage all videos" ON videos
       SELECT 1 FROM users 
       WHERE id = auth.uid() 
       AND is_approved = true 
-      AND email IN (SELECT email FROM auth.users WHERE email = 'admin@martialarts.com')
+      AND email IN (SELECT email FROM auth.users WHERE email = 'acmyma@gmail.com')
     )
   );
 
@@ -120,7 +120,7 @@ CREATE POLICY "Admins can manage categories" ON categories
       SELECT 1 FROM users 
       WHERE id = auth.uid() 
       AND is_approved = true 
-      AND email IN (SELECT email FROM auth.users WHERE email = 'admin@martialarts.com')
+      AND email IN (SELECT email FROM auth.users WHERE email = 'acmyma@gmail.com')
     )
   );
 
@@ -144,6 +144,6 @@ CREATE POLICY "Admins can manage video categories" ON video_categories
       SELECT 1 FROM users 
       WHERE id = auth.uid() 
       AND is_approved = true 
-      AND email IN (SELECT email FROM auth.users WHERE email = 'admin@martialarts.com')
+      AND email IN (SELECT email FROM auth.users WHERE email = 'acmyma@gmail.com')
     )
   );

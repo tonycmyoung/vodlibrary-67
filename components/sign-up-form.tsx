@@ -1,12 +1,14 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import type React from "react"
+
+import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, UserPlus } from "lucide-react"
+import { Loader2, UserPlus, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { signUp } from "@/lib/actions"
 
@@ -35,6 +37,16 @@ export default function SignUpForm() {
   const [state, formAction] = useActionState(signUp, null)
   const router = useRouter()
 
+  const [formData, setFormData] = useState({
+    fullName: "",
+    teacher: "",
+    school: "",
+    email: "",
+    password: "",
+  })
+
+  const [showPassword, setShowPassword] = useState(false)
+
   useEffect(() => {
     if (state?.success) {
       const timer = setTimeout(() => {
@@ -44,6 +56,38 @@ export default function SignUpForm() {
       return () => clearTimeout(timer)
     }
   }, [state?.success, router])
+
+  useEffect(() => {
+    if (state?.error) {
+      setFormData((prev) => ({
+        ...prev,
+        password: "", // Only clear password on error
+      }))
+    }
+  }, [state?.error])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleFormAction = (formData: FormData) => {
+    // Store current form values before submission
+    const currentData = {
+      fullName: formData.get("fullName") as string,
+      teacher: formData.get("teacher") as string,
+      school: formData.get("school") as string,
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+    }
+    setFormData(currentData)
+
+    // Call the original form action
+    formAction(formData)
+  }
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
@@ -58,7 +102,7 @@ export default function SignUpForm() {
       </CardHeader>
 
       <CardContent>
-        <form action={formAction} className="space-y-6">
+        <form action={handleFormAction} className="space-y-6">
           {state?.error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
               {state.error}
@@ -72,69 +116,97 @@ export default function SignUpForm() {
           )}
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">
-                Full Name
-              </label>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="Your full name"
-                required
-                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">
+                  Full Name
+                </label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  placeholder="Your full name"
+                  required
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="teacher" className="block text-sm font-medium text-gray-300">
-                Teacher
-              </label>
-              <Input
-                id="teacher"
-                name="teacher"
-                type="text"
-                placeholder="Your teacher's name"
-                required
-                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="teacher" className="block text-sm font-medium text-gray-300">
+                  Teacher
+                </label>
+                <Input
+                  id="teacher"
+                  name="teacher"
+                  type="text"
+                  placeholder="Your teacher's name"
+                  required
+                  value={formData.teacher}
+                  onChange={handleInputChange}
+                  className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="school" className="block text-sm font-medium text-gray-300">
+                  School
+                </label>
+                <Input
+                  id="school"
+                  name="school"
+                  type="text"
+                  placeholder="Your school/dojo name"
+                  required
+                  value={formData.school}
+                  onChange={handleInputChange}
+                  className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="school" className="block text-sm font-medium text-gray-300">
-                School
-              </label>
-              <Input
-                id="school"
-                name="school"
-                type="text"
-                placeholder="Your school/dojo name"
-                required
-                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-              />
-            </div>
+
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                 Password
               </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 italic leading-3 mt-0">
+                min 6 characters with uppercase, lowercase, number, and symbol
+              </p>
             </div>
           </div>
 

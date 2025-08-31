@@ -126,7 +126,9 @@ export default function Header({ user }: HeaderProps) {
                   className="relative h-12 w-12 rounded-full p-0 hover:bg-yellow-400/30 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/50 transition-all duration-300 border-2 border-transparent hover:border-yellow-400"
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.profile_image_url || "/placeholder.svg"} alt={user.full_name || "User"} />
+                    {user.profile_image_url && (
+                      <AvatarImage src={user.profile_image_url || "/placeholder.svg"} alt={user.full_name || "User"} />
+                    )}
                     <AvatarFallback className="bg-red-600 text-white hover:bg-yellow-600 transition-colors">
                       {initials}
                     </AvatarFallback>

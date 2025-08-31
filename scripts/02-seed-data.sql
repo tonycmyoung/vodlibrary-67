@@ -17,7 +17,7 @@ ON CONFLICT (name) DO NOTHING;
 -- To create the admin account:
 -- 1. Go to your Supabase dashboard > Authentication > Users
 -- 2. Click "Add user" 
--- 3. Email: admin@martialarts.com
+-- 3. Email: acmyma@gmail.com
 -- 4. Password: admin123 (change this after first login!)
 -- 5. Then run this script to create the profile
 
@@ -25,12 +25,12 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO users (id, email, full_name, is_approved, approved_at)
 SELECT 
   auth.uid() as id,
-  'admin@martialarts.com' as email,
+  'acmyma@gmail.com' as email,
   'System Administrator' as full_name,
   true as is_approved,
   NOW() as approved_at
 WHERE EXISTS (
-  SELECT 1 FROM auth.users WHERE email = 'admin@martialarts.com'
+  SELECT 1 FROM auth.users WHERE email = 'acmyma@gmail.com'
 )
 ON CONFLICT (email) DO UPDATE SET
   is_approved = true,

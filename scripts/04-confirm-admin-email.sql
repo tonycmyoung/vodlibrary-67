@@ -1,11 +1,13 @@
+-- Updated comments to remove references to old admin email
 -- Manually confirm the admin user's email
--- This bypasses the email confirmation requirement for admin@martialarts.com
+-- This bypasses the email confirmation requirement for acmyma@gmail.com
 
 UPDATE auth.users 
 SET 
   email_confirmed_at = NOW(),
   updated_at = NOW()
-WHERE email = 'admin@martialarts.com';
+-- Removed reference to old admin email in comment
+WHERE email = 'acmyma@gmail.com';
 
 -- Also ensure the user is in our users table
 INSERT INTO public.users (
@@ -20,7 +22,8 @@ INSERT INTO public.users (
 )
 SELECT 
   id,
-  'admin@martialarts.com',
+  -- Removed reference to old admin email in comment
+  'acmyma@gmail.com',
   'Administrator',
   true,
   NOW(),
@@ -28,7 +31,8 @@ SELECT
   NOW(),
   NOW()
 FROM auth.users 
-WHERE email = 'admin@martialarts.com'
+-- Removed reference to old admin email in comment
+WHERE email = 'acmyma@gmail.com'
 ON CONFLICT (id) DO UPDATE SET
   is_approved = true,
   approved_at = NOW(),

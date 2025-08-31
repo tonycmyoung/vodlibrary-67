@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 
@@ -41,6 +41,7 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from("users")
         .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
@@ -82,6 +83,7 @@ export default function UserManagement() {
         approved_at: !currentStatus ? new Date().toISOString() : null,
       }
 
+      const supabase = createClient()
       const { error, data } = await supabase.from("users").update(updateData).eq("id", userId).select()
 
       if (error) throw error
@@ -141,6 +143,7 @@ export default function UserManagement() {
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
+      const supabase = createClient()
       const { error } = await supabase.from("users").update({ role: newRole }).eq("id", userId)
 
       if (error) throw error

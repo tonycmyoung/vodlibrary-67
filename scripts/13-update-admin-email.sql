@@ -1,5 +1,6 @@
--- Update administrator email from admin@martialarts.com to acmyma@gmail.com
--- This script updates all references to the admin email across the database
+-- Updated script to be obsolete since all references have been updated
+-- This script is now obsolete - all admin email references have been updated to acmyma@gmail.com
+-- Originally designed to migrate from old admin email, but no longer needed
 
 -- Update RLS policies to use new admin email
 DROP POLICY IF EXISTS "Admins can view all users" ON users;
@@ -34,12 +35,7 @@ CREATE POLICY "Admins can manage all users" ON users
     auth.email() = 'acmyma@gmail.com'
   );
 
--- Update existing admin user record if it exists
-UPDATE users 
-SET email = 'acmyma@gmail.com'
-WHERE email = 'admin@martialarts.com';
-
--- Update auth.users table if the admin user exists there
-UPDATE auth.users 
-SET email = 'acmyma@gmail.com'
-WHERE email = 'admin@martialarts.com';
+-- Removed WHERE clauses that referenced old admin email since they're no longer needed
+-- These update statements are now obsolete as all references have been updated at source
+-- UPDATE users SET email = 'acmyma@gmail.com' WHERE email = 'admin@martialarts.com';
+-- UPDATE auth.users SET email = 'acmyma@gmail.com' WHERE email = 'admin@martialarts.com';
