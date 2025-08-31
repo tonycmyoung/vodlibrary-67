@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +36,8 @@ function SubmitButton() {
 export default function SignUpForm() {
   const [state, formAction] = useActionState(signUp, null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const invitationToken = searchParams.get("invitation")
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -75,6 +77,10 @@ export default function SignUpForm() {
   }
 
   const handleFormAction = (formData: FormData) => {
+    if (invitationToken) {
+      formData.append("invitationToken", invitationToken)
+    }
+
     // Store current form values before submission
     const currentData = {
       fullName: formData.get("fullName") as string,
@@ -95,9 +101,13 @@ export default function SignUpForm() {
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
           <UserPlus className="w-8 h-8 text-white" />
         </div>
-        <CardTitle className="text-3xl font-bold text-white">Join TY Kobudo Library</CardTitle>
+        <CardTitle className="text-3xl font-bold text-white">
+          {invitationToken ? "Complete Your Invitation" : "Join TY Kobudo Library"}
+        </CardTitle>
         <CardDescription className="text-gray-300 text-lg">
-          Create an account to access kobudo training videos
+          {invitationToken
+            ? "Complete your account setup to access the library"
+            : "Create an account to access kobudo training videos"}
         </CardDescription>
       </CardHeader>
 

@@ -1,79 +1,60 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
+import crypto from "crypto"
 import { Resend } from "resend"
-import { createClient } from "@/lib/supabase/server"
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { deduplicateRequest } from "./request-cache"
+import { redirect } from "next/navigation"
 
 export async function signIn(prevState: any, formData: FormData) {
-  console.log("[v0] signIn function called")
-
-  if (!formData) {
-    console.log("[v0] signIn error: Form data is missing")
-    return { error: "Form data is missing" }
-  }
-
-  const email = formData.get("email")
-  const password = formData.get("password")
-
-  console.log("[v0] signIn attempting login for email:", email)
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
 
   if (!email || !password) {
-    console.log("[v0] signIn error: Email and password are required")
     return { error: "Email and password are required" }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
 
-  try {
-    console.log("[v0] signIn calling supabase.auth.signInWithPassword")
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.toString(),
-      password: password.toString(),
-    })
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-    if (error) {
-      console.log("[v0] signIn auth error:", error.message)
-      return { error: error.message }
-    }
-
-    console.log("[v0] signIn auth successful, getting session")
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
-
-    if (sessionError || !session) {
-      console.log("[v0] signIn session error:", sessionError?.message || "No session")
-      return { error: "Failed to establish session" }
-    }
-
-    console.log("[v0] signIn session established, tracking login for user:", session.user.id)
-    await trackUserLogin(session.user.id)
-
-    console.log("[v0] signIn redirecting to home")
-    redirect("/")
-  } catch (error: any) {
-    console.log("[v0] signIn unexpected error:", error.message)
-    return { error: error.message || "An unexpected error occurred" }
+  if (error) {
+    return { error: "Invalid email or password" }
   }
+
+  redirect("/")
 }
 
 export async function signUp(prevState: any, formData: FormData) {
-  if (!formData) {
-    return { error: "Form data is missing" }
-  }
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+  const fullName = formData.get("fullName") as string
+  const school = formData.get("school") as string
+  const teacher = formData.get("teacher") as string
 
-  const email = formData.get("email")
-  const password = formData.get("password")
-  const fullName = formData.get("fullName")
-  const teacher = formData.get("teacher")
-  const school = formData.get("school")
-
-  if (!email || !password || !fullName || !teacher || !school) {
+  if (!email || !password || !fullName || !school || !teacher) {
     return { error: "All fields are required" }
   }
 
@@ -97,64 +78,58 @@ export async function signUp(prevState: any, formData: FormData) {
     },
   )
 
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email: email.toString(),
-      password: password.toString(),
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
-        data: {
-          full_name: fullName.toString(),
-        },
-      },
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo:
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  if (data.user) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error: profileError } = await serviceSupabase.from("users").insert({
+      id: data.user.id,
+      email: data.user.email,
+      full_name: fullName,
+      school,
+      teacher,
+      is_approved: false,
     })
 
-    if (error) {
-      return { error: error.message }
+    if (profileError) {
+      console.error("Error creating user profile:", profileError)
+      return { error: "Failed to create user profile" }
     }
 
-    if (data.user) {
-      const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    console.log("[v0] Attempting to clean up invitation for email:", email.toLowerCase())
 
-      const profileData = {
-        id: data.user.id,
-        email: data.user.email,
-        full_name: fullName.toString(),
-        teacher: teacher.toString(),
-        school: school.toString(),
-        role: "Student",
-        is_approved: false,
-      }
+    // Clean up invitation record if exists
+    const { data: deletedInvitations, error: deleteError } = await serviceSupabase
+      .from("invitations")
+      .delete()
+      .eq("email", email.toLowerCase())
+      .select()
 
-      const { error: profileError } = await serviceSupabase.from("users").insert(profileData)
-
-      if (profileError) {
-        console.error("Profile creation error:", profileError)
-        return { error: "Failed to create user profile. Please try again." }
-      }
-
-      try {
-        await sendNewUserNotification({
-          userEmail: email.toString(),
-          fullName: fullName.toString(),
-          teacher: teacher.toString(),
-          school: school.toString(),
-        })
-      } catch (emailError) {
-        console.error("Email notification failed:", emailError)
-        // Don't fail the signup if email fails
+    if (deleteError) {
+      console.error("[v0] Error deleting invitation record:", deleteError)
+    } else {
+      console.log("[v0] Invitation cleanup result:", deletedInvitations)
+      if (deletedInvitations && deletedInvitations.length > 0) {
+        console.log("[v0] Successfully deleted", deletedInvitations.length, "invitation record(s)")
+      } else {
+        console.log("[v0] No invitation records found to delete for email:", email.toLowerCase())
       }
     }
-
-    return {
-      success: "Check your email to confirm your account, then you can sign in.",
-    }
-  } catch (error) {
-    console.error("Sign up error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
   }
+
+  redirect("/pending-approval")
 }
 
 export async function signOut() {
@@ -178,820 +153,66 @@ export async function signOut() {
     },
   )
 
-  const { error } = await supabase.auth.signOut()
-
-  if (error) {
-    console.error("Sign out error:", error.message)
-  } else {
-    try {
-      cookieStore.set("sb-access-token", "", {
-        expires: new Date(0),
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      })
-      cookieStore.set("sb-refresh-token", "", {
-        expires: new Date(0),
-        path: "/",
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      })
-    } catch (cookieError) {
-      // Cookie clearing completed
-    }
-  }
-
+  await supabase.auth.signOut()
   redirect("/auth/login")
 }
 
-async function getAdminAuthorization(userId: string) {
-  return deduplicateRequest(`admin-auth-${userId}`, async () => {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
+export async function createAdminUser(prevState: any, formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+  const fullName = formData.get("fullName") as string
+
+  if (!email || !password || !fullName) {
+    return { error: "All fields are required" }
+  }
+
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
         },
       },
-    )
+    },
+  )
 
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      return { error: "Not authenticated" }
-    }
-
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
-
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized" }
-    }
-
-    return { success: true, user: currentUser.user }
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
   })
-}
 
-export async function approveUser(userId: string) {
-  const authResult = await getAdminAuthorization("approve-user")
-  if (authResult.error) {
-    return { error: authResult.error }
+  if (error) {
+    return { error: error.message }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
+  if (data.user) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  try {
-    const { data: currentUser } = await supabase.auth.getUser()
-
-    if (!currentUser.user) {
-      return { error: "Not authenticated" }
-    }
-
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
-
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized" }
-    }
-
-    const { data: userToApprove } = await supabase.from("users").select("email, full_name").eq("id", userId).single()
-
-    if (!userToApprove) {
-      return { error: "User not found" }
-    }
-
-    const { error } = await supabase
-      .from("users")
-      .update({
-        is_approved: true,
-        approved_by: currentUser.user.id,
-        approved_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-
-    if (error) {
-      return { error: error.message }
-    }
-
-    try {
-      await sendUserApprovalEmail({
-        recipientEmail: userToApprove.email,
-        recipientName: userToApprove.full_name,
-      })
-    } catch (emailError) {
-      console.error("Failed to send approval email:", emailError)
-      // Don't fail the approval if email fails
-    }
-
-    return { success: "User approved successfully" }
-  } catch (error) {
-    console.error("Approve user error:", error)
-    return { error: "An unexpected error occurred" }
-  }
-}
-
-export async function createAdminUser() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
-
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email: "acmyma@gmail.com",
-      password: "admin123",
-      options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000",
-        data: {
-          email_confirm: true,
-        },
-      },
+    const { error: profileError } = await serviceSupabase.from("users").insert({
+      id: data.user.id,
+      email: data.user.email,
+      full_name: fullName,
+      role: "Admin",
+      is_approved: true,
     })
 
-    if (error) {
-      return { error: error.message }
+    if (profileError) {
+      console.error("Error creating admin profile:", profileError)
+      return { error: "Failed to create admin profile" }
     }
-
-    if (data.user) {
-      const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-      const { error: profileError } = await serviceSupabase.from("users").insert({
-        id: data.user.id,
-        email: data.user.email,
-        full_name: "Administrator",
-        is_approved: true,
-        approved_by: data.user.id,
-        approved_at: new Date().toISOString(),
-      })
-
-      if (profileError) {
-        console.error("Admin profile creation error:", profileError)
-        return { error: "Failed to create admin profile" }
-      }
-    }
-
-    return { success: "Admin user created! You can now sign in with acmyma@gmail.com / admin123" }
-  } catch (error) {
-    console.error("Create admin user error:", error)
-    return { error: "An unexpected error occurred" }
-  }
-}
-
-export async function updateProfile(data: {
-  userId: string
-  email: string
-  fullName: string | null
-  profileImageUrl: string | null
-  teacher?: string | null
-  school?: string | null
-}) {
-  try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user || currentUser.user.id !== data.userId) {
-      return { error: "Not authorized" }
-    }
-
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    const updateData: any = {
-      full_name: data.fullName,
-      profile_image_url: data.profileImageUrl,
-    }
-
-    if (data.teacher !== undefined) updateData.teacher = data.teacher
-    if (data.school !== undefined) updateData.school = data.school
-
-    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", data.userId)
-
-    if (error) {
-      return { error: error.message }
-    }
-
-    return { success: "Profile updated successfully" }
-  } catch (error) {
-    console.error("Profile update error:", error)
-    return { error: "An unexpected error occurred" }
-  }
-}
-
-export async function deleteUserCompletely(userId: string, userEmail: string) {
-  try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    // Verify admin authorization
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      return { error: "Not authenticated" }
-    }
-
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
-
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized" }
-    }
-
-    // Use service role client for complete deletion
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Delete from database first
-    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
-
-    if (dbError) {
-      console.error("Database deletion error:", dbError)
-      return { error: "Failed to delete user from database" }
-    }
-
-    // Delete from Supabase auth
-    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
-
-    if (authError) {
-      console.error("Auth deletion error:", authError)
-      // Note: Database record is already deleted, but auth user remains
-      return { error: "User database record deleted, but auth user deletion failed" }
-    }
-
-    return { success: "User completely deleted from both database and authentication" }
-  } catch (error) {
-    console.error("Complete user deletion error:", error)
-    return { error: "An unexpected error occurred during deletion" }
-  }
-}
-
-export async function rejectUser(userId: string) {
-  const authResult = await getAdminAuthorization("reject-user")
-  if (authResult.error) {
-    return { error: authResult.error }
-  }
-  try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    // Verify admin authorization
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      return { error: "Not authenticated" }
-    }
-
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
-
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized" }
-    }
-
-    // Use service role client for deletion
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Delete from database first
-    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
-
-    if (dbError) {
-      console.error("Database deletion error:", dbError)
-      return { error: "Failed to reject user" }
-    }
-
-    // Delete from Supabase auth
-    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
-
-    if (authError) {
-      console.error("Auth deletion error:", authError)
-      // Database record is already deleted, but auth user remains
-    }
-
-    return { success: "User rejected and removed successfully" }
-  } catch (error) {
-    console.error("Reject user error:", error)
-    return { error: "An unexpected error occurred during rejection" }
-  }
-}
-
-export async function fetchPendingUsers() {
-  try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    // Verify admin authorization
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      return { error: "Not authenticated", data: [] }
-    }
-
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
-
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized", data: [] }
-    }
-
-    // Fetch pending users
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, email, full_name, teacher, school, created_at")
-      .eq("is_approved", false)
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      return { error: error.message, data: [] }
-    }
-
-    return { success: true, data: data || [] }
-  } catch (error) {
-    console.error("Fetch pending users error:", error)
-    return { error: "An unexpected error occurred", data: [] }
-  }
-}
-
-export async function fetchNotificationsWithSenders(userId: string) {
-  return deduplicateRequest(`notifications-${userId}`, async () => {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    try {
-      if (!userId || userId === "undefined" || userId.trim() === "") {
-        console.error("[v0] Invalid userId provided to fetchNotificationsWithSenders:", userId)
-        return { error: "Invalid user ID", data: [] }
-      }
-
-      let serviceSupabase
-      try {
-        serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-      } catch (clientError) {
-        console.error("[v0] Error creating Supabase client:", clientError)
-        return { error: "Database connection failed", data: [] }
-      }
-
-      // Fetch notifications for the user
-      const { data: notifications, error: notificationsError } = await serviceSupabase
-        .from("notifications")
-        .select("id, sender_id, message, is_read, created_at, is_broadcast")
-        .eq("recipient_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(10)
-
-      if (notificationsError) {
-        console.error("[v0] Error fetching notifications:", notificationsError)
-        return { error: "Failed to fetch notifications", data: [] }
-      }
-
-      if (!notifications || notifications.length === 0) {
-        return { success: true, data: [] }
-      }
-
-      // Get unique sender IDs
-      const senderIds = [...new Set(notifications.map((n) => n.sender_id).filter(Boolean))]
-
-      let senders, sendersError
-      try {
-        const result = await serviceSupabase
-          .from("users")
-          .select("id, full_name, email, profile_image_url")
-          .in("id", senderIds)
-
-        senders = result.data
-        sendersError = result.error
-      } catch (fetchError) {
-        console.error("[v0] Error fetching senders:", fetchError)
-        return { error: "Failed to fetch sender information", data: [] }
-      }
-
-      if (sendersError) {
-        console.error("[v0] Error fetching senders:", sendersError)
-        return { error: "Failed to fetch sender information", data: [] }
-      }
-
-      // Create sender lookup map
-      const sendersMap = (senders || []).reduce(
-        (acc, sender) => {
-          acc[sender.id] = sender
-          return acc
-        },
-        {} as Record<string, any>,
-      )
-
-      // Combine notifications with sender info
-      const notificationsWithSenders = notifications.map((notification) => ({
-        ...notification,
-        sender: sendersMap[notification.sender_id] || null,
-      }))
-
-      return { success: true, data: notificationsWithSenders }
-    } catch (error) {
-      console.error("[v0] Error in fetchNotificationsWithSenders:", error)
-      console.error("[v0] Error type:", typeof error)
-      console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
-      return { error: "An unexpected error occurred", data: [] }
-    }
-  })
-}
-
-export async function sendNotificationWithEmail({
-  recipientId,
-  message,
-  isBroadcast = false,
-}: {
-  recipientId?: string
-  message: string
-  isBroadcast?: boolean
-}) {
-  try {
-    console.log("[v0] sendNotificationWithEmail called with:", { recipientId, message, isBroadcast })
-
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Get current user (sender)
-    const { data: currentUser } = await supabase.auth.getUser()
-    if (!currentUser.user) {
-      console.log("[v0] No authenticated user found")
-      return { error: "Not authenticated" }
-    }
-    console.log("[v0] Current user found:", currentUser.user.id)
-
-    // Get sender info using service role client
-    const { data: senderInfo } = await serviceSupabase
-      .from("users")
-      .select("full_name, email")
-      .eq("id", currentUser.user.id)
-      .single()
-    console.log("[v0] Sender info:", senderInfo)
-
-    if (isBroadcast) {
-      // Get all approved users for broadcast using service role client
-      const { data: users } = await serviceSupabase
-        .from("users")
-        .select("id, email, full_name")
-        .eq("is_approved", true)
-        .neq("id", currentUser.user.id) // Don't send to sender
-
-      if (!users || users.length === 0) {
-        return { error: "No users to send broadcast to" }
-      }
-
-      // Create notifications for all users using service role client
-      const notifications = users.map((user) => ({
-        sender_id: currentUser.user!.id,
-        recipient_id: user.id,
-        message: message.trim(),
-        is_read: false,
-        is_broadcast: true,
-      }))
-
-      const { error: notificationError } = await serviceSupabase.from("notifications").insert(notifications)
-
-      if (notificationError) {
-        return { error: "Failed to send broadcast notifications" }
-      }
-
-      // Send emails to all users
-      const emailPromises = users.map((user) =>
-        sendBroadcastNotificationEmail({
-          recipientEmail: user.email,
-          recipientName: user.full_name,
-          message: message.trim(),
-        }).catch((error) => {
-          console.error(`Failed to send email to ${user.email}:`, error)
-        }),
-      )
-
-      await Promise.allSettled(emailPromises)
-
-      return { success: `Broadcast sent to ${users.length} users` }
-    } else {
-      // Individual message
-      if (!recipientId) {
-        console.log("[v0] No recipient ID provided")
-        return { error: "Recipient ID required for individual message" }
-      }
-
-      let actualRecipientId = recipientId
-      if (recipientId === "admin") {
-        console.log("[v0] Looking for admin user")
-        const { data: adminUser, error: adminError } = await serviceSupabase
-          .from("users")
-          .select("id, email")
-          .or("role.eq.admin,email.eq.acmyma@gmail.com")
-          .eq("is_approved", true)
-          .limit(1)
-          .single()
-
-        console.log("[v0] Admin lookup result:", { adminUser, adminError })
-
-        if (!adminUser) {
-          console.log("[v0] No admin user found")
-          return { error: "No admin user found. Please ensure an admin user exists." }
-        }
-        actualRecipientId = adminUser.id
-        console.log("[v0] Using admin user ID:", actualRecipientId)
-      }
-
-      // Get recipient info using the actual recipient ID and service role client
-      console.log("[v0] Looking up recipient info for ID:", actualRecipientId)
-      const { data: recipientInfo, error: recipientError } = await serviceSupabase
-        .from("users")
-        .select("email, full_name")
-        .eq("id", actualRecipientId)
-        .single()
-
-      console.log("[v0] Recipient lookup result:", { recipientInfo, recipientError })
-
-      if (!recipientInfo) {
-        console.log("[v0] Recipient not found")
-        return { error: "Recipient not found" }
-      }
-
-      console.log("[v0] Creating notification in database")
-      const { error: notificationError } = await serviceSupabase.from("notifications").insert({
-        sender_id: currentUser.user.id,
-        recipient_id: actualRecipientId,
-        message: message.trim(),
-        is_read: false,
-        is_broadcast: false,
-      })
-
-      console.log("[v0] Notification creation result:", { notificationError })
-
-      if (notificationError) {
-        console.log("[v0] Failed to create notification:", notificationError.message)
-        return { error: "Failed to send notification" }
-      }
-
-      // Send email
-      console.log("[v0] Attempting to send email")
-      try {
-        await sendNotificationEmail({
-          recipientEmail: recipientInfo.email,
-          recipientName: recipientInfo.full_name,
-          senderName: senderInfo?.full_name || null,
-          message: message.trim(),
-          isFromAdmin: senderInfo?.email === "acmyma@gmail.com",
-        })
-        console.log("[v0] Email sent successfully")
-      } catch (emailError) {
-        console.error("[v0] Failed to send notification email:", emailError)
-        console.error("[v0] Email error details:", {
-          message: emailError.message,
-          recipientEmail: recipientInfo.email,
-          isFromAdmin: senderInfo?.email === "acmyma@gmail.com",
-        })
-        // Don't fail the notification if email fails
-      }
-
-      console.log("[v0] Message sent successfully")
-      return { success: "Message sent successfully" }
-    }
-  } catch (error) {
-    console.error("[v0] Error in sendNotificationWithEmail:", error)
-    return { error: "An unexpected error occurred" }
-  }
-}
-
-export async function changePassword(prevState: any, formData: FormData) {
-  if (!formData) {
-    return { error: "Form data is missing" }
   }
 
-  const currentPassword = formData.get("currentPassword")
-  const newPassword = formData.get("newPassword")
-  const confirmPassword = formData.get("confirmPassword")
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: "All password fields are required" }
-  }
-
-  if (newPassword !== confirmPassword) {
-    return { error: "New passwords do not match" }
-  }
-
-  if (newPassword.toString().length < 6) {
-    return { error: "New password must be at least 6 characters long" }
-  }
-
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
-
-  try {
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      return { error: "Auth session missing!" }
-    }
-
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Update password using admin API (server-side, no BroadcastChannel issues)
-    const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(user.id, {
-      password: newPassword.toString(),
-    })
-
-    if (updateError) {
-      return { error: updateError.message || "Failed to update password" }
-    }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: newPassword.toString(),
-    })
-
-    if (signInError) {
-      // Password was updated but session refresh failed - user will need to login manually
-      return { error: "Password updated but session refresh failed. Please log in again." }
-    }
-
-    return { success: "Password updated successfully" }
-  } catch (error) {
-    console.error("Change password error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
-  }
+  redirect("/")
 }
 
 export async function inviteUser(email: string) {
@@ -1022,852 +243,496 @@ export async function inviteUser(email: string) {
       return { error: "Not authenticated" }
     }
 
-    // Use service role client for admin operations
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    // Get current user details
+    const { data: inviterUser } = await supabase
+      .from("users")
+      .select("full_name, email")
+      .eq("id", currentUser.user.id)
+      .single()
 
-    try {
-      const { data: existingUser, error: checkError } = await serviceSupabase
-        .from("users")
-        .select("id, email, is_approved")
-        .eq("email", email.toLowerCase())
-        .not("is_approved", "is", null) // Only users who have completed registration
-        .single()
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking existing user:", checkError)
-        return { error: "Failed to validate user" }
-      }
-
-      if (existingUser) {
-        return { error: "This user is already registered. No invitation needed." }
-      }
-
-      const { data: authUsers, error: authError } = await serviceSupabase.auth.admin.listUsers()
-
-      if (authError) {
-        console.error("Error checking auth users:", authError)
-        return { error: "Failed to validate user" }
-      }
-
-      const existingAuthUser = authUsers.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())
-
-      if (existingAuthUser) {
-        const { error: deleteError } = await serviceSupabase.auth.admin.deleteUser(existingAuthUser.id)
-
-        if (deleteError) {
-          console.error("Error deleting existing auth user:", deleteError)
-          return { error: "Failed to resend invitation" }
-        }
-      }
-
-      const { data, error } = await serviceSupabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
-      })
-
-      if (error) {
-        console.error("Supabase invite error:", error.message)
-        return { error: "Failed to send invitation: " + error.message }
-      }
-
-      const successMessage = existingAuthUser ? "Invitation resent successfully" : "Invitation sent successfully"
-
-      return { success: successMessage, data }
-    } catch (inviteError: any) {
-      console.error("Invite process error:", inviteError.message)
-      return { error: "Failed to send invitation" }
-    }
-  } catch (error: any) {
-    console.error("General invite error:", error.message)
-    return { error: "Failed to send invitation" }
-  }
-}
-
-function createServiceClient() {
-  return createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-}
-
-function createServiceRoleClient() {
-  return createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-}
-
-export async function saveVideo(formData: any) {
-  try {
-    const cookieStore = cookies()
-    const regularSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          },
-        },
-      },
-    )
-    const serviceSupabase = createServiceRoleClient()
-
-    // Get current user from regular client
-    const {
-      data: { user },
-      error: userError,
-    } = await regularSupabase.auth.getUser()
-    if (userError || !user) {
-      return { error: "Authentication required" }
+    if (!inviterUser) {
+      return { error: "User profile not found" }
     }
 
-    const isAdmin = user.email === "acmyma@gmail.com"
-    if (!isAdmin) {
-      return { error: "Admin access required" }
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Check if user already exists and is registered
+    const { data: existingUser, error: checkError } = await serviceSupabase
+      .from("users")
+      .select("id, email, is_approved")
+      .eq("email", email.toLowerCase())
+      .single()
+
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Error checking existing user:", checkError)
+      return { error: "Failed to validate user" }
     }
 
-    const { id, category_ids, performer_ids, ...videoFields } = formData
-
-    let videoResult
-    if (id) {
-      // Update existing video using service role client
-      const { data, error } = await serviceSupabase.from("videos").update(videoFields).eq("id", id).select().single()
-
-      if (error) throw error
-      videoResult = data
-    } else {
-      // Create new video using service role client
-      const { data, error } = await serviceSupabase
-        .from("videos")
-        .insert({
-          ...videoFields,
-          created_by: user.id,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      videoResult = data
+    if (existingUser) {
+      return { error: "This user is already registered. No invitation needed." }
     }
 
-    const videoId = videoResult.id
+    // Check if there's already a pending invitation
+    const { data: existingInvitation } = await serviceSupabase
+      .from("invitations")
+      .select("id, expires_at")
+      .eq("email", email.toLowerCase())
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .single()
 
-    // Handle categories
-    if (category_ids && category_ids.length > 0) {
-      // Delete existing categories
-      await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
-
-      // Insert new categories
-      const categoryInserts = category_ids.map((category_id: string) => ({
-        video_id: videoId,
-        category_id,
-      }))
-
-      const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
-      if (categoryError) throw categoryError
+    if (existingInvitation) {
+      return { error: "An invitation has already been sent to this email address." }
     }
 
-    // Handle performers
-    if (performer_ids && performer_ids.length > 0) {
-      // Delete existing performers
-      await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
+    // Generate secure invitation token
+    const invitationToken = crypto.randomUUID()
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
 
-      // Insert new performers
-      const performerInserts = performer_ids.map((performer_id: string) => ({
-        video_id: videoId,
-        performer_id,
-      }))
+    // Create invitation record
+    const { error: inviteError } = await serviceSupabase.from("invitations").insert({
+      email: email.toLowerCase(),
+      invited_by: currentUser.user.id,
+      token: invitationToken,
+      expires_at: expiresAt.toISOString(),
+      status: "pending",
+    })
 
-      const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
-      if (performerError) throw performerError
+    if (inviteError) {
+      console.error("Error creating invitation:", inviteError)
+      return { error: "Failed to create invitation" }
     }
 
-    return { success: id ? "Video updated successfully" : "Video created successfully" }
-  } catch (error: any) {
-    console.error("Error saving video:", error.message)
-    return { error: `Error saving video: ${error.message}` }
+    // Send invitation email using Resend
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL!,
+      to: email,
+      subject: "You're invited to join TY Kobudo Library",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">You're Invited!</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              ${inviterUser.full_name} has invited you to join the TY Kobudo Library.
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+              This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXT_PUBLIC_SITE_URL}/auth/sign-up" 
+                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+                Accept Invitation
+              </a>
+            </div>
+            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+              This invitation will expire in 7 days.
+            </p>
+          </div>
+        </div>
+      `,
+    })
+
+    return { success: "Invitation sent successfully" }
+  } catch (emailError) {
+    console.error("Failed to send invitation email:", emailError)
+    return { error: "Failed to send invitation email" }
   }
 }
 
 export async function incrementVideoViews(videoId: string) {
   try {
-    const supabase = createServiceRoleClient()
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get current views count
-    const { data: currentVideo, error: fetchError } = await supabase
-      .from("videos")
-      .select("views")
-      .eq("id", videoId)
-      .single()
-
-    if (fetchError) {
-      console.error("Error fetching current views:", fetchError)
-      return
-    }
-
-    const newViews = (currentVideo?.views || 0) + 1
-    const currentTimestamp = new Date().toISOString()
-
-    const { error: updateError } = await supabase
-      .from("videos")
-      .update({
-        views: newViews,
-        last_viewed: currentTimestamp,
-      })
-      .eq("id", videoId)
-
-    if (updateError) {
-      console.error("Error updating views:", updateError)
-      return
-    }
-  } catch (error) {
-    console.error("incrementVideoViews - Unexpected error:", error)
-  }
-}
-
-export async function trackUserLogin(userId: string) {
-  try {
-    console.log("[v0] Tracking login for user:", userId)
-
-    const supabase = createServiceRoleClient()
-
-    const { error } = await supabase.from("user_logins").insert({
-      user_id: userId,
-      login_time: new Date().toISOString(),
+    const { error } = await serviceSupabase.rpc("increment_video_views", {
+      video_id: videoId,
     })
 
     if (error) {
-      console.error("[v0] Error tracking login:", error)
-      return { error: "Failed to track login" }
+      console.error("Error incrementing video views:", error)
+      return { error: "Failed to increment video views" }
     }
 
-    console.log("[v0] Login tracked successfully")
     return { success: true }
   } catch (error) {
-    console.error("[v0] trackUserLogin error:", error)
-    return { error: "An unexpected error occurred tracking login" }
+    console.error("Error in incrementVideoViews:", error)
+    return { error: "Failed to increment video views" }
   }
 }
 
-export async function getTelemetryData() {
+export async function fetchNotificationsWithSenders(userId: string) {
   try {
-    const serviceSupabase = createServiceRoleClient()
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const today = new Date()
-    const currentDay = today.getDay() // Sunday = 0, Monday = 1, etc.
+    const { data, error } = await serviceSupabase
+      .from("notifications")
+      .select(`
+        id,
+        sender_id,
+        message,
+        is_read,
+        created_at,
+        sender:users!sender_id (
+          full_name,
+          email,
+          profile_image_url
+        )
+      `)
+      .eq("recipient_id", userId)
+      .order("created_at", { ascending: false })
 
-    // Calculate Monday of current week (date only)
-    const thisWeekStart = new Date(today)
-    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1 // Sunday = 6 days from Monday
-    thisWeekStart.setDate(today.getDate() - daysFromMonday)
-
-    // Set to start of day for consistent date-only comparison
-    const thisWeekStartDate = thisWeekStart.toISOString().split("T")[0] // YYYY-MM-DD format
-
-    const lastWeekStart = new Date(thisWeekStart)
-    lastWeekStart.setDate(thisWeekStart.getDate() - 7)
-    const lastWeekStartDate = lastWeekStart.toISOString().split("T")[0] // YYYY-MM-DD format
-
-    const todayDate = today.toISOString().split("T")[0] // YYYY-MM-DD format
-
-    console.log("[v0] Telemetry date ranges:", {
-      thisWeekStart: thisWeekStartDate,
-      lastWeekStart: lastWeekStartDate,
-      today: todayDate,
-    })
-
-    const [totalViewsResult, thisWeekVideosResult, lastWeekVideosResult, thisWeekLoginsResult, lastWeekLoginsResult] =
-      await Promise.all([
-        // Total views across all videos
-        serviceSupabase
-          .from("videos")
-          .select("views")
-          .not("views", "is", null),
-
-        // Videos viewed this week (using date-only comparison)
-        serviceSupabase
-          .from("videos")
-          .select("id")
-          .gte("last_viewed", thisWeekStartDate)
-          .lte("last_viewed", todayDate + "T23:59:59.999Z"),
-
-        // Videos viewed last week (using date-only comparison)
-        serviceSupabase
-          .from("videos")
-          .select("id")
-          .gte("last_viewed", lastWeekStartDate)
-          .lt("last_viewed", thisWeekStartDate),
-
-        // User logins this week (using date-only comparison)
-        serviceSupabase
-          .from("user_logins")
-          .select("id", { count: "exact" })
-          .gte("login_time", thisWeekStartDate)
-          .lte("login_time", todayDate + "T23:59:59.999Z"),
-
-        // User logins last week (using date-only comparison)
-        serviceSupabase
-          .from("user_logins")
-          .select("id", { count: "exact" })
-          .gte("login_time", lastWeekStartDate)
-          .lt("login_time", thisWeekStartDate),
-      ])
-
-    // Calculate total views
-    const totalViews = totalViewsResult.data?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
-
-    // Count unique videos viewed in each period
-    const thisWeekViews = thisWeekVideosResult.data?.length || 0
-    const lastWeekViews = lastWeekVideosResult.data?.length || 0
-
-    const telemetryData = {
-      totalViews,
-      thisWeekViews,
-      lastWeekViews,
-      thisWeekUserLogins: thisWeekLoginsResult.count || 0,
-      lastWeekUserLogins: lastWeekLoginsResult.count || 0,
+    if (error) {
+      console.error("Error fetching notifications with senders:", error)
+      return { error: "Failed to fetch notifications", data: [] }
     }
 
-    console.log("[v0] Telemetry data:", telemetryData)
-
-    return {
-      success: true,
-      data: telemetryData,
-    }
+    return { data: data || [], error: null }
   } catch (error) {
-    console.error("[v0] Error fetching telemetry data:", error)
-    return {
-      success: false,
-      data: {
-        totalViews: 0,
-        thisWeekViews: 0,
-        lastWeekViews: 0,
-        thisWeekUserLogins: 0,
-        lastWeekUserLogins: 0,
-      },
-    }
+    console.error("Error in fetchNotificationsWithSenders:", error)
+    return { error: "Failed to fetch notifications", data: [] }
   }
 }
 
-async function sendNewUserNotification({
-  userEmail,
-  fullName,
-  teacher,
-  school,
-}: {
-  userEmail: string
-  fullName: string
-  teacher: string
-  school: string
-}) {
-  if (!process.env.RESEND_API_KEY) {
-    return
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY)
-
-  const emailContent = `
-    <h2>New User Registration Requires Approval</h2>
-    <p>A new user has registered and is waiting for approval:</p>
-    
-    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-      <p><strong>Name:</strong> ${fullName}</p>
-      <p><strong>Email:</strong> ${userEmail}</p>
-      <p><strong>Teacher:</strong> ${teacher}</p>
-      <p><strong>School:</strong> ${school}</p>
-    </div>
-    
-    <p>Please log in to the admin panel to approve or review this user registration.</p>
-    
-    <p><a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/admin" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Admin Panel</a></p>
-  `
-
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL || "noreply@yourdomain.com",
-    to: "acmyma@gmail.com",
-    subject: `New User Registration: ${fullName}`,
-    html: emailContent,
-  })
-}
-
-async function sendNotificationEmail({
-  recipientEmail,
-  recipientName,
-  senderName,
-  message,
-  isFromAdmin = false,
-}: {
-  recipientEmail: string
-  recipientName: string | null
-  senderName: string | null
-  message: string
-  isFromAdmin?: boolean
-}) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("[v0] No RESEND_API_KEY found, skipping email")
-    return
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY)
-
-  console.log("[v0] Email parameters:", {
-    recipientEmail,
-    recipientName,
-    senderName,
-    isFromAdmin,
-    messageLength: message.length,
-  })
-
-  const emailSubject = `New Message from the TY Kobudo Library`
-  console.log("[v0] Email subject:", emailSubject)
-
-  const emailContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${emailSubject}</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
-            <tr>
-                <td align="center">
-                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
-                        <tr>
-                            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                                <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
-                                <p style="color: #f0f0f0; margin: 5px 0 0 0;">New Message Notification</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 30px; background: #ffffff;">
-                                <h2 style="color: #333; margin-top: 0;">You have a new message!</h2>
-                                <p style="color: #666; margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
-                                    Hello ${recipientName || "there"}, you've received a new message in your TY Kobudo Library account.
-                                </p>
-                                
-                                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isFromAdmin ? "#6f42c1" : "#dc3545"};">
-                                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px; font-weight: bold;">
-                                        From: ${senderName || "Unknown User"}${isFromAdmin ? " (Administrator)" : ""}
-                                    </p>
-                                    <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
-                                        <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
-                                            "${message}"
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <p style="color: #666; margin: 20px 0;">
-                                    To view and respond to this message, please log in to your account:
-                                </p>
-                                
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
-                                       style="background: ${isFromAdmin ? "#6f42c1" : "#dc3545"}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                                        View Message
-                                    </a>
-                                </div>
-                                
-                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                
-                                <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-                                    This is an automated notification from TY Kobudo Library.<br>
-                                    Please do not reply to this email.
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </body>
-    </html>
-  `
-
-  console.log("[v0] Attempting to send email via Resend")
-  console.log("[v0] From address:", process.env.FROM_EMAIL || "noreply@tykobudolibrary.com")
-  console.log("[v0] To address:", recipientEmail)
-
+export async function fetchPendingUsers() {
   try {
-    const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
-      to: recipientEmail,
-      subject: emailSubject,
-      html: emailContent,
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    console.log("[v0] Resend API response:", result)
+    const { data, error } = await serviceSupabase
+      .from("users")
+      .select("*")
+      .eq("is_approved", false)
+      .order("created_at", { ascending: false })
 
-    if (result.error) {
-      console.error("[v0] Resend API returned error:", result.error)
-      if (
-        result.error.message &&
-        result.error.message.includes("You can only send testing emails to your own email address")
-      ) {
-        console.log("[v0] Resend is in testing mode - email delivery skipped but notification created successfully")
-        return
-      }
-      throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`)
+    if (error) {
+      console.error("Error fetching pending users:", error)
+      return { error: "Failed to fetch pending users", data: [] }
     }
 
-    if (!result.data?.id) {
-      console.error("[v0] Resend API returned no message ID")
-      throw new Error("Email sending failed - no message ID returned")
-    }
-
-    console.log("[v0] Email send successful, message ID:", result.data.id)
+    return { data: data || [], error: null }
   } catch (error) {
-    console.error("[v0] Resend API error:", error)
-    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
-      console.log("[v0] Resend is in testing mode - email delivery skipped but notification created successfully")
-      return
-    }
-    console.error("[v0] Error details:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-    })
-    throw error
+    console.error("Error in fetchPendingUsers:", error)
+    return { error: "Failed to fetch pending users", data: [] }
   }
 }
 
-async function sendBroadcastNotificationEmail({
-  recipientEmail,
-  recipientName,
-  message,
-}: {
-  recipientEmail: string
-  recipientName: string | null
-  message: string
-}) {
-  if (!process.env.RESEND_API_KEY) {
-    return
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY)
-
-  const emailContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
-        <p style="color: #f0f0f0; margin: 5px 0 0 0;">Important Announcement</p>
-      </div>
-      
-      <div style="padding: 30px; background: #ffffff;">
-        <h2 style="color: #333; margin-top: 0;">Message from Administrator</h2>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6f42c1;">
-          <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.5;">
-            ${message}
-          </p>
-        </div>
-        
-        <p style="color: #666; margin: 20px 0;">
-          This message has been sent to all users. Please log in to your account to view it:
-        </p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
-             style="background: #6f42c1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-            View Message
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-          This is an automated notification from TY Kobudo Library.<br>
-          Please do not reply to this email.
-        </p>
-      </div>
-    </div>
-  `
-
+export async function approveUser(userId: string) {
   try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Get user details for email
+    const { data: user, error: userError } = await serviceSupabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userId)
+      .single()
+
+    if (userError || !user) {
+      console.error("Error fetching user:", userError)
+      return { error: "User not found" }
+    }
+
+    const { error } = await serviceSupabase.from("users").update({ is_approved: true }).eq("id", userId)
+
+    if (error) {
+      console.error("Error approving user:", error)
+      return { error: "Failed to approve user" }
+    }
+
+    // Send approval email
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || "noreply@tykobudolibrary.com",
-      to: recipientEmail,
-      subject: "Important Message from TY Kobudo Library Administrator",
-      html: emailContent,
-    })
-  } catch (error) {
-    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
-      console.log("[v0] Resend is in testing mode - broadcast email delivery skipped")
-      return
-    }
-    throw error
-  }
-}
-
-async function sendUserApprovalEmail({
-  recipientEmail,
-  recipientName,
-}: {
-  recipientEmail: string
-  recipientName: string | null
-}) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("No RESEND_API_KEY found, skipping approval email")
-    return
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY)
-
-  const emailSubject = "Your TY Kobudo Library Account Has Been Approved!"
-
-  const emailContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${emailSubject}</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
-            <tr>
-                <td align="center">
-                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
-                        <tr>
-                            <td style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                                <h1 style="color: white; margin: 0; font-size: 24px;">TY Kobudo Library</h1>
-                                <p style="color: #f0f0f0; margin: 5px 0 0 0;">Account Approved</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 30px; background: #ffffff;">
-                                <h2 style="color: #333; margin-top: 0;">Welcome to the TY Kobudo Library!</h2>
-                                <p style="color: #666; margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
-                                    Hello ${recipientName || "there"}, great news! Your account has been approved by the administrator.
-                                </p>
-                                
-                                <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-                                    <p style="margin: 0; color: #166534; font-size: 16px; line-height: 1.5; font-weight: bold;">
-                                        🎉 Your access to the martial arts video library is now active!
-                                    </p>
-                                </div>
-                                
-                                <p style="color: #666; margin: 20px 0; font-size: 16px; line-height: 1.5;">
-                                    You can now access all the exclusive martial arts training videos, techniques, and resources available in our library. 
-                                    This collection is specifically curated for Matayoshi/Okinawa Kobudo Australia students.
-                                </p>
-                                
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}" 
-                                       style="background: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                                        Access Your Library
-                                    </a>
-                                </div>
-                                
-                                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;">
-                                        <strong>What you can do now:</strong><br>
-                                        • Browse and watch training videos<br>
-                                        • Access technique demonstrations<br>
-                                        • View your favorites and track progress<br>
-                                        • Contact the administrator with questions
-                                    </p>
-                                </div>
-                                
-                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                
-                                <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-                                    This is an automated notification from TY Kobudo Library.<br>
-                                    If you have any questions, please contact us at acmyma@gmail.com
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </body>
-    </html>
-  `
-
-  try {
-    const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || "noreply@tykobudo.com.au",
-      to: recipientEmail,
-      subject: emailSubject,
-      html: emailContent,
+      from: process.env.FROM_EMAIL!,
+      to: user.email,
+      subject: "Your TY Kobudo Library account has been approved!",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to TY Kobudo Library!</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              Hi ${user.full_name},
+            </p>
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              Great news! Your account has been approved and you now have access to the TY Kobudo Library.
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+              You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXT_PUBLIC_SITE_URL}" 
+                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+                Access Library
+              </a>
+            </div>
+            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+              Happy training!
+            </p>
+          </div>
+        </div>
+      `,
     })
 
-    if (result.error) {
-      if (
-        result.error.message &&
-        result.error.message.includes("You can only send testing emails to your own email address")
-      ) {
-        console.log("Resend is in testing mode - approval email delivery skipped")
-        return
-      }
-      throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`)
-    }
-
-    console.log("User approval email sent successfully, message ID:", result.data?.id)
+    return { success: "User approved successfully" }
   } catch (error) {
-    console.error("Failed to send user approval email:", error)
-    if (error.message && error.message.includes("You can only send testing emails to your own email address")) {
-      console.log("Resend is in testing mode - approval email delivery skipped")
-      return
-    }
-    throw error
+    console.error("Error in approveUser:", error)
+    return { error: "Failed to approve user" }
   }
 }
 
-function parseCookieHeader(cookieHeader: string): { name: string; value: string; options: any }[] {
-  return cookieHeader.split(";").map((cookie) => {
-    const [name, value] = cookie.trim().split("=")
-    return { name: name.trim(), value: value?.trim() || "", options: {} }
-  })
+export async function rejectUser(userId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.from("users").delete().eq("id", userId)
+
+    if (error) {
+      console.error("Error rejecting user:", error)
+      return { error: "Failed to reject user" }
+    }
+
+    return { success: "User rejected successfully" }
+  } catch (error) {
+    console.error("Error in rejectUser:", error)
+    return { error: "Failed to reject user" }
+  }
 }
 
-export async function addPerformer(name: string) {
+export async function deleteUserCompletely(userId: string) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Delete user from public.users table first
+    const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
+
+    if (publicError) {
+      console.error("Error deleting user from public.users:", publicError)
+      return { error: "Failed to delete user profile" }
+    }
+
+    // Then delete from auth system (this might fail if user doesn't exist in auth)
+    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      // Log the auth error but don't fail the operation if public user was deleted
+      console.error("Error deleting user from auth (user may not exist in auth):", authError)
+    }
+
+    return { success: "User deleted successfully" }
+  } catch (error) {
+    console.error("Error in deleteUserCompletely:", error)
+    return { error: "Failed to delete user" }
+  }
+}
+
+export async function updateProfile(prevState: any, formData: FormData) {
+  const fullName = formData.get("fullName") as string
+  const school = formData.get("school") as string
+  const teacher = formData.get("teacher") as string
+
+  if (!fullName || !school || !teacher) {
+    return { error: "All fields are required" }
+  }
+
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
         },
       },
-    )
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    },
+  )
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return { error: "Not authenticated" }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: "Not authenticated" }
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      full_name: fullName,
+      school,
+      teacher,
+    })
+    .eq("id", user.id)
+
+  if (error) {
+    console.error("Error updating profile:", error)
+    return { error: "Failed to update profile" }
+  }
+
+  return { success: "Profile updated successfully" }
+}
+
+export async function changePassword(prevState: any, formData: FormData) {
+  const currentPassword = formData.get("currentPassword") as string
+  const newPassword = formData.get("newPassword") as string
+  const confirmPassword = formData.get("confirmPassword") as string
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { error: "All fields are required" }
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { error: "New passwords do not match" }
+  }
+
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+
+  if (error) {
+    console.error("Error changing password:", error)
+    return { error: "Failed to change password" }
+  }
+
+  return { success: "Password changed successfully" }
+}
+
+export async function saveVideo(prevState: any, formData: FormData) {
+  const title = formData.get("title") as string
+  const description = formData.get("description") as string
+  const videoUrl = formData.get("videoUrl") as string
+  const thumbnailUrl = formData.get("thumbnailUrl") as string
+  const performerId = formData.get("performerId") as string
+
+  if (!title || !videoUrl || !performerId) {
+    return { error: "Title, video URL, and performer are required" }
+  }
+
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.from("videos").insert({
+      title,
+      description,
+      video_url: videoUrl,
+      thumbnail_url: thumbnailUrl,
+      performer_id: performerId,
+    })
+
+    if (error) {
+      console.error("Error saving video:", error)
+      return { error: "Failed to save video" }
     }
 
-    const { error } = await serviceSupabase.from("performers").insert([{ name: name.trim() }])
+    return { success: "Video saved successfully" }
+  } catch (error) {
+    console.error("Error in saveVideo:", error)
+    return { error: "Failed to save video" }
+  }
+}
+
+export async function addPerformer(prevState: any, formData: FormData) {
+  const name = formData.get("name") as string
+  const bio = formData.get("bio") as string
+
+  if (!name) {
+    return { error: "Name is required" }
+  }
+
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.from("performers").insert({
+      name,
+      bio,
+    })
 
     if (error) {
       console.error("Error adding performer:", error)
       return { error: "Failed to add performer" }
     }
 
-    return { success: true }
+    return { success: "Performer added successfully" }
   } catch (error) {
-    console.error("Unexpected error adding performer:", error)
-    return { error: "An unexpected error occurred" }
+    console.error("Error in addPerformer:", error)
+    return { error: "Failed to add performer" }
   }
 }
 
-export async function updatePerformer(id: string, name: string) {
+export async function updatePerformer(performerId: string, name: string, bio: string) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return { error: "Not authenticated" }
-    }
-
-    const { error } = await serviceSupabase.from("performers").update({ name: name.trim() }).eq("id", id)
+    const { error } = await serviceSupabase.from("performers").update({ name, bio }).eq("id", performerId)
 
     if (error) {
       console.error("Error updating performer:", error)
       return { error: "Failed to update performer" }
     }
 
-    return { success: true }
+    return { success: "Performer updated successfully" }
   } catch (error) {
-    console.error("Unexpected error updating performer:", error)
-    return { error: "An unexpected error occurred" }
+    console.error("Error in updatePerformer:", error)
+    return { error: "Failed to update performer" }
   }
 }
 
-export async function deletePerformer(id: string) {
+export async function deletePerformer(performerId: string) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return { error: "Not authenticated" }
-    }
+    const { error } = await serviceSupabase.from("performers").delete().eq("id", performerId)
 
-    // First delete all video_performer relationships
-    const { error: relationError } = await serviceSupabase.from("video_performers").delete().eq("performer_id", id)
-
-    if (relationError) {
-      console.error("Error deleting performer relationships:", relationError)
-      return { error: "Failed to delete performer relationships" }
-    }
-
-    // Then delete the performer
-    const { error: performerError } = await serviceSupabase.from("performers").delete().eq("id", id)
-
-    if (performerError) {
-      console.error("Error deleting performer:", performerError)
+    if (error) {
+      console.error("Error deleting performer:", error)
       return { error: "Failed to delete performer" }
     }
 
-    return { success: true }
+    return { success: "Performer deleted successfully" }
   } catch (error) {
-    console.error("Unexpected error deleting performer:", error)
-    return { error: "An unexpected error occurred" }
+    console.error("Error in deletePerformer:", error)
+    return { error: "Failed to delete performer" }
   }
 }
 
-export async function deleteUser(userId: string) {
-  const authResult = await getAdminAuthorization("delete-user")
-  if (authResult.error) {
-    return { error: authResult.error }
+export async function sendNotificationWithEmail(prevState: any, formData: FormData) {
+  const message = formData.get("message") as string
+  const recipientId = formData.get("recipientId") as string
+  const isBroadcast = formData.get("isBroadcast") === "true"
+
+  if (!message) {
+    return { error: "Message is required" }
   }
 
   try {
@@ -1891,45 +756,132 @@ export async function deleteUser(userId: string) {
       },
     )
 
-    // Verify admin authorization
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
       return { error: "Not authenticated" }
     }
 
-    const { data: adminCheck } = await supabase
-      .from("users")
-      .select("email, is_approved")
-      .eq("id", currentUser.user.id)
-      .single()
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
-    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
-      return { error: "Not authorized" }
+    if (isBroadcast) {
+      // Send to all approved users
+      const { data: users } = await serviceSupabase.from("users").select("id, email, full_name").eq("is_approved", true)
+
+      if (users) {
+        for (const user of users) {
+          await serviceSupabase.from("notifications").insert({
+            sender_id: currentUser.user.id,
+            recipient_id: user.id,
+            message,
+          })
+
+          await resend.emails.send({
+            from: process.env.FROM_EMAIL!,
+            to: user.email,
+            subject: "New notification from TY Kobudo Library",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #1f2937; padding: 20px; text-align: center;">
+                  <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+                </div>
+                <div style="background: #f9fafb; padding: 30px;">
+                  <p style="font-size: 16px; color: #374151;">Hi ${user.full_name},</p>
+                  <p style="font-size: 16px; color: #374151;">${message}</p>
+                </div>
+              </div>
+            `,
+          })
+        }
+      }
+    } else {
+      // Send to specific user
+      if (!recipientId) {
+        return { error: "Recipient is required for individual messages" }
+      }
+
+      const { data: recipient } = await serviceSupabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", recipientId)
+        .single()
+
+      if (!recipient) {
+        return { error: "Recipient not found" }
+      }
+
+      await serviceSupabase.from("notifications").insert({
+        sender_id: currentUser.user.id,
+        recipient_id: recipientId,
+        message,
+      })
+
+      await resend.emails.send({
+        from: process.env.FROM_EMAIL!,
+        to: recipient.email,
+        subject: "New notification from TY Kobudo Library",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #1f2937; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px;">
+              <p style="font-size: 16px; color: #374151;">Hi ${recipient.full_name},</p>
+              <p style="font-size: 16px; color: #374151;">${message}</p>
+            </div>
+          </div>
+        `,
+      })
     }
 
-    // Use service role client for complete deletion
-    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Delete from database first
-    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
-
-    if (dbError) {
-      console.error("Database deletion error:", dbError)
-      return { error: "Failed to delete user from database" }
-    }
-
-    // Delete from Supabase auth
-    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
-
-    if (authError) {
-      console.error("Auth deletion error:", authError)
-      // Note: Database record is already deleted, but auth user remains
-      return { error: "User database record deleted, but auth user deletion failed" }
-    }
-
-    return { success: "User completely deleted from both database and authentication" }
+    return { success: "Notification sent successfully" }
   } catch (error) {
-    console.error("Complete user deletion error:", error)
-    return { error: "An unexpected error occurred during deletion" }
+    console.error("Error sending notification:", error)
+    return { error: "Failed to send notification" }
+  }
+}
+
+export async function getTelemetryData() {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+
+    // Get video views this week
+    const { data: videoViews } = await serviceSupabase
+      .from("videos")
+      .select("views")
+      .gte("last_viewed", startOfWeek.toISOString())
+      .lte("last_viewed", endOfWeek.toISOString())
+
+    const thisWeekViews = videoViews?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+
+    // Get user logins this week
+    const { data: userLogins } = await serviceSupabase
+      .from("user_logins")
+      .select("user_id")
+      .gte("login_date", startOfWeek.toDateString())
+      .lte("login_date", endOfWeek.toDateString())
+
+    const uniqueUsers = new Set(userLogins?.map((login) => login.user_id) || [])
+    const thisWeekUserLogins = uniqueUsers.size
+
+    return {
+      thisWeekViews,
+      thisWeekUserLogins,
+    }
+  } catch (error) {
+    console.error("Error getting telemetry data:", error)
+    return {
+      thisWeekViews: 0,
+      thisWeekUserLogins: 0,
+    }
   }
 }
