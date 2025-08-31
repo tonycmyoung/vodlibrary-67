@@ -40,12 +40,14 @@ export async function GET(request: NextRequest) {
       }
 
       if (data.session?.user) {
-        // Check if this is an invite acceptance by looking for user metadata
-        const isInvite =
-          data.session.user.user_metadata?.invited ||
-          (data.session.user.app_metadata?.provider === "email" && !data.session.user.email_confirmed_at)
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("id, is_approved")
+          .eq("id", data.session.user.id)
+          .single()
 
-        if (isInvite) {
+        // If user doesn't exist in our users table, this is likely an invitation acceptance
+        if (!existingUser) {
           // Redirect to sign-up completion for invited users
           const response = NextResponse.redirect(new URL("/auth/sign-up?invited=true", request.url))
 
