@@ -18,9 +18,16 @@ export default async function SignUpPage() {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // If user is logged in, redirect to home page
   if (session) {
-    redirect("/")
+    // Check if user exists in our users table
+    const { data: existingUser } = await supabase.from("users").select("id").eq("id", session.user.id).single()
+
+    // If user exists in our database, redirect to home page
+    // If user doesn't exist, they're invited and need to complete sign-up
+    if (existingUser) {
+      redirect("/")
+    }
+    // If no existingUser, allow them to continue to sign-up form
   }
 
   return (
