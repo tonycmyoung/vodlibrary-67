@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -33,7 +33,7 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
   const [isOpen, setIsOpen] = useState(false)
   const supabase = createClient()
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       if (!userId || userId === "undefined" || userId.trim() === "") {
         console.error("[v0] NotificationBell: Invalid userId provided:", userId)
@@ -52,7 +52,7 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     } catch (error) {
       console.error("Error fetching notifications:", error)
     }
-  }
+  }, [userId]) // Only recreate when userId changes
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -144,7 +144,7 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     }
 
     fetchNotifications()
-  }, [userId])
+  }, [fetchNotifications]) // Now properly depends on memoized function
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

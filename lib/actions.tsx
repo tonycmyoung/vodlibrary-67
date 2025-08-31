@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { Resend } from "resend"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { deduplicateRequest } from "./request-cache"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -190,7 +191,53 @@ export async function signOut() {
   redirect("/auth/login")
 }
 
+async function getAdminAuthorization(userId: string) {
+  return deduplicateRequest(`admin-auth-${userId}`, async () => {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminCheck } = await supabase
+      .from("users")
+      .select("email, is_approved")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
+      return { error: "Not authorized" }
+    }
+
+    return { success: true, user: currentUser.user }
+  })
+}
+
 export async function approveUser(userId: string) {
+  const authResult = await getAdminAuthorization("approve-user")
+  if (authResult.error) {
+    return { error: authResult.error }
+  }
+
   const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -433,6 +480,10 @@ export async function deleteUserCompletely(userId: string, userEmail: string) {
 }
 
 export async function rejectUser(userId: string) {
+  const authResult = await getAdminAuthorization("reject-user")
+  if (authResult.error) {
+    return { error: authResult.error }
+  }
   try {
     const cookieStore = cookies()
     const supabase = createServerClient(
@@ -553,81 +604,103 @@ export async function fetchPendingUsers() {
 }
 
 export async function fetchNotificationsWithSenders(userId: string) {
-  try {
-    if (!userId || userId === "undefined" || userId.trim() === "") {
-      console.error("[v0] Invalid userId provided to fetchNotificationsWithSenders:", userId)
-      return { error: "Invalid user ID", data: [] }
-    }
-
-    let serviceSupabase
-    try {
-      serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    } catch (clientError) {
-      console.error("[v0] Error creating Supabase client:", clientError)
-      return { error: "Database connection failed", data: [] }
-    }
-
-    // Fetch notifications for the user
-    const { data: notifications, error: notificationsError } = await serviceSupabase
-      .from("notifications")
-      .select("id, sender_id, message, is_read, created_at, is_broadcast")
-      .eq("recipient_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10)
-
-    if (notificationsError) {
-      console.error("[v0] Error fetching notifications:", notificationsError)
-      return { error: "Failed to fetch notifications", data: [] }
-    }
-
-    if (!notifications || notifications.length === 0) {
-      return { success: true, data: [] }
-    }
-
-    // Get unique sender IDs
-    const senderIds = [...new Set(notifications.map((n) => n.sender_id).filter(Boolean))]
-
-    let senders, sendersError
-    try {
-      const result = await serviceSupabase
-        .from("users")
-        .select("id, full_name, email, profile_image_url")
-        .in("id", senderIds)
-
-      senders = result.data
-      sendersError = result.error
-    } catch (fetchError) {
-      console.error("[v0] Error fetching senders:", fetchError)
-      return { error: "Failed to fetch sender information", data: [] }
-    }
-
-    if (sendersError) {
-      console.error("[v0] Error fetching senders:", sendersError)
-      return { error: "Failed to fetch sender information", data: [] }
-    }
-
-    // Create sender lookup map
-    const sendersMap = (senders || []).reduce(
-      (acc, sender) => {
-        acc[sender.id] = sender
-        return acc
+  return deduplicateRequest(`notifications-${userId}`, async () => {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
       },
-      {} as Record<string, any>,
     )
 
-    // Combine notifications with sender info
-    const notificationsWithSenders = notifications.map((notification) => ({
-      ...notification,
-      sender: sendersMap[notification.sender_id] || null,
-    }))
+    try {
+      if (!userId || userId === "undefined" || userId.trim() === "") {
+        console.error("[v0] Invalid userId provided to fetchNotificationsWithSenders:", userId)
+        return { error: "Invalid user ID", data: [] }
+      }
 
-    return { success: true, data: notificationsWithSenders }
-  } catch (error) {
-    console.error("[v0] Error in fetchNotificationsWithSenders:", error)
-    console.error("[v0] Error type:", typeof error)
-    console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
-    return { error: "An unexpected error occurred", data: [] }
-  }
+      let serviceSupabase
+      try {
+        serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      } catch (clientError) {
+        console.error("[v0] Error creating Supabase client:", clientError)
+        return { error: "Database connection failed", data: [] }
+      }
+
+      // Fetch notifications for the user
+      const { data: notifications, error: notificationsError } = await serviceSupabase
+        .from("notifications")
+        .select("id, sender_id, message, is_read, created_at, is_broadcast")
+        .eq("recipient_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (notificationsError) {
+        console.error("[v0] Error fetching notifications:", notificationsError)
+        return { error: "Failed to fetch notifications", data: [] }
+      }
+
+      if (!notifications || notifications.length === 0) {
+        return { success: true, data: [] }
+      }
+
+      // Get unique sender IDs
+      const senderIds = [...new Set(notifications.map((n) => n.sender_id).filter(Boolean))]
+
+      let senders, sendersError
+      try {
+        const result = await serviceSupabase
+          .from("users")
+          .select("id, full_name, email, profile_image_url")
+          .in("id", senderIds)
+
+        senders = result.data
+        sendersError = result.error
+      } catch (fetchError) {
+        console.error("[v0] Error fetching senders:", fetchError)
+        return { error: "Failed to fetch sender information", data: [] }
+      }
+
+      if (sendersError) {
+        console.error("[v0] Error fetching senders:", sendersError)
+        return { error: "Failed to fetch sender information", data: [] }
+      }
+
+      // Create sender lookup map
+      const sendersMap = (senders || []).reduce(
+        (acc, sender) => {
+          acc[sender.id] = sender
+          return acc
+        },
+        {} as Record<string, any>,
+      )
+
+      // Combine notifications with sender info
+      const notificationsWithSenders = notifications.map((notification) => ({
+        ...notification,
+        sender: sendersMap[notification.sender_id] || null,
+      }))
+
+      return { success: true, data: notificationsWithSenders }
+    } catch (error) {
+      console.error("[v0] Error in fetchNotificationsWithSenders:", error)
+      console.error("[v0] Error type:", typeof error)
+      console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
+      return { error: "An unexpected error occurred", data: [] }
+    }
+  })
 }
 
 export async function sendNotificationWithEmail({
@@ -1669,5 +1742,75 @@ export async function deletePerformer(id: string) {
   } catch (error) {
     console.error("Unexpected error deleting performer:", error)
     return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function deleteUser(userId: string) {
+  const authResult = await getAdminAuthorization("delete-user")
+  if (authResult.error) {
+    return { error: authResult.error }
+  }
+
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    // Verify admin authorization
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminCheck } = await supabase
+      .from("users")
+      .select("email, is_approved")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminCheck?.is_approved || adminCheck.email !== "acmyma@gmail.com") {
+      return { error: "Not authorized" }
+    }
+
+    // Use service role client for complete deletion
+    const serviceSupabase = createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Delete from database first
+    const { error: dbError } = await serviceSupabase.from("users").delete().eq("id", userId)
+
+    if (dbError) {
+      console.error("Database deletion error:", dbError)
+      return { error: "Failed to delete user from database" }
+    }
+
+    // Delete from Supabase auth
+    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error("Auth deletion error:", authError)
+      // Note: Database record is already deleted, but auth user remains
+      return { error: "User database record deleted, but auth user deletion failed" }
+    }
+
+    return { success: "User completely deleted from both database and authentication" }
+  } catch (error) {
+    console.error("Complete user deletion error:", error)
+    return { error: "An unexpected error occurred during deletion" }
   }
 }
