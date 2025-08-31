@@ -1412,7 +1412,7 @@ async function sendNotificationEmail({
     messageLength: message.length,
   })
 
-  const emailSubject = `New Message from ${isFromAdmin ? "Administrator" : senderName || "TY Kobudo Library"}`
+  const emailSubject = `New Message from the TY Kobudo Library`
   console.log("[v0] Email subject:", emailSubject)
 
   const emailContent = `
