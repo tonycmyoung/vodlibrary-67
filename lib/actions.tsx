@@ -1,7 +1,7 @@
 "use server"
 
 import { createServerClient } from "@supabase/ssr"
-import { cookies, headers } from "next/headers"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { Resend } from "resend"
 import { createClient } from "@/lib/supabase/server"
@@ -1208,27 +1208,17 @@ export async function incrementVideoViews(videoId: string) {
 
 export async function trackUserLogin() {
   try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return parseCookieHeader(headers().get("Cookie") ?? "")
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => cookies().set(name, value, options))
-          },
-        },
-      },
-    )
+    const supabase = createServiceRoleClient()
 
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) {
+      console.log("[v0] No user found for login tracking")
       return { error: "User not authenticated" }
     }
+
+    console.log("[v0] Tracking login for user:", user.id)
 
     // Insert login record
     const { error } = await supabase.from("user_logins").insert({
@@ -1241,6 +1231,7 @@ export async function trackUserLogin() {
       return { error: "Failed to track login" }
     }
 
+    console.log("[v0] Login tracked successfully")
     return { success: true }
   } catch (error) {
     console.error("[v0] trackUserLogin error:", error)

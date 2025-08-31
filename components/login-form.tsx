@@ -43,6 +43,7 @@ export default function LoginForm() {
   const [resetError, setResetError] = useState("")
   const [isResetting, setIsResetting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showResetInput, setShowResetInput] = useState(false)
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,15 +68,9 @@ export default function LoginForm() {
     } else {
       setResetMessage("Password reset email sent! Check your inbox.")
       setResetEmail("")
+      setShowResetInput(false)
     }
   }
-
-  // Handle successful login by redirecting
-  // useEffect(() => {
-  //   if (state?.success) {
-  //     router.push("/")
-  //   }
-  // }, [state, router])
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
@@ -83,7 +78,7 @@ export default function LoginForm() {
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
           <span className="text-white font-bold text-2xl">武</span>
         </div>
-        <CardTitle className="text-3xl font-bold text-white">{"TY Kobudo Library\nWelcome Back"}</CardTitle>
+        <CardTitle className="text-3xl font-bold text-white">{"Welcome to the\nTY Kobudo Library"}</CardTitle>
         <CardDescription className="text-gray-300 text-lg whitespace-pre-line">
           {
             "This library is invite-only for\nMatayoshi/Okinawa Kobudo Australia Students.\nSign in, or request an account, below."
@@ -120,8 +115,6 @@ export default function LoginForm() {
                 placeholder="you@example.com"
                 required
                 className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -149,17 +142,6 @@ export default function LoginForm() {
 
           <SubmitButton />
 
-          <div className="text-center mt-1">
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              disabled={isResetting}
-              className="text-red-400 hover:text-red-300 hover:underline text-sm disabled:opacity-50"
-            >
-              {isResetting ? "Sending..." : "Forgot your password?"}
-            </button>
-          </div>
-
           <div className="text-center text-gray-400">
             Don't have an account?{" "}
             <Link href="/auth/sign-up" className="text-red-400 hover:text-red-300 hover:underline">
@@ -167,6 +149,53 @@ export default function LoginForm() {
             </Link>
           </div>
         </form>
+
+        <div className="text-center mt-4">
+          {!showResetInput ? (
+            <button
+              type="button"
+              onClick={() => setShowResetInput(true)}
+              disabled={isResetting}
+              className="text-red-400 hover:text-red-300 hover:underline text-sm disabled:opacity-50"
+            >
+              Forgot your password?
+            </button>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-2">
+              <Input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="Enter email for reset"
+                className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
+                required
+              />
+              <div className="flex gap-2 justify-center">
+                <Button
+                  type="submit"
+                  disabled={isResetting}
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {isResetting ? "Sending..." : "Send Reset"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setShowResetInput(false)
+                    setResetEmail("")
+                    setResetError("")
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
