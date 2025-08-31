@@ -41,6 +41,8 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: "Failed to establish session" }
     }
 
+    await trackUserLogin()
+
     redirect("/")
   } catch (error: any) {
     return { error: error.message || "An unexpected error occurred" }
