@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
@@ -66,6 +67,8 @@ const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
 export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
 
   const [videos, setVideos] = useState<Video[]>([])
@@ -74,11 +77,40 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const [categories, setCategories] = useState<Category[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [recordedValues, setRecordedValues] = useState<string[]>([])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const urlFilters = searchParams.get("filters")
+      if (urlFilters) {
+        try {
+          return JSON.parse(decodeURIComponent(urlFilters))
+        } catch (e) {
+          console.error("Error parsing URL filters:", e)
+        }
+      }
+    }
+    return []
+  })
+
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== "undefined") {
+      return searchParams.get("search") || ""
+    }
+    return ""
+  })
+
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
-  const [filterMode, setFilterMode] = useState<"AND" | "OR">("AND")
+
+  const [filterMode, setFilterMode] = useState<"AND" | "OR">(() => {
+    if (typeof window !== "undefined") {
+      const urlMode = searchParams.get("mode")
+      if (urlMode === "AND" || urlMode === "OR") {
+        return urlMode
+      }
+    }
+    return "AND"
+  })
 
   const [view, setView] = useState<"grid" | "list">(() => {
     if (typeof window !== "undefined") {
@@ -360,10 +392,11 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
+      updateURL(selectedCategories, searchQuery, filterMode)
     }, 300) // 300ms delay
 
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, selectedCategories, filterMode])
 
   const totalPages = Math.ceil(videos.length / itemsPerPage)
   const startItem = (currentPage - 1) * itemsPerPage + 1
@@ -504,9 +537,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
-    )
+    const newSelectedCategories = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter((id) => id !== categoryId)
+      : [...selectedCategories, categoryId]
+
+    setSelectedCategories(newSelectedCategories)
+    updateURL(newSelectedCategories, searchQuery, filterMode)
   }
 
   const handleViewChange = (newView: "grid" | "list") => {
@@ -834,6 +870,30 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     updatePaginatedVideos(videos, currentPage, itemsPerPage)
   }, [videos, currentPage, itemsPerPage])
 
+  const updateURL = (filters: string[], search: string, mode: "AND" | "OR") => {
+    const params = new URLSearchParams()
+
+    if (filters.length > 0) {
+      params.set("filters", encodeURIComponent(JSON.stringify(filters)))
+    }
+
+    if (search.trim()) {
+      params.set("search", search)
+    }
+
+    if (mode !== "AND") {
+      params.set("mode", mode)
+    }
+
+    const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.replace(newURL, { scroll: false })
+  }
+
+  const handleFilterModeChange = (newMode: "AND" | "OR") => {
+    setFilterMode(newMode)
+    updateURL(selectedCategories, searchQuery, newMode)
+  }
+
   if (loading || userLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -933,7 +993,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                           <Button
                             variant={filterMode === "AND" ? "default" : "ghost"}
                             size="sm"
-                            onClick={() => setFilterMode("AND")}
+                            onClick={() => handleFilterModeChange("AND")}
                             className={`text-xs px-3 py-1 flex-1 ${
                               filterMode === "AND"
                                 ? "bg-red-600 text-white hover:bg-red-700"
@@ -945,7 +1005,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                           <Button
                             variant={filterMode === "OR" ? "default" : "ghost"}
                             size="sm"
-                            onClick={() => setFilterMode("OR")}
+                            onClick={() => handleFilterModeChange("OR")}
                             className={`text-xs px-3 py-1 flex-1 ${
                               filterMode === "OR"
                                 ? "bg-red-600 text-white hover:bg-red-700"
@@ -992,7 +1052,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                 <Button
                   variant={filterMode === "AND" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setFilterMode("AND")}
+                  onClick={() => handleFilterModeChange("AND")}
                   className={`text-xs px-3 py-1 ${
                     filterMode === "AND"
                       ? "bg-red-600 text-white hover:bg-red-700"
@@ -1004,7 +1064,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                 <Button
                   variant={filterMode === "OR" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setFilterMode("OR")}
+                  onClick={() => handleFilterModeChange("OR")}
                   className={`text-xs px-3 py-1 ${
                     filterMode === "OR"
                       ? "bg-red-600 text-white hover:bg-red-700"
