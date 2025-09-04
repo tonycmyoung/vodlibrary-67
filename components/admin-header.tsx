@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Settings, Users, Video, Tags, Home, Lock, Bell, UserPlus } from "lucide-react"
+import { LogOut, User, Settings, Users, Video, Tags, Home, Lock, Bell, UserPlus, Menu, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -30,6 +30,7 @@ interface AdminHeaderProps {
 export default function AdminHeader({ user }: AdminHeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // Added mobile menu state
   const router = useRouter()
 
   const initials = user.full_name
@@ -80,7 +81,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden lg:flex items-center space-x-6">
             <Link
               href="/?admin-view=student"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
@@ -126,6 +127,15 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
           </nav>
 
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden text-white hover:bg-purple-600/40 hover:text-purple-100 border border-transparent hover:border-purple-400/50 transition-all duration-200"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+
             <NotificationBell userId={user.id} isAdmin={true} />
 
             <DropdownMenu>
@@ -179,6 +189,63 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             </DropdownMenu>
           </div>
         </div>
+
+        {isMobileMenuOpen && ( // Mobile navigation menu
+          <div className="lg:hidden bg-black/90 backdrop-blur-md border-t border-purple-800/30">
+            {" "}
+            {/* Changed from md:hidden to lg:hidden */}
+            <nav className="container mx-auto px-4 py-4 space-y-2">
+              <Link
+                href="/?admin-view=student"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Home className="w-4 h-4" />
+                <span>Student View</span>
+              </Link>
+              <Link
+                href="/admin/users"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Users className="w-4 h-4" />
+                <span>Users</span>
+              </Link>
+              <Link
+                href="/admin/videos"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Video className="w-4 h-4" />
+                <span>Videos</span>
+              </Link>
+              <Link
+                href="/admin/categories"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Tags className="w-4 h-4" />
+                <span>Categories</span>
+              </Link>
+              <Link
+                href="/admin/performers"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="w-4 h-4" />
+                <span>Performers</span>
+              </Link>
+              <Link
+                href="/admin/notifications"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Bell className="w-4 h-4" />
+                <span>Notifications</span>
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />

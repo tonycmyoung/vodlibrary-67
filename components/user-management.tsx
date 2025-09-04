@@ -188,9 +188,9 @@ export default function UserManagement() {
   return (
     <Card className="bg-black/60 border-gray-800">
       <CardHeader>
-        <CardTitle className="text-white flex items-center justify-between">
+        <CardTitle className="text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <span>All Users ({users.length})</span>
-          <div className="relative max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search users..."
@@ -210,77 +210,81 @@ export default function UserManagement() {
             return (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 leading-5 py-0.5"
+                className="flex flex-col xl:flex-row xl:items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 gap-4"
               >
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
+                <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
+                  <Avatar className="h-12 w-12 flex-shrink-0">
                     <AvatarImage
                       src={user.profile_image_url || "/placeholder.svg"}
                       alt={user.full_name || user.email}
                     />
-                    <AvatarFallback className="bg-purple-600 text-white">
+                    <AvatarFallback className="bg-purple-600 text-white flex-shrink-0">
                       {getInitials(user.full_name, user.email)}
                     </AvatarFallback>
                   </Avatar>
 
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-medium text-white">{user.full_name || "No name provided"}</h4>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
                       {isAdmin ? (
-                        <Badge className="bg-purple-600 text-white">Administrator</Badge>
+                        <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
                       ) : (
                         <>
                           <Badge
                             variant={user.is_approved ? "default" : "outline"}
                             className={
                               user.is_approved
-                                ? "bg-green-600 text-white"
-                                : "border-yellow-600 text-yellow-400 bg-transparent"
+                                ? "bg-green-600 text-white flex-shrink-0"
+                                : "border-yellow-600 text-yellow-400 bg-transparent flex-shrink-0"
                             }
                           >
                             {user.is_approved ? "Approved" : "Pending"}
                           </Badge>
                           <Badge
-                            className={user.role === "Teacher" ? "bg-blue-600 text-white" : "bg-gray-600 text-white"}
+                            className={
+                              user.role === "Teacher"
+                                ? "bg-blue-600 text-white flex-shrink-0"
+                                : "bg-gray-600 text-white flex-shrink-0"
+                            }
                           >
                             {user.role || "Student"}
                           </Badge>
                         </>
                       )}
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      <div className="flex items-center space-x-1">
-                        <Mail className="w-3 h-3" />
-                        <span>{user.email}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-2 text-sm text-gray-400">
+                      <div className="flex items-center space-x-1 min-w-0">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{user.email}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <span>Teacher: {user.teacher || "Not specified"}</span>
+                      <div className="flex items-center space-x-1 min-w-0">
+                        <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <span>School: {user.school || "Not specified"}</span>
+                      <div className="flex items-center space-x-1 min-w-0">
+                        <span className="truncate">School: {user.school || "Not specified"}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>Joined {formatDate(user.created_at)}</span>
+                      <div className="flex items-center space-x-1 min-w-0">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">Joined {formatDate(user.created_at)}</span>
                       </div>
                       {user.approved_at && (
-                        <div className="flex items-center space-x-1">
-                          <UserCheck className="w-3 h-3" />
-                          <span>Approved {formatDate(user.approved_at)}</span>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <UserCheck className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">Approved {formatDate(user.approved_at)}</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-2 flex-shrink-0">
                   {!isAdmin && (
                     <>
                       <select
                         value={user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
                         disabled={isProcessing}
-                        className="px-3 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
+                        className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
                       >
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
@@ -302,12 +306,12 @@ export default function UserManagement() {
                         ) : user.is_approved ? (
                           <>
                             <UserX className="w-4 h-4 mr-1" />
-                            Revoke
+                            <span className="hidden md:inline">Revoke</span>
                           </>
                         ) : (
                           <>
                             <UserCheck className="w-4 h-4 mr-1" />
-                            Approve
+                            <span className="hidden md:inline">Approve</span>
                           </>
                         )}
                       </Button>
@@ -324,7 +328,7 @@ export default function UserManagement() {
                         ) : (
                           <>
                             <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
+                            <span className="hidden md:inline">Delete</span>
                           </>
                         )}
                       </Button>

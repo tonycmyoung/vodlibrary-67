@@ -19,7 +19,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, X, Heart } from "lucide-react"
+import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface Video {
   id: string
@@ -372,94 +373,128 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     const showNavigation = totalPages > 1
 
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4 min-w-0 flex-1">
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-sm text-gray-400">Show</span>
-            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-              <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem
-                  value="5"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  5
-                </SelectItem>
-                <SelectItem
-                  value="10"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  10
-                </SelectItem>
-                <SelectItem
-                  value="20"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  20
-                </SelectItem>
-                <SelectItem
-                  value="50"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  50
-                </SelectItem>
-                <SelectItem
-                  value="100"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  100
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-400">per page</span>
-          </div>
-          <div className="text-sm text-gray-400 whitespace-nowrap">
-            Showing {startItem}-{endItem} of {videos.length} videos
+      <div className="flex flex-col gap-4 py-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 min-w-0 flex-1">
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <span className="text-sm text-gray-400">Show</span>
+              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem
+                    value="5"
+                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                  >
+                    5
+                  </SelectItem>
+                  <SelectItem
+                    value="10"
+                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                  >
+                    10
+                  </SelectItem>
+                  <SelectItem
+                    value="20"
+                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                  >
+                    20
+                  </SelectItem>
+                  <SelectItem
+                    value="50"
+                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                  >
+                    50
+                  </SelectItem>
+                  <SelectItem
+                    value="100"
+                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                  >
+                    100
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-400">per page</span>
+            </div>
+            <div className="text-sm text-gray-400 whitespace-nowrap">
+              Showing {startItem}-{endItem} of {videos.length} videos
+            </div>
           </div>
         </div>
 
         {showNavigation && (
-          <div className="ml-auto">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                    className={`${currentPage <= 1 ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
-                  />
-                </PaginationItem>
+          <div className="flex justify-center">
+            <div className="flex items-center gap-1">
+              {/* Mobile: Simple prev/next with page indicator */}
+              <div className="flex sm:hidden items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="h-9 px-3 text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-gray-400 px-3">
+                  {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="h-9 px-3 text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
 
-                {getVisiblePages().map((page, index) => (
-                  <PaginationItem key={index}>
-                    {page === "..." ? (
-                      <PaginationEllipsis className="text-gray-300" />
-                    ) : (
-                      <PaginationLink
-                        onClick={() => handlePageChange(page as number)}
-                        isActive={currentPage === page}
-                        className={`${currentPage === page ? "bg-red-600 text-white hover:bg-red-700 hover:text-white" : "text-white hover:text-white"}`}
-                      >
-                        {page}
-                      </PaginationLink>
-                    )}
-                  </PaginationItem>
-                ))}
+              {/* Desktop: Full pagination */}
+              <div className="hidden sm:block">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                        className={`${currentPage <= 1 ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
+                      />
+                    </PaginationItem>
 
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                    className={`${currentPage >= totalPages ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                    {getVisiblePages().map((page, index) => (
+                      <PaginationItem key={index}>
+                        {page === "..." ? (
+                          <PaginationEllipsis className="text-gray-300" />
+                        ) : (
+                          <PaginationLink
+                            onClick={() => handlePageChange(page as number)}
+                            isActive={currentPage === page}
+                            className={`${currentPage === page ? "bg-red-600 text-white hover:bg-red-700 hover:text-white" : "text-white hover:text-white"}`}
+                          >
+                            {page}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                        className={`${currentPage >= totalPages ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
           </div>
         )}
       </div>
     )
   }
+
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) =>
@@ -824,8 +859,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="relative max-w-md">
+        <div className="space-y-4">
+          {/* Search bar - full width on mobile */}
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
@@ -844,57 +880,142 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
-            <ViewToggle view={view} onViewChange={handleViewChange} />
+
+          {/* Controls row - responsive layout */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Mobile filter button */}
+              <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                    {selectedCategories.length > 0 && (
+                      <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
+                        {selectedCategories.length}
+                      </span>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Filter Videos</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <CategoryFilter
+                      categories={categories}
+                      recordedValues={recordedValues}
+                      performers={performers}
+                      selectedCategories={selectedCategories}
+                      onCategoryToggle={handleCategoryToggle}
+                      videoCount={videos.length}
+                      compact={true}
+                    />
+                    {selectedCategories.length > 1 && (
+                      <div className="space-y-2">
+                        <span className="text-sm text-gray-400">Filter mode:</span>
+                        <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
+                          <Button
+                            variant={filterMode === "AND" ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setFilterMode("AND")}
+                            className={`text-xs px-3 py-1 flex-1 ${
+                              filterMode === "AND"
+                                ? "bg-red-600 text-white hover:bg-red-700"
+                                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                            }`}
+                          >
+                            AND
+                          </Button>
+                          <Button
+                            variant={filterMode === "OR" ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setFilterMode("OR")}
+                            className={`text-xs px-3 py-1 flex-1 ${
+                              filterMode === "OR"
+                                ? "bg-red-600 text-white hover:bg-red-700"
+                                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                            }`}
+                          >
+                            OR
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    <Button
+                      onClick={() => setShowMobileFilters(false)}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Sort control - responsive */}
+              <div className="flex-1 sm:flex-none">
+                <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+              </div>
+            </div>
+
+            {/* View toggle - larger touch targets on mobile */}
+            <div className="w-full sm:w-auto">
+              <ViewToggle view={view} onViewChange={handleViewChange} />
+            </div>
           </div>
         </div>
 
-        <CategoryFilter
-          categories={categories}
-          recordedValues={recordedValues}
-          performers={performers}
-          selectedCategories={selectedCategories}
-          onCategoryToggle={handleCategoryToggle}
-          videoCount={videos.length}
-        />
+        <div className="hidden lg:block">
+          <CategoryFilter
+            categories={categories}
+            recordedValues={recordedValues}
+            performers={performers}
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
+            videoCount={videos.length}
+          />
 
-        {selectedCategories.length > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Filter mode:</span>
-            <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
-              <Button
-                variant={filterMode === "AND" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilterMode("AND")}
-                className={`text-xs px-3 py-1 ${
-                  filterMode === "AND"
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                AND
-              </Button>
-              <Button
-                variant={filterMode === "OR" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilterMode("OR")}
-                className={`text-xs px-3 py-1 ${
-                  filterMode === "OR"
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                OR
-              </Button>
+          {selectedCategories.length > 1 && (
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm text-gray-400">Filter mode:</span>
+              <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
+                <Button
+                  variant={filterMode === "AND" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilterMode("AND")}
+                  className={`text-xs px-3 py-1 ${
+                    filterMode === "AND"
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "text-gray-400 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  AND
+                </Button>
+                <Button
+                  variant={filterMode === "OR" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilterMode("OR")}
+                  className={`text-xs px-3 py-1 ${
+                    filterMode === "OR"
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "text-gray-400 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  OR
+                </Button>
+              </div>
+              <span className="text-xs text-gray-500">
+                {filterMode === "AND"
+                  ? "Videos must have ALL selected categories"
+                  : "Videos can have ANY selected categories"}
+              </span>
             </div>
-            <span className="text-xs text-gray-500">
-              {filterMode === "AND"
-                ? "Videos must have ALL selected categories"
-                : "Videos can have ANY selected categories"}
-            </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {videos.length === 0 ? (
