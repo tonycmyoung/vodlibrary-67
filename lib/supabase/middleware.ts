@@ -154,115 +154,69 @@ export async function updateSession(request: NextRequest) {
 
     if (session?.user && !request.nextUrl.pathname.startsWith("/admin")) {
       try {
-        const serviceSupabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          {
-            cookies: {
-              getAll() {
-                return []
-              },
-              setAll() {},
-            },
-          },
-        )
-
-        // Check if we've already tracked a login for this user today
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
-        const { data: existingLogin } = await serviceSupabase
-          .from("user_logins")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .gte("login_time", today.toISOString())
-          .limit(1)
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("is_approved, role")
+          .eq("id", session.user.id)
           .single()
 
-        if (!existingLogin) {
-          await serviceSupabase.from("user_logins").insert({
-            user_id: session.user.id,
-            login_time: new Date().toISOString(),
-          })
-        }
-      } catch (trackingError) {
-        // Silently fail - don't break the user experience for tracking issues
-      }
-    }
-
-    const isAdminEmail = session.user.email === "acmyma@gmail.com"
-
-    // Admin users bypass approval checks and get redirected to admin dashboard
-    // unless they explicitly want to view the student interface
-    if (isAdminEmail && request.nextUrl.pathname === "/" && !request.nextUrl.searchParams.has("admin-view")) {
-      const redirectUrl = new URL("/admin", request.url)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    if (!request.nextUrl.pathname.startsWith("/admin") && !isAdminEmail) {
-      const cachedApproval = getCachedUserApproval(session.user.id)
-
-      if (cachedApproval) {
-        if (!cachedApproval.isApproved) {
-          const redirectUrl = new URL("/pending-approval", request.url)
-          return NextResponse.redirect(redirectUrl)
-        }
-      } else {
-        try {
-          const { data: user, error } = await supabase
-            .from("users")
-            .select("is_approved, role")
-            .eq("id", session.user.id)
-            .single()
-
-          if (error) {
-            setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
-            return supabaseResponse
-          }
-
-          if (user) {
-            setCachedUserApproval(session.user.id, user.is_approved, user.role)
-
-            if (!user.is_approved) {
-              const redirectUrl = new URL("/pending-approval", request.url)
-              return NextResponse.redirect(redirectUrl)
-            }
-          }
-        } catch (dbError) {
+        if (error) {
           setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
           return supabaseResponse
         }
+
+        if (user) {
+          setCachedUserApproval(session.user.id, user.is_approved, user.role)
+
+          if (!user.is_approved) {
+            const redirectUrl = new URL("/pending-approval", request.url)
+            return NextResponse.redirect(redirectUrl)
+          }
+
+          const isAdminEmail = session.user.email === "acmyma@gmail.com"
+          if ((user.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
+            const redirectUrl = new URL("/admin", request.url)
+            return NextResponse.redirect(redirectUrl)
+          }
+        }
+      } catch (dbError) {
+        setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
+        return supabaseResponse
       }
     }
 
     if (request.nextUrl.pathname.startsWith("/admin")) {
+      const isAdminEmail = session.user.email === "acmyma@gmail.com"
+
+      if (isAdminEmail) {
+        // Admin email always has access
+        return supabaseResponse
+      }
+
       const cachedApproval = getCachedUserApproval(session.user.id)
 
       if (cachedApproval && cachedApproval.role === "Admin") {
-        // Use cached admin role verification
-      } else {
-        try {
-          const { data: user, error } = await supabase
-            .from("users")
-            .select("role, is_approved")
-            .eq("id", session.user.id)
-            .single()
-
-          if (error) {
-            const redirectUrl = new URL("/", request.url)
-            return NextResponse.redirect(redirectUrl)
-          } else if (user && user.role !== "Admin") {
-            setCachedUserApproval(session.user.id, user.is_approved, user.role)
-            const redirectUrl = new URL("/", request.url)
-            return NextResponse.redirect(redirectUrl)
-          } else if (user) {
-            setCachedUserApproval(session.user.id, user.is_approved, user.role)
-          }
-        } catch (dbError) {
-          const redirectUrl = new URL("/", request.url)
-          return NextResponse.redirect(redirectUrl)
-        }
+        return supabaseResponse
       }
+
+      try {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("role, is_approved")
+          .eq("id", session.user.id)
+          .single()
+
+        if (!error && user && user.role === "Admin") {
+          setCachedUserApproval(session.user.id, user.is_approved, user.role)
+          return supabaseResponse
+        }
+      } catch (dbError) {
+        // Database error - deny access for non-admin emails
+      }
+
+      // Not authorized for admin routes
+      const redirectUrl = new URL("/", request.url)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 

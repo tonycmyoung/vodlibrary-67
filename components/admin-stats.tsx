@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Users, Video, UserCheck, Clock, TrendingUp, LogIn } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { getTelemetryData } from "@/lib/actions"
 
 interface Stats {
@@ -31,6 +30,7 @@ export default function AdminStats() {
     lastWeekUserLogins: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     fetchStats()
@@ -38,26 +38,13 @@ export default function AdminStats() {
 
   const fetchStats = async () => {
     try {
-      const supabase = createClient()
-      const [usersResult, pendingResult, videosResult, categoriesResult, telemetryResult] = await Promise.all([
-        supabase.from("users").select("id", { count: "exact" }),
-        supabase.from("users").select("id", { count: "exact" }).eq("is_approved", false),
-        supabase.from("videos").select("id", { count: "exact" }),
-        supabase.from("categories").select("id", { count: "exact" }),
-        getTelemetryData(),
-      ])
+      const telemetryResult = await getTelemetryData()
 
-      setStats({
-        totalUsers: usersResult.count || 0,
-        pendingUsers: pendingResult.count || 0,
-        totalVideos: videosResult.count || 0,
-        totalCategories: categoriesResult.count || 0,
-        totalViews: telemetryResult.success ? telemetryResult.data.totalViews : 0,
-        thisWeekViews: telemetryResult.success ? telemetryResult.data.thisWeekViews : 0,
-        lastWeekViews: telemetryResult.success ? telemetryResult.data.lastWeekViews : 0,
-        thisWeekUserLogins: telemetryResult.success ? telemetryResult.data.thisWeekUserLogins : 0,
-        lastWeekUserLogins: telemetryResult.success ? telemetryResult.data.lastWeekUserLogins : 0,
-      })
+      if (telemetryResult.success) {
+        setStats(telemetryResult.data)
+      }
+
+      setRefreshKey((prev) => prev + 1)
     } catch (error) {
       console.error("Error fetching stats:", error)
     } finally {
@@ -131,7 +118,7 @@ export default function AdminStats() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+    <div key={refreshKey} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
       {statCards.map((stat, index) => {
         const Icon = stat.icon
         return (

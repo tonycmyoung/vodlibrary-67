@@ -97,13 +97,13 @@ importers:
         version: 1.2.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@supabase/auth-helpers-nextjs':
         specifier: latest
-        version: 0.10.0(@supabase/supabase-js@2.56.1)
+        version: 0.10.0(@supabase/supabase-js@2.57.0)
       '@supabase/ssr':
         specifier: latest
-        version: 0.7.0(@supabase/supabase-js@2.56.1)
+        version: 0.7.0(@supabase/supabase-js@2.57.0)
       '@supabase/supabase-js':
         specifier: latest
-        version: 2.56.1
+        version: 2.57.0
       '@vercel/blob':
         specifier: latest
         version: 1.1.1
@@ -120,7 +120,7 @@ importers:
         specifier: 1.0.4
         version: 1.0.4(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       crypto:
-        specifier: latest
+        specifier: 1.0.1
         version: 1.0.1
       embla-carousel-react:
         specifier: 8.5.1
@@ -1369,8 +1369,8 @@ packages:
   '@supabase/storage-js@2.11.0':
     resolution: {integrity: sha512-Y+kx/wDgd4oasAgoAq0bsbQojwQ+ejIif8uczZ9qufRHWFLMU5cODT+ApHsSrDufqUcVKt+eyxtOXSkeh2v9ww==}
 
-  '@supabase/supabase-js@2.56.1':
-    resolution: {integrity: sha512-cb/kS0d6G/qbcmUFItkqVrQbxQHWXzfRZuoiSDv/QiU6RbGNTn73XjjvmbBCZ4MMHs+5teihjhpEVluqbXISEg==}
+  '@supabase/supabase-js@2.57.0':
+    resolution: {integrity: sha512-h9ttcL0MY4h+cGqZl95F/RuqccuRBjHU9B7Qqvw0Da+pPK2sUlU1/UdvyqUGj37UsnSphr9pdGfeXjesYkBcyA==}
 
   '@swc/counter@0.1.3':
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
@@ -3279,15 +3279,15 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.11.0
 
-  '@supabase/auth-helpers-nextjs@0.10.0(@supabase/supabase-js@2.56.1)':
+  '@supabase/auth-helpers-nextjs@0.10.0(@supabase/supabase-js@2.57.0)':
     dependencies:
-      '@supabase/auth-helpers-shared': 0.7.0(@supabase/supabase-js@2.56.1)
-      '@supabase/supabase-js': 2.56.1
+      '@supabase/auth-helpers-shared': 0.7.0(@supabase/supabase-js@2.57.0)
+      '@supabase/supabase-js': 2.57.0
       set-cookie-parser: 2.7.1
 
-  '@supabase/auth-helpers-shared@0.7.0(@supabase/supabase-js@2.56.1)':
+  '@supabase/auth-helpers-shared@0.7.0(@supabase/supabase-js@2.57.0)':
     dependencies:
-      '@supabase/supabase-js': 2.56.1
+      '@supabase/supabase-js': 2.57.0
       jose: 4.15.9
 
   '@supabase/auth-js@2.71.1':
@@ -3316,16 +3316,16 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.56.1)':
+  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.57.0)':
     dependencies:
-      '@supabase/supabase-js': 2.56.1
+      '@supabase/supabase-js': 2.57.0
       cookie: 1.0.2
 
   '@supabase/storage-js@2.11.0':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
-  '@supabase/supabase-js@2.56.1':
+  '@supabase/supabase-js@2.57.0':
     dependencies:
       '@supabase/auth-js': 2.71.1
       '@supabase/functions-js': 2.4.5

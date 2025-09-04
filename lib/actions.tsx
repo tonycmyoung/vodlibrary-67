@@ -3,15 +3,31 @@
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
-import crypto from "crypto"
 import { Resend } from "resend"
 import { redirect } from "next/navigation"
+
+function generateUUID() {
+  // Use Web Crypto API if available (modern browsers and Node.js 16+)
+  if (typeof globalThis !== "undefined" && globalThis.crypto && globalThis.crypto.randomUUID) {
+    return globalThis.crypto.randomUUID()
+  }
+
+  // Fallback UUID v4 generation for older environments
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c == "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
+  console.log("[v0] SignIn attempt for email:", email)
+
   if (!email || !password) {
+    console.log("[v0] SignIn failed: missing email or password")
     return { error: "Email and password are required" }
   }
 
@@ -35,15 +51,18 @@ export async function signIn(prevState: any, formData: FormData) {
     },
   )
 
+  console.log("[v0] Attempting Supabase auth.signInWithPassword")
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
+    console.log("[v0] SignIn failed with error:", error.message)
     return { error: "Invalid email or password" }
   }
 
+  console.log("[v0] SignIn successful, redirecting to /")
   redirect("/")
 }
 
@@ -286,7 +305,7 @@ export async function inviteUser(email: string) {
     }
 
     // Generate secure invitation token
-    const invitationToken = crypto.randomUUID()
+    const invitationToken = generateUUID() // Using universal UUID function instead of crypto.randomUUID()
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
 
@@ -530,57 +549,43 @@ export async function deleteUserCompletely(userId: string) {
   }
 }
 
-export async function updateProfile(prevState: any, formData: FormData) {
-  const fullName = formData.get("fullName") as string
-  const school = formData.get("school") as string
-  const teacher = formData.get("teacher") as string
+export async function updateProfile(params: {
+  userId: string
+  email: string
+  fullName: string | null
+  teacher: string | null
+  school: string | null
+  profileImageUrl: string | null
+}) {
+  const { userId, email, fullName, teacher, school, profileImageUrl } = params
 
   if (!fullName || !school || !teacher) {
-    return { error: "All fields are required" }
+    return { error: "All fields are required", success: false }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: "Not authenticated" }
+    const { error } = await serviceSupabase
+      .from("users")
+      .update({
+        full_name: fullName,
+        school,
+        teacher,
+        profile_image_url: profileImageUrl,
+      })
+      .eq("id", userId)
+
+    if (error) {
+      console.error("Error updating profile:", error)
+      return { error: "Failed to update profile", success: false }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in updateProfile:", error)
+    return { error: "Failed to update profile", success: false }
   }
-
-  const { error } = await supabase
-    .from("users")
-    .update({
-      full_name: fullName,
-      school,
-      teacher,
-    })
-    .eq("id", user.id)
-
-  if (error) {
-    console.error("Error updating profile:", error)
-    return { error: "Failed to update profile" }
-  }
-
-  return { success: "Profile updated successfully" }
 }
 
 export async function changePassword(prevState: any, formData: FormData) {
@@ -726,10 +731,12 @@ export async function deletePerformer(performerId: string) {
   }
 }
 
-export async function sendNotificationWithEmail(prevState: any, formData: FormData) {
-  const message = formData.get("message") as string
-  const recipientId = formData.get("recipientId") as string
-  const isBroadcast = formData.get("isBroadcast") === "true"
+export async function sendNotificationWithEmail(params: {
+  recipientId: string
+  message: string
+  isBroadcast: boolean
+}) {
+  const { message, recipientId, isBroadcast } = params
 
   if (!message) {
     return { error: "Message is required" }
@@ -795,15 +802,23 @@ export async function sendNotificationWithEmail(prevState: any, formData: FormDa
         }
       }
     } else {
-      // Send to specific user
-      if (!recipientId) {
-        return { error: "Recipient is required for individual messages" }
+      // Send to specific user or admin
+      let actualRecipientId = recipientId
+
+      // If recipientId is "admin", find the admin user
+      if (recipientId === "admin") {
+        const { data: adminUser } = await serviceSupabase.from("users").select("id").eq("role", "Admin").single()
+
+        if (!adminUser) {
+          return { error: "Admin user not found" }
+        }
+        actualRecipientId = adminUser.id
       }
 
       const { data: recipient } = await serviceSupabase
         .from("users")
         .select("email, full_name")
-        .eq("id", recipientId)
+        .eq("id", actualRecipientId)
         .single()
 
       if (!recipient) {
@@ -812,7 +827,7 @@ export async function sendNotificationWithEmail(prevState: any, formData: FormDa
 
       await serviceSupabase.from("notifications").insert({
         sender_id: currentUser.user.id,
-        recipient_id: recipientId,
+        recipient_id: actualRecipientId,
         message,
       })
 
@@ -843,9 +858,12 @@ export async function sendNotificationWithEmail(prevState: any, formData: FormDa
 
 export async function getTelemetryData() {
   try {
+    console.log("[v0] Starting getTelemetryData function")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const now = new Date()
+    console.log("[v0] Current date:", now.toISOString())
+
     const startOfWeek = new Date(now)
     startOfWeek.setDate(now.getDate() - now.getDay())
     startOfWeek.setHours(0, 0, 0, 0)
@@ -854,34 +872,129 @@ export async function getTelemetryData() {
     endOfWeek.setDate(startOfWeek.getDate() + 6)
     endOfWeek.setHours(23, 59, 59, 999)
 
-    // Get video views this week
-    const { data: videoViews } = await serviceSupabase
-      .from("videos")
-      .select("views")
-      .gte("last_viewed", startOfWeek.toISOString())
-      .lte("last_viewed", endOfWeek.toISOString())
+    console.log("[v0] This week range:", startOfWeek.toISOString(), "to", endOfWeek.toISOString())
 
-    const thisWeekViews = videoViews?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+    const startOfLastWeek = new Date(startOfWeek)
+    startOfLastWeek.setDate(startOfWeek.getDate() - 7)
 
-    // Get user logins this week
-    const { data: userLogins } = await serviceSupabase
-      .from("user_logins")
-      .select("user_id")
-      .gte("login_date", startOfWeek.toDateString())
-      .lte("login_date", endOfWeek.toDateString())
+    const endOfLastWeek = new Date(startOfLastWeek)
+    endOfLastWeek.setDate(startOfLastWeek.getDate() + 6)
+    endOfLastWeek.setHours(23, 59, 59, 999)
 
-    const uniqueUsers = new Set(userLogins?.map((login) => login.user_id) || [])
-    const thisWeekUserLogins = uniqueUsers.size
+    console.log("[v0] Last week range:", startOfLastWeek.toISOString(), "to", endOfLastWeek.toISOString())
 
-    return {
-      thisWeekViews,
-      thisWeekUserLogins,
+    const [
+      allVideosResult,
+      totalUsersResult,
+      pendingUsersResult,
+      totalVideosResult,
+      totalCategoriesResult,
+      thisWeekVideosResult,
+      lastWeekVideosResult,
+      thisWeekLoginsResult,
+      lastWeekLoginsResult,
+    ] = await Promise.all([
+      serviceSupabase.from("videos").select("views"),
+      serviceSupabase.from("users").select("id", { count: "exact" }),
+      serviceSupabase.from("users").select("id", { count: "exact" }).eq("is_approved", false),
+      serviceSupabase.from("videos").select("id", { count: "exact" }),
+      serviceSupabase.from("categories").select("id", { count: "exact" }),
+      serviceSupabase
+        .from("videos")
+        .select("id")
+        .gte("last_viewed::date", startOfWeek.toISOString().split("T")[0])
+        .lte("last_viewed::date", endOfWeek.toISOString().split("T")[0]),
+      serviceSupabase
+        .from("videos")
+        .select("id")
+        .gte("last_viewed::date", startOfLastWeek.toISOString().split("T")[0])
+        .lte("last_viewed::date", endOfLastWeek.toISOString().split("T")[0]),
+      serviceSupabase
+        .from("user_logins")
+        .select("user_id")
+        .gte("login_time::date", startOfWeek.toISOString().split("T")[0])
+        .lte("login_time::date", endOfWeek.toISOString().split("T")[0]),
+      serviceSupabase
+        .from("user_logins")
+        .select("user_id")
+        .gte("login_time::date", startOfLastWeek.toISOString().split("T")[0])
+        .lte("login_time::date", endOfLastWeek.toISOString().split("T")[0]),
+    ])
+
+    console.log("[v0] All videos query result:", allVideosResult.data?.length, "videos, error:", allVideosResult.error)
+    const totalViews = allVideosResult.data?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+    console.log("[v0] Total views calculated:", totalViews)
+
+    console.log(
+      "[v0] This week videos query result:",
+      thisWeekVideosResult.data?.length,
+      "videos, error:",
+      thisWeekVideosResult.error,
+    )
+    const thisWeekViews = thisWeekVideosResult.data?.length || 0
+
+    console.log(
+      "[v0] Last week videos query result:",
+      lastWeekVideosResult.data?.length,
+      "videos, error:",
+      lastWeekVideosResult.error,
+    )
+    const lastWeekViews = lastWeekVideosResult.data?.length || 0
+
+    console.log(
+      "[v0] This week logins query result:",
+      thisWeekLoginsResult.data?.length,
+      "logins, error:",
+      thisWeekLoginsResult.error,
+    )
+
+    const uniqueThisWeekUsers = new Set(thisWeekLoginsResult.data?.map((login) => login.user_id) || [])
+    const thisWeekUserLogins = uniqueThisWeekUsers.size
+    console.log("[v0] Unique users this week:", thisWeekUserLogins)
+
+    console.log(
+      "[v0] Last week logins query result:",
+      lastWeekLoginsResult.data?.length,
+      "logins, error:",
+      lastWeekLoginsResult.error,
+    )
+
+    const uniqueLastWeekUsers = new Set(lastWeekLoginsResult.data?.map((login) => login.user_id) || [])
+    const lastWeekUserLogins = uniqueLastWeekUsers.size
+    console.log("[v0] Unique users last week:", lastWeekUserLogins)
+
+    const result = {
+      success: true,
+      data: {
+        totalUsers: totalUsersResult.count || 0,
+        pendingUsers: pendingUsersResult.count || 0,
+        totalVideos: totalVideosResult.count || 0,
+        totalCategories: totalCategoriesResult.count || 0,
+        totalViews,
+        thisWeekViews,
+        lastWeekViews,
+        thisWeekUserLogins,
+        lastWeekUserLogins,
+      },
     }
+
+    console.log("[v0] Final telemetry result:", result)
+    return result
   } catch (error) {
-    console.error("Error getting telemetry data:", error)
+    console.error("[v0] Error getting telemetry data:", error)
     return {
-      thisWeekViews: 0,
-      thisWeekUserLogins: 0,
+      success: false,
+      data: {
+        totalUsers: 0,
+        pendingUsers: 0,
+        totalVideos: 0,
+        totalCategories: 0,
+        totalViews: 0,
+        thisWeekViews: 0,
+        lastWeekViews: 0,
+        thisWeekUserLogins: 0,
+        lastWeekUserLogins: 0,
+      },
     }
   }
 }

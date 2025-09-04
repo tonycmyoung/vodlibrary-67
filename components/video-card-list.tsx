@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Play, Clock, Heart } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 interface Video {
   id: string
@@ -37,6 +37,22 @@ interface VideoCardListProps {
 export default function VideoCardList({ video, isFavorited: initialIsFavorited = false }: VideoCardListProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user: userData },
+        } = await supabase.auth.getUser()
+        setUser(userData)
+      } catch (error) {
+        console.error("Error getting user:", error)
+      }
+    }
+    getUser()
+  }, [])
 
   useEffect(() => {
     setIsFavorited(initialIsFavorited)
@@ -55,12 +71,9 @@ export default function VideoCardList({ video, isFavorited: initialIsFavorited =
     setIsLoading(true)
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       if (!user) return
 
+      const supabase = createClient()
       if (isFavorited) {
         await supabase.from("user_favorites").delete().eq("user_id", user.id).eq("video_id", video.id)
         setIsFavorited(false)

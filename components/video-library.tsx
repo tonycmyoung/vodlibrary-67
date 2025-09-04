@@ -291,7 +291,11 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         const processedVideos = processVideos(data || [])
         setAllVideos(processedVideos)
 
-        if (!favoritesOnly && user) {
+        if (favoritesOnly) {
+          // On favorites page, all displayed videos are favorites
+          const favoriteVideoIds = new Set(processedVideos.map((video) => video.id))
+          setUserFavorites(favoriteVideoIds)
+        } else if (user) {
           const videoIds = processedVideos.map((video) => video.id)
           await loadUserFavorites(videoIds)
         }

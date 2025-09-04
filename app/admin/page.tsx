@@ -63,7 +63,7 @@ export default async function AdminDashboard() {
         </div>
 
         <div className="space-y-8">
-          <AdminStats />
+          <AdminStats key="admin-stats" />
           <PendingUsers />
         </div>
       </div>
