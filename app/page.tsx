@@ -3,6 +3,41 @@ import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
 
+async function trackUserLogin(userId: string) {
+  try {
+    console.log("[v0] Tracking login for user:", userId)
+    const supabase = createClient()
+
+    // Check if user already has a login record for today
+    const today = new Date().toISOString().split("T")[0]
+    const { data: existingLogin } = await supabase
+      .from("user_logins")
+      .select("id")
+      .eq("user_id", userId)
+      .gte("login_time", `${today}T00:00:00.000Z`)
+      .lt("login_time", `${today}T23:59:59.999Z`)
+      .single()
+
+    if (!existingLogin) {
+      console.log("[v0] No existing login today, creating new record")
+      const { error } = await supabase.from("user_logins").insert({
+        user_id: userId,
+        login_time: new Date().toISOString(),
+      })
+
+      if (error) {
+        console.error("[v0] Error tracking login:", error)
+      } else {
+        console.log("[v0] Login tracked successfully")
+      }
+    } else {
+      console.log("[v0] Login already tracked for today")
+    }
+  } catch (error) {
+    console.error("[v0] Login tracking failed:", error)
+  }
+}
+
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
@@ -34,6 +69,8 @@ export default async function Home() {
   if (!userProfile?.is_approved) {
     redirect("/pending-approval")
   }
+
+  await trackUserLogin(user.id)
 
   const userWithEmail = {
     id: user.id, // Always use the authenticated user's ID

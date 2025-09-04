@@ -52,7 +52,7 @@ export async function signIn(prevState: any, formData: FormData) {
   )
 
   console.log("[v0] Attempting Supabase auth.signInWithPassword")
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -62,7 +62,56 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Invalid email or password" }
   }
 
-  console.log("[v0] SignIn successful, redirecting to /")
+  console.log(
+    "[v0] SignIn successful, authentication data:",
+    JSON.stringify({
+      hasUser: !!data.user,
+      userId: data.user?.id,
+      hasSession: !!data.session,
+      sessionUserId: data.session?.user?.id,
+    }),
+  )
+
+  console.log("[v0] SignIn successful, attempting login tracking")
+
+  // Get the user ID from either data.user or data.session.user
+  const userId = data.user?.id || data.session?.user?.id
+  console.log("[v0] Login tracking: User ID found:", userId)
+
+  if (userId) {
+    try {
+      console.log("[v0] Login tracking: Creating service client for database insert")
+      const serviceSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return []
+            },
+            setAll() {},
+          },
+        },
+      )
+
+      console.log("[v0] Login tracking: Inserting login record for user:", userId)
+      const { error: insertError } = await serviceSupabase.from("user_logins").insert({
+        user_id: userId,
+      })
+
+      if (insertError) {
+        console.log("[v0] Login tracking: Insert failed with error:", insertError.message)
+      } else {
+        console.log("[v0] Login tracking: Successfully inserted login record")
+      }
+    } catch (trackingError) {
+      console.log("[v0] Login tracking: Exception occurred:", trackingError)
+    }
+  } else {
+    console.log("[v0] Login tracking: No user ID found in authentication response")
+  }
+
+  console.log("[v0] SignIn complete, now redirecting to /")
   redirect("/")
 }
 

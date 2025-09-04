@@ -1,5 +1,9 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+/* 
+ * DO NOT ADD EXTERNAL IMPORTS LIKE tw-animate-css OR OTHER THIRD-PARTY CSS LIBRARIES
+ * These imports may not resolve correctly in production and will break all styling
+ * Removed problematic tw-animate-css import that caused production styling failures
+ */
 
 @custom-variant dark (&:is(.dark *));
 

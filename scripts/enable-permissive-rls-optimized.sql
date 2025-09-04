@@ -1,4 +1,5 @@
--- Enable RLS with fully permissive policies to satisfy Supabase while maintaining functionality
+-- Enable RLS with fully permissive policies optimized for performance
+-- Uses (select auth.uid()) to avoid re-evaluation per row
 -- Security is handled at the application level through proper server actions and middleware
 
 -- Enable RLS on all tables
@@ -10,7 +11,6 @@ ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_logins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
--- Added missing tables: categories and performers
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.performers ENABLE ROW LEVEL SECURITY;
 
@@ -23,14 +23,12 @@ DROP POLICY IF EXISTS "permissive_user_favorites_policy" ON public.user_favorite
 DROP POLICY IF EXISTS "permissive_user_logins_policy" ON public.user_logins;
 DROP POLICY IF EXISTS "permissive_notifications_policy" ON public.notifications;
 DROP POLICY IF EXISTS "permissive_invitations_policy" ON public.invitations;
--- Added policy drops for missing tables
 DROP POLICY IF EXISTS "permissive_categories_policy" ON public.categories;
 DROP POLICY IF EXISTS "permissive_performers_policy" ON public.performers;
 
--- Create fully permissive policies (allow all authenticated users to do everything)
--- This satisfies Supabase RLS requirements while relying on application-level security
+-- Create fully permissive policies with performance optimization
+-- Using (select auth.uid()) prevents re-evaluation for each row
 
--- Updated auth.uid() to (select auth.uid()) for performance optimization
 CREATE POLICY "permissive_users_policy" ON public.users
 FOR ALL USING ((select auth.uid()) IS NOT NULL) WITH CHECK ((select auth.uid()) IS NOT NULL);
 
@@ -70,7 +68,6 @@ GRANT ALL ON public.user_favorites TO authenticated;
 GRANT ALL ON public.user_logins TO authenticated;
 GRANT ALL ON public.notifications TO authenticated;
 GRANT ALL ON public.invitations TO authenticated;
--- Added grants for missing tables
 GRANT ALL ON public.categories TO authenticated;
 GRANT ALL ON public.performers TO authenticated;
 
