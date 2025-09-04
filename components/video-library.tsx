@@ -65,6 +65,33 @@ const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
 export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page was restored from bfcache, force refresh of images
+        console.log("[v0] Page restored from bfcache, refreshing thumbnails")
+
+        // Force re-render of video components by updating a dummy state
+        setVideos((prev) => [...prev])
+
+        // Also refresh image cache by adding timestamp to image URLs
+        const images = document.querySelectorAll('img[src*="thumbnail"]')
+        images.forEach((img: any) => {
+          const originalSrc = img.src
+          if (originalSrc && !originalSrc.includes("?refresh=")) {
+            img.src = `${originalSrc}?refresh=${Date.now()}`
+          }
+        })
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow)
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow)
+    }
+  }, [])
+
   const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
 
   const [videos, setVideos] = useState<Video[]>([])
