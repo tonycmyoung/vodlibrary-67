@@ -41,6 +41,7 @@ export default function Header({ user }: HeaderProps) {
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const initials = user.full_name
     ? user.full_name
@@ -117,6 +118,17 @@ export default function Header({ user }: HeaderProps) {
           </nav>
 
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden text-white hover:bg-white/10"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </Button>
+
             <NotificationBell userId={user.id} isAdmin={isAdmin} />
 
             <DropdownMenu>
@@ -197,6 +209,38 @@ export default function Header({ user }: HeaderProps) {
             </DropdownMenu>
           </div>
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-black/90 border-t border-red-800/30">
+            <nav className="container mx-auto px-4 py-4 space-y-2">
+              <Link
+                href="/"
+                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Library
+              </Link>
+              <Link
+                href="/favorites"
+                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Heart className="w-4 h-4" />
+                <span>Favorites</span>
+              </Link>
+              {showAdminView && (
+                <Link
+                  href="/admin"
+                  className="block text-orange-400 hover:text-orange-300 transition-colors py-2 px-3 rounded-md hover:bg-orange-500/10 flex items-center space-x-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Admin View</span>
+                </Link>
+              )}
+            </nav>
+          </div>
+        )}
       </header>
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
