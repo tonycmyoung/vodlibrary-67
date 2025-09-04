@@ -963,7 +963,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             </div>
 
             {/* View toggle - larger touch targets on mobile */}
-            <div className="w-full sm:w-auto">
+            <div className="flex justify-center sm:w-auto">
               <ViewToggle view={view} onViewChange={handleViewChange} />
             </div>
           </div>
