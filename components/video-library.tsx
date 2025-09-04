@@ -860,25 +860,29 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 space-y-6">
         <div className="space-y-4">
-          {/* Search bar - full width on mobile */}
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* View toggle moved to right of search bar */}
+            <ViewToggle view={view} onViewChange={handleViewChange} />
           </div>
 
           {/* Controls row - responsive layout */}
@@ -960,11 +964,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               <div className="flex-1 sm:flex-none">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
-            </div>
-
-            {/* View toggle - larger touch targets on mobile */}
-            <div className="flex justify-center sm:w-auto">
-              <ViewToggle view={view} onViewChange={handleViewChange} />
             </div>
           </div>
         </div>
