@@ -175,8 +175,12 @@ export async function updateSession(request: NextRequest) {
 
           const isAdminEmail = session.user.email === "acmyma@gmail.com"
           if ((user.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
-            const redirectUrl = new URL("/admin", request.url)
-            return NextResponse.redirect(redirectUrl)
+            // Check if we're already coming from admin to prevent loops
+            const referer = request.headers.get("referer")
+            if (!referer || !referer.includes("/admin")) {
+              const redirectUrl = new URL("/admin", request.url)
+              return NextResponse.redirect(redirectUrl)
+            }
           }
         }
       } catch (dbError) {
