@@ -417,7 +417,39 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               </Select>
               <span className="text-sm text-gray-400">per page</span>
             </div>
-            <div className="text-sm text-gray-400 whitespace-nowrap">
+            {showNavigation ? (
+              <div className="flex sm:hidden items-center gap-2 text-sm text-gray-400 whitespace-nowrap">
+                <span>
+                  Showing {startItem}-{endItem} of {videos.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="h-7 px-2 text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <span className="px-1">
+                  {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="h-7 px-2 text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400 whitespace-nowrap sm:block">
+                Showing {startItem}-{endItem} of {videos.length}
+              </div>
+            )}
+            <div className="hidden sm:block text-sm text-gray-400 whitespace-nowrap">
               Showing {startItem}-{endItem} of {videos.length} videos
             </div>
           </div>
@@ -426,31 +458,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         {showNavigation && (
           <div className="flex justify-center">
             <div className="flex items-center gap-1">
-              {/* Mobile: Simple prev/next with page indicator */}
-              <div className="flex sm:hidden items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="h-9 px-3 text-white hover:bg-gray-700 disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-gray-400 px-3">
-                  {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className="h-9 px-3 text-white hover:bg-gray-700 disabled:opacity-50"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-
               {/* Desktop: Full pagination */}
               <div className="hidden sm:block">
                 <Pagination>
