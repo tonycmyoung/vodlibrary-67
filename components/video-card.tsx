@@ -41,7 +41,6 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [thumbnailSrc, setThumbnailSrc] = useState<string | null>(null)
 
   useEffect(() => {
     console.log("[v0] VideoCard mounted for video:", video.id, video.title)
@@ -58,36 +57,6 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
     }
     getUser()
   }, [])
-
-  useEffect(() => {
-    if (!video.thumbnail_url) {
-      setThumbnailSrc(null)
-      return
-    }
-
-    if (video.thumbnail_url.startsWith("data:")) {
-      try {
-        const byteCharacters = atob(video.thumbnail_url.split(",")[1])
-        const byteNumbers = new Array(byteCharacters.length)
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i)
-        }
-        const byteArray = new Uint8Array(byteNumbers)
-        const blob = new Blob([byteArray], { type: "image/jpeg" })
-        const blobUrl = URL.createObjectURL(blob)
-        setThumbnailSrc(blobUrl)
-
-        return () => {
-          URL.revokeObjectURL(blobUrl)
-        }
-      } catch (error) {
-        console.error("Error converting base64 to blob:", error)
-        setThumbnailSrc(video.thumbnail_url)
-      }
-    } else {
-      setThumbnailSrc(video.thumbnail_url)
-    }
-  }, [video.thumbnail_url])
 
   useEffect(() => {
     setIsFavorited(initialIsFavorited)
@@ -149,9 +118,9 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
     <Link href={`/video/${video.id}`} onClick={handleVideoClick}>
       <Card className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden">
         <div className="relative aspect-video bg-gray-900">
-          {thumbnailSrc ? (
+          {video.thumbnail_url ? (
             <img
-              src={thumbnailSrc || "/placeholder.svg"}
+              src={video.thumbnail_url || "/placeholder.svg"}
               alt={video.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               onError={(e) => {
