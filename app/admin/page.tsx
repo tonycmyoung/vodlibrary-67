@@ -59,7 +59,7 @@ export default async function AdminDashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-300">Manage users, videos, and categories</p>
+          <p className="text-gray-200">Manage users, videos, and categories</p>
         </div>
 
         <div className="space-y-8">

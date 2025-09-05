@@ -72,45 +72,6 @@ export async function signIn(prevState: any, formData: FormData) {
     }),
   )
 
-  console.log("[v0] SignIn successful, attempting login tracking")
-
-  // Get the user ID from either data.user or data.session.user
-  const userId = data.user?.id || data.session?.user?.id
-  console.log("[v0] Login tracking: User ID found:", userId)
-
-  if (userId) {
-    try {
-      console.log("[v0] Login tracking: Creating service client for database insert")
-      const serviceSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return []
-            },
-            setAll() {},
-          },
-        },
-      )
-
-      console.log("[v0] Login tracking: Inserting login record for user:", userId)
-      const { error: insertError } = await serviceSupabase.from("user_logins").insert({
-        user_id: userId,
-      })
-
-      if (insertError) {
-        console.log("[v0] Login tracking: Insert failed with error:", insertError.message)
-      } else {
-        console.log("[v0] Login tracking: Successfully inserted login record")
-      }
-    } catch (trackingError) {
-      console.log("[v0] Login tracking: Exception occurred:", trackingError)
-    }
-  } else {
-    console.log("[v0] Login tracking: No user ID found in authentication response")
-  }
-
   console.log("[v0] SignIn complete, now redirecting to /")
   redirect("/")
 }
@@ -997,9 +958,8 @@ export async function getTelemetryData() {
       thisWeekLoginsResult.error,
     )
 
-    const uniqueThisWeekUsers = new Set(thisWeekLoginsResult.data?.map((login) => login.user_id) || [])
-    const thisWeekUserLogins = uniqueThisWeekUsers.size
-    console.log("[v0] Unique users this week:", thisWeekUserLogins)
+    const thisWeekUserLogins = thisWeekLoginsResult.data?.length || 0
+    console.log("[v0] Total logins this week:", thisWeekUserLogins)
 
     console.log(
       "[v0] Last week logins query result:",
@@ -1008,9 +968,8 @@ export async function getTelemetryData() {
       lastWeekLoginsResult.error,
     )
 
-    const uniqueLastWeekUsers = new Set(lastWeekLoginsResult.data?.map((login) => login.user_id) || [])
-    const lastWeekUserLogins = uniqueLastWeekUsers.size
-    console.log("[v0] Unique users last week:", lastWeekUserLogins)
+    const lastWeekUserLogins = lastWeekLoginsResult.data?.length || 0
+    console.log("[v0] Total logins last week:", lastWeekUserLogins)
 
     const result = {
       success: true,

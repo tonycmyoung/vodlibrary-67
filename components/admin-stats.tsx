@@ -91,7 +91,7 @@ export default function AdminStats() {
       bgColor: "bg-emerald-500/10",
     },
     {
-      title: "Daily Logons This Week",
+      title: "Logons This Week", // removed "Daily" from title
       value: stats.thisWeekUserLogins,
       subtitle: `Last week: ${stats.lastWeekUserLogins}`,
       icon: LogIn,
