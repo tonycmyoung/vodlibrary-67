@@ -31,13 +31,13 @@ export default function CurriculumModal({ isOpen, onClose }: CurriculumModalProp
               onClick={() =>
                 handleLinkClick("https://drive.google.com/file/d/1RGKlqb_XNsEOZUgiaEDSBmN86ArVhuZm/view?usp=drive_link")
               }
-              className="w-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-between p-4 h-auto"
+              className="w-full bg-gray-700 hover:bg-gray-600 hover:scale-[1.02] transition-all duration-200 text-white flex items-center justify-between p-4 h-auto"
             >
               <div className="flex items-center gap-3">
-                <Award className="w-5 h-5" />
+                <Award className="w-5 h-5 text-red-400" />
                 <div className="text-left">
                   <div className="font-semibold">Belt Requirements</div>
-                  <div className="text-xs text-red-100 opacity-80">Training progression guidelines</div>
+                  <div className="text-xs text-gray-300 opacity-80">Training progression guidelines</div>
                 </div>
               </div>
               <ExternalLink className="w-4 h-4" />
@@ -47,7 +47,7 @@ export default function CurriculumModal({ isOpen, onClose }: CurriculumModalProp
               onClick={() =>
                 handleLinkClick("https://drive.google.com/file/d/1RHvON4aG8KZ1R5xl7lKjkk0NzyREzHax/view?usp=drive_link")
               }
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-between p-4 h-auto"
+              className="w-full bg-gray-700 hover:bg-gray-600 hover:scale-[1.02] transition-all duration-200 text-white flex items-center justify-between p-4 h-auto"
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5" />

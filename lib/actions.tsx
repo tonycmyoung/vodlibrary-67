@@ -24,10 +24,7 @@ export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  console.log("[v0] SignIn attempt for email:", email)
-
   if (!email || !password) {
-    console.log("[v0] SignIn failed: missing email or password")
     return { error: "Email and password are required" }
   }
 
@@ -51,28 +48,66 @@ export async function signIn(prevState: any, formData: FormData) {
     },
   )
 
-  console.log("[v0] Attempting Supabase auth.signInWithPassword")
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
   if (error) {
-    console.log("[v0] SignIn failed with error:", error.message)
     return { error: "Invalid email or password" }
   }
 
-  console.log(
-    "[v0] SignIn successful, authentication data:",
-    JSON.stringify({
-      hasUser: !!data.user,
-      userId: data.user?.id,
-      hasSession: !!data.session,
-      sessionUserId: data.session?.user?.id,
-    }),
-  )
+  if (data.user?.id) {
+    try {
+      console.log("[v0] Tracking login for user:", data.user.id)
 
-  console.log("[v0] SignIn complete, now redirecting to /")
+      const serviceSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return []
+            },
+            setAll() {},
+          },
+        },
+      )
+
+      const today = new Date().toISOString().split("T")[0]
+
+      // Check if login already exists for today
+      const { data: existingLogin, error: checkError } = await serviceSupabase
+        .from("user_logins")
+        .select("id")
+        .eq("user_id", data.user.id)
+        .gte("login_time", today)
+        .single()
+
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError
+      }
+
+      if (!existingLogin) {
+        const { error: insertError } = await serviceSupabase.from("user_logins").insert({
+          user_id: data.user.id,
+          login_time: new Date().toISOString(),
+        })
+
+        if (insertError) {
+          throw insertError
+        }
+
+        console.log("[v0] Login tracking successful")
+      } else {
+        console.log("[v0] Login already tracked for today")
+      }
+    } catch (trackingError) {
+      console.log("[v0] Login tracking failed:", trackingError)
+      // Don't fail signin if tracking fails
+    }
+  }
+
   redirect("/")
 }
 

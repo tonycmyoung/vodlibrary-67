@@ -9,7 +9,7 @@ export const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
 const userApprovalCache = new Map<string, { isApproved: boolean; role: string; timestamp: number }>()
-const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes (increased from 5)
+const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
 
 function getCachedUserApproval(userId: string) {
   const cached = userApprovalCache.get(userId)
@@ -38,8 +38,13 @@ function setCachedUserApproval(userId: string, isApproved: boolean, role: string
 }
 
 export async function updateSession(request: NextRequest) {
+  console.log("[v0] MIDDLEWARE EXECUTION START - URL:", request.url)
+  console.log("[v0] MIDDLEWARE - Method:", request.method)
+  console.log("[v0] MIDDLEWARE - Pathname:", request.nextUrl.pathname)
+
   // If Supabase is not configured, just continue without auth
   if (!isSupabaseConfigured) {
+    console.log("[v0] MIDDLEWARE - Supabase not configured, skipping")
     return NextResponse.next({
       request,
     })
@@ -68,40 +73,7 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // Check if this is an auth callback
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get("code")
-
-  if (code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (!error && data.session?.user) {
-      // Track the login using service role client
-      try {
-        const serviceSupabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          {
-            cookies: {
-              getAll() {
-                return []
-              },
-              setAll() {},
-            },
-          },
-        )
-
-        await serviceSupabase.from("user_logins").insert({
-          user_id: data.session.user.id,
-          login_time: new Date().toISOString(),
-        })
-      } catch (trackingError) {
-        // Silently fail - don't break the user experience for tracking issues
-      }
-    }
-
-    return NextResponse.redirect(new URL("/auth/login?confirmed=true", request.url))
-  }
+  console.log("[v0] MIDDLEWARE - Processing request (OAuth logic removed)")
 
   let session
   try {
@@ -233,5 +205,6 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  console.log("[v0] MIDDLEWARE EXECUTION END - Continuing to:", request.nextUrl.pathname)
   return supabaseResponse
 }

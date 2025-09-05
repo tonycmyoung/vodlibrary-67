@@ -77,9 +77,30 @@ export async function GET(request: NextRequest) {
 
           return response
         } else {
-          console.log("[v0] Callback: Existing user found, redirecting to login")
-          // Regular login confirmation
-          return NextResponse.redirect(new URL("/auth/login?confirmed=true", request.url))
+          console.log("[v0] Callback: Existing user found, redirecting to home")
+
+          const response = NextResponse.redirect(new URL("/", request.url))
+
+          // Set cookies for the session
+          const {
+            data: { session },
+          } = await supabase.auth.getSession()
+          if (session) {
+            response.cookies.set("sb-access-token", session.access_token, {
+              path: "/",
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+            })
+            response.cookies.set("sb-refresh-token", session.refresh_token, {
+              path: "/",
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+            })
+          }
+
+          return response
         }
       }
     } catch (error) {
