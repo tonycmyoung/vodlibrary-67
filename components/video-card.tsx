@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,13 +35,12 @@ interface VideoCardProps {
   isFavorited?: boolean
 }
 
-export default function VideoCard({ video, isFavorited: initialIsFavorited = false }: VideoCardProps) {
+const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorited = false }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    console.log("[v0] VideoCard mounted for video:", video.id, video.title)
     const getUser = async () => {
       try {
         const supabase = createClient()
@@ -55,7 +53,7 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
       }
     }
     getUser()
-  }, [])
+  }, [video.id])
 
   useEffect(() => {
     setIsFavorited(initialIsFavorited)
@@ -193,4 +191,6 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
       </Card>
     </Link>
   )
-}
+})
+
+export default VideoCard

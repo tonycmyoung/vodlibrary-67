@@ -119,18 +119,27 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse
     }
 
-    // If it's a rate limiting error, allow the request to continue for non-auth routes
     const errorMessage = error?.message || ""
-    if (errorMessage.includes("Too Many") || errorMessage.includes("SyntaxError")) {
+    if (
+      errorMessage.includes("Too Many") ||
+      errorMessage.includes("SyntaxError") ||
+      errorMessage.includes("Invalid Refresh Token")
+    ) {
+      // Clear all auth cookies to prevent loops
       const response = NextResponse.redirect(new URL("/auth/login", request.url))
       response.cookies.delete("sb-access-token")
       response.cookies.delete("sb-refresh-token")
+      response.cookies.delete("supabase-auth-token")
+      response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
+      response.headers.set("Pragma", "no-cache")
+      response.headers.set("Expires", "0")
       return response
     }
 
     const response = NextResponse.redirect(new URL("/auth/login", request.url))
     response.cookies.delete("sb-access-token")
     response.cookies.delete("sb-refresh-token")
+    response.cookies.delete("supabase-auth-token")
     return response
   }
 

@@ -197,184 +197,169 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       recordedValues: Array.from(recordedSet),
     }
-  }, [allVideos])
+  }, [allVideos]) // Optimized dependency to just allVideos
 
   useEffect(() => {
+    let mounted = true
     const getUser = async () => {
+      if (!mounted) return
       setUserLoading(true)
       try {
         const {
           data: { user: userData },
         } = await supabase.auth.getUser()
-        setUser(userData)
+        if (mounted) setUser(userData)
       } catch (error) {
         console.error("Error getting user:", error)
       } finally {
-        setUserLoading(false)
+        if (mounted) setUserLoading(false)
       }
     }
     getUser()
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
+    let mounted = true
     const loadData = async () => {
+      if (!mounted) return
       setLoading(true)
 
       if (isCircuitBreakerOpen()) {
         console.log("Circuit breaker is open, using cached data if available")
         loadFromCache()
-        setLoading(false)
+        if (mounted) setLoading(false)
         return
       }
 
       try {
-        let query
-
-        if (favoritesOnly) {
-          if (userLoading) {
-            setLoading(false)
-            return
-          }
-
-          if (!user) {
-            setLoading(false)
-            return
-          }
-
-          // Get favorites with all related data in one query
-          query = supabase
-            .from("user_favorites")
-            .select(
-              `
-              videos!inner(
-                *,
-                video_categories(
-                  categories(id, name, color)
-                ),
-                video_performers(
-                  performers(id, name)
-                )
-              )
-            `,
-            )
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-        } else {
-          // Get all videos with related data in one query
-          query = supabase
+        const [videosResult, favoritesResult, categoriesResult, performersResult] = await Promise.all([
+          // Simple video query without JOINs
+          supabase
             .from("videos")
-            .select(
-              `
-              *,
-              video_categories(
-                categories(id, name, color)
-              ),
-              video_performers(
-                performers(id, name)
-              )
-            `,
-            )
-            .eq("is_published", true)
+            .select(`
+              id, title, description, video_url, thumbnail_url, duration_seconds, 
+              created_at, recorded, views, updated_at
+            `)
+            .order("created_at", { ascending: false }),
+
+          // User favorites query
+          user
+            ? supabase.from("user_favorites").select("video_id").eq("user_id", user.id)
+            : Promise.resolve({ data: [], error: null }),
+
+          // Separate categories query
+          supabase
+            .from("video_categories")
+            .select(`
+              video_id,
+              categories(id, name, color)
+            `),
+
+          // Separate performers query
+          supabase
+            .from("video_performers")
+            .select(`
+              video_id,
+              performers(id, name)
+            `),
+        ])
+
+        if (!mounted) return
+
+        if (videosResult.error) {
+          recordCircuitBreakerFailure()
+          throw videosResult.error
         }
 
-        const { data, error } = await query
+        const videosWithMetadata =
+          videosResult.data?.map((video) => {
+            // Find categories for this video
+            const videoCategories =
+              categoriesResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.categories) || []
 
-        if (error) {
-          console.error("Error fetching data:", error)
-          setLoading(false)
-          return
-        }
+            // Find performers for this video
+            const videoPerformers =
+              performersResult.data?.filter((vp) => vp.video_id === video.id).map((vp) => vp.performers) || []
 
-        const processVideos = (rawData: any[]) => {
-          const videoMap = new Map<string, Video>()
-
-          rawData.forEach((item) => {
-            const video = favoritesOnly ? item.videos : item
-
-            if (!videoMap.has(video.id)) {
-              videoMap.set(video.id, {
-                ...video,
-                categories: [],
-                performers: [],
-              })
+            return {
+              ...video,
+              categories: videoCategories,
+              performers: videoPerformers,
             }
+          }) || []
 
-            const processedVideo = videoMap.get(video.id)!
+        recordCircuitBreakerSuccess()
+        saveToCache(videosWithMetadata)
 
-            // Process categories efficiently
-            video.video_categories?.forEach((vc: any) => {
-              const category = vc.categories
-              if (category?.id && category?.name && !processedVideo.categories.some((c) => c.id === category.id)) {
-                processedVideo.categories.push(category)
-              }
-            })
-
-            // Process performers efficiently
-            video.video_performers?.forEach((vp: any) => {
-              const performer = vp.performers
-              if (performer?.id && performer?.name && !processedVideo.performers.some((p) => p.id === performer.id)) {
-                processedVideo.performers.push(performer)
-              }
-            })
-          })
-
-          return Array.from(videoMap.values())
+        if (mounted) {
+          setAllVideos(videosWithMetadata)
+          setUserFavorites(new Set(favoritesResult.data?.map((f) => f.video_id) || []))
         }
-
-        const processedVideos = processVideos(data || [])
-        setAllVideos(processedVideos)
-
-        if (favoritesOnly) {
-          // On favorites page, all displayed videos are favorites
-          const favoriteVideoIds = new Set(processedVideos.map((video) => video.id))
-          setUserFavorites(favoriteVideoIds)
-        } else if (user) {
-          const videoIds = processedVideos.map((video) => video.id)
-          await loadUserFavorites(videoIds)
-        }
-
-        setCachedData(favoritesOnly ? "favoriteVideos" : "videos", processedVideos)
-
-        filterAndSortVideos(processedVideos)
-        setLoading(false)
       } catch (error) {
         console.error("Error loading data:", error)
-        setLoading(false)
+        recordCircuitBreakerFailure()
+        loadFromCache()
+      } finally {
+        if (mounted) setLoading(false)
       }
-    }
-
-    if (favoritesOnly && userLoading) {
-      return
     }
 
     loadData()
-  }, [favoritesOnly, user, userLoading])
-
-  const loadUserFavorites = async (videoIds: string[]) => {
-    if (!user || videoIds.length === 0) {
-      setUserFavorites(new Set())
-      return
+    return () => {
+      mounted = false
     }
+  }, [user, favoritesOnly])
 
-    try {
-      const { data, error } = await supabase
-        .from("user_favorites")
-        .select("video_id")
-        .eq("user_id", user.id)
-        .in("video_id", videoIds)
+  const loadFromCache = () => {
+    const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
 
-      if (error) {
-        console.error("Error loading user favorites:", error)
-        setUserFavorites(new Set())
-        return
+    if (cachedVideos) {
+      setAllVideos(cachedVideos)
+      filterAndSortVideos(cachedVideos)
+    }
+  }
+
+  const saveToCache = (data: Video[]) => {
+    setCachedData(favoritesOnly ? "favoriteVideos" : "videos", data)
+  }
+
+  const setCachedData = (key: string, data: any) => {
+    cache.set(key, { data, timestamp: Date.now() })
+  }
+
+  const getCachedData = (key: string) => {
+    const cached = cache.get(key)
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data
+    }
+    return null
+  }
+
+  const recordCircuitBreakerFailure = () => {
+    failureCount++
+    lastFailureTime = Date.now()
+  }
+
+  const recordCircuitBreakerSuccess = () => {
+    failureCount = 0
+    lastFailureTime = 0
+  }
+
+  const isCircuitBreakerOpen = () => {
+    if (failureCount >= CIRCUIT_BREAKER_THRESHOLD) {
+      const timeSinceLastFailure = Date.now() - lastFailureTime
+      if (timeSinceLastFailure < CIRCUIT_BREAKER_TIMEOUT) {
+        return true
+      } else {
+        failureCount = 0
+        lastFailureTime = 0
+        return false
       }
-
-      const favoriteVideoIds = new Set(data?.map((fav) => fav.video_id) || [])
-      setUserFavorites(favoriteVideoIds)
-    } catch (error) {
-      console.error("Error loading user favorites:", error)
-      setUserFavorites(new Set())
     }
+    return false
   }
 
   useEffect(() => {
@@ -597,75 +582,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     }
 
     return rangeWithDots
-  }
-
-  const isCircuitBreakerOpen = () => {
-    if (failureCount >= CIRCUIT_BREAKER_THRESHOLD) {
-      const timeSinceLastFailure = Date.now() - lastFailureTime
-      if (timeSinceLastFailure < CIRCUIT_BREAKER_TIMEOUT) {
-        return true
-      } else {
-        failureCount = 0
-        lastFailureTime = 0
-        return false
-      }
-    }
-    return false
-  }
-
-  const recordFailure = () => {
-    failureCount++
-    lastFailureTime = Date.now()
-  }
-
-  const recordSuccess = () => {
-    failureCount = 0
-    lastFailureTime = 0
-  }
-
-  const getCachedData = (key: string) => {
-    const cached = cache.get(key)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data
-    }
-    return null
-  }
-
-  const setCachedData = (key: string, data: any) => {
-    cache.set(key, { data, timestamp: Date.now() })
-  }
-
-  const loadFromCache = () => {
-    const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
-
-    if (cachedVideos) {
-      setAllVideos(cachedVideos)
-      filterAndSortVideos(cachedVideos)
-    }
-  }
-
-  const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 5, baseDelay = 2000) => {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const result = await fn()
-        recordSuccess()
-        return result
-      } catch (error: any) {
-        const isRateLimit =
-          error.message?.includes("Too Many") ||
-          error.message?.includes("rate limit") ||
-          error.message?.includes("Internal S")
-
-        if (isRateLimit && i < maxRetries - 1) {
-          const delay = baseDelay * Math.pow(2, i) + Math.random() * 2000
-          console.log(`Rate limited, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
-          await new Promise((resolve) => setTimeout(resolve, delay))
-          continue
-        }
-        recordFailure()
-        throw error
-      }
-    }
   }
 
   const filterAndSortVideos = (
