@@ -3,7 +3,7 @@
 import type React from "react"
 import SortControl from "@/components/sort-control"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -112,6 +112,8 @@ export default function VideoManagement() {
   const [thumbnailError, setThumbnailError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const isInitialMount = useRef(true)
+
   useEffect(() => {
     fetchVideos()
     fetchCategories()
@@ -199,8 +201,8 @@ export default function VideoManagement() {
 
       switch (sortBy) {
         case "category":
-          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
-          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized"
+          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized"
           aValue = aCats
           bValue = bCats
           break
@@ -242,7 +244,12 @@ export default function VideoManagement() {
     })
 
     setFilteredVideos(filtered)
-    setCurrentPage(1)
+
+    if (!isInitialMount.current) {
+      setCurrentPage(1)
+    } else {
+      isInitialMount.current = false
+    }
   }
 
   const resetForm = () => {
@@ -434,8 +441,8 @@ export default function VideoManagement() {
 
       switch (newSortBy) {
         case "category":
-          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
-          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized" // Use a value that sorts last alphabetically
+          const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized"
+          const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized"
           aValue = aCats
           bValue = bCats
           break
@@ -502,7 +509,8 @@ export default function VideoManagement() {
     } else {
       params.set("page", page.toString())
     }
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+    const currentPath = window.location.pathname
+    const newUrl = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
     router.replace(newUrl)
 
     document.querySelector(".space-y-6")?.scrollIntoView({ behavior: "smooth" })

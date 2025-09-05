@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
@@ -804,25 +804,44 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     updatePaginatedVideos(videos, currentPage, itemsPerPage)
   }, [videos, currentPage, itemsPerPage])
 
+  const isInitialMount = useRef(true)
+
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
     if (currentPage !== 1) {
       handlePageChange(1)
     }
   }, [searchQuery, selectedCategories])
 
   const updateURL = (filters: string[], search: string, mode: "AND" | "OR") => {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(searchParams.toString())
 
     if (filters.length > 0) {
       params.set("filters", encodeURIComponent(JSON.stringify(filters)))
+    } else {
+      params.delete("filters")
     }
 
     if (search.trim()) {
       params.set("search", search)
+    } else {
+      params.delete("search")
     }
 
     if (mode !== "AND") {
       params.set("mode", mode)
+    } else {
+      params.delete("mode")
+    }
+
+    // Preserve page parameter if it exists and we're not resetting to page 1
+    const currentPageParam = searchParams.get("page")
+    if (currentPageParam && currentPage !== 1) {
+      params.set("page", currentPageParam)
     }
 
     const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
