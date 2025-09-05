@@ -263,24 +263,63 @@ export default function VideoManagement() {
 
     try {
       const videoData = {
-        id: editingVideo?.id,
         title: formData.title,
-        description: formData.description || null,
-        video_url: formData.video_url,
-        thumbnail_url: formData.thumbnail_url || null,
-        duration_seconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
-        is_published: formData.is_published,
+        description: formData.description || "",
+        videoUrl: formData.video_url,
+        thumbnailUrl: formData.thumbnail_url || "",
+        performerId: formData.performer_ids[0] || "", // Use first performer for now
+        categoryIds: formData.category_ids,
+        performerIds: formData.performer_ids,
+        durationSeconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
+        isPublished: formData.is_published,
         recorded: formData.recorded || null,
-        category_ids: formData.category_ids,
-        performer_ids: formData.performer_ids,
       }
 
-      const result = await saveVideo(videoData)
+      if (editingVideo) {
+        const { error } = await supabase
+          .from("videos")
+          .update({
+            title: formData.title,
+            description: formData.description || null,
+            video_url: formData.video_url,
+            thumbnail_url: formData.thumbnail_url || null,
+            duration_seconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
+            is_published: formData.is_published,
+            recorded: formData.recorded || null,
+          })
+          .eq("id", editingVideo.id)
 
-      if (result.error) {
-        console.error("Error saving video:", result.error)
-        alert(`Error: ${result.error}`)
-        return
+        if (error) {
+          console.error("Error updating video:", error)
+          alert(`Error: ${error.message}`)
+          return
+        }
+
+        await supabase.from("video_categories").delete().eq("video_id", editingVideo.id)
+        if (formData.category_ids.length > 0) {
+          const categoryInserts = formData.category_ids.map((categoryId) => ({
+            video_id: editingVideo.id,
+            category_id: categoryId,
+          }))
+          await supabase.from("video_categories").insert(categoryInserts)
+        }
+
+        await supabase.from("video_performers").delete().eq("video_id", editingVideo.id)
+        if (formData.performer_ids.length > 0) {
+          const performerInserts = formData.performer_ids.map((performerId) => ({
+            video_id: editingVideo.id,
+            performer_id: performerId,
+          }))
+          await supabase.from("video_performers").insert(performerInserts)
+        }
+      } else {
+        const result = await saveVideo(videoData)
+
+        if (result.error) {
+          console.error("Error saving video:", result.error)
+          alert(`Error: ${result.error}`)
+          return
+        }
       }
 
       await fetchVideos()

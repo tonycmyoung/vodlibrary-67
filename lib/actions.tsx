@@ -706,12 +706,14 @@ export async function changePassword(prevState: any, formData: FormData) {
   return { success: "Password changed successfully" }
 }
 
-export async function saveVideo(prevState: any, formData: FormData) {
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const videoUrl = formData.get("videoUrl") as string
-  const thumbnailUrl = formData.get("thumbnailUrl") as string
-  const performerId = formData.get("performerId") as string
+export async function saveVideo(videoData: {
+  title: string
+  description?: string
+  videoUrl: string
+  thumbnailUrl?: string
+  performerId: string
+}) {
+  const { title, description, videoUrl, thumbnailUrl, performerId } = videoData
 
   if (!title || !videoUrl || !performerId) {
     return { error: "Title, video URL, and performer are required" }
