@@ -3,7 +3,7 @@
 import type React from "react"
 import SortControl from "@/components/sort-control"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,18 +61,16 @@ interface Performer {
 
 export default function VideoManagement() {
   const supabase = createClient()
-  const router = useRouter()
   const searchParams = useSearchParams()
+  const router = useRouter()
 
+  const [defaultPage, setDefaultPage] = useState(1)
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [filteredVideos, setFilteredVideos] = useState<Video[]>([])
   const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
-  const [currentPage, setCurrentPage] = useState(() => {
-    const pageParam = searchParams.get("page")
-    return pageParam ? Math.max(1, Number.parseInt(pageParam)) : 1
-  })
+  const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== "undefined") {
       return Number.parseInt(localStorage.getItem("videoManagementItemsPerPage") || "10")
@@ -112,8 +110,6 @@ export default function VideoManagement() {
   const [thumbnailError, setThumbnailError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const isInitialMount = useRef(true)
-
   useEffect(() => {
     fetchVideos()
     fetchCategories()
@@ -121,8 +117,15 @@ export default function VideoManagement() {
   }, [])
 
   useEffect(() => {
+    const pageParam = searchParams.get("page")
+    const pageValue = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) || 1 : 1
+    setDefaultPage(pageValue)
+    setCurrentPage(pageValue)
+  }, []) // Removed searchParams dependency to prevent infinite loop
+
+  useEffect(() => {
     filterVideos()
-  }, [videos, searchQuery]) // Removed sort dependencies
+  }, [videos, searchQuery, defaultPage]) // Added defaultPage dependency
 
   useEffect(() => {
     updatePaginatedVideos()
@@ -244,12 +247,6 @@ export default function VideoManagement() {
     })
 
     setFilteredVideos(filtered)
-
-    if (!isInitialMount.current) {
-      setCurrentPage(1)
-    } else {
-      isInitialMount.current = false
-    }
   }
 
   const resetForm = () => {
@@ -280,7 +277,7 @@ export default function VideoManagement() {
         description: formData.description || "",
         videoUrl: formData.video_url,
         thumbnailUrl: formData.thumbnail_url || "",
-        performerId: formData.performer_ids[0] || "", // Use first performer for now
+        performerId: formData.performer_ids[0] || "",
         categoryIds: formData.category_ids,
         performerIds: formData.performer_ids,
         durationSeconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
@@ -491,10 +488,6 @@ export default function VideoManagement() {
     const endIndex = startIndex + itemsPerPage
     const paginated = filteredVideos.slice(startIndex, endIndex)
     setPaginatedVideos(paginated)
-
-    console.log(
-      `[v0] Pagination update: page ${currentPage}, showing ${paginated.length} of ${filteredVideos.length} videos`,
-    )
   }
 
   const totalPages = Math.ceil(filteredVideos.length / itemsPerPage)
@@ -502,15 +495,16 @@ export default function VideoManagement() {
   const endItem = Math.min(currentPage * itemsPerPage, filteredVideos.length)
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    const validPage = Math.max(1, Math.min(page, totalPages))
+    setCurrentPage(validPage)
+
     const params = new URLSearchParams(searchParams.toString())
-    if (page === 1) {
+    if (validPage === 1) {
       params.delete("page")
     } else {
-      params.set("page", page.toString())
+      params.set("page", validPage.toString())
     }
-    const currentPath = window.location.pathname
-    const newUrl = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
+    const newUrl = params.toString() ? `/admin/videos?${params.toString()}` : "/admin/videos"
     router.replace(newUrl)
 
     document.querySelector(".space-y-6")?.scrollIntoView({ behavior: "smooth" })
@@ -519,7 +513,11 @@ export default function VideoManagement() {
   const handleItemsPerPageChange = (newItemsPerPage: string) => {
     const itemsPerPageNum = Number.parseInt(newItemsPerPage)
     setItemsPerPage(itemsPerPageNum)
-    setCurrentPage(1)
+    const pageParam = searchParams.get("page")
+    const targetPage = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) || 1 : 1
+    const maxPage = Math.ceil(filteredVideos.length / itemsPerPageNum)
+    const validPage = Math.min(targetPage, maxPage)
+    setCurrentPage(validPage)
     localStorage.setItem("videoManagementItemsPerPage", newItemsPerPage)
   }
 

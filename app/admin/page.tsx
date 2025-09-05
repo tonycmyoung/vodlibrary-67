@@ -54,12 +54,12 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">
+    <div className="min-h-screen bg-gray-900">
       <AdminHeader user={userWithId} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-200">Manage users, videos, and categories</p>
+          <p className="text-gray-300">Manage users, videos, and categories</p>
         </div>
 
         <div className="space-y-8">
