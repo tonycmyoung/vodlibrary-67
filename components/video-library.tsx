@@ -146,7 +146,13 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     return "asc"
   })
 
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const urlPage = searchParams.get("page")
+      return urlPage ? Math.max(1, Number.parseInt(urlPage)) : 1
+    }
+    return 1
+  })
 
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== "undefined") {
@@ -769,8 +775,20 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    updatePaginatedVideos(videos, page, itemsPerPage)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+
+    // Update URL with new page parameter
+    const params = new URLSearchParams(searchParams.toString())
+    if (page === 1) {
+      params.delete("page")
+    } else {
+      params.set("page", page.toString())
+    }
+
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.replace(newUrl, { scroll: false })
+
+    // Scroll to top of video grid
+    document.querySelector(".grid")?.scrollIntoView({ behavior: "smooth" })
   }
 
   const handleItemsPerPageChange = (value: string) => {
@@ -785,6 +803,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   useEffect(() => {
     updatePaginatedVideos(videos, currentPage, itemsPerPage)
   }, [videos, currentPage, itemsPerPage])
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      handlePageChange(1)
+    }
+  }, [searchQuery, selectedCategories])
 
   const updateURL = (filters: string[], search: string, mode: "AND" | "OR") => {
     const params = new URLSearchParams()

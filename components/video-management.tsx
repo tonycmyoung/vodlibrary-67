@@ -4,6 +4,7 @@ import type React from "react"
 import SortControl from "@/components/sort-control"
 
 import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -60,13 +61,18 @@ interface Performer {
 
 export default function VideoManagement() {
   const supabase = createClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [filteredVideos, setFilteredVideos] = useState<Video[]>([])
   const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get("page")
+    return pageParam ? Math.max(1, Number.parseInt(pageParam)) : 1
+  })
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== "undefined") {
       return Number.parseInt(localStorage.getItem("videoManagementItemsPerPage") || "10")
@@ -490,6 +496,15 @@ export default function VideoManagement() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+    const params = new URLSearchParams(searchParams.toString())
+    if (page === 1) {
+      params.delete("page")
+    } else {
+      params.set("page", page.toString())
+    }
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.replace(newUrl)
+
     document.querySelector(".space-y-6")?.scrollIntoView({ behavior: "smooth" })
   }
 
