@@ -8,6 +8,16 @@ async function trackUserLogin(userId: string) {
     console.log("[v0] Tracking login for user:", userId)
     const supabase = createClient()
 
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError || !session || session.user.id !== userId) {
+      console.log("[v0] No valid session, skipping login tracking")
+      return
+    }
+
     // Check if user already has a login record for today
     const today = new Date().toISOString().split("T")[0]
     const { data: existingLogin } = await supabase

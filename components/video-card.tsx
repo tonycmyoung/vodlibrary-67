@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Play, Clock, Heart } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { incrementVideoViews } from "@/lib/actions"
 
 interface Video {
   id: string
@@ -106,12 +105,6 @@ export default function VideoCard({ video, isFavorited: initialIsFavorited = fal
       defaultPrevented: e.defaultPrevented,
       propagationStopped: e.isPropagationStopped?.(),
     })
-
-    try {
-      await incrementVideoViews(video.id)
-    } catch (error) {
-      console.error("Error incrementing video views:", error)
-    }
   }
 
   return (

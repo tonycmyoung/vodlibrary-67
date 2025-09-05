@@ -375,20 +375,48 @@ export async function inviteUser(email: string) {
 
 export async function incrementVideoViews(videoId: string) {
   try {
+    console.log("[v0] Incrementing views for video:", videoId)
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const { error } = await serviceSupabase.rpc("increment_video_views", {
-      video_id: videoId,
-    })
+    // Get current view count first
+    const { data: currentVideo, error: fetchError } = await serviceSupabase
+      .from("videos")
+      .select("views")
+      .eq("id", videoId)
+      .single()
+
+    if (fetchError) {
+      console.error("[v0] Error fetching current views:", fetchError)
+      return { error: "Failed to fetch current views" }
+    }
+
+    const currentViews = currentVideo?.views || 0
+    const newViews = currentViews + 1
+    const newLastViewed = new Date().toISOString()
+
+    console.log("[v0] Current views:", currentViews, "New views:", newViews)
+    console.log("[v0] Setting last_viewed to:", newLastViewed)
+
+    const { data: updateData, error } = await serviceSupabase
+      .from("videos")
+      .update({
+        views: newViews,
+        last_viewed: newLastViewed,
+      })
+      .eq("id", videoId)
+      .select() // Added select() to return updated data for verification
+
+    console.log("[v0] Database update result - data:", updateData, "error:", error)
 
     if (error) {
-      console.error("Error incrementing video views:", error)
+      console.error("[v0] Error incrementing video views:", error)
       return { error: "Failed to increment video views" }
     }
 
+    console.log("[v0] View increment successful - updated record:", updateData)
     return { success: true }
   } catch (error) {
-    console.error("Error in incrementVideoViews:", error)
+    console.error("[v0] Error in incrementVideoViews:", error)
     return { error: "Failed to increment video views" }
   }
 }
