@@ -2,14 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { LogOut, User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign, BookOpen } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign, BookOpen, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -17,8 +11,6 @@ import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
 import CurriculumModal from "@/components/curriculum-modal"
 import { useState } from "react"
-import SessionTimeoutWarning from "@/components/session-timeout-warning"
-import { signOut } from "@/lib/actions"
 
 interface HeaderProps {
   user: {
@@ -41,7 +33,6 @@ export default function Header({ user }: HeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false)
-  const [isSigningOut, setIsSigningOut] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const initials = user.full_name
@@ -56,19 +47,8 @@ export default function Header({ user }: HeaderProps) {
     router.push("/profile")
   }
 
-  const handleSignOut = async () => {
-    if (isSigningOut) return
-
-    setIsSigningOut(true)
-    try {
-      await signOut()
-    } catch (error) {
-      console.error("[v0] Sign out failed:", error)
-      // Fallback to manual redirect if server action fails
-      router.push("/auth/login")
-    } finally {
-      setIsSigningOut(false)
-    }
+  const handleSignOutClick = () => {
+    router.push("/signout")
   }
 
   return (
@@ -188,14 +168,12 @@ export default function Header({ user }: HeaderProps) {
                     Change Password
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
+                  onClick={handleSignOutClick}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {isSigningOut ? "Signing Out..." : "Sign Out"}
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -230,6 +208,14 @@ export default function Header({ user }: HeaderProps) {
                   <span>Admin View</span>
                 </Link>
               )}
+              <Link
+                href="/signout"
+                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </Link>
             </nav>
           </div>
         )}
@@ -238,7 +224,6 @@ export default function Header({ user }: HeaderProps) {
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
       <DonationModal isOpen={isDonationModalOpen} onClose={() => setIsDonationModalOpen(false)} />
       <CurriculumModal isOpen={isCurriculumModalOpen} onClose={() => setIsCurriculumModalOpen(false)} />
-      <SessionTimeoutWarning userId={user.id} onSignOut={handleSignOut} />
     </>
   )
 }

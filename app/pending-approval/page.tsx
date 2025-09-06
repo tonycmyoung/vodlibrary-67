@@ -1,9 +1,9 @@
+"use client"
+
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Clock, Mail } from "lucide-react"
-import { signOut } from "@/lib/actions"
 
 export default async function PendingApprovalPage() {
   const supabase = createClient()
@@ -58,16 +58,6 @@ export default async function PendingApprovalPage() {
               </a>
             </p>
           </div>
-
-          <form action={signOut} className="w-full">
-            <Button
-              type="submit"
-              variant="outline"
-              className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-            >
-              Sign Out
-            </Button>
-          </form>
         </CardContent>
       </Card>
     </div>

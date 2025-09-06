@@ -15,10 +15,9 @@ import { createClient } from "@/lib/supabase/client"
 
 interface SessionTimeoutWarningProps {
   userId: string
-  onSignOut: () => void
 }
 
-export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTimeoutWarningProps) {
+export default function SessionTimeoutWarning({ userId }: SessionTimeoutWarningProps) {
   const [showWarning, setShowWarning] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -31,7 +30,6 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
       } = await supabase.auth.getSession()
 
       if (!session) {
-        onSignOut()
         return
       }
 
@@ -46,12 +44,11 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
         setTimeLeft(timeUntilExpiry)
         setShowWarning(true)
       } else if (timeUntilExpiry <= 0) {
-        onSignOut()
       }
     } catch (error) {
       console.error("[v0] Session check error:", error)
     }
-  }, [supabase.auth, onSignOut])
+  }, [supabase.auth])
 
   const refreshSession = async () => {
     setIsRefreshing(true)
@@ -60,14 +57,12 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
 
       if (error) {
         console.error("[v0] Session refresh error:", error)
-        onSignOut()
       } else if (data.session) {
         setShowWarning(false)
         setTimeLeft(0)
       }
     } catch (error) {
       console.error("[v0] Session refresh failed:", error)
-      onSignOut()
     } finally {
       setIsRefreshing(false)
     }
@@ -76,7 +71,8 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
   useEffect(() => {
     if (!userId || userId === "undefined") return
 
-    const interval = setInterval(checkSessionExpiry, 60000)
+    // Check session every 30 seconds
+    const interval = setInterval(checkSessionExpiry, 30000)
 
     // Initial check
     checkSessionExpiry()
@@ -89,7 +85,6 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
       const countdown = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            onSignOut()
             return 0
           }
           return prev - 1
@@ -98,7 +93,7 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
 
       return () => clearInterval(countdown)
     }
-  }, [showWarning, timeLeft, onSignOut])
+  }, [showWarning, timeLeft])
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
@@ -121,16 +116,9 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
         </DialogHeader>
         <DialogFooter className="flex gap-2">
           <Button
-            variant="outline"
-            onClick={onSignOut}
-            className="border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-          >
-            Sign Out
-          </Button>
-          <Button
             onClick={refreshSession}
             disabled={isRefreshing}
-            className="bg-yellow-600 hover:bg-yellow-700 text-black"
+            className="bg-yellow-600 hover:bg-yellow-700 text-black w-full"
           >
             {isRefreshing ? (
               <>

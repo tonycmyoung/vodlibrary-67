@@ -2,21 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { LogOut, User, Settings, Users, Video, Tags, Home, Lock, Bell, UserPlus, Menu, X } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import { useState } from "react"
-import SessionTimeoutWarning from "@/components/session-timeout-warning"
-import { signOut } from "@/lib/actions"
 
 interface AdminHeaderProps {
   user: {
@@ -30,8 +22,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ user }: AdminHeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
-  const [isSigningOut, setIsSigningOut] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // Added mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
   const initials = user.full_name
@@ -42,19 +33,8 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
         .toUpperCase()
     : "A"
 
-  const handleSignOut = async () => {
-    if (isSigningOut) return
-
-    setIsSigningOut(true)
-    try {
-      await signOut()
-    } catch (error) {
-      console.error("[v0] Admin sign out failed:", error)
-      // Fallback to manual redirect if server action fails
-      router.push("/auth/login")
-    } finally {
-      setIsSigningOut(false)
-    }
+  const handleSignOutClick = () => {
+    router.push("/signout")
   }
 
   return (
@@ -162,30 +142,20 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   <UserPlus className="mr-2 h-4 w-4" />
                   Invite User
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
-                  <Link href="/change-password" className="flex items-center">
-                    <Lock className="mr-2 h-4 w-4" />
-                    Change Password
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
+                  onClick={handleSignOutClick}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {isSigningOut ? "Signing Out..." : "Sign Out"}
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        {isMobileMenuOpen && ( // Mobile navigation menu
+        {isMobileMenuOpen && (
           <div className="lg:hidden bg-black/90 backdrop-blur-md border-t border-purple-800/30">
-            {" "}
-            {/* Changed from md:hidden to lg:hidden */}
             <nav className="container mx-auto px-4 py-4 space-y-2">
               <Link
                 href="/?admin-view=student"
@@ -235,13 +205,20 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
               </Link>
+              <Button
+                variant="ghost"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={handleSignOutClick}
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </Button>
             </nav>
           </div>
         )}
       </header>
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
-      <SessionTimeoutWarning userId={user.id} onSignOut={handleSignOut} />
     </>
   )
 }
