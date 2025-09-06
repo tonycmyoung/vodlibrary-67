@@ -10,14 +10,6 @@ import CategoryFilter from "@/components/category-filter"
 import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -551,9 +543,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     const showNavigation = totalPages > 1
 
     return (
-      <div className="flex flex-col gap-4 py-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-4 min-w-0 flex-1">
+      <div className="flex flex-col gap-3 py-3 sm:gap-4 sm:py-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 min-w-0 flex-1">
             <div className="flex items-center gap-2 whitespace-nowrap">
               <span className="text-sm text-gray-400">Show</span>
               <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
@@ -635,44 +627,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             </div>
           </div>
         </div>
-
-        {showNavigation && (
-          <div className="flex justify-center">
-            <div className="flex items-center gap-1">
-              <div className="hidden sm:block">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                        className={`${currentPage <= 1 ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
-                      />
-                    </PaginationItem>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className={`${currentPage === page ? "bg-red-600 text-white hover:bg-red-700 hover:text-white" : "text-white hover:text-white"}`}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                        className={`${currentPage >= totalPages ? "pointer-events-none opacity-50 text-gray-500" : "cursor-pointer hover:bg-gray-700 text-white hover:text-white"}`}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     )
   }
@@ -707,9 +661,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 space-y-6">
-        <div className="space-y-4">
+    <div className="container mx-auto px-4 py-4 sm:py-8">
+      <div className="mb-4 sm:mb-8 space-y-3 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -734,7 +688,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             <ViewToggle view={view} onViewChange={handleViewChange} />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
                 <DialogTrigger asChild>
