@@ -560,178 +560,144 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     const showNavigation = totalPages > 1
 
     return (
-      <div className="flex flex-col gap-3 py-3 sm:gap-4 sm:py-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-sm text-gray-400">Show</span>
-              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem
-                    value="5"
-                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                  >
-                    5
-                  </SelectItem>
-                  <SelectItem
-                    value="10"
-                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                  >
-                    10
-                  </SelectItem>
-                  <SelectItem
-                    value="20"
-                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                  >
-                    20
-                  </SelectItem>
-                  <SelectItem
-                    value="50"
-                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                  >
-                    50
-                  </SelectItem>
-                  <SelectItem
-                    value="100"
-                    className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                  >
-                    100
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-gray-400">per page</span>
-            </div>
-            {showNavigation ? (
-              <div className="flex sm:hidden items-center gap-2 text-sm text-gray-400 whitespace-nowrap">
-                <span>
-                  Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
-                  {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="h-7 px-2 text-white hover:bg-gray-700 disabled:opacity-50"
+      <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3">
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-sm text-gray-400">Show</span>
+            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+              <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem
+                  value="5"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
                 >
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <span className="px-1">
-                  {validCurrentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className="h-7 px-2 text-white hover:bg-gray-700 disabled:opacity-50"
+                  5
+                </SelectItem>
+                <SelectItem
+                  value="10"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
                 >
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="text-sm text-gray-400 whitespace-nowrap sm:block">
-                Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
-                {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length}
-              </div>
-            )}
-            <div className="hidden sm:block text-sm text-gray-400 whitespace-nowrap">
-              Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
-              {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length} videos
-            </div>
+                  10
+                </SelectItem>
+                <SelectItem
+                  value="20"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  20
+                </SelectItem>
+                <SelectItem
+                  value="50"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  50
+                </SelectItem>
+                <SelectItem
+                  value="100"
+                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
+                >
+                  100
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-400">per page</span>
           </div>
-
           {showNavigation && (
-            <div className="hidden sm:flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage <= 1}
-                className="text-white hover:bg-gray-700 disabled:opacity-50"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
+            <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+              <div className="hidden xl:block text-sm text-gray-400 whitespace-nowrap">
+                Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
+                {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length} videos
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
+                </Button>
+                <div className="xl:hidden text-sm text-gray-400 px-2">
+                  {currentPage} of {totalPages}
+                </div>
+                <div className="hidden xl:flex items-center gap-1">
+                  {(() => {
+                    const pages = []
 
-              <div className="flex items-center gap-1">
-                {(() => {
-                  const pages = []
-
-                  if (totalPages <= 7) {
-                    for (let i = 1; i <= totalPages; i++) {
-                      pages.push(i)
-                    }
-                  } else {
-                    pages.push(1)
-
-                    if (currentPage <= 4) {
-                      for (let i = 2; i <= 5; i++) {
-                        pages.push(i)
-                      }
-                      if (totalPages > 6) {
-                        pages.push("ellipsis")
-                        pages.push(totalPages)
-                      }
-                    } else if (currentPage >= totalPages - 3) {
-                      if (totalPages > 6) {
-                        pages.push("ellipsis")
-                      }
-                      for (let i = totalPages - 4; i <= totalPages; i++) {
+                    if (totalPages <= 7) {
+                      for (let i = 1; i <= totalPages; i++) {
                         pages.push(i)
                       }
                     } else {
-                      pages.push("ellipsis")
-                      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                        pages.push(i)
+                      pages.push(1)
+
+                      if (currentPage <= 4) {
+                        for (let i = 2; i <= 5; i++) {
+                          pages.push(i)
+                        }
+                        if (totalPages > 6) {
+                          pages.push("ellipsis")
+                          pages.push(totalPages)
+                        }
+                      } else if (currentPage >= totalPages - 3) {
+                        if (totalPages > 6) {
+                          pages.push("ellipsis")
+                        }
+                        for (let i = totalPages - 4; i <= totalPages; i++) {
+                          pages.push(i)
+                        }
+                      } else {
+                        pages.push("ellipsis")
+                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                          pages.push(i)
+                        }
+                        pages.push("ellipsis")
+                        pages.push(totalPages)
                       }
-                      pages.push("ellipsis")
-                      pages.push(totalPages)
                     }
-                  }
 
-                  return pages.map((page, index) => {
-                    if (page === "ellipsis") {
+                    return pages.map((page, index) => {
+                      if (page === "ellipsis") {
+                        return (
+                          <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                            ...
+                          </span>
+                        )
+                      }
+
                       return (
-                        <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
-                          ...
-                        </span>
+                        <Button
+                          key={page}
+                          variant={page === currentPage ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handlePageChange(page as number)}
+                          disabled={page === currentPage}
+                          className={`w-8 h-8 p-0 ${
+                            page === currentPage
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "text-white hover:bg-gray-700"
+                          }`}
+                        >
+                          {page}
+                        </Button>
                       )
-                    }
-
-                    return (
-                      <Button
-                        key={page}
-                        variant={page === currentPage ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => handlePageChange(page as number)}
-                        disabled={page === currentPage}
-                        className={`w-8 h-8 p-0 ${
-                          page === currentPage
-                            ? "bg-red-600 text-white hover:bg-red-700"
-                            : "text-white hover:bg-gray-700"
-                        }`}
-                      >
-                        {page}
-                      </Button>
-                    )
-                  })
-                })()}
+                    })
+                  })()}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                className="text-white hover:bg-gray-700 disabled:opacity-50"
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
             </div>
           )}
         </div>
@@ -782,8 +748,8 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
-      <div className="mb-4 sm:mb-8 space-y-3 sm:space-y-6">
-        <div className="space-y-3 sm:space-y-4">
+      <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -804,10 +770,8 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                 </Button>
               )}
             </div>
-
             <ViewToggle view={view} onViewChange={handleViewChange} />
           </div>
-
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
@@ -880,14 +844,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                   </div>
                 </DialogContent>
               </Dialog>
-
               <div className="flex-1 sm:flex-none">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
             </div>
           </div>
         </div>
-
         <div className="hidden lg:block">
           <CategoryFilter
             categories={categories}
@@ -897,7 +859,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             onCategoryToggle={handleCategoryToggle}
             videoCount={videos.length}
           />
-
           {selectedCategories.length > 1 && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-gray-400">Filter mode:</span>
@@ -935,45 +896,42 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             </div>
           )}
         </div>
+        {videos.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg">
+              {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <PaginationControls />
+            {view === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {paginatedVideos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    isFavorited={userFavorites.has(video.id)}
+                    onFavoriteToggle={handleFavoriteToggle}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {paginatedVideos.map((video) => (
+                  <VideoCardList
+                    key={video.id}
+                    video={video}
+                    isFavorited={userFavorites.has(video.id)}
+                    onFavoriteToggle={handleFavoriteToggle}
+                  />
+                ))}
+              </div>
+            )}
+            <PaginationControls />
+          </>
+        )}
       </div>
-
-      {videos.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-400 text-lg">
-            {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
-          </p>
-        </div>
-      ) : (
-        <>
-          <PaginationControls />
-
-          {view === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {paginatedVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  isFavorited={userFavorites.has(video.id)}
-                  onFavoriteToggle={handleFavoriteToggle}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {paginatedVideos.map((video) => (
-                <VideoCardList
-                  key={video.id}
-                  video={video}
-                  isFavorited={userFavorites.has(video.id)}
-                  onFavoriteToggle={handleFavoriteToggle}
-                />
-              ))}
-            </div>
-          )}
-
-          <PaginationControls />
-        </>
-      )}
     </div>
   )
 }

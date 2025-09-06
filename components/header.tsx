@@ -61,7 +61,7 @@ export default function Header({ user }: HeaderProps) {
                 <span className="text-white font-bold text-sm">武道</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Okinawa Kobudo Library</h1>
+                <h1 className="text-xl font-bold text-white">Okinawa Kobudo </h1>
                 <p className="text-xs text-gray-400">Training Video Library</p>
               </div>
             </Link>
