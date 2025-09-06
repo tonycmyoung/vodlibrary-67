@@ -89,7 +89,7 @@ export default function Header({ user }: HeaderProps) {
                 <span className="text-white font-bold text-xl">武</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">TY Kobudo Library</h1>
+                <h1 className="text-xl font-bold text-white">Okinawa Kobudo Library</h1>
                 <p className="text-xs text-gray-400">Training Video Library</p>
               </div>
             </Link>

@@ -16,7 +16,7 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
-  title: "TY Kobudo Library",
+  title: "Okinawa Kobudo Library",
   description: "Traditional Kobudo Training Video Library",
   generator: "v0.app",
 }

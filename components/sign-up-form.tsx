@@ -102,7 +102,7 @@ export default function SignUpForm() {
           <UserPlus className="w-8 h-8 text-white" />
         </div>
         <CardTitle className="text-3xl font-bold text-white">
-          {invitationToken ? "Complete Your Invitation" : "Join TY Kobudo Library"}
+          {invitationToken ? "Complete Your Invitation" : "Join Okinawa Kobudo Library"}
         </CardTitle>
         <CardDescription className="text-gray-300 text-lg">
           {invitationToken

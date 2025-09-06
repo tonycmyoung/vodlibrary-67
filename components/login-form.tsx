@@ -78,7 +78,7 @@ export default function LoginForm() {
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
           <span className="text-white font-bold text-2xl">武</span>
         </div>
-        <CardTitle className="text-3xl font-bold text-white">{"Welcome to the\nTY Kobudo Library"}</CardTitle>
+        <CardTitle className="text-3xl font-bold text-white">{"Welcome to the\nOkinawa Kobudo Library"}</CardTitle>
         <CardDescription className="text-gray-300 text-lg whitespace-pre-line">
           {
             "This library is invite-only for\nMatayoshi/Okinawa Kobudo Australia Students.\nSign in, or request an account, below."
