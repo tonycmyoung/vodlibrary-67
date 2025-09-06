@@ -76,8 +76,7 @@ export default function SessionTimeoutWarning({ userId, onSignOut }: SessionTime
   useEffect(() => {
     if (!userId || userId === "undefined") return
 
-    // Check session every 30 seconds
-    const interval = setInterval(checkSessionExpiry, 30000)
+    const interval = setInterval(checkSessionExpiry, 60000)
 
     // Initial check
     checkSessionExpiry()

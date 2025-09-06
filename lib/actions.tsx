@@ -20,6 +20,33 @@ function generateUUID() {
   })
 }
 
+let cachedSupabaseClient: any = null
+
+function getCachedSupabaseClient() {
+  if (!cachedSupabaseClient) {
+    const cookieStore = cookies()
+    cachedSupabaseClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+  }
+  return cachedSupabaseClient
+}
+
 export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
@@ -196,28 +223,35 @@ export async function signUp(prevState: any, formData: FormData) {
   redirect("/pending-approval")
 }
 
-export async function signOut() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
+const signOutAttempts = new Map<string, number>()
 
-  await supabase.auth.signOut()
+export async function signOut() {
+  try {
+    const now = Date.now()
+    const lastAttempt = signOutAttempts.get("global") || 0
+    if (now - lastAttempt < 2000) {
+      // 2 second debounce
+      console.log("[v0] Signout debounced - too many rapid attempts")
+      return
+    }
+    signOutAttempts.set("global", now)
+
+    const supabase = getCachedSupabaseClient()
+
+    const signOutPromise = supabase.auth.signOut()
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Signout timeout")), 10000))
+
+    await Promise.race([signOutPromise, timeoutPromise])
+    console.log("[v0] Sign out successful, redirecting...")
+  } catch (error) {
+    console.error("[v0] Signout error:", error)
+    // Continue with redirect even if signout fails
+  } finally {
+    // Clear cached client on signout
+    cachedSupabaseClient = null
+    signOutAttempts.delete("global")
+  }
+
   redirect("/auth/login")
 }
 

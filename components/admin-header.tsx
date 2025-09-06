@@ -10,13 +10,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, User, Settings, Users, Video, Tags, Home, Lock, Bell, UserPlus, Menu, X } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import { useState } from "react"
 import SessionTimeoutWarning from "@/components/session-timeout-warning"
+import { signOut } from "@/lib/actions"
 
 interface AdminHeaderProps {
   user: {
@@ -43,24 +43,15 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
     : "A"
 
   const handleSignOut = async () => {
-    if (isSigningOut) return // Prevent multiple clicks
+    if (isSigningOut) return
 
     setIsSigningOut(true)
-    console.log("[v0] Starting admin client-side sign-out")
-
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        console.error("[v0] Admin sign out error:", error.message)
-      } else {
-        console.log("[v0] Admin sign out successful, redirecting...")
-        router.push("/auth/login")
-        router.refresh() // Refresh to clear any cached data
-      }
+      await signOut()
     } catch (error) {
       console.error("[v0] Admin sign out failed:", error)
+      // Fallback to manual redirect if server action fails
+      router.push("/auth/login")
     } finally {
       setIsSigningOut(false)
     }

@@ -8,6 +8,9 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
+let cachedClient: any = null
+let cacheRequestId: string | null = null
+
 const userApprovalCache = new Map<string, { isApproved: boolean; role: string; timestamp: number }>()
 const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
 
@@ -37,10 +40,44 @@ function setCachedUserApproval(userId: string, isApproved: boolean, role: string
   }
 }
 
+function getCachedSupabaseClient(request: NextRequest, supabaseResponse: NextResponse) {
+  const requestId = request.headers.get("x-request-id") || request.url + Date.now()
+
+  if (cachedClient && cacheRequestId === requestId) {
+    console.log("[v0] MIDDLEWARE - Using cached Supabase client")
+    return cachedClient
+  }
+
+  console.log("[v0] MIDDLEWARE - Creating new Supabase client")
+  cachedClient = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        supabaseResponse = NextResponse.next({
+          request,
+        })
+        cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+      },
+    },
+  })
+  cacheRequestId = requestId
+  return cachedClient
+}
+
 export async function updateSession(request: NextRequest) {
   console.log("[v0] MIDDLEWARE EXECUTION START - URL:", request.url)
   console.log("[v0] MIDDLEWARE - Method:", request.method)
   console.log("[v0] MIDDLEWARE - Pathname:", request.nextUrl.pathname)
+
+  const redirectCount = Number.parseInt(request.headers.get("x-redirect-count") || "0")
+  if (redirectCount > 3) {
+    console.log("[v0] MIDDLEWARE - Redirect loop detected, breaking chain")
+    const errorUrl = new URL("/error?type=redirect&message=Too many redirects", request.url)
+    return NextResponse.redirect(errorUrl)
+  }
 
   try {
     // If Supabase is not configured, just continue without auth
@@ -51,33 +88,21 @@ export async function updateSession(request: NextRequest) {
       })
     }
 
-    console.log("[v0] MIDDLEWARE - Creating Supabase client")
-    let supabaseResponse = NextResponse.next({
+    const supabaseResponse = NextResponse.next({
       request,
     })
 
     let supabase
     try {
-      supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-            supabaseResponse = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
-          },
-        },
-      })
-      console.log("[v0] MIDDLEWARE - Supabase client created successfully")
+      supabase = getCachedSupabaseClient(request, supabaseResponse)
+      console.log("[v0] MIDDLEWARE - Supabase client ready")
     } catch (clientError) {
       console.log("[v0] MIDDLEWARE - Supabase client creation error:", clientError?.message)
       console.log("[v0] MIDDLEWARE - Redirecting to home due to client error")
       const redirectUrl = new URL("/", request.url)
-      return NextResponse.redirect(redirectUrl)
+      const response = NextResponse.redirect(redirectUrl)
+      response.headers.set("x-redirect-count", String(redirectCount + 1))
+      return response
     }
 
     console.log("[v0] MIDDLEWARE - Processing request (OAuth logic removed)")
@@ -91,9 +116,12 @@ export async function updateSession(request: NextRequest) {
       console.log("[v0] MIDDLEWARE - Request pathname for session call:", request.nextUrl.pathname)
       console.log("[v0] MIDDLEWARE - Request search params:", request.nextUrl.searchParams.toString())
 
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Session timeout")), 5000))
+
       const {
         data: { session: sessionData },
-      } = await supabase.auth.getSession()
+      } = await Promise.race([sessionPromise, timeoutPromise])
 
       console.log("[v0] MIDDLEWARE - Session call completed successfully")
       session = sessionData
@@ -120,7 +148,8 @@ export async function updateSession(request: NextRequest) {
       if (
         errorMessage.includes("Too Many") ||
         errorMessage.includes("SyntaxError") ||
-        errorMessage.includes("Invalid Refresh Token")
+        errorMessage.includes("Invalid Refresh Token") ||
+        errorMessage.includes("Session timeout")
       ) {
         console.log("[v0] MIDDLEWARE - Auth error detected, redirecting to error page")
         const response = NextResponse.redirect(new URL("/error?type=session&message=Session expired", request.url))
@@ -130,6 +159,7 @@ export async function updateSession(request: NextRequest) {
         response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
         response.headers.set("Pragma", "no-cache")
         response.headers.set("Expires", "0")
+        response.headers.set("x-redirect-count", String(redirectCount + 1))
         return response
       }
 
@@ -138,6 +168,7 @@ export async function updateSession(request: NextRequest) {
       response.cookies.delete("sb-access-token")
       response.cookies.delete("sb-refresh-token")
       response.cookies.delete("supabase-auth-token")
+      response.headers.set("x-redirect-count", String(redirectCount + 1))
       return response
     }
 
@@ -167,7 +198,9 @@ export async function updateSession(request: NextRequest) {
       if (!session) {
         console.log("[v0] MIDDLEWARE - No session, redirecting to login")
         const redirectUrl = new URL("/auth/login", request.url)
-        return NextResponse.redirect(redirectUrl)
+        const response = NextResponse.redirect(redirectUrl)
+        response.headers.set("x-redirect-count", String(redirectCount + 1))
+        return response
       }
 
       if (session?.user && !request.nextUrl.pathname.startsWith("/admin")) {
@@ -192,7 +225,9 @@ export async function updateSession(request: NextRequest) {
             if (!user.is_approved) {
               console.log("[v0] MIDDLEWARE - User not approved, redirecting to pending")
               const redirectUrl = new URL("/pending-approval", request.url)
-              return NextResponse.redirect(redirectUrl)
+              const response = NextResponse.redirect(redirectUrl)
+              response.headers.set("x-redirect-count", String(redirectCount + 1))
+              return response
             }
 
             const isAdminEmail = session.user.email === "acmyma@gmail.com"
@@ -202,7 +237,9 @@ export async function updateSession(request: NextRequest) {
               if (!referer || !referer.includes("/admin")) {
                 console.log("[v0] MIDDLEWARE - Admin user on home, redirecting to admin")
                 const redirectUrl = new URL("/admin", request.url)
-                return NextResponse.redirect(redirectUrl)
+                const response = NextResponse.redirect(redirectUrl)
+                response.headers.set("x-redirect-count", String(redirectCount + 1))
+                return response
               }
             }
           }
@@ -254,7 +291,9 @@ export async function updateSession(request: NextRequest) {
         // Not authorized for admin routes
         console.log("[v0] MIDDLEWARE - Not authorized for admin, redirecting to error page")
         const redirectUrl = new URL("/error?type=permission&message=Admin access required", request.url)
-        return NextResponse.redirect(redirectUrl)
+        const response = NextResponse.redirect(redirectUrl)
+        response.headers.set("x-redirect-count", String(redirectCount + 1))
+        return response
       }
     }
 
@@ -266,6 +305,8 @@ export async function updateSession(request: NextRequest) {
     console.log("[v0] MIDDLEWARE - Error occurred for URL:", request.url)
     console.log("[v0] MIDDLEWARE - Redirecting to error page due to unhandled error")
     const redirectUrl = new URL("/error?type=server&message=Server error occurred", request.url)
-    return NextResponse.redirect(redirectUrl)
+    const response = NextResponse.redirect(redirectUrl)
+    response.headers.set("x-redirect-count", String(redirectCount + 1))
+    return response
   }
 }

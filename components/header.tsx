@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign, BookOpen } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -19,6 +18,7 @@ import DonationModal from "@/components/donation-modal"
 import CurriculumModal from "@/components/curriculum-modal"
 import { useState } from "react"
 import SessionTimeoutWarning from "@/components/session-timeout-warning"
+import { signOut } from "@/lib/actions"
 
 interface HeaderProps {
   user: {
@@ -57,24 +57,15 @@ export default function Header({ user }: HeaderProps) {
   }
 
   const handleSignOut = async () => {
-    if (isSigningOut) return // Prevent multiple clicks
+    if (isSigningOut) return
 
     setIsSigningOut(true)
-    console.log("[v0] Starting client-side sign-out")
-
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        console.error("[v0] Sign out error:", error.message)
-      } else {
-        console.log("[v0] Sign out successful, redirecting...")
-        router.push("/auth/login")
-        router.refresh() // Refresh to clear any cached data
-      }
+      await signOut()
     } catch (error) {
       console.error("[v0] Sign out failed:", error)
+      // Fallback to manual redirect if server action fails
+      router.push("/auth/login")
     } finally {
       setIsSigningOut(false)
     }
