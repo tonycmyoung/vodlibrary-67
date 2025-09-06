@@ -108,12 +108,12 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
   return (
     <Link href={`/video/${video.id}`} onClick={handleVideoClick}>
       <Card className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden">
-        <div className="relative aspect-video bg-gray-900">
+        <div className="relative h-48 bg-gray-900">
           {video.thumbnail_url ? (
             <img
               src={video.thumbnail_url || "/placeholder.svg"}
               alt={video.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.src = "/placeholder.svg"
