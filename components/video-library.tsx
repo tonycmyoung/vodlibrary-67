@@ -316,10 +316,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             | "recorded"
             | "performers"
             | "category"
-            | "views") || "title"
+            | "views") || "category"
         )
       }
-      return "title"
+      return "category"
     },
   )
 
@@ -431,12 +431,25 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
         case "category":
           const aCategories = a.categories.map((c) => c.name).join(", ")
           const bCategories = b.categories.map((c) => c.name).join(", ")
+
+          // If sorting ascending and one video has no categories, put it at the end
+          if (sortOrder === "asc") {
+            if (!aCategories && bCategories) return 1
+            if (aCategories && !bCategories) return -1
+          }
+
           comparison = aCategories.localeCompare(bCategories)
           break
         case "views":
           comparison = (a.views || 0) - (b.views || 0)
           break
       }
+
+      // If primary sort values are equal and we're not sorting by title, use title as secondary sort
+      if (comparison === 0 && sortBy !== "title") {
+        comparison = a.title.localeCompare(b.title)
+      }
+
       return sortOrder === "asc" ? comparison : -comparison
     })
 
@@ -626,6 +639,97 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length} videos
             </div>
           </div>
+
+          {showNavigation && (
+            <div className="hidden sm:flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="text-white hover:bg-gray-700 disabled:opacity-50"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const pages = []
+
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i)
+                    }
+                  } else {
+                    pages.push(1)
+
+                    if (currentPage <= 4) {
+                      for (let i = 2; i <= 5; i++) {
+                        pages.push(i)
+                      }
+                      if (totalPages > 6) {
+                        pages.push("ellipsis")
+                        pages.push(totalPages)
+                      }
+                    } else if (currentPage >= totalPages - 3) {
+                      if (totalPages > 6) {
+                        pages.push("ellipsis")
+                      }
+                      for (let i = totalPages - 4; i <= totalPages; i++) {
+                        pages.push(i)
+                      }
+                    } else {
+                      pages.push("ellipsis")
+                      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                        pages.push(i)
+                      }
+                      pages.push("ellipsis")
+                      pages.push(totalPages)
+                    }
+                  }
+
+                  return pages.map((page, index) => {
+                    if (page === "ellipsis") {
+                      return (
+                        <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                          ...
+                        </span>
+                      )
+                    }
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => handlePageChange(page as number)}
+                        disabled={page === currentPage}
+                        className={`w-8 h-8 p-0 ${
+                          page === currentPage
+                            ? "bg-red-600 text-white hover:bg-red-700"
+                            : "text-white hover:bg-gray-700"
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    )
+                  })
+                })()}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="text-white hover:bg-gray-700 disabled:opacity-50"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     )
