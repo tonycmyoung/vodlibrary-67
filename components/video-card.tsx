@@ -34,9 +34,14 @@ interface Video {
 interface VideoCardProps {
   video: Video
   isFavorited?: boolean
+  onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
 }
 
-const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorited = false }: VideoCardProps) {
+const VideoCard = memo(function VideoCard({
+  video,
+  isFavorited: initialIsFavorited = false,
+  onFavoriteToggle,
+}: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -80,12 +85,14 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
       if (isFavorited) {
         await supabase.from("user_favorites").delete().eq("user_id", user.id).eq("video_id", video.id)
         setIsFavorited(false)
+        onFavoriteToggle?.(video.id, false)
       } else {
         await supabase.from("user_favorites").insert({
           user_id: user.id,
           video_id: video.id,
         })
         setIsFavorited(true)
+        onFavoriteToggle?.(video.id, true)
       }
     } catch (error) {
       console.error("Error toggling favorite:", error)

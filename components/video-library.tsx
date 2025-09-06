@@ -334,6 +334,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const processedVideos = useMemo(() => {
     let result = [...allVideos]
 
+    if (favoritesOnly) {
+      result = result.filter((video) => userFavorites.has(video.id))
+    }
+
     if (debouncedSearchQuery) {
       result = result.filter((video) => {
         const titleMatch = video.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
@@ -454,7 +458,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     })
 
     return result
-  }, [allVideos, debouncedSearchQuery, selectedCategories, filterMode, sortBy, sortOrder])
+  }, [allVideos, debouncedSearchQuery, selectedCategories, filterMode, sortBy, sortOrder, favoritesOnly, userFavorites])
 
   const totalPages = Math.ceil(processedVideos.length / itemsPerPage)
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
@@ -735,6 +739,18 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     )
   }
 
+  const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
+    setUserFavorites((prev) => {
+      const newFavorites = new Set(prev)
+      if (isFavorited) {
+        newFavorites.add(videoId)
+      } else {
+        newFavorites.delete(videoId)
+      }
+      return newFavorites
+    })
+  }
+
   if (loading || userLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -934,13 +950,23 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           {view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {paginatedVideos.map((video) => (
-                <VideoCard key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
+                <VideoCard
+                  key={video.id}
+                  video={video}
+                  isFavorited={userFavorites.has(video.id)}
+                  onFavoriteToggle={handleFavoriteToggle}
+                />
               ))}
             </div>
           ) : (
             <div className="space-y-2">
               {paginatedVideos.map((video) => (
-                <VideoCardList key={video.id} video={video} isFavorited={userFavorites.has(video.id)} />
+                <VideoCardList
+                  key={video.id}
+                  video={video}
+                  isFavorited={userFavorites.has(video.id)}
+                  onFavoriteToggle={handleFavoriteToggle}
+                />
               ))}
             </div>
           )}
