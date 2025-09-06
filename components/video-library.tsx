@@ -561,7 +561,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
     return (
       <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3">
+        <div className="flex flex-col flex-row items-start items-center justify-between gap-2 gap-3">
           <div className="flex items-center gap-2 whitespace-nowrap">
             <span className="text-sm text-gray-400">Show</span>
             <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
@@ -604,7 +604,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             <span className="text-sm text-gray-400">per page</span>
           </div>
           {showNavigation && (
-            <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+            <div className="flex items-center justify-between justify-end gap-4 w-full w-auto">
               <div className="hidden xl:block text-sm text-gray-400 whitespace-nowrap">
                 Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
                 {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length} videos
