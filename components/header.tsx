@@ -18,6 +18,7 @@ import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
 import CurriculumModal from "@/components/curriculum-modal"
 import { useState } from "react"
+import SessionTimeoutWarning from "@/components/session-timeout-warning"
 
 interface HeaderProps {
   user: {
@@ -246,6 +247,7 @@ export default function Header({ user }: HeaderProps) {
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
       <DonationModal isOpen={isDonationModalOpen} onClose={() => setIsDonationModalOpen(false)} />
       <CurriculumModal isOpen={isCurriculumModalOpen} onClose={() => setIsCurriculumModalOpen(false)} />
+      <SessionTimeoutWarning userId={user.id} onSignOut={handleSignOut} />
     </>
   )
 }

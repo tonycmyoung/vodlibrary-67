@@ -122,9 +122,8 @@ export async function updateSession(request: NextRequest) {
         errorMessage.includes("SyntaxError") ||
         errorMessage.includes("Invalid Refresh Token")
       ) {
-        console.log("[v0] MIDDLEWARE - Auth error detected, redirecting to login")
-        // Clear all auth cookies to prevent loops
-        const response = NextResponse.redirect(new URL("/auth/login", request.url))
+        console.log("[v0] MIDDLEWARE - Auth error detected, redirecting to error page")
+        const response = NextResponse.redirect(new URL("/error?type=session&message=Session expired", request.url))
         response.cookies.delete("sb-access-token")
         response.cookies.delete("sb-refresh-token")
         response.cookies.delete("supabase-auth-token")
@@ -134,8 +133,8 @@ export async function updateSession(request: NextRequest) {
         return response
       }
 
-      console.log("[v0] MIDDLEWARE - General auth error, redirecting to login")
-      const response = NextResponse.redirect(new URL("/auth/login", request.url))
+      console.log("[v0] MIDDLEWARE - General auth error, redirecting to error page")
+      const response = NextResponse.redirect(new URL("/error?type=auth&message=Authentication required", request.url))
       response.cookies.delete("sb-access-token")
       response.cookies.delete("sb-refresh-token")
       response.cookies.delete("supabase-auth-token")
@@ -253,8 +252,8 @@ export async function updateSession(request: NextRequest) {
         }
 
         // Not authorized for admin routes
-        console.log("[v0] MIDDLEWARE - Not authorized for admin, redirecting to home")
-        const redirectUrl = new URL("/", request.url)
+        console.log("[v0] MIDDLEWARE - Not authorized for admin, redirecting to error page")
+        const redirectUrl = new URL("/error?type=permission&message=Admin access required", request.url)
         return NextResponse.redirect(redirectUrl)
       }
     }
@@ -265,8 +264,8 @@ export async function updateSession(request: NextRequest) {
     console.log("[v0] MIDDLEWARE - Unhandled error:", middlewareError?.message)
     console.log("[v0] MIDDLEWARE - Stack trace:", middlewareError?.stack)
     console.log("[v0] MIDDLEWARE - Error occurred for URL:", request.url)
-    console.log("[v0] MIDDLEWARE - Redirecting to home due to unhandled error")
-    const redirectUrl = new URL("/", request.url)
+    console.log("[v0] MIDDLEWARE - Redirecting to error page due to unhandled error")
+    const redirectUrl = new URL("/error?type=server&message=Server error occurred", request.url)
     return NextResponse.redirect(redirectUrl)
   }
 }

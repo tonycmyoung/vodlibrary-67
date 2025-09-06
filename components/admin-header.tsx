@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import { useState } from "react"
+import SessionTimeoutWarning from "@/components/session-timeout-warning"
 
 interface AdminHeaderProps {
   user: {
@@ -249,6 +250,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
       </header>
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
+      <SessionTimeoutWarning userId={user.id} onSignOut={handleSignOut} />
     </>
   )
 }
