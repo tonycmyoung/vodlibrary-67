@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Play, Clock, Heart } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface Video {
   id: string
@@ -39,6 +40,7 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const getUser = async () => {
@@ -105,9 +107,21 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
     })
   }
 
+  const handleTouchStart = () => {
+    // No longer show overlay on mobile touch
+  }
+
+  const handleTouchEnd = () => {
+    // No longer manage overlay state on mobile
+  }
+
   return (
     <Link href={`/video/${video.id}`} onClick={handleVideoClick}>
-      <Card className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden">
+      <Card
+        className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="relative h-48 bg-gray-900">
           {video.thumbnail_url ? (
             <img
@@ -125,7 +139,11 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
             </div>
           )}
 
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <div
+            className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center ${
+              isMobile ? "opacity-0" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
             <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
               <Play className="w-6 h-6 text-white ml-1" />
             </div>

@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase/client"
 import { useSearchParams } from "next/navigation"
 import { incrementVideoViews } from "@/lib/actions"
 import { formatShortDate } from "@/lib/utils/date"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface VideoPlayerProps {
   video: {
@@ -38,6 +39,8 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [isFavorited, setIsFavorited] = useState(video.isFavorited || false)
   const [isLoading, setIsLoading] = useState(false)
   const [viewCount, setViewCount] = useState(video.views || 0)
+  const isMobile = useIsMobile()
+  const [iframeLoaded, setIframeLoaded] = useState(false)
   const searchParams = useSearchParams()
   const isAdminView = searchParams.get("admin-view") === "student"
 
@@ -110,6 +113,12 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     return url
   }
 
+  const handleIframeClick = () => {}
+
+  const handleIframeLoad = () => {
+    setIframeLoaded(true)
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back button */}
@@ -128,14 +137,17 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
           <Card className="bg-black/60 border-gray-800 overflow-hidden">
             <div className="aspect-video bg-gray-900 relative">
               {video.video_url ? (
-                <iframe
-                  src={getEmbeddableVideoUrl(video.video_url)}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  title={video.title}
-                  sandbox="allow-scripts allow-same-origin allow-presentation"
-                  allowFullScreen
-                />
+                <>
+                  <iframe
+                    src={getEmbeddableVideoUrl(video.video_url)}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    title={video.title}
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
+                    allowFullScreen
+                    onLoad={handleIframeLoad}
+                  />
+                </>
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-red-900 to-orange-900 flex items-center justify-center">
                   <div className="text-center text-white">
