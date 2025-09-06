@@ -113,7 +113,7 @@ const VideoCard = memo(function VideoCard({ video, isFavorited: initialIsFavorit
             <img
               src={video.thumbnail_url || "/placeholder.svg"}
               alt={video.title}
-              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.src = "/placeholder.svg"
