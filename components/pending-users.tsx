@@ -147,58 +147,66 @@ export default function PendingUsers() {
               return (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700"
+                  className="flex items-center justify-between p-3 sm:p-4 bg-gray-900/50 rounded-lg border border-gray-700 gap-2 sm:gap-4"
                 >
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-10 w-10">
+                  <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                       <AvatarImage src="/placeholder.svg" alt={user.full_name || user.email} />
-                      <AvatarFallback className="bg-purple-600 text-white">
+                      <AvatarFallback className="bg-purple-600 text-white text-xs sm:text-sm">
                         {getInitials(user.full_name, user.email)}
                       </AvatarFallback>
                     </Avatar>
 
-                    <div>
-                      <h4 className="font-medium text-white">{user.full_name || "No name provided"}</h4>
-                      <div className="flex items-center space-x-4 text-sm text-gray-400">
-                        <div className="flex items-center space-x-1">
-                          <Mail className="w-3 h-3" />
-                          <span>{user.email}</span>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-medium text-white truncate text-sm sm:text-base">
+                        {user.full_name || "No name provided"}
+                      </h4>
+                      <div className="flex flex-col space-y-1 text-xs sm:text-sm text-gray-400">
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1 flex-shrink-0">
                           <Calendar className="w-3 h-3" />
                           <span>{formatDate(user.created_at)}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
-                        <div className="flex items-center space-x-1">
-                          <User className="w-3 h-3" />
-                          <span>Teacher: {user.teacher || "Not specified"}</span>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <GraduationCap className="w-3 h-3" />
-                          <span>School: {user.school || "Not specified"}</span>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <GraduationCap className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">School: {user.school || "Not specified"}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleRejectUser(user.id)}
                       disabled={isProcessing}
-                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white h-8 w-8 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2"
                     >
-                      {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                      {isProcessing ? (
+                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                      ) : (
+                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                      )}
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleApproveUser(user.id)}
                       disabled={isProcessing}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 sm:h-9 sm:w-auto sm:px-3 p-0 sm:p-2"
                     >
-                      {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      {isProcessing ? (
+                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>

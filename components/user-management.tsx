@@ -277,14 +277,14 @@ export default function UserManagement() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {!isAdmin && (
                     <>
                       <select
                         value={user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
                         disabled={isProcessing}
-                        className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
+                        className="px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-white text-xs sm:text-sm focus:border-purple-500 focus:outline-none min-w-0 flex-shrink-0"
                       >
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
@@ -295,23 +295,23 @@ export default function UserManagement() {
                         variant={user.is_approved ? "outline" : "default"}
                         onClick={() => toggleUserApproval(user.id, user.is_approved)}
                         disabled={isProcessing}
-                        className={
+                        className={`flex-shrink-0 px-2 py-1.5 text-xs sm:text-sm ${
                           user.is_approved
                             ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                             : "bg-green-600 hover:bg-green-700 text-white"
-                        }
+                        }`}
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                         ) : user.is_approved ? (
                           <>
-                            <UserX className="w-4 h-4 mr-1" />
-                            <span className="hidden md:inline">Revoke</span>
+                            <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Revoke</span>
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            <span className="hidden md:inline">Approve</span>
+                            <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Approve</span>
                           </>
                         )}
                       </Button>
@@ -321,14 +321,14 @@ export default function UserManagement() {
                         variant="outline"
                         onClick={() => deleteUser(user.id, user.email)}
                         disabled={isProcessing}
-                        className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                        className="flex-shrink-0 px-2 py-1.5 text-xs sm:text-sm border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                         ) : (
                           <>
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            <span className="hidden md:inline">Delete</span>
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Delete</span>
                           </>
                         )}
                       </Button>

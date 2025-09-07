@@ -191,6 +191,37 @@ export async function signUp(prevState: any, formData: FormData) {
         console.log("[v0] No invitation records found to delete for email:", email.toLowerCase())
       }
     }
+
+    try {
+      // Find the admin user
+      const { data: adminUser } = await serviceSupabase
+        .from("users")
+        .select("id, email, full_name")
+        .eq("role", "Admin")
+        .single()
+
+      if (adminUser) {
+        const message = `New user registration pending approval:
+        
+Name: ${fullName}
+Email: ${email}
+School: ${school}
+Teacher: ${teacher}
+
+Please review and approve this user in the admin dashboard.`
+
+        // Use existing notification email system
+        await sendNotificationEmail({
+          recipientEmail: adminUser.email,
+          recipientName: adminUser.full_name,
+          senderName: "System",
+          message: message,
+        })
+      }
+    } catch (emailError) {
+      console.error("Failed to send admin notification email:", emailError)
+      // Don't fail the registration if email fails
+    }
   }
 
   redirect("/pending-approval")
@@ -1045,4 +1076,30 @@ export async function getTelemetryData() {
       },
     }
   }
+}
+
+async function sendNotificationEmail(params: {
+  recipientEmail: string
+  recipientName: string
+  senderName: string
+  message: string
+}) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  await resend.emails.send({
+    from: process.env.FROM_EMAIL!,
+    to: params.recipientEmail,
+    subject: "New Notification from TY Kobudo Library",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1f2937; padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 30px;">
+          <p style="font-size: 16px; color: #374151;">Hi ${params.recipientName},</p>
+          <p style="font-size: 16px; color: #374151;">${params.message}</p>
+        </div>
+      </div>
+    `,
+  })
 }
