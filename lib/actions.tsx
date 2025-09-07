@@ -201,13 +201,11 @@ export async function signUp(prevState: any, formData: FormData) {
         .single()
 
       if (adminUser) {
-        const message = `New user registration pending approval:
-        
-Name: ${fullName}
-Email: ${email}
-School: ${school}
-Teacher: ${teacher}
-
+        const message = `New user registration pending approval:<br><br>
+<strong>Name:</strong> ${fullName}<br>
+<strong>Email:</strong> ${email}<br>
+<strong>School:</strong> ${school}<br>
+<strong>Teacher:</strong> ${teacher}<br><br>
 Please review and approve this user in the admin dashboard.`
 
         // Use existing notification email system
