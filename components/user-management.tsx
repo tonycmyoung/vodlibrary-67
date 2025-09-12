@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2 } from "lucide-react"
+import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2, Clock, LogIn } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
@@ -22,6 +22,8 @@ interface UserInterface {
   is_approved: boolean
   approved_at: string | null
   profile_image_url: string | null
+  last_login: string | null
+  login_count: number
 }
 
 export default function UserManagement() {
@@ -42,14 +44,38 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
+
+      // First get all users
+      const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
         .order("created_at", { ascending: false })
 
-      if (error) throw error
+      if (usersError) throw usersError
 
-      setUsers(data || [])
+      // Then get login statistics for each user
+      const { data: loginStats, error: loginError } = await supabase
+        .from("user_logins")
+        .select("user_id, login_time")
+        .order("login_time", { ascending: false })
+
+      if (loginError) throw loginError
+
+      // Combine user data with login statistics
+      const usersWithStats =
+        usersData?.map((user) => {
+          const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
+          const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
+          const loginCount = userLogins.length
+
+          return {
+            ...user,
+            last_login: lastLogin,
+            login_count: loginCount,
+          }
+        }) || []
+
+      setUsers(usersWithStats)
     } catch (error) {
       console.error("Error fetching users:", error)
     } finally {
@@ -251,7 +277,21 @@ export default function UserManagement() {
                           </Badge>
                         </>
                       )}
+
+                      {/* Login statistics badges */}
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Clock className="w-3 h-3" />
+                        <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <LogIn className="w-3 h-3" />
+                        <span>
+                          {user.login_count} login{user.login_count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-2 text-sm text-gray-400">
                       <div className="flex items-center space-x-1 min-w-0">
                         <Mail className="w-3 h-3 flex-shrink-0" />
