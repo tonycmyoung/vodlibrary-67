@@ -549,13 +549,6 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  useEffect(() => {
-    if (validCurrentPage !== currentPage && totalPages > 0) {
-      setCurrentPage(validCurrentPage)
-      reconstructURL(selectedCategories, searchQuery, filterMode, validCurrentPage)
-    }
-  }, [validCurrentPage, currentPage, totalPages])
-
   const PaginationControls = () => {
     const showNavigation = totalPages > 1
 

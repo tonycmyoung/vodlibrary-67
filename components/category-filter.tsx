@@ -4,6 +4,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 
+function getContrastColor(hexColor: string): string {
+  // Remove # if present
+  const hex = hexColor.replace("#", "")
+
+  // Convert to RGB
+  const r = Number.parseInt(hex.substr(0, 2), 16)
+  const g = Number.parseInt(hex.substr(2, 2), 16)
+  const b = Number.parseInt(hex.substr(4, 2), 16)
+
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+
+  // Return white for dark colors, black for light colors
+  return luminance > 0.5 ? "#000000" : "#ffffff"
+}
+
 interface Category {
   id: string
   name: string
@@ -97,15 +113,23 @@ export default function CategoryFilter({
             <Badge
               key={item.id}
               variant={isSelected ? "default" : "outline"}
-              className={`cursor-pointer transition-all hover:scale-105 ${
+              className={`cursor-pointer transition-all hover:scale-105 relative ${
                 isSelected
-                  ? "bg-red-600 text-white border-red-600"
-                  : "bg-transparent text-gray-300 border-gray-600 hover:border-red-500 hover:text-white"
+                  ? "text-white border-2 shadow-lg"
+                  : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
               }`}
               style={
                 isSelected
-                  ? { backgroundColor: item.color, borderColor: item.color }
-                  : { borderColor: item.color + "40" }
+                  ? {
+                      backgroundColor: item.color,
+                      borderColor: item.color,
+                      color: getContrastColor(item.color),
+                    }
+                  : {
+                      borderColor: item.color + "90", // Increased opacity from 70 to 90
+                      borderLeftColor: item.color,
+                      borderLeftWidth: "4px", // Increased from 3px to 4px
+                    }
               }
               onClick={() => onCategoryToggle(item.id)}
             >

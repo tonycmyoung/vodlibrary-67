@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Heart, Calendar, User } from "lucide-react"
-import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
-import { useSearchParams } from "next/navigation"
 import { incrementVideoViews } from "@/lib/actions"
 import { formatShortDate } from "@/lib/utils/date"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -42,6 +41,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const isMobile = useIsMobile()
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const searchParams = useSearchParams()
+  const router = useRouter()
   const isAdminView = searchParams.get("admin-view") === "student"
 
   useEffect(() => {
@@ -119,16 +119,22 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     setIframeLoaded(true)
   }
 
+  const handleBackClick = () => {
+    router.back()
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back button */}
       <div className="mb-6">
-        <Link href={isAdminView ? "/?admin-view=student" : "/"}>
-          <Button variant="ghost" className="text-gray-300 hover:text-gray-800 hover:bg-gray-100">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Library
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          className="text-gray-300 hover:text-gray-800 hover:bg-gray-100"
+          onClick={handleBackClick}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Library
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
