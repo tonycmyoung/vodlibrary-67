@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Manrope } from "next/font/google"
 import "./globals.css"
 import { LoadingProvider } from "@/components/loading-provider"
+import { LegalFooter } from "@/components/legal-footer"
 
 const geist = Geist({
   subsets: ["latin"],
@@ -29,8 +30,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} ${manrope.variable} antialiased`}>
-      <body>
-        <LoadingProvider>{children}</LoadingProvider>
+      <body className="min-h-screen flex flex-col">
+        <LoadingProvider>
+          <div className="flex-1">{children}</div>
+          <LegalFooter />
+        </LoadingProvider>
       </body>
     </html>
   )
