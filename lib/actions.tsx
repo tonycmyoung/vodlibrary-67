@@ -1328,3 +1328,60 @@ async function sendNotificationEmail(params: {
     `,
   })
 }
+
+export async function fetchUnconfirmedEmailUsers() {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // First get unconfirmed users from auth.users
+    const { data: authUsers, error: authError } = await serviceSupabase.auth.admin.listUsers()
+
+    if (authError) {
+      console.error("Error fetching auth users:", authError)
+      return { error: "Failed to fetch unconfirmed email users", data: [] }
+    }
+
+    // Filter for users with null email_confirmed_at
+    const unconfirmedAuthUsers = authUsers.users.filter((user) => !user.email_confirmed_at)
+
+    if (unconfirmedAuthUsers.length === 0) {
+      return { data: [], error: null }
+    }
+
+    // Get the corresponding profile data from public.users
+    const userIds = unconfirmedAuthUsers.map((user) => user.id)
+    const { data: profileData, error: profileError } = await serviceSupabase
+      .from("users")
+      .select(`
+        id,
+        full_name,
+        teacher,
+        school,
+        created_at
+      `)
+      .in("id", userIds)
+
+    if (profileError) {
+      console.error("Error fetching profile data:", profileError)
+      return { error: "Failed to fetch user profiles", data: [] }
+    }
+
+    // Combine auth and profile data
+    const combinedData = unconfirmedAuthUsers.map((authUser) => {
+      const profile = profileData?.find((p) => p.id === authUser.id)
+      return {
+        id: authUser.id,
+        email: authUser.email,
+        full_name: profile?.full_name || "Unknown",
+        teacher: profile?.teacher || "Unknown",
+        school: profile?.school || "Unknown",
+        created_at: authUser.created_at,
+      }
+    })
+
+    return { data: combinedData, error: null }
+  } catch (error) {
+    console.error("Error in fetchUnconfirmedEmailUsers:", error)
+    return { error: "Failed to fetch unconfirmed email users", data: [] }
+  }
+}

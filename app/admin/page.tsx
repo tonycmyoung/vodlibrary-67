@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import AdminStats from "@/components/admin-stats"
 import PendingUsers from "@/components/pending-users"
+import UnconfirmedEmailUsers from "@/components/unconfirmed-email-users"
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -65,6 +66,7 @@ export default async function AdminDashboard() {
         <div className="space-y-8">
           <AdminStats key="admin-stats" />
           <PendingUsers />
+          <UnconfirmedEmailUsers />
         </div>
       </div>
     </div>

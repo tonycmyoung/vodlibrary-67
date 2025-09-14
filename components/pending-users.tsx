@@ -200,9 +200,9 @@ export default function PendingUsers() {
               return (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-3 sm:p-4 bg-gray-900/50 rounded-lg border border-gray-700 gap-2 sm:gap-4"
+                  className="p-3 sm:p-4 bg-gray-900/50 rounded-lg border border-gray-700 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6 lg:items-center"
                 >
-                  <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+                  <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1 lg:flex-none">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                       <AvatarImage src="/placeholder.svg" alt={user.full_name || user.email} />
                       <AvatarFallback className="bg-purple-600 text-white text-xs sm:text-sm">
@@ -223,7 +223,7 @@ export default function PendingUsers() {
                           <Calendar className="w-3 h-3" />
                           <span>{formatDate(user.created_at)}</span>
                         </div>
-                        <div className="flex items-center space-x-1 min-w-0">
+                        <div className="flex items-center space-x-1 min-w-0 lg:hidden">
                           <User className="w-3 h-3 flex-shrink-0" />
                           {isEditing ? (
                             <Input
@@ -236,7 +236,7 @@ export default function PendingUsers() {
                             <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
                           )}
                         </div>
-                        <div className="flex items-center space-x-1 min-w-0">
+                        <div className="flex items-center space-x-1 min-w-0 lg:hidden">
                           <GraduationCap className="w-3 h-3 flex-shrink-0" />
                           {isEditing ? (
                             <Input
@@ -253,7 +253,36 @@ export default function PendingUsers() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                  <div className="hidden lg:flex lg:flex-col lg:space-y-2 lg:min-w-0">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <User className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                      {isEditing ? (
+                        <Input
+                          value={editValues.teacher}
+                          onChange={(e) => setEditValues((prev) => ({ ...prev, teacher: e.target.value }))}
+                          placeholder="Teacher name"
+                          className="h-8 text-sm bg-gray-800 border-gray-600 text-white"
+                        />
+                      ) : (
+                        <span className="text-sm text-gray-300 truncate">{user.teacher || "No teacher specified"}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <GraduationCap className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                      {isEditing ? (
+                        <Input
+                          value={editValues.school}
+                          onChange={(e) => setEditValues((prev) => ({ ...prev, school: e.target.value }))}
+                          placeholder="School name"
+                          className="h-8 text-sm bg-gray-800 border-gray-600 text-white"
+                        />
+                      ) : (
+                        <span className="text-sm text-gray-300 truncate">{user.school || "No school specified"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 mt-3 lg:mt-0 justify-end lg:justify-start">
                     {isEditing ? (
                       <>
                         <Button
