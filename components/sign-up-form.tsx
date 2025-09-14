@@ -270,8 +270,8 @@ export default function SignUpForm() {
                 />
                 <label htmlFor="privacyAccepted" className="text-sm text-gray-300 leading-5">
                   I agree to the{" "}
-                  <Link href="/privacy-notice" target="_blank" className="text-red-400 hover:text-red-300 underline">
-                    Privacy Notice
+                  <Link href="/privacy-policy" target="_blank" className="text-red-400 hover:text-red-300 underline">
+                    Privacy Policy
                   </Link>
                 </label>
               </div>
@@ -279,7 +279,7 @@ export default function SignUpForm() {
 
             {!isFormValid && (
               <div className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/50 px-3 py-2 rounded">
-                You must accept both the EULA and Privacy Notice to create an account.
+                You must accept both the EULA and Privacy Policy to create an account.
               </div>
             )}
           </div>

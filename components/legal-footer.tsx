@@ -13,8 +13,8 @@ export function LegalFooter() {
             <Link href="/eula" className="text-gray-200 hover:text-white transition-colors underline">
               End User License Agreement
             </Link>
-            <Link href="/privacy-notice" className="text-gray-200 hover:text-white transition-colors underline">
-              Privacy Notice
+            <Link href="/privacy-policy" className="text-gray-200 hover:text-white transition-colors underline">
+              Privacy Policy
             </Link>
           </div>
         </div>

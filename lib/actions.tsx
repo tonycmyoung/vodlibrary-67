@@ -125,7 +125,7 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 
   if (!eulaAccepted || !privacyAccepted) {
-    return { error: "You must accept both the EULA and Privacy Notice to create an account" }
+    return { error: "You must accept both the EULA and Privacy Policy to create an account" }
   }
 
   const cookieStore = cookies()

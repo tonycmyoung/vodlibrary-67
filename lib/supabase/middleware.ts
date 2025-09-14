@@ -125,7 +125,7 @@ export async function updateSession(request: NextRequest) {
     const isPublicRoute =
       request.nextUrl.pathname === "/pending-approval" ||
       request.nextUrl.pathname === "/setup-admin" ||
-      request.nextUrl.pathname === "/privacy-notice" || // Adding legal pages as public routes for pre-signup access
+      request.nextUrl.pathname === "/privacy-policy" || // Updated route from privacy-notice to privacy-policy
       request.nextUrl.pathname === "/eula"
 
     // Protected routes - redirect to login if not authenticated
