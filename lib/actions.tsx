@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 
 function generateUUID() {
   // Use Web Crypto API if available (modern browsers and Node.js 16+)
@@ -528,15 +529,45 @@ export async function fetchPendingUsers() {
   }
 }
 
-export async function approveUser(userId: string) {
+export async function approveUserServerAction(userId: string) {
   try {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const cookieStore = await cookies()
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    })
+
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
       return { error: "Not authenticated" }
     }
 
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Ignore
+          }
+        },
+      },
+    })
 
     const { data: user, error: userError } = await serviceSupabase
       .from("users")
@@ -598,6 +629,7 @@ export async function approveUser(userId: string) {
       `,
     })
 
+    revalidatePath("/admin")
     return { success: "User approved successfully" }
   } catch (error) {
     console.error("Error in approveUser:", error)
@@ -605,21 +637,84 @@ export async function approveUser(userId: string) {
   }
 }
 
-export async function rejectUser(userId: string) {
+export async function rejectUserServerAction(userId: string) {
   try {
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const cookieStore = await cookies()
+    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Ignore
+          }
+        },
+      },
+    })
 
-    const { error } = await serviceSupabase.from("users").delete().eq("id", userId)
+    // First delete from public.users table
+    const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
 
-    if (error) {
-      console.error("Error rejecting user:", error)
+    if (publicError) {
+      console.error("Error deleting from public.users:", publicError)
       return { error: "Failed to reject user" }
     }
 
+    // Then delete from auth.users table using admin API
+    const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error("Error deleting from auth.users:", authError)
+      return { error: "Failed to completely remove user" }
+    }
+
+    revalidatePath("/admin")
     return { success: "User rejected successfully" }
   } catch (error) {
     console.error("Error in rejectUser:", error)
     return { error: "Failed to reject user" }
+  }
+}
+
+export async function updatePendingUserFields(userId: string, teacher: string, school: string) {
+  try {
+    const cookieStore = await cookies()
+    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Ignore
+          }
+        },
+      },
+    })
+
+    const { error } = await serviceSupabase
+      .from("users")
+      .update({
+        teacher: teacher.trim(),
+        school: school.trim(),
+      })
+      .eq("id", userId)
+
+    if (error) {
+      console.error("Error updating user fields:", error)
+      return { error: "Failed to update user fields" }
+    }
+
+    revalidatePath("/admin")
+    return { success: "User fields updated successfully" }
+  } catch (error) {
+    console.error("Error in updatePendingUserFields:", error)
+    return { error: "Failed to update user fields" }
   }
 }
 
