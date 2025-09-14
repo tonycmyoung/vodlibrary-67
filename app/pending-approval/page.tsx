@@ -1,25 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Mail } from "lucide-react"
 
-export default async function PendingApprovalPage() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/auth/login")
-  }
-
-  // Check if user is approved
-  const { data: userProfile } = await supabase.from("users").select("is_approved, full_name").eq("id", user.id).single()
-
-  if (userProfile?.is_approved) {
-    redirect("/")
-  }
-
+export default function PendingApprovalPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900 px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md bg-black/80 border-yellow-600/50 backdrop-blur-sm">
@@ -28,9 +10,7 @@ export default async function PendingApprovalPage() {
             <Clock className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-3xl font-bold text-white">Approval Pending</CardTitle>
-          <CardDescription className="text-gray-300 text-lg">
-            Welcome, {userProfile?.full_name || user.email}!
-          </CardDescription>
+          <CardDescription className="text-gray-300 text-lg">Welcome!</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -40,8 +20,9 @@ export default async function PendingApprovalPage() {
               <div>
                 <p className="font-medium mb-2">Account Under Review</p>
                 <p className="text-sm text-yellow-300">
-                  Your account has been created successfully! An administrator will review and approve your access to
-                  the martial arts video library. You'll receive an email notification once approved.
+                  Your account has been created successfully!<br />
+                  An administrator will review and approve your access.<br />
+                  You'll receive an email notification once approved.
                 </p>
               </div>
             </div>
@@ -53,6 +34,11 @@ export default async function PendingApprovalPage() {
               Questions? Contact us at{" "}
               <a href="mailto:acmyma@gmail.com" className="text-red-400 hover:text-red-300">
                 acmyma@gmail.com
+              </a>
+            </p>
+            <p className="mt-4">
+              <a href="/auth/login" className="text-red-400 hover:text-red-300 underline">
+                Sign in to your account
               </a>
             </p>
           </div>

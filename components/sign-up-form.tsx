@@ -12,14 +12,14 @@ import { Loader2, UserPlus, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { signUp } from "@/lib/actions"
 
-function SubmitButton() {
+function SubmitButton({ isFormValid }: { isFormValid: boolean }) {
   const { pending } = useFormStatus()
 
   return (
     <Button
       type="submit"
-      disabled={pending}
-      className="w-full bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-medium rounded-lg h-[60px]"
+      disabled={pending || !isFormValid}
+      className="w-full bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-medium rounded-lg h-[60px] disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {pending ? (
         <>
@@ -90,6 +90,11 @@ export default function SignUpForm() {
   }
 
   const handleFormAction = (formData: FormData) => {
+    // Prevent submission if legal agreements aren't accepted
+    if (!legalAgreements.eulaAccepted || !legalAgreements.privacyAccepted) {
+      return
+    }
+
     if (invitationToken) {
       formData.append("invitationToken", invitationToken)
     }
@@ -288,9 +293,7 @@ export default function SignUpForm() {
             <strong>Note:</strong> Your account will require admin approval before you can access the video library.
           </div>
 
-          <div className={!isFormValid ? "opacity-50" : ""}>
-            <SubmitButton />
-          </div>
+          <SubmitButton isFormValid={isFormValid} />
 
           <div className="text-center text-gray-400">
             Already have an account?{" "}

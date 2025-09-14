@@ -117,8 +117,15 @@ export async function signUp(prevState: any, formData: FormData) {
   const fullName = formData.get("fullName") as string
   const school = formData.get("school") as string
   const teacher = formData.get("teacher") as string
-  const eulaAccepted = formData.get("eulaAccepted") === "true"
-  const privacyAccepted = formData.get("privacyAccepted") === "true"
+  const eulaAccepted = formData.get("eulaAccepted") === "true" || formData.get("eulaAccepted") === "on"
+  const privacyAccepted = formData.get("privacyAccepted") === "true" || formData.get("privacyAccepted") === "on"
+
+  console.log("[v0] Form data received:", {
+    eulaAccepted: formData.get("eulaAccepted"),
+    privacyAccepted: formData.get("privacyAccepted"),
+    eulaAcceptedBool: eulaAccepted,
+    privacyAcceptedBool: privacyAccepted,
+  })
 
   if (!email || !password || !fullName || !school || !teacher) {
     return { error: "All fields are required" }

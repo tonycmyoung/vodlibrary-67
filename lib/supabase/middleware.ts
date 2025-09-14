@@ -128,91 +128,96 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/privacy-policy" || // Updated route from privacy-notice to privacy-policy
       request.nextUrl.pathname === "/eula"
 
-    // Protected routes - redirect to login if not authenticated
     if (isAuthRoute) {
       return supabaseResponse
     }
 
-    if (!isPublicRoute) {
-      if (!session) {
-        const redirectUrl = new URL("/auth/login", request.url)
-        return NextResponse.redirect(redirectUrl)
-      }
+    if (isPublicRoute) {
+      return supabaseResponse
+    }
 
-      if (session?.user && !request.nextUrl.pathname.startsWith("/admin")) {
-        try {
-          const { data: user, error } = await supabase
-            .from("users")
-            .select("is_approved, role")
-            .eq("id", session.user.id)
-            .single()
+    if (!session) {
+      const redirectUrl = new URL("/auth/login", request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
 
-          if (error) {
-            console.error("User lookup error:", error.message)
-            setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
-            return supabaseResponse
-          }
+    if (
+      session?.user &&
+      !request.nextUrl.pathname.startsWith("/admin") &&
+      request.nextUrl.pathname !== "/pending-approval"
+    ) {
+      try {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("is_approved, role")
+          .eq("id", session.user.id)
+          .single()
 
-          if (user) {
-            setCachedUserApproval(session.user.id, user.is_approved, user.role)
-
-            if (!user.is_approved) {
-              const redirectUrl = new URL("/pending-approval", request.url)
-              return NextResponse.redirect(redirectUrl)
-            }
-
-            const isAdminEmail = session.user.email === "acmyma@gmail.com"
-            if ((user.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
-              // Check if we're already coming from admin to prevent loops
-              const referer = request.headers.get("referer")
-              if (!referer || !referer.includes("/admin")) {
-                const redirectUrl = new URL("/admin", request.url)
-                return NextResponse.redirect(redirectUrl)
-              }
-            }
-          }
-        } catch (dbError) {
-          console.error("Database error:", dbError?.message)
+        if (error) {
+          console.error("User lookup error:", error.message)
           setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
           return supabaseResponse
         }
-      }
 
-      if (request.nextUrl.pathname.startsWith("/admin")) {
-        const isAdminEmail = session.user.email === "acmyma@gmail.com"
+        if (user) {
+          setCachedUserApproval(session.user.id, user.is_approved, user.role)
 
-        if (isAdminEmail) {
-          // Admin email always has access
-          return supabaseResponse
-        }
-
-        const cachedApproval = getCachedUserApproval(session.user.id)
-
-        if (cachedApproval && cachedApproval.role === "Admin") {
-          return supabaseResponse
-        }
-
-        try {
-          const { data: user, error } = await supabase
-            .from("users")
-            .select("role, is_approved")
-            .eq("id", session.user.id)
-            .single()
-
-          if (!error && user && user.role === "Admin") {
-            setCachedUserApproval(session.user.id, user.is_approved, user.role)
-            return supabaseResponse
+          if (!user.is_approved) {
+            const redirectUrl = new URL("/pending-approval", request.url)
+            return NextResponse.redirect(redirectUrl)
           }
-        } catch (dbError) {
-          console.error("Database query error:", dbError?.message)
-          // Database error - deny access for non-admin emails
-        }
 
-        // Not authorized for admin routes
-        console.error("Unauthorized admin access attempt by:", session.user?.email)
-        const redirectUrl = new URL("/error?type=permission&message=Admin access required", request.url)
-        return NextResponse.redirect(redirectUrl)
+          const isAdminEmail = session.user.email === "acmyma@gmail.com"
+          if ((user.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
+            // Check if we're already coming from admin to prevent loops
+            const referer = request.headers.get("referer")
+            if (!referer || !referer.includes("/admin")) {
+              const redirectUrl = new URL("/admin", request.url)
+              return NextResponse.redirect(redirectUrl)
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error("Database error:", dbError?.message)
+        setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
+        return supabaseResponse
       }
+    }
+
+    if (request.nextUrl.pathname.startsWith("/admin")) {
+      const isAdminEmail = session.user.email === "acmyma@gmail.com"
+
+      if (isAdminEmail) {
+        // Admin email always has access
+        return supabaseResponse
+      }
+
+      const cachedApproval = getCachedUserApproval(session.user.id)
+
+      if (cachedApproval && cachedApproval.role === "Admin") {
+        return supabaseResponse
+      }
+
+      try {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("role, is_approved")
+          .eq("id", session.user.id)
+          .single()
+
+        if (!error && user && user.role === "Admin") {
+          setCachedUserApproval(session.user.id, user.is_approved, user.role)
+          return supabaseResponse
+        }
+      } catch (dbError) {
+        console.error("Database query error:", dbError?.message)
+        // Database error - deny access for non-admin emails
+      }
+
+      // Not authorized for admin routes
+      console.error("Unauthorized admin access attempt by:", session.user?.email)
+      const redirectUrl = new URL("/error?type=permission&message=Admin access required", request.url)
+      return NextResponse.redirect(redirectUrl)
     }
 
     return supabaseResponse
