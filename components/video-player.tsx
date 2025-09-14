@@ -237,6 +237,14 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Legal Notice */}
+          <div className="p-4 bg-gray-800/30 border border-gray-600/30 rounded-lg">
+            <p className="text-gray-400 text-sm text-center italic">
+              Videos are for personal study only. Downloading, distributing, or sharing this material without
+              authorization is strictly prohibited.
+            </p>
+          </div>
         </div>
       </div>
     </div>

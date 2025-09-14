@@ -47,6 +47,11 @@ export default function SignUpForm() {
     password: "",
   })
 
+  const [legalAgreements, setLegalAgreements] = useState({
+    eulaAccepted: false,
+    privacyAccepted: false,
+  })
+
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
@@ -76,10 +81,21 @@ export default function SignUpForm() {
     }))
   }
 
+  const handleLegalAgreementChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target
+    setLegalAgreements((prev) => ({
+      ...prev,
+      [name]: checked,
+    }))
+  }
+
   const handleFormAction = (formData: FormData) => {
     if (invitationToken) {
       formData.append("invitationToken", invitationToken)
     }
+
+    formData.append("eulaAccepted", legalAgreements.eulaAccepted.toString())
+    formData.append("privacyAccepted", legalAgreements.privacyAccepted.toString())
 
     // Store current form values before submission
     const currentData = {
@@ -94,6 +110,8 @@ export default function SignUpForm() {
     // Call the original form action
     formAction(formData)
   }
+
+  const isFormValid = legalAgreements.eulaAccepted && legalAgreements.privacyAccepted
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
@@ -220,11 +238,59 @@ export default function SignUpForm() {
             </div>
           </div>
 
+          <div className="space-y-4 border-t border-gray-700 pt-4">
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <input
+                  id="eulaAccepted"
+                  name="eulaAccepted"
+                  type="checkbox"
+                  checked={legalAgreements.eulaAccepted}
+                  onChange={handleLegalAgreementChange}
+                  className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-600 rounded bg-gray-900"
+                  required
+                />
+                <label htmlFor="eulaAccepted" className="text-sm text-gray-300 leading-5">
+                  I agree to the{" "}
+                  <Link href="/eula" target="_blank" className="text-red-400 hover:text-red-300 underline">
+                    End User License Agreement (EULA)
+                  </Link>
+                </label>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <input
+                  id="privacyAccepted"
+                  name="privacyAccepted"
+                  type="checkbox"
+                  checked={legalAgreements.privacyAccepted}
+                  onChange={handleLegalAgreementChange}
+                  className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-600 rounded bg-gray-900"
+                  required
+                />
+                <label htmlFor="privacyAccepted" className="text-sm text-gray-300 leading-5">
+                  I agree to the{" "}
+                  <Link href="/privacy-notice" target="_blank" className="text-red-400 hover:text-red-300 underline">
+                    Privacy Notice
+                  </Link>
+                </label>
+              </div>
+            </div>
+
+            {!isFormValid && (
+              <div className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/50 px-3 py-2 rounded">
+                You must accept both the EULA and Privacy Notice to create an account.
+              </div>
+            )}
+          </div>
+
           <div className="bg-yellow-500/10 border border-yellow-500/50 text-yellow-400 px-4 py-3 rounded-lg text-sm">
             <strong>Note:</strong> Your account will require admin approval before you can access the video library.
           </div>
 
-          <SubmitButton />
+          <div className={!isFormValid ? "opacity-50" : ""}>
+            <SubmitButton />
+          </div>
 
           <div className="text-center text-gray-400">
             Already have an account?{" "}

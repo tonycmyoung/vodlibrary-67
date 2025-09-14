@@ -117,9 +117,15 @@ export async function signUp(prevState: any, formData: FormData) {
   const fullName = formData.get("fullName") as string
   const school = formData.get("school") as string
   const teacher = formData.get("teacher") as string
+  const eulaAccepted = formData.get("eulaAccepted") === "true"
+  const privacyAccepted = formData.get("privacyAccepted") === "true"
 
   if (!email || !password || !fullName || !school || !teacher) {
     return { error: "All fields are required" }
+  }
+
+  if (!eulaAccepted || !privacyAccepted) {
+    return { error: "You must accept both the EULA and Privacy Notice to create an account" }
   }
 
   const cookieStore = cookies()
@@ -172,9 +178,20 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: "Failed to create user profile" }
     }
 
+    const now = new Date().toISOString()
+    const { error: consentError } = await serviceSupabase.from("user_consents").insert({
+      user_id: data.user.id,
+      eula_accepted_at: eulaAccepted ? now : null,
+      privacy_accepted_at: privacyAccepted ? now : null,
+    })
+
+    if (consentError) {
+      console.error("Error storing user consent:", consentError)
+      return { error: "Failed to store legal consent" }
+    }
+
     console.log("[v0] Attempting to clean up invitation for email:", email.toLowerCase())
 
-    // Clean up invitation record if exists
     const { data: deletedInvitations, error: deleteError } = await serviceSupabase
       .from("invitations")
       .delete()
@@ -193,7 +210,6 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     try {
-      // Find the admin user
       const { data: adminUser } = await serviceSupabase
         .from("users")
         .select("id, email, full_name")
@@ -208,7 +224,6 @@ export async function signUp(prevState: any, formData: FormData) {
 <strong>Teacher:</strong> ${teacher}<br><br>
 Please review and approve this user in the admin dashboard.`
 
-        // Use existing notification email system
         await sendNotificationEmail({
           recipientEmail: adminUser.email,
           recipientName: adminUser.full_name,
@@ -218,7 +233,6 @@ Please review and approve this user in the admin dashboard.`
       }
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError)
-      // Don't fail the registration if email fails
     }
   }
 
@@ -305,13 +319,11 @@ export async function inviteUser(email: string) {
       },
     )
 
-    // Verify user is authenticated
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
       return { error: "Not authenticated" }
     }
 
-    // Get current user details
     const { data: inviterUser } = await supabase
       .from("users")
       .select("full_name, email")
@@ -324,7 +336,6 @@ export async function inviteUser(email: string) {
 
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Check if user already exists and is registered
     const { data: existingUser, error: checkError } = await serviceSupabase
       .from("users")
       .select("id, email, is_approved")
@@ -340,7 +351,6 @@ export async function inviteUser(email: string) {
       return { error: "This user is already registered. No invitation needed." }
     }
 
-    // Check if there's already a pending invitation
     const { data: existingInvitation } = await serviceSupabase
       .from("invitations")
       .select("id, expires_at")
@@ -353,12 +363,10 @@ export async function inviteUser(email: string) {
       return { error: "An invitation has already been sent to this email address." }
     }
 
-    // Generate secure invitation token
-    const invitationToken = generateUUID() // Using universal UUID function instead of crypto.randomUUID()
+    const invitationToken = generateUUID()
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
+    expiresAt.setDate(expiresAt.getDate() + 7)
 
-    // Create invitation record
     const { error: inviteError } = await serviceSupabase.from("invitations").insert({
       email: email.toLowerCase(),
       invited_by: currentUser.user.id,
@@ -372,7 +380,6 @@ export async function inviteUser(email: string) {
       return { error: "Failed to create invitation" }
     }
 
-    // Send invitation email using Resend
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     await resend.emails.send({
@@ -417,7 +424,6 @@ export async function incrementVideoViews(videoId: string) {
     console.log("[v0] Incrementing views for video:", videoId)
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get current view count first
     const { data: currentVideo, error: fetchError } = await serviceSupabase
       .from("videos")
       .select("views")
@@ -443,7 +449,7 @@ export async function incrementVideoViews(videoId: string) {
         last_viewed: newLastViewed,
       })
       .eq("id", videoId)
-      .select() // Added select() to return updated data for verification
+      .select()
 
     console.log("[v0] Database update result - data:", updateData, "error:", error)
 
@@ -517,9 +523,14 @@ export async function fetchPendingUsers() {
 
 export async function approveUser(userId: string) {
   try {
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get user details for email
     const { data: user, error: userError } = await serviceSupabase
       .from("users")
       .select("email, full_name")
@@ -531,14 +542,20 @@ export async function approveUser(userId: string) {
       return { error: "User not found" }
     }
 
-    const { error } = await serviceSupabase.from("users").update({ is_approved: true }).eq("id", userId)
+    const { error } = await serviceSupabase
+      .from("users")
+      .update({
+        is_approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: currentUser.user.id,
+      })
+      .eq("id", userId)
 
     if (error) {
       console.error("Error approving user:", error)
       return { error: "Failed to approve user" }
     }
 
-    // Send approval email
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     await resend.emails.send({
@@ -603,7 +620,6 @@ export async function deleteUserCompletely(userId: string) {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Delete user from public.users table first
     const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
 
     if (publicError) {
@@ -611,11 +627,9 @@ export async function deleteUserCompletely(userId: string) {
       return { error: "Failed to delete user profile" }
     }
 
-    // Then delete from auth system (this might fail if user doesn't exist in auth)
     const { error: authError } = await serviceSupabase.auth.admin.deleteUser(userId)
 
     if (authError) {
-      // Log the auth error but don't fail the operation if public user was deleted
       console.error("Error deleting user from auth (user may not exist in auth):", authError)
     }
 
@@ -851,7 +865,6 @@ export async function sendNotificationWithEmail(params: {
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     if (isBroadcast) {
-      // Send to all approved users
       const { data: users } = await serviceSupabase.from("users").select("id, email, full_name").eq("is_approved", true)
 
       if (users) {
@@ -881,10 +894,8 @@ export async function sendNotificationWithEmail(params: {
         }
       }
     } else {
-      // Send to specific user or admin
       let actualRecipientId = recipientId
 
-      // If recipientId is "admin", find the admin user
       if (recipientId === "admin") {
         const { data: adminUser } = await serviceSupabase.from("users").select("id").eq("role", "Admin").single()
 

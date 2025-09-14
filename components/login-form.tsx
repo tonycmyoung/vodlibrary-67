@@ -196,6 +196,14 @@ export default function LoginForm() {
             </form>
           )}
         </div>
+
+        <div className="mt-6 pt-4 border-t border-gray-700/50">
+          <p className="text-xs text-gray-400 italic text-center leading-relaxed">
+            By accessing or using this video platform, you agree to abide by our End User License Agreement. All videos
+            are owned by Tony Young and are provided solely for private viewing by authorized members. Unauthorized
+            reproduction or distribution is strictly prohibited.
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

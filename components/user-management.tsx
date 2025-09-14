@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2, Clock, LogIn } from "lucide-react"
+import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2, Clock, LogIn, Shield, FileText } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
@@ -24,6 +24,8 @@ interface UserInterface {
   profile_image_url: string | null
   last_login: string | null
   login_count: number
+  eula_consent: string | null
+  privacy_consent: string | null
 }
 
 export default function UserManagement() {
@@ -45,7 +47,6 @@ export default function UserManagement() {
     try {
       const supabase = createClient()
 
-      // First get all users
       const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
@@ -53,7 +54,6 @@ export default function UserManagement() {
 
       if (usersError) throw usersError
 
-      // Then get login statistics for each user
       const { data: loginStats, error: loginError } = await supabase
         .from("user_logins")
         .select("user_id, login_time")
@@ -61,17 +61,26 @@ export default function UserManagement() {
 
       if (loginError) throw loginError
 
-      // Combine user data with login statistics
+      const { data: consentData, error: consentError } = await supabase
+        .from("user_consents")
+        .select("user_id, eula_accepted_at, privacy_accepted_at")
+
+      if (consentError) throw consentError
+
       const usersWithStats =
         usersData?.map((user) => {
           const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
           const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
           const loginCount = userLogins.length
 
+          const userConsent = consentData?.find((consent) => consent.user_id === user.id)
+
           return {
             ...user,
             last_login: lastLogin,
             login_count: loginCount,
+            eula_consent: userConsent?.eula_accepted_at || null,
+            privacy_consent: userConsent?.privacy_accepted_at || null,
           }
         }) || []
 
@@ -278,7 +287,6 @@ export default function UserManagement() {
                         </>
                       )}
 
-                      {/* Login statistics badges */}
                       <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
                         <Clock className="w-3 h-3" />
                         <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
@@ -292,7 +300,7 @@ export default function UserManagement() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-2 text-sm text-gray-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-2 text-sm text-gray-400">
                       <div className="flex items-center space-x-1 min-w-0">
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{user.email}</span>
@@ -305,12 +313,18 @@ export default function UserManagement() {
                       </div>
                       <div className="flex items-center space-x-1 min-w-0">
                         <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">Joined {formatDate(user.created_at)}</span>
+                        <span>Joined {formatDate(user.created_at)}</span>
                       </div>
-                      {user.approved_at && (
+                      {user.is_approved && (
                         <div className="flex items-center space-x-1 min-w-0">
                           <UserCheck className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">Approved {formatDate(user.approved_at)}</span>
+                          <span>Approved {user.approved_at ? formatDate(user.approved_at) : "Date unknown"}</span>
+                        </div>
+                      )}
+                      {(user.eula_consent || user.privacy_consent) && (
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Shield className="w-3 h-3 flex-shrink-0" />
+                          <span>Consented {formatDate(user.eula_consent || user.privacy_consent || "")}</span>
                         </div>
                       )}
                     </div>
@@ -320,6 +334,29 @@ export default function UserManagement() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {!isAdmin && (
                     <>
+                      <div className="flex flex-col gap-1 text-xs flex-shrink-0">
+                        <Badge
+                          className={
+                            user.eula_consent
+                              ? "bg-green-700 text-green-100 flex-shrink-0"
+                              : "bg-red-700 text-red-100 flex-shrink-0"
+                          }
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          EULA {user.eula_consent ? "✓" : "✗"}
+                        </Badge>
+                        <Badge
+                          className={
+                            user.privacy_consent
+                              ? "bg-green-700 text-green-100 flex-shrink-0"
+                              : "bg-red-700 text-red-100 flex-shrink-0"
+                          }
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          Privacy {user.privacy_consent ? "✓" : "✗"}
+                        </Badge>
+                      </div>
+
                       <select
                         value={user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
