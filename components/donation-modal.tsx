@@ -33,7 +33,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />
-            Support TY Kobudo Library
+            Support the Okinawa Kobudo Library
           </DialogTitle>
         </DialogHeader>
 

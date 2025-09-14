@@ -47,8 +47,8 @@ export default async function ContactPage() {
             <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
               <h2 className="text-lg font-semibold text-white mb-2">Alternative Contact</h2>
               <p className="text-gray-400 mb-2">For urgent matters, you can also reach out directly via email:</p>
-              <a href="mailto:acmyma@gmail.com" className="text-red-400 hover:text-red-300 font-medium">
-                acmyma@gmail.com
+              <a href="mailto:admin@tykobudo.com.au" className="text-red-400 hover:text-red-300 font-medium">
+                admin@tykobudo.com.au
               </a>
             </div>
           </div>
