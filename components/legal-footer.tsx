@@ -1,5 +1,3 @@
-import Link from "next/link"
-
 export function LegalFooter() {
   const currentYear = new Date().getFullYear()
 
@@ -10,12 +8,22 @@ export function LegalFooter() {
           <div className="text-sm text-white">© {currentYear} Tony Young. All rights reserved.</div>
 
           <div className="flex items-center gap-6 text-sm">
-            <Link href="/eula" className="text-gray-200 hover:text-white transition-colors underline">
+            <a
+              href="/eula"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-200 hover:text-white transition-colors underline"
+            >
               End User License Agreement
-            </Link>
-            <Link href="/privacy-policy" className="text-gray-200 hover:text-white transition-colors underline">
+            </a>
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-200 hover:text-white transition-colors underline"
+            >
               Privacy Policy
-            </Link>
+            </a>
           </div>
         </div>
       </div>
