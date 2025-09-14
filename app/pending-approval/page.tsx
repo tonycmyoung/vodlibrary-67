@@ -1,7 +1,28 @@
+"use client"
+
+import { useEffect } from "react"
+import { createBrowserClient } from "@supabase/ssr"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Mail } from "lucide-react"
 
 export default function PendingApprovalPage() {
+  useEffect(() => {
+    const performSignOut = async () => {
+      try {
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        )
+
+        await supabase.auth.signOut()
+      } catch (error) {
+        console.error("Signout error:", error)
+      }
+    }
+
+    performSignOut()
+  }, [])
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900 px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md bg-black/80 border-yellow-600/50 backdrop-blur-sm">
@@ -20,8 +41,10 @@ export default function PendingApprovalPage() {
               <div>
                 <p className="font-medium mb-2">Account Under Review</p>
                 <p className="text-sm text-yellow-300">
-                  Your account has been created successfully!<br />
-                  An administrator will review and approve your access.<br />
+                  Your account has been created successfully!
+                  <br />
+                  An administrator will review and approve your access.
+                  <br />
                   You'll receive an email notification once approved.
                 </p>
               </div>
@@ -32,8 +55,8 @@ export default function PendingApprovalPage() {
             <p>This usually takes 24-48 hours.</p>
             <p className="mt-2">
               Questions? Contact us at{" "}
-              <a href="mailto:acmyma@gmail.com" className="text-red-400 hover:text-red-300">
-                acmyma@gmail.com
+              <a href="mailto:admin@tykobudo.com.au" className="text-red-400 hover:text-red-300">
+                admin@tykobudo.com.au
               </a>
             </p>
             <p className="mt-4">
