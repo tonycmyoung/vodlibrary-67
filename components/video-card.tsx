@@ -43,7 +43,6 @@ const VideoCard = memo(function VideoCard({
   onFavoriteToggle,
 }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
-  const [isLoading, setIsLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
   const isMobile = useIsMobile()
 
@@ -76,14 +75,17 @@ const VideoCard = memo(function VideoCard({
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsLoading(true)
 
     try {
-      if (!user) return
+      if (!user) {
+        return
+      }
 
       const supabase = createClient()
+
       if (isFavorited) {
         await supabase.from("user_favorites").delete().eq("user_id", user.id).eq("video_id", video.id)
+
         setIsFavorited(false)
         onFavoriteToggle?.(video.id, false)
       } else {
@@ -91,13 +93,12 @@ const VideoCard = memo(function VideoCard({
           user_id: user.id,
           video_id: video.id,
         })
+
         setIsFavorited(true)
         onFavoriteToggle?.(video.id, true)
       }
     } catch (error) {
       console.error("Error toggling favorite:", error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -168,7 +169,7 @@ const VideoCard = memo(function VideoCard({
             size="sm"
             className="absolute top-2 right-2 w-8 h-8 p-0 bg-black/60 hover:bg-black/80"
             onClick={toggleFavorite}
-            disabled={isLoading}
+            data-no-loading // prevent global loading spinner on favorite toggle
           >
             <Heart className={`w-4 h-4 ${isFavorited ? "fill-red-500 text-red-500" : "text-white"}`} />
           </Button>

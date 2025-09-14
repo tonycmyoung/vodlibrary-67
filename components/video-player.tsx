@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Heart, Calendar, User } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { incrementVideoViews } from "@/lib/actions"
 import { formatShortDate } from "@/lib/utils/date"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -56,6 +56,8 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     setIsLoading(true)
 
     try {
+      const supabase = createClient()
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -178,6 +180,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   onClick={toggleFavorite}
                   disabled={isLoading}
                   className="flex-shrink-0"
+                  data-no-loading // prevent global loading spinner on favorite toggle
                 >
                   <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
                 </Button>
@@ -224,19 +227,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   ))}
                 </div>
               </div>
-
-              {video.performers && video.performers.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-300 mb-2">Performers</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {video.performers.map((performer) => (
-                      <Badge key={performer.id} variant="outline" className="border-purple-600 text-purple-400">
-                        {performer.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
