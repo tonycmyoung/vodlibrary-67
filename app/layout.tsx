@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   title: "Okinawa Kobudo Library",
   description: "Traditional Kobudo Training Video Library",
   generator: "v0.app",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+      { url: "/icon-192.jpg", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.jpg", sizes: "180x180", type: "image/png" }],
+  },
 }
 
 export default function RootLayout({
