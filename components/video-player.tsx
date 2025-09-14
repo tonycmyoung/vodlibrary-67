@@ -183,7 +183,9 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                 </Button>
               </div>
 
-              {video.description && <p className="text-gray-300 mb-4 leading-relaxed">{video.description}</p>}
+              {video.description && (
+                <p className="text-gray-300 mb-4 leading-relaxed whitespace-pre-wrap">{video.description}</p>
+              )}
 
               <div className="space-y-3">
                 <div className="flex items-center text-gray-400 text-sm">

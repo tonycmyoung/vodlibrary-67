@@ -37,6 +37,10 @@ interface Video {
     name: string
     color: string
   }>
+  performers: Array<{
+    id: string
+    name: string
+  }>
   isFavorited: boolean
 }
 
@@ -108,17 +112,17 @@ export default function VideoPage({ params }: VideoPageProps) {
     async function loadVideo() {
       console.log("[v0] Loading video data for ID:", params.id)
 
-      const [videoResult, favoriteResult, categoriesResult] = await Promise.all([
+      const [videoResult, favoriteResult, categoriesResult, performersResult] = await Promise.all([
         supabase.from("videos").select("*, views").eq("id", params.id).eq("is_published", true).single(),
-
         supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", params.id).maybeSingle(),
-
         supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", params.id),
+        supabase.from("video_performers").select("performers(id, name)").eq("video_id", params.id),
       ])
 
       const { data: videoData, error } = videoResult
       const { data: favorite } = favoriteResult
       const { data: videoCategories } = categoriesResult
+      const { data: videoPerformers } = performersResult
 
       if (error) {
         console.log("[v0] Error loading video:", error)
@@ -137,6 +141,7 @@ export default function VideoPage({ params }: VideoPageProps) {
       const videoWithCategories: Video = {
         ...videoData,
         categories: videoCategories?.map((vc: any) => vc.categories) || [],
+        performers: videoPerformers?.map((vp: any) => vp.performers) || [],
         isFavorited: !!favorite,
       }
 
