@@ -39,19 +39,35 @@ export default function PendingApprovalPage() {
             <div className="flex items-start space-x-3">
               <Mail className="w-5 h-5 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium mb-2">Account Under Review</p>
-                <p className="text-sm text-yellow-300">
-                  Your account has been created successfully!
-                  <br />
-                  An administrator will review and approve your access.
-                  <br />
+                <p className="font-medium mb-2">Next ...</p>
+                <p className="text-center text-sm text-yellow-300">
+                  Your account has been created successfully!<br />
+                  If you have just finished signing up, you'll need to confirm
+                  your email address. Look for an email:<br />
+                  <em>(check your junk/spam)</em>
+                </p>
+                <p className="text-sm text-yellow-300 mt-2">
+                  From: <strong>Supabase Auth</strong><br />
+                  Subject: <strong>Confirm Your Signup - Okinawa Kobudo Library</strong><br />
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-cyan-500/10 border border-cyan-500/50 text-cyan-400 px-4 py-6 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div>
+                <p className="text-center text-sm text-cyan-300">
+                  As well as that an administrator will review and approve your access.
+                </p>
+                <p className="text-center text-sm text-cyan-300 mt-2">
                   You'll receive an email notification once approved.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="text-center text-gray-400 text-sm">
+          <div className="text-center text-grey-400 text-sm">
             <p>This usually takes 24-48 hours.</p>
             <p className="mt-2">
               Questions? Contact us at{" "}

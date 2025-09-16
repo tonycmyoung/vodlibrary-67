@@ -1366,7 +1366,6 @@ export async function fetchUnconfirmedEmailUsers() {
       return { error: "Failed to fetch user profiles", data: [] }
     }
 
-    // Combine auth and profile data
     const combinedData = unconfirmedAuthUsers.map((authUser) => {
       const profile = profileData?.find((p) => p.id === authUser.id)
       return {
@@ -1376,6 +1375,7 @@ export async function fetchUnconfirmedEmailUsers() {
         teacher: profile?.teacher || "Unknown",
         school: profile?.school || "Unknown",
         created_at: authUser.created_at,
+        confirmation_sent_at: authUser.confirmation_sent_at, // Add confirmation timestamp
       }
     })
 
@@ -1383,5 +1383,63 @@ export async function fetchUnconfirmedEmailUsers() {
   } catch (error) {
     console.error("Error in fetchUnconfirmedEmailUsers:", error)
     return { error: "Failed to fetch unconfirmed email users", data: [] }
+  }
+}
+
+export async function resendConfirmationEmail(email: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      },
+    )
+
+    // Check if user is authenticated and is admin
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: userProfile } = await supabase.from("users").select("role").eq("id", currentUser.user.id).single()
+
+    if (!userProfile || userProfile.role !== "Admin") {
+      return { error: "Unauthorized - Admin access required" }
+    }
+
+    // Use admin client to resend confirmation email
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.auth.resend({
+      type: "signup",
+      email: email,
+      options: {
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      console.error("Error resending confirmation email:", error)
+      return { error: "Failed to resend confirmation email" }
+    }
+
+    return { success: "Confirmation email sent successfully" }
+  } catch (error) {
+    console.error("Error in resendConfirmationEmail:", error)
+    return { error: "Failed to resend confirmation email" }
   }
 }
