@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { getCurrentUser } from "./utils"
+import { getCurrentUser } from "./auth"
 
 function generateUUID() {
   // Use Web Crypto API if available (modern browsers and Node.js 16+)
