@@ -4,14 +4,9 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
 
-  const fragment = requestUrl.hash.substring(1) // Remove the # symbol
-  const fragmentParams = new URLSearchParams(fragment)
-
-  // Check for Supabase success/error in fragments
-  const accessToken = fragmentParams.get("access_token")
-  const refreshToken = fragmentParams.get("refresh_token")
-  const error = fragmentParams.get("error") || requestUrl.searchParams.get("error")
-  const errorDescription = fragmentParams.get("error_description") || requestUrl.searchParams.get("error_description")
+  const code = requestUrl.searchParams.get("code")
+  const error = requestUrl.searchParams.get("error")
+  const errorDescription = requestUrl.searchParams.get("error_description")
 
   const serviceSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,12 +31,10 @@ export async function GET(request: NextRequest) {
       error_message: error || null,
       error_code: null,
       additional_data: {
-        has_access_token: !!accessToken,
-        has_refresh_token: !!refreshToken,
+        has_code: !!code,
         error_description: errorDescription,
         timestamp: new Date().toISOString(),
         full_url: request.url,
-        fragment: fragment,
       },
     })
   } catch (logError) {
@@ -54,7 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
   }
 
-  if (!accessToken) {
+  if (!code) {
     return NextResponse.redirect(new URL("/auth/confirm?error=missing_params", request.url))
   }
 
@@ -74,14 +67,10 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    // Set the session with the tokens from fragments
-    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken!,
-    })
+    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (sessionError || !sessionData.user) {
-      throw new Error(sessionError?.message || "Failed to create session")
+      throw new Error(sessionError?.message || "Failed to exchange code for session")
     }
 
     const user = sessionData.user
@@ -119,7 +108,6 @@ export async function GET(request: NextRequest) {
     const redirectUrl = `/auth/confirm?confirmed=true&approved=${isApproved}`
     const response = NextResponse.redirect(new URL(redirectUrl, request.url))
 
-    // Set session cookies
     const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
 
     const supabaseWithCookies = createServerClient(
@@ -141,8 +129,8 @@ export async function GET(request: NextRequest) {
 
     // Set the session to trigger cookie setting
     await supabaseWithCookies.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken!,
+      access_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
     })
 
     // Apply all cookies to response
