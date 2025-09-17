@@ -126,7 +126,9 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/pending-approval" ||
       request.nextUrl.pathname === "/setup-admin" ||
       request.nextUrl.pathname === "/privacy-policy" || // Updated route from privacy-notice to privacy-policy
-      request.nextUrl.pathname === "/eula"
+      request.nextUrl.pathname === "/eula" ||
+      request.nextUrl.pathname === "/auth/confirm" || // Added confirmation routes to public routes to prevent redirect to login
+      request.nextUrl.pathname === "/auth/confirm/callback"
 
     if (isAuthRoute) {
       return supabaseResponse
