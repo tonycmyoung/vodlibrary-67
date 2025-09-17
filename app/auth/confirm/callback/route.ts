@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
-  const token_hash = requestUrl.searchParams.get("token_hash")
+  const token = requestUrl.searchParams.get("token")
   const type = requestUrl.searchParams.get("type")
   const error = requestUrl.searchParams.get("error")
   const errorDescription = requestUrl.searchParams.get("error_description")
@@ -23,15 +23,31 @@ export async function GET(request: NextRequest) {
     },
   )
 
+  const serviceSupabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return []
+        },
+        setAll() {},
+      },
+    },
+  )
+
   // Log confirmation attempt
   try {
-    await supabase.from("auth_debug_logs").insert({
+    await serviceSupabase.from("auth_debug_logs").insert({
       event_type: "email_confirmation_attempt",
       user_id: null,
-      details: {
-        has_token: !!token_hash,
+      user_email: null,
+      success: false, // Will be updated to true on success
+      error_message: error || null,
+      error_code: null,
+      additional_data: {
+        has_token: !!token,
         type: type,
-        error: error,
         error_description: errorDescription,
         timestamp: new Date().toISOString(),
       },
@@ -47,14 +63,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Verify we have the required parameters
-  if (!token_hash || !type) {
+  if (!token || !type) {
     return NextResponse.redirect(new URL("/auth/confirm?error=missing_params", request.url))
   }
 
   try {
-    // Verify the OTP token
     const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash,
+      token,
       type: type as any,
     })
 
@@ -63,12 +78,15 @@ export async function GET(request: NextRequest) {
 
       // Log verification failure
       try {
-        await supabase.from("auth_debug_logs").insert({
+        await serviceSupabase.from("auth_debug_logs").insert({
           event_type: "email_confirmation_failed",
           user_id: null,
-          details: {
-            error: verifyError.message,
-            token_hash: token_hash?.substring(0, 10) + "...", // Partial token for debugging
+          user_email: null,
+          success: false,
+          error_message: verifyError.message,
+          error_code: verifyError.code || null,
+          additional_data: {
+            token_preview: token?.substring(0, 10) + "...", // Partial token for debugging
             type: type,
             timestamp: new Date().toISOString(),
           },
@@ -86,11 +104,14 @@ export async function GET(request: NextRequest) {
 
     if (data.session?.user) {
       try {
-        await supabase.from("auth_debug_logs").insert({
+        await serviceSupabase.from("auth_debug_logs").insert({
           event_type: "email_confirmation_success",
           user_id: data.session.user.id,
-          details: {
-            email: data.session.user.email,
+          user_email: data.session.user.email,
+          success: true,
+          error_message: null,
+          error_code: null,
+          additional_data: {
             confirmed_at: new Date().toISOString(),
             type: type,
           },
@@ -139,11 +160,14 @@ export async function GET(request: NextRequest) {
 
     // Log processing error
     try {
-      await supabase.from("auth_debug_logs").insert({
+      await serviceSupabase.from("auth_debug_logs").insert({
         event_type: "email_confirmation_error",
         user_id: null,
-        details: {
-          error: error instanceof Error ? error.message : "Unknown error",
+        user_email: null,
+        success: false,
+        error_message: error instanceof Error ? error.message : "Unknown error",
+        error_code: null,
+        additional_data: {
           timestamp: new Date().toISOString(),
         },
       })
