@@ -123,13 +123,6 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                 <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-medium">
                   <Link href="/">Access the Library</Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
-                >
-                  <Link href="/profile">View Your Profile</Link>
-                </Button>
               </div>
             </>
           )}
@@ -164,13 +157,6 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
               </div>
 
               <div className="flex flex-col space-y-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full border-cyan-600 text-cyan-400 hover:bg-cyan-600 hover:text-white bg-transparent"
-                >
-                  <Link href="/pending-approval">View Status Page</Link>
-                </Button>
                 <Button
                   asChild
                   variant="outline"
