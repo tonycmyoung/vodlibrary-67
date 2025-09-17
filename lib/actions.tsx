@@ -302,7 +302,7 @@ Please review and approve this user in the admin dashboard.`
     }
   }
 
-  redirect("/pending-approval")
+  redirect("/pending-approval?from=signup")
 }
 
 export async function createAdminUser(prevState: any, formData: FormData) {
