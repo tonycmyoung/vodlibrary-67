@@ -1,5 +1,3 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Clock, Mail, AlertCircle } from "lucide-react"
@@ -8,12 +6,13 @@ import Link from "next/link"
 interface ConfirmPageProps {
   searchParams: {
     confirmed?: string
+    approved?: string // Added approved parameter
     error?: string
   }
 }
 
 export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
-  const { confirmed, error } = searchParams
+  const { confirmed, approved, error } = searchParams // Extract approved parameter
 
   let userStatus: "confirmed_approved" | "confirmed_pending" | "error" | "unknown" = "unknown"
   let userInfo: { full_name?: string; email?: string } = {}
@@ -48,52 +47,15 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
   // Handle successful confirmation
   if (confirmed === "true" && !error) {
-    try {
-      const cookieStore = await cookies()
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll()
-            },
-            setAll(cookiesToSet) {
-              try {
-                cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-              } catch {
-                // The `setAll` method was called from a Server Component.
-                // This can be ignored if you have middleware refreshing user sessions.
-              }
-            },
-          },
-        },
-      )
+    if (approved === "true") {
+      userStatus = "confirmed_approved"
+    } else {
+      userStatus = "confirmed_pending"
+    }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (user) {
-        // Get user profile to check approval status
-        const { data: userProfile } = await supabase
-          .from("users")
-          .select("full_name, email, is_approved")
-          .eq("id", user.id)
-          .single()
-
-        if (userProfile) {
-          userInfo = {
-            full_name: userProfile.full_name,
-            email: userProfile.email,
-          }
-          userStatus = userProfile.is_approved ? "confirmed_approved" : "confirmed_pending"
-        }
-      }
-    } catch (err) {
-      console.error("Error checking user status:", err)
-      userStatus = "error"
-      errorMessage = "Unable to verify your account status."
+    userInfo = {
+      full_name: undefined, // We don't have this from the callback
+      email: undefined, // We don't have this from the callback
     }
   }
 
