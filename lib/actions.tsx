@@ -198,7 +198,8 @@ export async function signUp(prevState: any, formData: FormData) {
     password,
     options: {
       emailRedirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm/callback`,
     },
   })
 
@@ -1485,7 +1486,8 @@ export async function resendConfirmationEmail(email: string) {
       email: email,
       options: {
         emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+          `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm/callback`,
       },
     })
 
