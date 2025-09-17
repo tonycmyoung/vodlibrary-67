@@ -673,7 +673,7 @@ export async function approveUserServerAction(userId: string) {
               You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_SITE_URL}" 
+              <a href="${process.env.FULL_SITE_URL}" 
                  style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
                 Access Library
               </a>
