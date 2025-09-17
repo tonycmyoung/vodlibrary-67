@@ -3,25 +3,15 @@ import { NextResponse, type NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
-  const token = requestUrl.searchParams.get("token")
-  const type = requestUrl.searchParams.get("type")
-  const error = requestUrl.searchParams.get("error")
-  const errorDescription = requestUrl.searchParams.get("error_description")
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // This will be handled by the response
-        },
-      },
-    },
-  )
+  const fragment = requestUrl.hash.substring(1) // Remove the # symbol
+  const fragmentParams = new URLSearchParams(fragment)
+
+  // Check for Supabase success/error in fragments
+  const accessToken = fragmentParams.get("access_token")
+  const refreshToken = fragmentParams.get("refresh_token")
+  const error = fragmentParams.get("error") || requestUrl.searchParams.get("error")
+  const errorDescription = fragmentParams.get("error_description") || requestUrl.searchParams.get("error_description")
 
   const serviceSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,10 +36,12 @@ export async function GET(request: NextRequest) {
       error_message: error || null,
       error_code: null,
       additional_data: {
-        has_token: !!token,
-        type: type,
+        has_access_token: !!accessToken,
+        has_refresh_token: !!refreshToken,
         error_description: errorDescription,
         timestamp: new Date().toISOString(),
+        full_url: request.url,
+        fragment: fragment,
       },
     })
   } catch (logError) {
@@ -62,99 +54,103 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
   }
 
-  // Verify we have the required parameters
-  if (!token || !type) {
+  if (!accessToken) {
     return NextResponse.redirect(new URL("/auth/confirm?error=missing_params", request.url))
   }
 
   try {
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      token,
-      type: type as any,
-    })
-
-    if (verifyError) {
-      console.error("Email confirmation verification error:", verifyError)
-
-      // Log verification failure
-      try {
-        await serviceSupabase.from("auth_debug_logs").insert({
-          event_type: "email_confirmation_failed",
-          user_id: null,
-          user_email: null,
-          success: false,
-          error_message: verifyError.message,
-          error_code: verifyError.code || null,
-          additional_data: {
-            token_preview: token?.substring(0, 10) + "...", // Partial token for debugging
-            type: type,
-            timestamp: new Date().toISOString(),
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
           },
-        })
-      } catch (logError) {
-        console.error("Failed to log verification failure:", logError)
-      }
-
-      const errorParam =
-        verifyError.message.includes("expired") || verifyError.message.includes("invalid")
-          ? "expired"
-          : "verification_failed"
-      return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
-    }
-
-    if (data.session?.user) {
-      try {
-        await serviceSupabase.from("auth_debug_logs").insert({
-          event_type: "email_confirmation_success",
-          user_id: data.session.user.id,
-          user_email: data.session.user.email,
-          success: true,
-          error_message: null,
-          error_code: null,
-          additional_data: {
-            confirmed_at: new Date().toISOString(),
-            type: type,
-          },
-        })
-      } catch (logError) {
-        console.error("Failed to log confirmation success:", logError)
-      }
-
-      // Email confirmed successfully - redirect to confirmation page with success
-      const response = NextResponse.redirect(new URL("/auth/confirm?confirmed=true", request.url))
-
-      const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
-
-      const supabaseWithCookies = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return request.cookies.getAll()
-            },
-            setAll(cookies) {
-              cookies.forEach(({ name, value, options }) => {
-                cookiesToSet.push({ name, value, options })
-              })
-            },
+          setAll(cookiesToSet) {
+            // This will be handled by the response
           },
         },
-      )
+      },
+    )
 
-      // Trigger cookie setting by getting session
-      await supabaseWithCookies.auth.getSession()
+    // Set the session with the tokens from fragments
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken!,
+    })
 
-      // Apply all cookies to response
-      cookiesToSet.forEach(({ name, value, options }) => {
-        response.cookies.set(name, value, options)
-      })
-
-      return response
+    if (sessionError || !sessionData.user) {
+      throw new Error(sessionError?.message || "Failed to create session")
     }
 
-    // No session created - something went wrong
-    return NextResponse.redirect(new URL("/auth/confirm?error=no_session", request.url))
+    const user = sessionData.user
+
+    const { data: userData, error: userError } = await serviceSupabase
+      .from("users")
+      .select("is_approved")
+      .eq("id", user.id)
+      .single()
+
+    if (userError) {
+      console.error("Error checking user approval status:", userError)
+      // Continue anyway - user might not be in users table yet
+    }
+
+    // Log successful confirmation
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "email_confirmation_success",
+        user_id: user.id,
+        user_email: user.email,
+        success: true,
+        error_message: null,
+        error_code: null,
+        additional_data: {
+          confirmed_at: new Date().toISOString(),
+          is_approved: userData?.is_approved || false,
+        },
+      })
+    } catch (logError) {
+      console.error("Failed to log confirmation success:", logError)
+    }
+
+    const isApproved = userData?.is_approved || false
+    const redirectUrl = `/auth/confirm?confirmed=true&approved=${isApproved}`
+    const response = NextResponse.redirect(new URL(redirectUrl, request.url))
+
+    // Set session cookies
+    const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
+
+    const supabaseWithCookies = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookies) {
+            cookies.forEach(({ name, value, options }) => {
+              cookiesToSet.push({ name, value, options })
+            })
+          },
+        },
+      },
+    )
+
+    // Set the session to trigger cookie setting
+    await supabaseWithCookies.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken!,
+    })
+
+    // Apply all cookies to response
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options)
+    })
+
+    return response
   } catch (error) {
     console.error("Confirmation processing error:", error)
 
