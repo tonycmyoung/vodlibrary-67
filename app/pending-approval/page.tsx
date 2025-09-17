@@ -41,14 +41,17 @@ export default function PendingApprovalPage() {
               <div>
                 <p className="font-medium mb-2">Next ...</p>
                 <p className="text-center text-sm text-yellow-300">
-                  Your account has been created successfully!<br />
-                  If you have just finished signing up, you'll need to confirm
-                  your email address <strong>WITHIN 24 HOURS</strong>.<br />
+                  Your account has been created successfully!
+                  <br />
+                  If you have just finished signing up, you'll need to confirm your email address{" "}
+                  <strong>WITHIN 24 HOURS</strong>.<br />
                   Look for an email <em>(check your junk/spam)</em>:
                 </p>
                 <p className="text-sm text-yellow-300 mt-2">
-                  From: <strong>Supabase Auth</strong><br />
-                  Subject: <strong>Confirm Your Signup - Okinawa Kobudo Library</strong><br />
+                  From: <strong>Supabase Auth</strong>
+                  <br />
+                  Subject: <strong>Confirm Your Signup - Okinawa Kobudo Library</strong>
+                  <br />
                 </p>
               </div>
             </div>
@@ -58,7 +61,7 @@ export default function PendingApprovalPage() {
             <div className="flex items-start space-x-3">
               <div>
                 <p className="text-center text-sm text-cyan-300">
-                  As well as that an administrator will review and approve your access.
+                  The administrator will then review and approve your access.
                 </p>
                 <p className="text-center text-sm text-cyan-300 mt-2">
                   You'll receive an email notification once approved.
