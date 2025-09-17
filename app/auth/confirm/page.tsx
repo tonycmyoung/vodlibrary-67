@@ -121,7 +121,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
               <div className="flex flex-col space-y-3">
                 <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-medium">
-                  <Link href="/">Access the Library</Link>
+                  <Link href={process.env.FULL_SITE_URL || "/"}>Access the Library</Link>
                 </Button>
               </div>
             </>

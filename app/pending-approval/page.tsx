@@ -204,7 +204,7 @@ export default function PendingApprovalPage() {
                 </div>
               </div>
               <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-medium">
-                <Link href="/">Access the Library</Link>
+                <Link href={process.env.FULL_SITE_URL || "/"}>Access the Library</Link>
               </Button>
             </>
           )}
@@ -216,7 +216,6 @@ export default function PendingApprovalPage() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium mb-2">Email Confirmed!</p>
                     <p className="text-sm text-yellow-300">
                       {userStatus.full_name && `Thank you, ${userStatus.full_name}! `}
                       Your email has been confirmed. Your account is now pending administrator approval.
