@@ -43,7 +43,7 @@ export default function PendingApprovalPage() {
                 <p className="text-center text-sm text-yellow-300">
                   Your account has been created successfully!<br />
                   If you have just finished signing up, you'll need to confirm
-                  your email address within 24 hours.<br />
+                  your email address <strong>WITHIN 24 HOURS</strong>.<br />
                   Look for an email <em>(check your junk/spam)</em>:
                 </p>
                 <p className="text-sm text-yellow-300 mt-2">
