@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut } from "lucide-react"
+import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -95,6 +95,13 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             >
               <Bell className="w-4 h-4" />
               <span>Notifications</span>
+            </Link>
+            <Link
+              href="/admin/debug"
+              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
+            >
+              <Bug className="w-4 h-4" />
+              <span>Debug</span>
             </Link>
           </nav>
 
@@ -204,6 +211,14 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               >
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
+              </Link>
+              <Link
+                href="/admin/debug"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Bug className="w-4 h-4" />
+                <span>Debug</span>
               </Link>
               <Button
                 variant="ghost"

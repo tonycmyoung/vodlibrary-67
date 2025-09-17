@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { getCurrentUser } from "./utils"
 
 function generateUUID() {
   // Use Web Crypto API if available (modern browsers and Node.js 16+)
@@ -54,8 +55,44 @@ export async function signIn(prevState: any, formData: FormData) {
     password,
   })
 
+  const serviceSupabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return []
+        },
+        setAll() {},
+      },
+    },
+  )
+
+  try {
+    await serviceSupabase.from("auth_debug_logs").insert({
+      event_type: "login_attempt",
+      user_email: email,
+      user_id: data?.user?.id || null,
+      success: !error,
+      error_message: error?.message || null,
+      error_code: error?.code || null,
+      additional_data: {
+        email_confirmed: data?.user?.email_confirmed_at ? true : false,
+        user_exists: data?.user ? true : false,
+      },
+    })
+  } catch (logError) {
+    console.error("[v0] Failed to log auth attempt:", logError)
+  }
+
   if (error) {
-    return { error: "Invalid email or password" }
+    if (error.message.includes("Email not confirmed")) {
+      return { error: "Please check your email and click the confirmation link before signing in." }
+    }
+    if (error.message.includes("Invalid login credentials")) {
+      return { error: "Invalid email or password. Please check your credentials and try again." }
+    }
+    return { error: error.message }
   }
 
   if (data.user?.id) {
@@ -164,6 +201,26 @@ export async function signUp(prevState: any, formData: FormData) {
         process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
     },
   })
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  try {
+    await serviceSupabase.from("auth_debug_logs").insert({
+      event_type: "signup",
+      user_email: email,
+      user_id: data?.user?.id || null,
+      success: !error,
+      error_message: error?.message || null,
+      error_code: error?.code || null,
+      additional_data: {
+        full_name: fullName,
+        school,
+        teacher,
+      },
+    })
+  } catch (logError) {
+    console.error("[v0] Failed to log signup attempt:", logError)
+  }
 
   if (error) {
     return { error: error.message }
@@ -1442,4 +1499,54 @@ export async function resendConfirmationEmail(email: string) {
     console.error("Error in resendConfirmationEmail:", error)
     return { error: "Failed to resend confirmation email" }
   }
+}
+
+export async function clearAuthDebugLogs() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== "Admin") {
+    throw new Error("Unauthorized")
+  }
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  const { error } = await serviceSupabase
+    .from("auth_debug_logs")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000") // Delete all records
+
+  if (error) {
+    throw new Error("Failed to clear debug logs")
+  }
+
+  revalidatePath("/admin/debug")
+}
+
+export async function fetchAuthDebugLogs() {
+  console.log("[v0] fetchAuthDebugLogs called")
+  const user = await getCurrentUser()
+  console.log("[v0] Current user:", user ? { id: user.id, role: user.role } : "null")
+
+  if (!user || user.role !== "Admin") {
+    console.log("[v0] Unauthorized access attempt")
+    throw new Error("Unauthorized")
+  }
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  console.log("[v0] Created service client")
+
+  const { data, error } = await serviceSupabase
+    .from("auth_debug_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100)
+
+  console.log("[v0] Query result:", { dataCount: data?.length || 0, error })
+
+  if (error) {
+    console.log("[v0] Database error:", error)
+    throw new Error("Failed to fetch debug logs")
+  }
+
+  console.log("[v0] Returning data:", data)
+  return data
 }

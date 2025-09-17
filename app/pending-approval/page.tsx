@@ -67,7 +67,7 @@ export default function PendingApprovalPage() {
             </div>
           </div>
 
-          <div className="text-center text-grey-400 text-sm">
+          <div className="text-center text-gray-200 text-sm">
             <p>This usually takes 24-48 hours.</p>
             <p className="mt-2">
               Questions? Contact us at{" "}
