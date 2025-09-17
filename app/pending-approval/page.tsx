@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Clock, Mail, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 interface UserStatus {
   email_confirmed: boolean
@@ -18,6 +19,8 @@ export default function PendingApprovalPage() {
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const fromSignup = searchParams.get("from") === "signup" // Check if user came from signup
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -33,6 +36,11 @@ export default function PendingApprovalPage() {
         } = await supabase.auth.getSession()
 
         if (!session?.user) {
+          if (fromSignup) {
+            setUserStatus(null)
+            setLoading(false)
+            return
+          }
           // No session - sign out and show generic message
           await supabase.auth.signOut()
           setUserStatus(null)
@@ -69,7 +77,7 @@ export default function PendingApprovalPage() {
     }
 
     checkUserStatus()
-  }, [])
+  }, [fromSignup]) // Add fromSignup to dependency array
 
   const getStatusContent = () => {
     if (loading) {
@@ -78,6 +86,15 @@ export default function PendingApprovalPage() {
         iconBg: "bg-gray-600",
         title: "Checking Status...",
         subtitle: "Please wait while we check your account",
+      }
+    }
+
+    if (fromSignup && !userStatus) {
+      return {
+        icon: <Mail className="w-8 h-8 text-white" />,
+        iconBg: "bg-blue-600",
+        title: "Account Created!",
+        subtitle: "Please check your email to confirm your address",
       }
     }
 
@@ -130,6 +147,27 @@ export default function PendingApprovalPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {fromSignup && !userStatus && !loading && (
+            <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 px-4 py-6 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Mail className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium mb-2">Check Your Email</p>
+                  <p className="text-sm text-blue-300">
+                    We've sent you a confirmation email. Please click the link in the email to verify your address.
+                  </p>
+                  <p className="text-sm text-blue-300 mt-2">
+                    Look for an email from <strong>Supabase Auth</strong> with subject{" "}
+                    <strong>"Confirm Your Signup - Okinawa Kobudo Library"</strong>
+                  </p>
+                  <p className="text-sm text-blue-300 mt-2">
+                    After confirming your email, an administrator will review and approve your account.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Email not confirmed */}
           {userStatus && !userStatus.email_confirmed && (
             <div className="bg-orange-500/10 border border-orange-500/50 text-orange-400 px-4 py-6 rounded-lg">
@@ -215,24 +253,26 @@ export default function PendingApprovalPage() {
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col space-y-3">
-            <Button
-              asChild
-              variant="outline"
-              className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
-            >
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-            {(!userStatus || error) && (
+          {!fromSignup && (
+            <div className="flex flex-col space-y-3">
               <Button
                 asChild
                 variant="outline"
                 className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
               >
-                <Link href="/auth/sign-up">Create Account</Link>
+                <Link href="/auth/login">Sign In</Link>
               </Button>
-            )}
-          </div>
+              {(!userStatus || error) && (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                >
+                  <Link href="/auth/sign-up">Create Account</Link>
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Contact Information */}
           <div className="text-center text-gray-400 text-sm border-t border-gray-700 pt-4">
