@@ -67,13 +67,31 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+    // Try to get current session (Supabase might have set it during redirect)
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
 
-    if (sessionError || !sessionData.user) {
-      throw new Error(sessionError?.message || "Failed to exchange code for session")
+    let user = session?.user
+
+    // If no session, try to find recently confirmed users
+    if (!user) {
+      const { data: recentUsers, error: usersError } = await serviceSupabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 100,
+      })
+
+      if (!usersError && recentUsers?.users) {
+        // Find user confirmed in the last 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+        user = recentUsers.users.find((u) => u.email_confirmed_at && new Date(u.email_confirmed_at) > fiveMinutesAgo)
+      }
     }
 
-    const user = sessionData.user
+    if (!user) {
+      throw new Error("Could not identify confirmed user")
+    }
 
     const { data: userData, error: userError } = await serviceSupabase
       .from("users")
@@ -98,6 +116,7 @@ export async function GET(request: NextRequest) {
         additional_data: {
           confirmed_at: new Date().toISOString(),
           is_approved: userData?.is_approved || false,
+          found_via_session: !!session,
         },
       })
     } catch (logError) {
@@ -106,39 +125,8 @@ export async function GET(request: NextRequest) {
 
     const isApproved = userData?.is_approved || false
     const redirectUrl = `/auth/confirm?confirmed=true&approved=${isApproved}`
-    const response = NextResponse.redirect(new URL(redirectUrl, request.url))
 
-    const cookiesToSet: Array<{ name: string; value: string; options?: any }> = []
-
-    const supabaseWithCookies = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookies) {
-            cookies.forEach(({ name, value, options }) => {
-              cookiesToSet.push({ name, value, options })
-            })
-          },
-        },
-      },
-    )
-
-    // Set the session to trigger cookie setting
-    await supabaseWithCookies.auth.setSession({
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
-    })
-
-    // Apply all cookies to response
-    cookiesToSet.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options)
-    })
-
-    return response
+    return NextResponse.redirect(new URL(redirectUrl, request.url))
   } catch (error) {
     console.error("Confirmation processing error:", error)
 
