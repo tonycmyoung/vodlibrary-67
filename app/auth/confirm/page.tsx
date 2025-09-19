@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Clock, Mail } from "lucide-react"
 import Link from "next/link"
+import { createClient } from "@supabase/supabase-js"
 
 interface ConfirmPageProps {
   searchParams: {
@@ -12,7 +13,7 @@ interface ConfirmPageProps {
   }
 }
 
-export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
+export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
   const { error, error_code, error_description, success } = searchParams
 
   const isSuccess = success === "true" && !error && !error_code
@@ -27,6 +28,27 @@ export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
     statusMessage = "An error occurred while processing your confirmation"
   } else if (error) {
     statusMessage = "There was a problem with your confirmation"
+  }
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  try {
+    await serviceSupabase.from("auth_debug_logs").insert({
+      event_type: isSuccess ? "email_confirmation_success" : "email_confirmation_error",
+      user_email: null,
+      user_id: null,
+      success: isSuccess,
+      error_message: `[confirm] ${isSuccess ? "Confirmation page loaded successfully" : `Confirmation page loaded with error: ${statusMessage || "Unknown error"}`}`,
+      error_code: error || null,
+      additional_data: {
+        page_status: isSuccess ? "success" : "error",
+        error_description: error_description || null,
+        status_message: statusMessage || null,
+        timestamp: new Date().toISOString(),
+      },
+    })
+  } catch (logError) {
+    console.error("[v0] Failed to log confirm page status:", logError)
   }
 
   return (
@@ -71,11 +93,11 @@ export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
                 </div>
               </div>
 
-              <div className="bg-cyan-500/10 border border-cyan-500/50 text-cyan-400 px-4 py-6 rounded-lg">
+              <div className="bg-cyan-500/10 border border-gray-500/50 text-gray-300 px-4 py-6 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-cyan-300">
+                    <p className="text-sm text-gray-300">
                       If your account requires approval, an administrator will review your access. You'll receive an
                       email notification once approved.
                     </p>
@@ -101,7 +123,7 @@ export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
                   <div>
                     <p className="font-medium mb-2">Confirmation Failed</p>
                     <p className="text-sm text-red-300">
-                      {statusMessage || "An error occurred while processing your confirmation."}
+                      {statusMessage || "There was a problem with your confirmation"}
                     </p>
                   </div>
                 </div>

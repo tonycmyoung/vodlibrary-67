@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       user_email: null, // We don't have email in URL parameters
       user_id: null, // We don't have user_id until after confirmation
       success: false, // Will be updated if successful
-      error_message: errorDescription || error || null,
+      error_message: `[confirm-callback] ${errorDescription || error || "Confirmation attempt"}`,
       error_code: error || null,
       additional_data: {
         type: type || null,
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         user_email: null,
         user_id: null,
         success: false,
-        error_message: `Confirmation failed: ${errorDescription || error}`,
+        error_message: `[confirm-callback] Confirmation failed: ${errorDescription || error}`,
         error_code: error,
         additional_data: {
           error_description: errorDescription,
@@ -51,7 +51,11 @@ export async function GET(request: NextRequest) {
     }
 
     const errorParam = error === "access_denied" && errorDescription?.includes("expired") ? "expired" : "invalid"
-    return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
+    const redirectUrl = new URL(`/auth/confirm?error=${errorParam}`, request.url)
+    if (errorDescription) {
+      redirectUrl.searchParams.set("error_description", errorDescription)
+    }
+    return NextResponse.redirect(redirectUrl)
   }
 
   try {
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
       user_email: null,
       user_id: null,
       success: true,
-      error_message: null,
+      error_message: `[confirm-callback] Confirmation successful`,
       error_code: null,
       additional_data: {
         confirmation_method: token_hash ? "token_hash" : code ? "code" : "no_params",
