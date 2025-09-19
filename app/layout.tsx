@@ -21,6 +21,14 @@ export const metadata: Metadata = {
   title: "Okinawa Kobudo Library",
   description: "Traditional Kobudo Training Video Library",
   generator: "v0.app",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },

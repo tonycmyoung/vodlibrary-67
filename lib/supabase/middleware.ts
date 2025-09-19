@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { AuthCookieService } from "@/lib/auth/cookie-service"
 
 // Check if Supabase environment variables are available
 export const isSupabaseConfigured =
@@ -98,22 +99,11 @@ export async function updateSession(request: NextRequest) {
         errorMessage.includes("Invalid Refresh Token")
       ) {
         console.error("Auth error detected, redirecting to error page")
-        const response = NextResponse.redirect(new URL("/error?type=session&message=Session expired", request.url))
-        response.cookies.delete("sb-access-token")
-        response.cookies.delete("sb-refresh-token")
-        response.cookies.delete("supabase-auth-token")
-        response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
-        response.headers.set("Pragma", "no-cache")
-        response.headers.set("Expires", "0")
-        return response
+        return AuthCookieService.createAuthErrorResponse(request, "session", "Session expired")
       }
 
       console.error("General auth error, redirecting to error page")
-      const response = NextResponse.redirect(new URL("/error?type=auth&message=Authentication required", request.url))
-      response.cookies.delete("sb-access-token")
-      response.cookies.delete("sb-refresh-token")
-      response.cookies.delete("supabase-auth-token")
-      return response
+      return AuthCookieService.createAuthErrorResponse(request, "auth", "Authentication required")
     }
 
     // Protected routes - redirect to login if not authenticated
@@ -225,7 +215,6 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   } catch (middlewareError) {
     console.error("Middleware unhandled error:", middlewareError?.message)
-    const redirectUrl = new URL("/error?type=server&message=Server error occurred", request.url)
-    return NextResponse.redirect(redirectUrl)
+    return AuthCookieService.createAuthErrorResponse(request, "server", "Server error occurred")
   }
 }

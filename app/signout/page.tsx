@@ -1,15 +1,15 @@
 "use client"
 
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
 import { createBrowserClient } from "@supabase/ssr"
+import { signOutServerAction } from "@/lib/actions"
 
 export default function SignOutPage() {
   const router = useRouter()
-  const [isSignedOut, setIsSignedOut] = useState(false)
 
   useEffect(() => {
-    const performSignOut = async () => {
+    const handleSignOut = async () => {
       try {
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,45 +17,24 @@ export default function SignOutPage() {
         )
 
         await supabase.auth.signOut()
-        setIsSignedOut(true)
+
+        await signOutServerAction()
+
+        router.push("/")
       } catch (error) {
-        console.error("Signout error:", error)
-        setIsSignedOut(true) // Still show as signed out even if error occurs
+        console.error("Sign out error:", error)
+        router.push("/")
       }
     }
 
-    performSignOut()
-  }, [])
+    handleSignOut()
+  }, [router])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-black/60 backdrop-blur-md border border-red-800/30 rounded-lg p-8 text-center">
-        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-white font-bold text-xl">武道</span>
-        </div>
-
-        <h1 className="text-2xl font-bold text-white mb-4">{isSignedOut ? "Signed Out" : "Signing You Out"}</h1>
-
-        <div className="space-y-4">
-          {!isSignedOut && (
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-            </div>
-          )}
-
-          <p className="text-gray-300 text-sm">
-            {isSignedOut
-              ? "You have been successfully signed out of the Okinawa Kobudo Library."
-              : "You are being signed out of the Okinawa Kobudo Library."}
-          </p>
-        </div>
-
-        <button
-          onClick={() => router.push("/")}
-          className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-        >
-          Return to Home
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center p-4">
+      <div className="bg-black/90 backdrop-blur-sm rounded-lg p-8 max-w-md w-full text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
+        <p className="text-white">Signing out...</p>
       </div>
     </div>
   )

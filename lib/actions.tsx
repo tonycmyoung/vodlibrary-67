@@ -1552,3 +1552,20 @@ export async function fetchAuthDebugLogs() {
   console.log("[v0] Returning data:", data)
   return data
 }
+
+export async function signOutServerAction() {
+  const cookieStore = cookies()
+  const authCookieNames = ["sb-access-token", "sb-refresh-token", "supabase-auth-token"]
+
+  authCookieNames.forEach((name) => {
+    cookieStore.set(name, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: new Date(0), // Expire immediately
+    })
+  })
+
+  return { success: true }
+}

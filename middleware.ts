@@ -1,12 +1,22 @@
 import { updateSession } from "@/lib/supabase/middleware"
-import type { NextRequest } from "next/server"
+import type { NextRequest, NextResponse } from "next/server"
 
 export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === "/pending-approval") {
     return
   }
 
-  return await updateSession(request)
+  const response: NextResponse = await updateSession(request)
+
+  if (response) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
+    return response
+  }
+
+  // If no response from updateSession, create one with robots headers
+  const newResponse = new Response()
+  newResponse.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
+  return newResponse
 }
 
 export const config = {
