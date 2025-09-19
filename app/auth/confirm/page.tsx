@@ -121,7 +121,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
               <div className="flex flex-col space-y-3">
                 <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-medium">
-                  <Link href={process.env.FULL_SITE_URL || "/"}>Access the Library</Link>
+                  <Link href={`${process.env.FULL_SITE_URL || "/"}`}>Access the Library</Link>
                 </Button>
               </div>
             </>
@@ -162,7 +162,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                   variant="outline"
                   className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
                 >
-                  <Link href={process.env.FULL_SITE_URL || "/auth/login"}>Back to Login</Link>
+                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/login`}>Back to Login</Link>
                 </Button>
               </div>
             </>
@@ -183,14 +183,14 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
               <div className="flex flex-col space-y-3">
                 <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white">
-                  <Link href={process.env.FULL_SITE_URL || "/auth/login"}>Try Signing In</Link>
+                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/login`}>Try Signing In</Link>
                 </Button>
                 <Button
                   asChild
                   variant="outline"
                   className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
                 >
-                  <Link href={process.env.FULL_SITE_URL || "/auth/sign-up"}>Create New Account</Link>
+                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/sign-up`}>Create New Account</Link>
                 </Button>
               </div>
             </>
@@ -217,7 +217,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                   variant="outline"
                   className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
                 >
-                  <Link href={process.env.FULL_SITE_URL || "/auth/login"}>Back to Login</Link>
+                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/login`}>Back to Login</Link>
                 </Button>
               </div>
             </>
