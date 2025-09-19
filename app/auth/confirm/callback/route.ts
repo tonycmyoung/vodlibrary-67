@@ -12,36 +12,20 @@ export async function GET(request: NextRequest) {
 
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  try {
-    await serviceSupabase.from("auth_debug_logs").insert({
-      event_type: "email_confirmation_attempt",
-      user_email: null, // We don't have email in URL parameters
-      user_id: null, // We don't have user_id until after confirmation
-      success: false, // Will be updated if successful
-      error_message: `[confirm-callback] ${errorDescription || error || "Confirmation attempt"}`,
-      error_code: error || null,
-      additional_data: {
-        type: type || null,
-        full_url: requestUrl.toString(),
-        has_code: !!code,
-        has_token_hash: !!token_hash,
-        timestamp: new Date().toISOString(),
-      },
-    })
-  } catch (logError) {
-    console.error("[v0] Failed to log confirmation attempt:", logError)
-  }
-
   if (error) {
     try {
       await serviceSupabase.from("auth_debug_logs").insert({
-        event_type: "email_confirmation_error",
+        event_type: "email_confirm_callback_error",
         user_email: null,
         user_id: null,
         success: false,
-        error_message: `[confirm-callback] Confirmation failed: ${errorDescription || error}`,
+        error_message: `Confirmation failed: ${errorDescription || error}`,
         error_code: error,
         additional_data: {
+          type: type || null,
+          full_url: requestUrl.toString(),
+          has_code: !!code,
+          has_token_hash: !!token_hash,
           error_description: errorDescription,
           timestamp: new Date().toISOString(),
         },
@@ -60,13 +44,18 @@ export async function GET(request: NextRequest) {
 
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
-      event_type: "email_confirmation_success",
+      event_type: "email_confirm_callback_success",
       user_email: null,
       user_id: null,
       success: true,
-      error_message: `[confirm-callback] Confirmation successful`,
+      error_message: null,
       error_code: null,
       additional_data: {
+        type: type || null,
+        full_url: requestUrl.toString(),
+        has_code: !!code,
+        has_token_hash: !!token_hash,
+        error_description: errorDescription,
         confirmation_method: token_hash ? "token_hash" : code ? "code" : "no_params",
         timestamp: new Date().toISOString(),
       },

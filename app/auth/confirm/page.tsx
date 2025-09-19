@@ -34,11 +34,13 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
-      event_type: isSuccess ? "email_confirmation_success" : "email_confirmation_error",
+      event_type: "email_confirm_status",
       user_email: null,
       user_id: null,
       success: isSuccess,
-      error_message: `[confirm] ${isSuccess ? "Confirmation page loaded successfully" : `Confirmation page loaded with error: ${statusMessage || "Unknown error"}`}`,
+      error_message: isSuccess
+        ? "[confirm] Confirmation page loaded successfully"
+        : `[confirm] Confirmation page loaded with error: ${statusMessage || "Unknown error"}`,
       error_code: error || null,
       additional_data: {
         page_status: isSuccess ? "success" : "error",
@@ -93,7 +95,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                 </div>
               </div>
 
-              <div className="bg-cyan-500/10 border border-gray-500/50 text-gray-300 px-4 py-6 rounded-lg">
+              <div className="bg-gray-500/10 border border-gray-500/50 text-gray-300 px-4 py-6 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
