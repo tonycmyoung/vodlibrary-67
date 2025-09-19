@@ -67,32 +67,20 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    // Try to get current session (Supabase might have set it during redirect)
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
+    // Exchange the code for a session - this is the proper way to confirm email
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
-    let user = session?.user
-
-    // If no session, try to find recently confirmed users
-    if (!user) {
-      const { data: recentUsers, error: usersError } = await serviceSupabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 100,
-      })
-
-      if (!usersError && recentUsers?.users) {
-        // Find user confirmed in the last 5 minutes
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-        user = recentUsers.users.find((u) => u.email_confirmed_at && new Date(u.email_confirmed_at) > fiveMinutesAgo)
-      }
+    if (exchangeError) {
+      throw new Error(`Code exchange failed: ${exchangeError.message}`)
     }
 
-    if (!user) {
-      throw new Error("Could not identify confirmed user")
+    if (!data.user) {
+      throw new Error("No user returned from code exchange")
     }
 
+    const user = data.user
+
+    // Check user approval status
     const { data: userData, error: userError } = await serviceSupabase
       .from("users")
       .select("is_approved")
@@ -116,7 +104,7 @@ export async function GET(request: NextRequest) {
         additional_data: {
           confirmed_at: new Date().toISOString(),
           is_approved: userData?.is_approved || false,
-          found_via_session: !!session,
+          session_created: !!data.session,
         },
       })
     } catch (logError) {
@@ -124,9 +112,29 @@ export async function GET(request: NextRequest) {
     }
 
     const isApproved = userData?.is_approved || false
-    const redirectUrl = `/auth/confirm?confirmed=true&approved=${isApproved}`
 
-    return NextResponse.redirect(new URL(redirectUrl, request.url))
+    const response = NextResponse.redirect(new URL(`/auth/confirm?confirmed=true&approved=${isApproved}`, request.url))
+
+    // Set the session cookies properly
+    if (data.session) {
+      response.cookies.set({
+        name: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split("//")[1].split(".")[0]}-auth-token`,
+        value: JSON.stringify({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+          token_type: data.session.token_type,
+          user: data.session.user,
+        }),
+        path: "/",
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+    }
+
+    return response
   } catch (error) {
     console.error("Confirmation processing error:", error)
 

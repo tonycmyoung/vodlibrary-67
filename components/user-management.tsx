@@ -321,12 +321,6 @@ export default function UserManagement() {
                           <span>Approved {user.approved_at ? formatDate(user.approved_at) : "Date unknown"}</span>
                         </div>
                       )}
-                      {(user.eula_consent || user.privacy_consent) && (
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Shield className="w-3 h-3 flex-shrink-0" />
-                          <span>Consented {formatDate(user.eula_consent || user.privacy_consent || "")}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

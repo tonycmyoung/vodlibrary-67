@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, Trash2, Clock, Loader2, Pencil, Plus } from "lucide-react"
 import VideoModal from "./video-modal"
+import { formatShortDate } from "@/lib/utils/date"
 
 interface Video {
   id: string
@@ -193,13 +194,6 @@ export default function VideoManagement() {
   }
 
   // Utility functions
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
 
   if (loading) {
     return (
@@ -330,7 +324,7 @@ export default function VideoManagement() {
                       {video.performers.length > 0 && (
                         <span>Performers: {video.performers.map((p) => p.name).join(", ")}</span>
                       )}
-                      <span>Added {formatDate(video.created_at)}</span>
+                      <span>Added {formatShortDate(video.created_at)}</span>
                       <div className="flex flex-wrap gap-1">
                         {video.categories.map((category) =>
                           category && category.id ? (

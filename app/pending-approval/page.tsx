@@ -259,7 +259,7 @@ export default function PendingApprovalPage() {
                 variant="outline"
                 className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
               >
-                <Link href="/auth/login">Sign In</Link>
+                <Link href={process.env.FULL_SITE_URL || "/auth/login"}>Sign In</Link>
               </Button>
               {(!userStatus || error) && (
                 <Button
@@ -267,7 +267,7 @@ export default function PendingApprovalPage() {
                   variant="outline"
                   className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
                 >
-                  <Link href="/auth/sign-up">Create Account</Link>
+                  <Link href={process.env.FULL_SITE_URL || "/auth/sign-up"}>Create Account</Link>
                 </Button>
               )}
             </div>

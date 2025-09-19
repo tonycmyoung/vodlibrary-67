@@ -1,41 +1,87 @@
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-})
+export const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString || dateString.trim() === "") {
+    return "No date"
+  }
 
-const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-})
+  try {
+    const hasTimezone = dateString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(dateString)
 
-const monthFormatter = new Intl.DateTimeFormat("default", {
-  month: "short",
-})
+    const processedString = hasTimezone ? dateString : dateString + "Z"
 
-export const formatDate = (dateString: string): string => {
-  return dateFormatter.format(new Date(dateString))
+    const date = new Date(processedString)
+
+    if (isNaN(date.getTime())) {
+      return "Invalid date"
+    }
+
+    const result = date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+
+    return result
+  } catch (error) {
+    return "Invalid date"
+  }
 }
 
-export const formatShortDate = (dateString: string): string => {
-  return shortDateFormatter.format(new Date(dateString))
+export const formatShortDate = (dateString: string | null | undefined): string => {
+  if (!dateString || dateString.trim() === "") {
+    return "No date"
+  }
+
+  try {
+    const hasTimezone = dateString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(dateString)
+
+    const date = new Date(hasTimezone ? dateString : dateString + "Z")
+
+    if (isNaN(date.getTime())) {
+      return "Invalid date"
+    }
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  } catch (error) {
+    return "Invalid date"
+  }
 }
 
-export const formatTimeAgo = (dateString: string): string => {
-  const now = new Date()
-  const date = new Date(dateString)
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+export const formatTimeAgo = (dateString: string | null | undefined): string => {
+  if (!dateString || dateString.trim() === "") {
+    return "No date"
+  }
 
-  if (diffInSeconds < 60) return "just now"
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-  return `${Math.floor(diffInSeconds / 2592000)} months ago`
+  try {
+    const now = new Date()
+    const hasTimezone = dateString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(dateString)
+
+    const date = new Date(hasTimezone ? dateString : dateString + "Z")
+
+    if (isNaN(date.getTime())) {
+      return "Invalid date"
+    }
+
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (diffInSeconds < 60) return "just now"
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
+    return `${Math.floor(diffInSeconds / 2592000)} months ago`
+  } catch (error) {
+    return "Invalid date"
+  }
 }
 
 export const formatMonth = (date: Date): string => {
-  return monthFormatter.format(date)
+  return new Intl.DateTimeFormat("default", {
+    month: "short",
+  }).format(date)
 }
