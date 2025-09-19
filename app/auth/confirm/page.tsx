@@ -8,13 +8,14 @@ interface ConfirmPageProps {
     error?: string
     error_code?: string
     error_description?: string
+    success?: string
   }
 }
 
 export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
-  const { error, error_code, error_description } = searchParams
+  const { error, error_code, error_description, success } = searchParams
 
-  const isSuccess = !error && !error_code
+  const isSuccess = success === "true" && !error && !error_code
   const isExpired = error_code === "otp_expired" || error_description?.includes("expired")
 
   let statusMessage = ""

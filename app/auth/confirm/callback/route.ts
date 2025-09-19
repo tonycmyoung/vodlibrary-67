@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       console.error("[v0] Failed to log confirmation success:", logError)
     }
 
-    return NextResponse.redirect(new URL("/auth/confirm", request.url))
+    return NextResponse.redirect(new URL("/auth/confirm?success=true", request.url))
   }
 
   try {
