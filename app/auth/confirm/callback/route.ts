@@ -79,7 +79,11 @@ export async function GET(request: NextRequest) {
       data = result.data
       exchangeError = result.error
     } else if (code) {
-      const result = await supabase.auth.exchangeCodeForSession(code)
+      // Email confirmation links send a 'code' parameter that should be used with verifyOtp, not exchangeCodeForSession
+      const result = await supabase.auth.verifyOtp({
+        token_hash: code, // The 'code' from email links is actually the token_hash
+        type: "email", // Email confirmation type
+      })
       data = result.data
       exchangeError = result.error
     } else {
