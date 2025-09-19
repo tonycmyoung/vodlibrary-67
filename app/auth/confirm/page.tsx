@@ -39,8 +39,8 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
       user_id: null,
       success: isSuccess,
       error_message: isSuccess
-        ? "[confirm] Confirmation page loaded successfully"
-        : `[confirm] Confirmation page loaded with error: ${statusMessage || "Unknown error"}`,
+        ? null
+        : `Confirmation page loaded with error: ${statusMessage || "Unknown error"}`,
       error_code: error || null,
       additional_data: {
         page_status: isSuccess ? "success" : "error",
