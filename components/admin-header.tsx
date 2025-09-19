@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { User, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug } from "lucide-react"
+import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -44,10 +44,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
           <div className="flex items-center space-x-4">
             <Link href="/admin" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                <div className="text-white font-bold text-xs flex flex-col items-center leading-tight">
-                  <div>古</div>
-                  <div>武道</div>
-                </div>
+                <Settings className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Admin Panel</h1>

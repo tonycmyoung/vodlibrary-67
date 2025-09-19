@@ -56,25 +56,19 @@ export default function LoginForm() {
     setResetError("")
     setResetMessage("")
 
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
 
-      setIsResetting(false)
+    setIsResetting(false)
 
-      if (error) {
-        setResetError("Failed to send reset email. Please try again.")
-      } else {
-        setResetMessage("Password reset email sent! Check your inbox.")
-        setResetEmail("")
-        setShowResetInput(false)
-      }
-    } catch (err) {
-      setIsResetting(false)
-      setResetError("Service temporarily unavailable. Please try again later.")
-      console.error("Supabase client error:", err)
+    if (error) {
+      setResetError("Failed to send reset email. Please try again.")
+    } else {
+      setResetMessage("Password reset email sent! Check your inbox.")
+      setResetEmail("")
+      setShowResetInput(false)
     }
   }
 
@@ -82,10 +76,7 @@ export default function LoginForm() {
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
       <CardHeader className="space-y-4 text-center">
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-          <div className="text-white font-bold text-lg flex flex-col items-center leading-tight">
-            <div>古</div>
-            <div>武道</div>
-          </div>
+          <span className="text-white font-bold text-lg">古<br />武道</span>
         </div>
         <CardTitle className="text-3xl font-bold text-white">{"Welcome to the\nOkinawa Kobudo Library"}</CardTitle>
         <CardDescription className="text-gray-300 text-lg whitespace-pre-line">

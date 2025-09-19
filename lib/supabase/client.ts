@@ -1,42 +1,28 @@
-let _createBrowserClient: typeof import("@supabase/ssr").createBrowserClient | null = null
+import { createBrowserClient } from "@supabase/ssr"
 
-async function getCreateBrowserClient() {
-  if (_createBrowserClient) return _createBrowserClient
-
-  try {
-    const { createBrowserClient } = await import("@supabase/ssr")
-    _createBrowserClient = createBrowserClient
-    return createBrowserClient
-  } catch (error) {
-    console.error("Failed to load Supabase client:", error)
-    throw new Error("Authentication service unavailable")
-  }
-}
-
-export async function createClient() {
-  const createBrowserClient = await getCreateBrowserClient()
+export function createClient() {
   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
 
-let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+let _supabase: ReturnType<typeof createClient> | null = null
 
 export const supabase = {
-  async getAuth() {
-    if (!_supabase) _supabase = await createClient()
+  get auth() {
+    if (!_supabase) _supabase = createClient()
     return _supabase.auth
   },
-  async getFrom() {
-    if (!_supabase) _supabase = await createClient()
+  get from() {
+    if (!_supabase) _supabase = createClient()
     return _supabase.from
   },
-  async getStorage() {
-    if (!_supabase) _supabase = await createClient()
+  get storage() {
+    if (!_supabase) _supabase = createClient()
     return _supabase.storage
   },
-  async getRpc() {
-    if (!_supabase) _supabase = await createClient()
+  get rpc() {
+    if (!_supabase) _supabase = createClient()
     return _supabase.rpc
   },
 }
 
-export { getCreateBrowserClient as createBrowserClient }
+export { createBrowserClient }
