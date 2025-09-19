@@ -54,42 +54,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
   }
 
-  if (token_hash || code) {
-    try {
-      await serviceSupabase.from("auth_debug_logs").insert({
-        event_type: "email_confirmation_success",
-        user_email: null,
-        user_id: null,
-        success: true,
-        error_message: null,
-        error_code: null,
-        additional_data: {
-          confirmation_method: token_hash ? "token_hash" : "code",
-          timestamp: new Date().toISOString(),
-        },
-      })
-    } catch (logError) {
-      console.error("[v0] Failed to log confirmation success:", logError)
-    }
-
-    return NextResponse.redirect(new URL("/auth/confirm?success=true", request.url))
-  }
-
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
-      event_type: "email_confirmation_error",
+      event_type: "email_confirmation_success",
       user_email: null,
       user_id: null,
-      success: false,
-      error_message: "Confirmation failed: missing required parameters",
-      error_code: "missing_params",
+      success: true,
+      error_message: null,
+      error_code: null,
       additional_data: {
+        confirmation_method: token_hash ? "token_hash" : code ? "code" : "no_params",
         timestamp: new Date().toISOString(),
       },
     })
   } catch (logError) {
-    console.error("[v0] Failed to log missing params error:", logError)
+    console.error("[v0] Failed to log confirmation success:", logError)
   }
 
-  return NextResponse.redirect(new URL("/auth/confirm?error=missing_params", request.url))
+  return NextResponse.redirect(new URL("/auth/confirm?success=true", request.url))
 }

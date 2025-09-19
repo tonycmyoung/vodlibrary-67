@@ -50,7 +50,7 @@ export default function ConfirmPage({ searchParams }: ConfirmPageProps) {
           </CardTitle>
 
           <CardDescription className="text-gray-300 text-lg">
-            {isSuccess ? "Your email has been verified" : "There was a problem with your confirmation"}
+            {isSuccess ? "Your email has been verified" : statusMessage || "There was a problem with your confirmation"}
           </CardDescription>
         </CardHeader>
 
