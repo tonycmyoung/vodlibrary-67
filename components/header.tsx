@@ -58,7 +58,10 @@ export default function Header({ user }: HeaderProps) {
           <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">武道</span>
+                <div className="text-white font-bold text-xs flex flex-col items-center leading-tight">
+                  <div>古</div>
+                  <div>武道</div>
+                </div>
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Okinawa Kobudo </h1>
