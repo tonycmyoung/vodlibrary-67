@@ -185,13 +185,6 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                 <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white">
                   <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/login`}>Try Signing In</Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
-                >
-                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/sign-up`}>Create New Account</Link>
-                </Button>
               </div>
             </>
           )}

@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
 
   const code = requestUrl.searchParams.get("code")
+  const token_hash = requestUrl.searchParams.get("token_hash")
+  const type = requestUrl.searchParams.get("type")
   const error = requestUrl.searchParams.get("error")
   const errorDescription = requestUrl.searchParams.get("error_description")
 
@@ -21,17 +23,18 @@ export async function GET(request: NextRequest) {
     },
   )
 
-  // Log confirmation attempt
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
       event_type: "email_confirmation_attempt",
       user_id: null,
       user_email: null,
-      success: false, // Will be updated to true on success
+      success: false,
       error_message: error || null,
       error_code: null,
       additional_data: {
         has_code: !!code,
+        has_token_hash: !!token_hash,
+        type: type,
         error_description: errorDescription,
         timestamp: new Date().toISOString(),
         full_url: request.url,
@@ -41,13 +44,12 @@ export async function GET(request: NextRequest) {
     console.error("Failed to log confirmation attempt:", logError)
   }
 
-  // Handle errors from Supabase
   if (error) {
     const errorParam = error === "access_denied" && errorDescription?.includes("expired") ? "expired" : "invalid"
     return NextResponse.redirect(new URL(`/auth/confirm?error=${errorParam}`, request.url))
   }
 
-  if (!code) {
+  if (!token_hash && !code) {
     return NextResponse.redirect(new URL("/auth/confirm?error=missing_params", request.url))
   }
 
@@ -67,20 +69,33 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    // Exchange the code for a session - this is the proper way to confirm email
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    let data, exchangeError
+
+    if (token_hash && type) {
+      const result = await supabase.auth.verifyOtp({
+        token_hash,
+        type: type as any,
+      })
+      data = result.data
+      exchangeError = result.error
+    } else if (code) {
+      const result = await supabase.auth.exchangeCodeForSession(code)
+      data = result.data
+      exchangeError = result.error
+    } else {
+      throw new Error("No valid confirmation parameters found")
+    }
 
     if (exchangeError) {
-      throw new Error(`Code exchange failed: ${exchangeError.message}`)
+      throw new Error(`Confirmation failed: ${exchangeError.message}`)
     }
 
     if (!data.user) {
-      throw new Error("No user returned from code exchange")
+      throw new Error("No user returned from confirmation")
     }
 
     const user = data.user
 
-    // Check user approval status
     const { data: userData, error: userError } = await serviceSupabase
       .from("users")
       .select("is_approved")
@@ -89,10 +104,8 @@ export async function GET(request: NextRequest) {
 
     if (userError) {
       console.error("Error checking user approval status:", userError)
-      // Continue anyway - user might not be in users table yet
     }
 
-    // Log successful confirmation
     try {
       await serviceSupabase.from("auth_debug_logs").insert({
         event_type: "email_confirmation_success",
@@ -105,6 +118,7 @@ export async function GET(request: NextRequest) {
           confirmed_at: new Date().toISOString(),
           is_approved: userData?.is_approved || false,
           session_created: !!data.session,
+          method_used: token_hash ? "verifyOtp" : "exchangeCodeForSession",
         },
       })
     } catch (logError) {
@@ -115,30 +129,31 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(new URL(`/auth/confirm?confirmed=true&approved=${isApproved}`, request.url))
 
-    // Set the session cookies properly
     if (data.session) {
-      response.cookies.set({
-        name: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split("//")[1].split(".")[0]}-auth-token`,
-        value: JSON.stringify({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-          expires_at: data.session.expires_at,
-          token_type: data.session.token_type,
-          user: data.session.user,
-        }),
-        path: "/",
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      })
+      const supabaseResponse = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, options)
+              })
+            },
+          },
+        },
+      )
+
+      await supabaseResponse.auth.getSession()
     }
 
     return response
   } catch (error) {
     console.error("Confirmation processing error:", error)
 
-    // Log processing error
     try {
       await serviceSupabase.from("auth_debug_logs").insert({
         event_type: "email_confirmation_error",
