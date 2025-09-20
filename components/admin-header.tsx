@@ -55,7 +55,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
 
           <nav className="hidden lg:flex items-center space-x-6">
             <Link
-              href="/?admin-view=student"
+              href="/student-view"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
             >
               <Home className="w-4 h-4" />
@@ -165,7 +165,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
           <div className="lg:hidden bg-black/90 backdrop-blur-md border-t border-purple-800/30">
             <nav className="container mx-auto px-4 py-4 space-y-2">
               <Link
-                href="/?admin-view=student"
+                href="/student-view"
                 className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

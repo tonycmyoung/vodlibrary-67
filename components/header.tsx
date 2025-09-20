@@ -27,7 +27,7 @@ export default function Header({ user }: HeaderProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const isAdmin = user.email === "acmyma@gmail.com"
-  const isStudentView = searchParams.get("admin-view") === "student"
+  const isStudentView = typeof window !== "undefined" && window.location.pathname === "/student-view"
   const isProfilePage = typeof window !== "undefined" && window.location.pathname === "/profile"
   const showAdminView = isAdmin && (isStudentView || isProfilePage)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
