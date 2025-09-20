@@ -16,7 +16,7 @@ interface SendNotificationEmailParams {
 }
 
 export async function sendInvitationEmail({ recipientEmail, inviterName, invitationToken }: SendInvitationEmailParams) {
-  const signUpUrl = `${process.env.FULL_SITE_URL || "http://localhost:3000"}/auth/sign-up`
+  const signUpUrl = `${process.env.NEXT_PUBLIC_FULL_SITE_URL || "http://localhost:3000"}/auth/sign-up`
 
   const { data, error } = await resend.emails.send({
     from: process.env.FROM_EMAIL!,
@@ -88,7 +88,7 @@ export async function sendNotificationEmail({
   senderName,
   message,
 }: SendNotificationEmailParams) {
-  const libraryUrl = `${process.env.FULL_SITE_URL || "http://localhost:3000"}`
+  const libraryUrl = `${process.env.NEXT_PUBLIC_FULL_SITE_URL || "http://localhost:3000"}`
 
   const { data, error } = await resend.emails.send({
     from: process.env.FROM_EMAIL!,

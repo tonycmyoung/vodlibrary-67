@@ -38,9 +38,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
       user_email: null,
       user_id: null,
       success: isSuccess,
-      error_message: isSuccess
-        ? null
-        : `Confirmation page loaded with error: ${statusMessage || "Unknown error"}`,
+      error_message: isSuccess ? null : `Confirmation page loaded with error: ${statusMessage || "Unknown error"}`,
       error_code: error || null,
       additional_data: {
         page_status: isSuccess ? "success" : "error",
@@ -110,7 +108,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
               <div className="flex flex-col space-y-3">
                 <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-medium">
-                  <Link href={`${process.env.FULL_SITE_URL || "/"}`}>Access the Library</Link>
+                  <Link href={`${process.env.NEXT_PUBLIC_FULL_SITE_URL || "/"}`}>Access the Library</Link>
                 </Button>
               </div>
             </>
@@ -133,7 +131,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
 
               <div className="flex flex-col space-y-3">
                 <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white">
-                  <Link href={`${process.env.FULL_SITE_URL || "/"}/auth/login`}>Try Signing In</Link>
+                  <Link href={`${process.env.NEXT_PUBLIC_FULL_SITE_URL || "/"}/auth/login`}>Try Signing In</Link>
                 </Button>
               </div>
             </>
