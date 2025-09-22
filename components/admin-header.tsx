@@ -48,8 +48,8 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                 <Settings className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-                <p className="text-xs text-gray-400">TY Kobudo Library</p>
+                <h1 className="text-xl font-bold text-white">Admin</h1>
+                <p className="text-xs text-gray-400">OKL</p>
               </div>
             </Link>
           </div>

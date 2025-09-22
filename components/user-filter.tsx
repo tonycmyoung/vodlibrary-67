@@ -32,56 +32,63 @@ export default function UserFilter({
   const hasActiveFilters = (selectedRole && selectedRole !== "all") || (selectedSchool && selectedSchool !== "all")
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Filter by</h3>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-gray-400 hover:text-white">
-            <X className="w-4 h-4 mr-1" />
-            Clear All
-          </Button>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        {/* Role Filter */}
-        <div className="flex flex-col gap-2">
-          <span className="text-sm text-gray-400">Role:</span>
-          <Select value={selectedRole} onValueChange={onRoleChange}>
-            <SelectTrigger className="w-32 bg-black/50 border-gray-700 text-white">
-              <SelectValue placeholder="All Roles" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700">
-              <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
-                All Roles
-              </SelectItem>
-              {roles.map((role) => (
-                <SelectItem key={role} value={role} className="text-gray-300 hover:text-gray-900">
-                  {role}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-start">
+          <h3 className="text-lg font-semibold text-white whitespace-nowrap">Filter by</h3>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-gray-400 hover:text-white sm:ml-4"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear All
+            </Button>
+          )}
         </div>
 
-        {/* School Filter */}
-        <div className="flex flex-col gap-2">
-          <span className="text-sm text-gray-400">School:</span>
-          <Select value={selectedSchool} onValueChange={onSchoolChange}>
-            <SelectTrigger className="w-48 bg-black/50 border-gray-700 text-white">
-              <SelectValue placeholder="All Schools" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700">
-              <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
-                All Schools
-              </SelectItem>
-              {schools.map((school) => (
-                <SelectItem key={school} value={school} className="text-gray-300 hover:text-gray-900">
-                  {school}
+        <div className="flex flex-wrap gap-3">
+          {/* Role Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400 whitespace-nowrap">Role:</span>
+            <Select value={selectedRole} onValueChange={onRoleChange}>
+              <SelectTrigger className="w-32 bg-black/50 border-gray-700 text-white">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
+                  All Roles
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {roles.map((role) => (
+                  <SelectItem key={role} value={role} className="text-gray-300 hover:text-gray-900">
+                    {role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* School Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400 whitespace-nowrap">School:</span>
+            <Select value={selectedSchool} onValueChange={onSchoolChange}>
+              <SelectTrigger className="w-48 bg-black/50 border-gray-700 text-white">
+                <SelectValue placeholder="All Schools" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
+                  All Schools
+                </SelectItem>
+                {schools.map((school) => (
+                  <SelectItem key={school} value={school} className="text-gray-300 hover:text-gray-900">
+                    {school}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

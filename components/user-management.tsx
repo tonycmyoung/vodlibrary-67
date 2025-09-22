@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -372,21 +372,21 @@ export default function UserManagement() {
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
-        <CardContent className="p-8">
+        <div className="p-8">
           <div className="flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
             <span className="ml-2 text-gray-300">Loading users...</span>
           </div>
-        </CardContent>
+        </div>
       </Card>
     )
   }
 
   return (
     <Card className="bg-black/60 border-gray-800">
-      <CardHeader>
-        <CardTitle className="text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <span>All Users ({users.length})</span>
+      <div className="px-6 py-3 pt-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <h2 className="text-xl font-semibold text-white">All Users ({users.length})</h2>
           <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -396,18 +396,18 @@ export default function UserManagement() {
               className="pl-10 bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-purple-500"
             />
           </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-6 space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+        </div>
+
+        <div>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            {/* Mobile filter button - only visible on mobile */}
+            <div className="lg:hidden">
               <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
+                    className="bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
@@ -445,25 +445,33 @@ export default function UserManagement() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <div className="flex-1 sm:flex-none">
+            </div>
+
+            {/* Desktop filters with sort controls inline */}
+            <div className="hidden lg:flex lg:items-start lg:justify-between lg:w-full">
+              <div className="flex-1">
+                <UserFilter
+                  roles={processedData.roles}
+                  schools={processedData.schools}
+                  selectedRole={selectedRole}
+                  selectedSchool={selectedSchool}
+                  onRoleChange={handleRoleChange}
+                  onSchoolChange={handleSchoolChange}
+                  userCount={filteredUsers.length}
+                />
+              </div>
+              <div className="ml-6 flex-shrink-0">
                 <UserSortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
             </div>
-          </div>
-          <div className="hidden lg:block">
-            <UserFilter
-              roles={processedData.roles}
-              schools={processedData.schools}
-              selectedRole={selectedRole}
-              selectedSchool={selectedSchool}
-              onRoleChange={handleRoleChange}
-              onSchoolChange={handleSchoolChange}
-              userCount={filteredUsers.length}
-            />
+
+            {/* Mobile sort controls - only visible on mobile */}
+            <div className="lg:hidden">
+              <UserSortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+            </div>
           </div>
         </div>
-
-        <div className="space-y-4">
+        <div className="space-y-3 mt-4">
           {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
             const isAdmin = user.email === "acmyma@gmail.com"
@@ -471,7 +479,7 @@ export default function UserManagement() {
             return (
               <div
                 key={user.id}
-                className="flex flex-col xl:flex-row xl:items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 gap-4"
+                className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3"
               >
                 <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
                   <Avatar className="h-12 w-12 flex-shrink-0">
@@ -485,7 +493,7 @@ export default function UserManagement() {
                   </Avatar>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
                       {isAdmin ? (
                         <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
@@ -514,19 +522,19 @@ export default function UserManagement() {
                       )}
 
                       <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3 flex-shrink-0" />
                         <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
                       </div>
 
                       <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <LogIn className="w-3 h-3" />
+                        <LogIn className="w-3 h-3 flex-shrink-0" />
                         <span>
                           {user.login_count} login{user.login_count !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-2 text-sm text-gray-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1 text-sm text-gray-400">
                       <div className="flex items-center space-x-1 min-w-0">
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{user.email}</span>
@@ -551,15 +559,17 @@ export default function UserManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {!isAdmin && (
-                    <>
-                      <div className="flex flex-col gap-1 text-xs flex-shrink-0">
+                {!isAdmin && (
+                  <div className="flex flex-col gap-2 flex-shrink-0 w-48 md:ml-4">
+                    {/* Top row: EULA/Privacy badges and role selector */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Top left: EULA/Privacy badges stacked */}
+                      <div className="flex flex-col gap-1">
                         <Badge
                           className={
                             user.eula_consent
-                              ? "bg-green-700 text-green-100 flex-shrink-0"
-                              : "bg-red-700 text-red-100 flex-shrink-0"
+                              ? "bg-green-700 text-green-100 text-xs px-1 py-0.5"
+                              : "bg-red-700 text-red-100 text-xs px-1 py-0.5"
                           }
                         >
                           <Shield className="w-3 h-3 mr-1" />
@@ -568,8 +578,8 @@ export default function UserManagement() {
                         <Badge
                           className={
                             user.privacy_consent
-                              ? "bg-green-700 text-green-100 flex-shrink-0"
-                              : "bg-red-700 text-red-100 flex-shrink-0"
+                              ? "bg-green-700 text-green-100 text-xs px-1 py-0.5"
+                              : "bg-red-700 text-red-100 text-xs px-1 py-0.5"
                           }
                         >
                           <FileText className="w-3 h-3 mr-1" />
@@ -577,38 +587,42 @@ export default function UserManagement() {
                         </Badge>
                       </div>
 
+                      {/* Top right: Role selector */}
                       <select
                         value={user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
                         disabled={isProcessing}
-                        className="px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-white text-xs sm:text-sm focus:border-purple-500 focus:outline-none min-w-0 flex-shrink-0"
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none h-fit"
                       >
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
                       </select>
+                    </div>
 
+                    {/* Bottom row: Action buttons */}
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
                         size="sm"
                         variant={user.is_approved ? "outline" : "default"}
                         onClick={() => toggleUserApproval(user.id, user.is_approved)}
                         disabled={isProcessing}
-                        className={`flex-shrink-0 px-2 py-1.5 text-xs sm:text-sm ${
+                        className={`px-2 py-1 text-xs ${
                           user.is_approved
                             ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                             : "bg-green-600 hover:bg-green-700 text-white"
                         }`}
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                          <Loader2 className="w-3 h-3 animate-spin" />
                         ) : user.is_approved ? (
                           <>
-                            <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Revoke</span>
+                            <UserX className="w-3 h-3 mr-1" />
+                            Revoke
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Approve</span>
+                            <UserCheck className="w-3 h-3 mr-1" />
+                            Approve
                           </>
                         )}
                       </Button>
@@ -618,31 +632,30 @@ export default function UserManagement() {
                         variant="outline"
                         onClick={() => deleteUser(user.id, user.email)}
                         disabled={isProcessing}
-                        className="flex-shrink-0 px-2 py-1.5 text-xs sm:text-sm border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                        className="px-2 py-1 text-xs border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                          <Loader2 className="w-3 h-3 animate-spin" />
                         ) : (
                           <>
-                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Delete</span>
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
                           </>
                         )}
                       </Button>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}
-
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-400">No users found matching your criteria.</p>
-            </div>
-          )}
         </div>
-      </CardContent>
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No users found matching your criteria.</p>
+          </div>
+        )}
+      </div>
     </Card>
   )
 }
