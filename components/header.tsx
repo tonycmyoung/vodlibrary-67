@@ -3,13 +3,25 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { User, Heart, Settings, Lock, MessageSquare, UserPlus, DollarSign, BookOpen, LogOut } from "lucide-react"
+import {
+  User,
+  Heart,
+  Settings,
+  Lock,
+  MessageSquare,
+  UserPlus,
+  DollarSign,
+  BookOpen,
+  LogOut,
+  Upload,
+} from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
 import CurriculumModal from "@/components/curriculum-modal"
+import ContributeModal from "@/components/contribute-modal"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -33,6 +45,7 @@ export default function Header({ user }: HeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false)
+  const [isContributeModalOpen, setIsContributeModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const initials = user.full_name
@@ -153,6 +166,13 @@ export default function Header({ user }: HeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={() => setIsContributeModalOpen(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Contribute
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={() => setIsDonationModalOpen(true)}
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
@@ -236,6 +256,7 @@ export default function Header({ user }: HeaderProps) {
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
       <DonationModal isOpen={isDonationModalOpen} onClose={() => setIsDonationModalOpen(false)} />
       <CurriculumModal isOpen={isCurriculumModalOpen} onClose={() => setIsCurriculumModalOpen(false)} />
+      <ContributeModal isOpen={isContributeModalOpen} onClose={() => setIsContributeModalOpen(false)} />
     </>
   )
 }
