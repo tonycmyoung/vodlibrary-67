@@ -170,7 +170,7 @@ export async function updateSession(request: NextRequest) {
           }
         }
       } catch (dbError) {
-        console.error("Database error:", dbError?.message)
+        console.error("User lookup error:", dbError?.message)
         setCachedUserApproval(session.user.id, true, "Teacher") // Fallback assumption
         return supabaseResponse
       }
@@ -197,13 +197,14 @@ export async function updateSession(request: NextRequest) {
           .eq("id", session.user.id)
           .single()
 
-        if (!error && user && user.role === "Admin") {
+        if (error) {
+          console.error("Admin lookup error:", error.message)
+        } else if (user && user.role === "Admin") {
           setCachedUserApproval(session.user.id, user.is_approved, user.role)
           return supabaseResponse
         }
       } catch (dbError) {
-        console.error("Database query error:", dbError?.message)
-        // Database error - deny access for non-admin emails
+        console.error("Admin check error:", dbError?.message)
       }
 
       // Not authorized for admin routes

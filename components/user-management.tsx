@@ -1,15 +1,32 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, UserCheck, UserX, Mail, Calendar, Loader2, Trash2, Clock, LogIn, Shield, FileText } from "lucide-react"
+import {
+  Search,
+  UserCheck,
+  UserX,
+  Mail,
+  Calendar,
+  Loader2,
+  Trash2,
+  Clock,
+  LogIn,
+  Shield,
+  FileText,
+  Filter,
+} from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
+import UserSortControl from "@/components/user-sort-control"
+import UserFilter from "@/components/user-filter"
 
 interface UserInterface {
   id: string
@@ -29,19 +46,181 @@ interface UserInterface {
 }
 
 export default function UserManagement() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const storagePrefix = "userManagement"
+
+  const [urlState, setUrlState] = useState(() => {
+    const role = searchParams.get("role") || "all"
+    const school = searchParams.get("school") || "all"
+    const search = searchParams.get("search") || ""
+    return { role, school, search }
+  })
+
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(urlState.search)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
+
+  const [selectedRole, setSelectedRole] = useState(urlState.role)
+  const [selectedSchool, setSelectedSchool] = useState(urlState.school)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+
+  const [sortBy, setSortBy] = useState<"full_name" | "created_at" | "last_login" | "login_count">(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `${storagePrefix}SortBy`
+      return (
+        (localStorage.getItem(storageKey) as "full_name" | "created_at" | "last_login" | "login_count") || "full_name"
+      )
+    }
+    return "full_name"
+  })
+
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `${storagePrefix}SortOrder`
+      return (localStorage.getItem(storageKey) as "asc" | "desc") || "asc"
+    }
+    return "asc"
+  })
+
+  const processedData = useMemo(() => {
+    if (!users.length) return { roles: [], schools: [] }
+
+    const roleSet = new Set<string>()
+    const schoolSet = new Set<string>()
+
+    users.forEach((user) => {
+      if (user.role && user.role.trim()) {
+        roleSet.add(user.role)
+      }
+      if (user.school && user.school.trim()) {
+        schoolSet.add(user.school)
+      }
+    })
+
+    return {
+      roles: Array.from(roleSet).sort(),
+      schools: Array.from(schoolSet).sort(),
+    }
+  }, [users])
+
+  const processedUsers = useMemo(() => {
+    let result = [...users]
+
+    // Apply search filter
+    if (debouncedSearchQuery) {
+      result = result.filter(
+        (user) =>
+          user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.full_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.teacher?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.school?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.role?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
+      )
+    }
+
+    // Apply role filter
+    if (selectedRole && selectedRole !== "all") {
+      result = result.filter((user) => user.role === selectedRole)
+    }
+
+    // Apply school filter
+    if (selectedSchool && selectedSchool !== "all") {
+      result = result.filter((user) => user.school === selectedSchool)
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let comparison = 0
+      switch (sortBy) {
+        case "full_name":
+          const aName = a.full_name || a.email
+          const bName = b.full_name || b.email
+          comparison = aName.localeCompare(bName)
+          break
+        case "created_at":
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          break
+        case "last_login":
+          const aLogin = a.last_login ? new Date(a.last_login).getTime() : 0
+          const bLogin = b.last_login ? new Date(b.last_login).getTime() : 0
+          comparison = aLogin - bLogin
+          break
+        case "login_count":
+          comparison = a.login_count - b.login_count
+          break
+      }
+
+      // If primary sort values are equal and we're not sorting by name, use name as secondary sort
+      if (comparison === 0 && sortBy !== "full_name") {
+        const aName = a.full_name || a.email
+        const bName = b.full_name || b.email
+        comparison = aName.localeCompare(bName)
+      }
+
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+
+    return result
+  }, [users, debouncedSearchQuery, selectedRole, selectedSchool, sortBy, sortOrder])
+
+  useEffect(() => {
+    setFilteredUsers(processedUsers)
+  }, [processedUsers])
+
+  const reconstructURL = (role: string, school: string, search: string) => {
+    const params = new URLSearchParams()
+
+    if (role.trim() && role !== "all") {
+      params.set("role", role)
+    }
+
+    if (school.trim() && school !== "all") {
+      params.set("school", school)
+    }
+
+    if (search.trim()) {
+      params.set("search", search)
+    }
+
+    const currentPath = "/admin/users"
+    const newURL = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
+    router.replace(newURL, { scroll: false })
+  }
+
+  const handleRoleChange = (role: string) => {
+    setSelectedRole(role)
+    reconstructURL(role, selectedSchool, searchQuery)
+  }
+
+  const handleSchoolChange = (school: string) => {
+    setSelectedSchool(school)
+    reconstructURL(selectedRole, school, searchQuery)
+  }
+
+  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+    setSortBy(newSortBy as "full_name" | "created_at" | "last_login" | "login_count")
+    setSortOrder(newSortOrder)
+
+    localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
+    localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+      reconstructURL(selectedRole, selectedSchool, searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, selectedRole, selectedSchool])
 
   useEffect(() => {
     fetchUsers()
   }, [])
-
-  useEffect(() => {
-    filterUsers()
-  }, [users, searchQuery])
 
   const fetchUsers = async () => {
     try {
@@ -90,23 +269,6 @@ export default function UserManagement() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const filterUsers = () => {
-    if (!searchQuery) {
-      setFilteredUsers(users)
-      return
-    }
-
-    const filtered = users.filter(
-      (user) =>
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.teacher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.school?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.role?.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
-    setFilteredUsers(filtered)
   }
 
   const toggleUserApproval = async (userId: string, currentStatus: boolean) => {
@@ -237,6 +399,70 @@ export default function UserManagement() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                    {((selectedRole && selectedRole !== "all") || (selectedSchool && selectedSchool !== "all")) && (
+                      <span className="ml-2 bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">
+                        {
+                          [selectedRole !== "all" && selectedRole, selectedSchool !== "all" && selectedSchool].filter(
+                            Boolean,
+                          ).length
+                        }
+                      </span>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Filter Users</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <UserFilter
+                      roles={processedData.roles}
+                      schools={processedData.schools}
+                      selectedRole={selectedRole}
+                      selectedSchool={selectedSchool}
+                      onRoleChange={handleRoleChange}
+                      onSchoolChange={handleSchoolChange}
+                      userCount={filteredUsers.length}
+                    />
+                    <Button
+                      onClick={() => setShowMobileFilters(false)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <div className="flex-1 sm:flex-none">
+                <UserSortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+              </div>
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <UserFilter
+              roles={processedData.roles}
+              schools={processedData.schools}
+              selectedRole={selectedRole}
+              selectedSchool={selectedSchool}
+              onRoleChange={handleRoleChange}
+              onSchoolChange={handleSchoolChange}
+              userCount={filteredUsers.length}
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
           {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
@@ -412,7 +638,7 @@ export default function UserManagement() {
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-400">No users found matching your search.</p>
+              <p className="text-gray-400">No users found matching your criteria.</p>
             </div>
           )}
         </div>
