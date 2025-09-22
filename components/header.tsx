@@ -133,15 +133,17 @@ export default function Header({ user }: HeaderProps) {
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
-                  onClick={() => {
-                    setIsInviteModalOpen(true)
-                  }}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Invite User
-                </DropdownMenuItem>
+                {user.role === "Teacher" && (
+                  <DropdownMenuItem
+                    className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                    onClick={() => {
+                      setIsInviteModalOpen(true)
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Invite User
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={() => setIsCurriculumModalOpen(true)}
@@ -206,6 +208,16 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Admin View</span>
+                </Link>
+              )}
+              {user.role === "Teacher" && (
+                <Link
+                  href="/invite-user"
+                  className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Invite User</span>
                 </Link>
               )}
               <Link

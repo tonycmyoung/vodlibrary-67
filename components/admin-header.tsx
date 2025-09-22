@@ -17,6 +17,7 @@ interface AdminHeaderProps {
     email: string
     is_approved: boolean
     profile_image_url?: string | null
+    role: string // Assuming role is added to the user object
   }
 }
 
@@ -142,13 +143,15 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
-                  onClick={() => setIsInviteModalOpen(true)}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Invite User
-                </DropdownMenuItem>
+                {user.role === "Teacher" && (
+                  <DropdownMenuItem
+                    className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                    onClick={() => setIsInviteModalOpen(true)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Invite User
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={handleSignOutClick}
