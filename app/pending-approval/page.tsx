@@ -242,10 +242,21 @@ export default function PendingApprovalPage() {
           {/* No user session or error */}
           {(!userStatus || error) && !loading && (
             <div className="bg-gray-500/10 border border-gray-500/50 text-gray-400 px-4 py-6 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-300">{error || "Please sign in to check your account status."}</p>
+                  </div>
+                </div>
                 <div>
-                  <p className="text-sm text-gray-300">{error || "Please sign in to check your account status."}</p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full border-gray-600 text-gray-300   hover:bg-gray-600 bg-transparent"
+                  >
+                    <Link href={`${process.env.NEXT_PUBLIC_FULL_SITE_URL || "/"}/auth/login`}>Sign In</Link>
+                  </Button>
                 </div>
               </div>
             </div>
