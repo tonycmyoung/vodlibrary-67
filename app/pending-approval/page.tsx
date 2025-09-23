@@ -157,7 +157,7 @@ export default function PendingApprovalPage() {
                     We've sent you a confirmation email. Please click the link in the email to verify your address.
                   </p>
                   <p className="text-sm text-blue-300 mt-2">
-                    Look for an email from <strong>Supabase Auth</strong> with subject{" "}
+                    Look for an email from <strong>OKL Admin</strong> with subject{" "}
                     <strong>"Confirm Your Signup - Okinawa Kobudo Library"</strong>
                   </p>
                   <p className="text-sm text-blue-300 mt-2">
@@ -180,7 +180,7 @@ export default function PendingApprovalPage() {
                     address.
                   </p>
                   <p className="text-sm text-orange-300 mt-2">
-                    Look for an email from <strong>Supabase Auth</strong> with subject{" "}
+                    Look for an email from <strong>OKL Admin</strong> with subject{" "}
                     <strong>"Confirm Your Signup - Okinawa Kobudo Library"</strong>
                   </p>
                 </div>
