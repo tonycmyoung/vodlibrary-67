@@ -20,10 +20,13 @@ import {
   Shield,
   FileText,
   Filter,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
-import { deleteUserCompletely } from "@/lib/actions"
+import { deleteUserCompletely, updateUserFields } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
@@ -64,6 +67,17 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
 
+  const [editingUser, setEditingUser] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{
+    full_name: string
+    teacher: string
+    school: string
+  }>({
+    full_name: "",
+    teacher: "",
+    school: "",
+  })
+
   const [selectedRole, setSelectedRole] = useState(urlState.role)
   const [selectedSchool, setSelectedSchool] = useState(urlState.school)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
@@ -72,18 +86,18 @@ export default function UserManagement() {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
       return (
-        (localStorage.getItem(storageKey) as "full_name" | "created_at" | "last_login" | "login_count") || "full_name"
+        (localStorage.getItem(storageKey) as "full_name" | "created_at" | "last_login" | "login_count") || "created_at"
       )
     }
-    return "full_name"
+    return "created_at"
   })
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortOrder`
-      return (localStorage.getItem(storageKey) as "asc" | "desc") || "asc"
+      return (localStorage.getItem(storageKey) as "asc" | "desc") || "desc"
     }
-    return "asc"
+    return "desc"
   })
 
   const processedData = useMemo(() => {
@@ -358,6 +372,68 @@ export default function UserManagement() {
     }
   }
 
+  const startEditing = (user: UserInterface) => {
+    setEditingUser(user.id)
+    setEditValues({
+      full_name: user.full_name || "",
+      teacher: user.teacher || "",
+      school: user.school || "",
+    })
+  }
+
+  const cancelEditing = () => {
+    setEditingUser(null)
+    setEditValues({
+      full_name: "",
+      teacher: "",
+      school: "",
+    })
+  }
+
+  const saveEditing = async () => {
+    if (!editingUser) return
+
+    setProcessingUsers((prev) => new Set(prev).add(editingUser))
+
+    try {
+      const result = await updateUserFields(editingUser, editValues.full_name, editValues.teacher, editValues.school)
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === editingUser
+            ? {
+                ...user,
+                full_name: editValues.full_name.trim(),
+                teacher: editValues.teacher.trim(),
+                school: editValues.school.trim(),
+              }
+            : user,
+        ),
+      )
+
+      setEditingUser(null)
+      setEditValues({
+        full_name: "",
+        teacher: "",
+        school: "",
+      })
+    } catch (error) {
+      console.error("Error updating user fields:", error)
+      alert("Failed to update user fields. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(editingUser)
+        return newSet
+      })
+    }
+  }
+
   const getInitials = (name: string | null, email: string) => {
     if (name) {
       return name
@@ -475,6 +551,7 @@ export default function UserManagement() {
           {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
             const isAdmin = user.email === "acmyma@gmail.com"
+            const isEditing = editingUser === user.id
 
             return (
               <div
@@ -494,7 +571,16 @@ export default function UserManagement() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
+                      {isEditing ? (
+                        <Input
+                          value={editValues.full_name}
+                          onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
+                          className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+                          placeholder="Full name"
+                        />
+                      ) : (
+                        <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
+                      )}
                       {isAdmin ? (
                         <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
                       ) : (
@@ -540,10 +626,28 @@ export default function UserManagement() {
                         <span className="truncate">{user.email}</span>
                       </div>
                       <div className="flex items-center space-x-1 min-w-0">
-                        <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
+                        {isEditing ? (
+                          <Input
+                            value={editValues.teacher}
+                            onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+                            className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                            placeholder="Teacher name"
+                          />
+                        ) : (
+                          <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
+                        )}
                       </div>
                       <div className="flex items-center space-x-1 min-w-0">
-                        <span className="truncate">School: {user.school || "Not specified"}</span>
+                        {isEditing ? (
+                          <Input
+                            value={editValues.school}
+                            onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+                            className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                            placeholder="School name"
+                          />
+                        ) : (
+                          <span className="truncate">School: {user.school || "Not specified"}</span>
+                        )}
                       </div>
                       <div className="flex items-center space-x-1 min-w-0">
                         <Calendar className="w-3 h-3 flex-shrink-0" />
@@ -560,10 +664,9 @@ export default function UserManagement() {
                 </div>
 
                 {!isAdmin && (
-                  <div className="flex flex-col gap-2 flex-shrink-0 w-48 md:ml-4">
-                    {/* Top row: EULA/Privacy badges and role selector */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Top left: EULA/Privacy badges stacked */}
+                  <div className="flex flex-shrink-0 w-48 md:ml-4">
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                      {/* Left column: EULA/Privacy badges stacked vertically */}
                       <div className="flex flex-col gap-1">
                         <Badge
                           className={
@@ -587,62 +690,82 @@ export default function UserManagement() {
                         </Badge>
                       </div>
 
-                      {/* Top right: Role selector */}
-                      <select
-                        value={user.role || "Student"}
-                        onChange={(e) => updateUserRole(user.id, e.target.value)}
-                        disabled={isProcessing}
-                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none h-fit"
-                      >
-                        <option value="Student">Student</option>
-                        <option value="Teacher">Teacher</option>
-                      </select>
-                    </div>
+                      {/* Right column: Role selector and action buttons */}
+                      <div className="flex flex-col gap-1">
+                        {/* Role selector */}
+                        <select
+                          value={user.role || "Student"}
+                          onChange={(e) => updateUserRole(user.id, e.target.value)}
+                          disabled={isProcessing || isEditing}
+                          className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+                        >
+                          <option value="Student">Student</option>
+                          <option value="Teacher">Teacher</option>
+                        </select>
 
-                    {/* Bottom row: Action buttons */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        size="sm"
-                        variant={user.is_approved ? "outline" : "default"}
-                        onClick={() => toggleUserApproval(user.id, user.is_approved)}
-                        disabled={isProcessing}
-                        className={`px-2 py-1 text-xs ${
-                          user.is_approved
-                            ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                            : "bg-green-600 hover:bg-green-700 text-white"
-                        }`}
-                      >
-                        {isProcessing ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : user.is_approved ? (
-                          <>
-                            <UserX className="w-3 h-3 mr-1" />
-                            Revoke
-                          </>
-                        ) : (
-                          <>
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            Approve
-                          </>
-                        )}
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteUser(user.id, user.email)}
-                        disabled={isProcessing}
-                        className="px-2 py-1 text-xs border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                      >
-                        {isProcessing ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <>
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Delete
-                          </>
-                        )}
-                      </Button>
+                        <div className="flex gap-1">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={saveEditing}
+                                disabled={isProcessing}
+                                className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+                                aria-label="Save changes"
+                              >
+                                <Save className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditing}
+                                disabled={isProcessing}
+                                className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+                                aria-label="Cancel editing"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEditing(user)}
+                                disabled={isProcessing}
+                                className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+                                aria-label="Edit user"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={user.is_approved ? "outline" : "default"}
+                                onClick={() => toggleUserApproval(user.id, user.is_approved)}
+                                disabled={isProcessing}
+                                className={`p-1 h-6 w-6 ${
+                                  user.is_approved
+                                    ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                                    : "bg-green-600 hover:bg-green-700 text-white"
+                                }`}
+                                aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
+                              >
+                                {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteUser(user.id, user.email)}
+                                disabled={isProcessing}
+                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+                                aria-label="Delete user"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

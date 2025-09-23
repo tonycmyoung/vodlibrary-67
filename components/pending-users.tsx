@@ -29,7 +29,11 @@ export default function PendingUsers() {
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
   const [editingUser, setEditingUser] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState<{ teacher: string; school: string }>({ teacher: "", school: "" })
+  const [editValues, setEditValues] = useState<{ full_name: string; teacher: string; school: string }>({
+    full_name: "",
+    teacher: "",
+    school: "",
+  })
 
   const fetchPendingUsersData = async () => {
     try {
@@ -103,6 +107,7 @@ export default function PendingUsers() {
   const startEditing = (user: PendingUser) => {
     setEditingUser(user.id)
     setEditValues({
+      full_name: user.full_name || "",
       teacher: user.teacher || "",
       school: user.school || "",
     })
@@ -110,14 +115,14 @@ export default function PendingUsers() {
 
   const cancelEditing = () => {
     setEditingUser(null)
-    setEditValues({ teacher: "", school: "" })
+    setEditValues({ full_name: "", teacher: "", school: "" })
   }
 
   const saveEditing = async (userId: string) => {
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const result = await updatePendingUserFields(userId, editValues.teacher, editValues.school)
+      const result = await updatePendingUserFields(userId, editValues.full_name, editValues.teacher, editValues.school)
 
       if (result.error) {
         console.error("Error updating user fields:", result.error)
@@ -127,12 +132,19 @@ export default function PendingUsers() {
       // Update the user in the local state
       setPendingUsers((prev) =>
         prev.map((user) =>
-          user.id === userId ? { ...user, teacher: editValues.teacher, school: editValues.school } : user,
+          user.id === userId
+            ? {
+                ...user,
+                full_name: editValues.full_name,
+                teacher: editValues.teacher,
+                school: editValues.school,
+              }
+            : user,
         ),
       )
 
       setEditingUser(null)
-      setEditValues({ teacher: "", school: "" })
+      setEditValues({ full_name: "", teacher: "", school: "" })
     } catch (error) {
       console.error("Error updating user fields:", error)
     } finally {
@@ -211,9 +223,18 @@ export default function PendingUsers() {
                     </Avatar>
 
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-white truncate text-sm sm:text-base">
-                        {user.full_name || "No name provided"}
-                      </h4>
+                      {isEditing ? (
+                        <Input
+                          value={editValues.full_name}
+                          onChange={(e) => setEditValues((prev) => ({ ...prev, full_name: e.target.value }))}
+                          placeholder="Full name"
+                          className="h-6 text-sm font-medium bg-gray-800 border-gray-600 text-white mb-1"
+                        />
+                      ) : (
+                        <h4 className="font-medium text-white truncate text-sm sm:text-base">
+                          {user.full_name || "No name provided"}
+                        </h4>
+                      )}
                       <div className="flex flex-col space-y-1 text-xs sm:text-sm text-gray-400">
                         <div className="flex items-center space-x-1 min-w-0">
                           <Mail className="w-3 h-3 flex-shrink-0" />

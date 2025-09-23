@@ -737,7 +737,7 @@ export async function rejectUserServerAction(userId: string) {
   }
 }
 
-export async function updatePendingUserFields(userId: string, teacher: string, school: string) {
+export async function updatePendingUserFields(userId: string, fullName: string, teacher: string, school: string) {
   try {
     const cookieStore = await cookies()
     const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -758,6 +758,7 @@ export async function updatePendingUserFields(userId: string, teacher: string, s
     const { error } = await serviceSupabase
       .from("users")
       .update({
+        full_name: fullName.trim(),
         teacher: teacher.trim(),
         school: school.trim(),
       })
@@ -772,6 +773,46 @@ export async function updatePendingUserFields(userId: string, teacher: string, s
     return { success: "User fields updated successfully" }
   } catch (error) {
     console.error("Error in updatePendingUserFields:", error)
+    return { error: "Failed to update user fields" }
+  }
+}
+
+export async function updateUserFields(userId: string, fullName: string, teacher: string, school: string) {
+  try {
+    const cookieStore = await cookies()
+    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // Ignore
+          }
+        },
+      },
+    })
+
+    const { error } = await serviceSupabase
+      .from("users")
+      .update({
+        full_name: fullName.trim(),
+        teacher: teacher.trim(),
+        school: school.trim(),
+      })
+      .eq("id", userId)
+
+    if (error) {
+      console.error("Error updating user fields:", error)
+      return { error: "Failed to update user fields" }
+    }
+
+    revalidatePath("/admin/users")
+    return { success: "User fields updated successfully" }
+  } catch (error) {
+    console.error("Error in updateUserFields:", error)
     return { error: "Failed to update user fields" }
   }
 }

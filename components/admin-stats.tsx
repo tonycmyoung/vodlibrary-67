@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Users, Video, UserCheck, Clock, TrendingUp, LogIn } from "lucide-react"
+import { Users, Video, TrendingUp, LogIn, FolderOpen } from "lucide-react"
 import { getTelemetryData } from "@/lib/actions"
 
 interface Stats {
   totalUsers: number
-  pendingUsers: number
   totalVideos: number
   totalCategories: number
   totalViews: number
@@ -20,7 +19,6 @@ interface Stats {
 export default function AdminStats() {
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
-    pendingUsers: 0,
     totalVideos: 0,
     totalCategories: 0,
     totalViews: 0,
@@ -61,13 +59,6 @@ export default function AdminStats() {
       bgColor: "bg-blue-500/10",
     },
     {
-      title: "Pending Approval",
-      value: stats.pendingUsers,
-      icon: Clock,
-      color: "text-yellow-400",
-      bgColor: "bg-yellow-500/10",
-    },
-    {
       title: "Total Videos",
       value: stats.totalVideos,
       icon: Video,
@@ -77,7 +68,7 @@ export default function AdminStats() {
     {
       title: "Categories",
       value: stats.totalCategories,
-      icon: UserCheck,
+      icon: FolderOpen,
       color: "text-purple-400",
       bgColor: "bg-purple-500/10",
     },
@@ -91,7 +82,7 @@ export default function AdminStats() {
       bgColor: "bg-emerald-500/10",
     },
     {
-      title: "Logons This Week", // removed "Daily" from title
+      title: "Logons This Week",
       value: stats.thisWeekUserLogins,
       subtitle: `Last week: ${stats.lastWeekUserLogins}`,
       icon: LogIn,
@@ -102,8 +93,8 @@ export default function AdminStats() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(7)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(5)].map((_, i) => (
           <Card key={i} className="bg-black/60 border-gray-800">
             <div className="p-6">
               <div className="animate-pulse">
@@ -118,7 +109,7 @@ export default function AdminStats() {
   }
 
   return (
-    <div key={refreshKey} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+    <div key={refreshKey} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
       {statCards.map((stat, index) => {
         const Icon = stat.icon
         return (
