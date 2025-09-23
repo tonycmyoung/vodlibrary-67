@@ -8,6 +8,8 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "./auth"
 
+const siteTitle = "Okinawa Kobudo Library"
+
 function generateUUID() {
   // Use Web Crypto API if available (modern browsers and Node.js 16+)
   if (typeof globalThis !== "undefined" && globalThis.crypto && globalThis.crypto.randomUUID) {
@@ -20,6 +22,15 @@ function generateUUID() {
     const v = c == "x" ? r : (r & 0x3) | 0x8
     return v.toString(16)
   })
+}
+
+function sanitizeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
 }
 
 export async function signIn(prevState: any, formData: FormData) {
@@ -157,13 +168,6 @@ export async function signUp(prevState: any, formData: FormData) {
   const teacher = formData.get("teacher") as string
   const eulaAccepted = formData.get("eulaAccepted") === "true" || formData.get("eulaAccepted") === "on"
   const privacyAccepted = formData.get("privacyAccepted") === "true" || formData.get("privacyAccepted") === "on"
-
-  console.log("[v0] Form data received:", {
-    eulaAccepted: formData.get("eulaAccepted"),
-    privacyAccepted: formData.get("privacyAccepted"),
-    eulaAcceptedBool: eulaAccepted,
-    privacyAcceptedBool: privacyAccepted,
-  })
 
   if (!email || !password || !fullName || !school || !teacher) {
     return { error: "All fields are required" }
@@ -447,11 +451,11 @@ export async function inviteUser(email: string) {
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY)
-
+    
     await resend.emails.send({
       from: process.env.FROM_EMAIL!,
       to: email,
-      subject: "You're invited to join TY Kobudo Library",
+      subject: `You're invited to join the ${siteTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -459,7 +463,7 @@ export async function inviteUser(email: string) {
           </div>
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
             <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              ${inviterUser.full_name} has invited you to join the TY Kobudo Library.
+              ${sanitizeHtml(inviterUser.full_name)} has invited you to join the ${siteTitle}.
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
               This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
@@ -470,9 +474,6 @@ export async function inviteUser(email: string) {
                 Accept Invitation
               </a>
             </div>
-            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-              This invitation will expire in 7 days.
-            </p>
           </div>
         </div>
       `,
@@ -657,18 +658,18 @@ export async function approveUserServerAction(userId: string) {
     await resend.emails.send({
       from: process.env.FROM_EMAIL!,
       to: user.email,
-      subject: "Your TY Kobudo Library account has been approved!",
+      subject: `Your ${siteTitle} account has been approved!`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to TY Kobudo Library!</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to the ${siteTitle}!</h1>
           </div>
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
             <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Hi ${user.full_name},
+              Hi ${sanitizeHtml(user.full_name)},
             </p>
             <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Great news! Your account has been approved and you now have access to the TY Kobudo Library.
+              Great news! Your account has been approved and you now have access to the ${siteTitle}.
             </p>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
               You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
@@ -1193,15 +1194,15 @@ export async function sendNotificationWithEmail(params: {
           await resend.emails.send({
             from: process.env.FROM_EMAIL!,
             to: user.email,
-            subject: "New notification from TY Kobudo Library",
+            subject: `New notification from the ${siteTitle}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #1f2937; padding: 20px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+                  <h1 style="color: white; margin: 0;">${siteTitle}</h1>
                 </div>
                 <div style="background: #f9fafb; padding: 30px;">
-                  <p style="font-size: 16px; color: #374151;">Hi ${user.full_name},</p>
-                  <p style="font-size: 16px; color: #374151;">${message}</p>
+                  <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(user.full_name)},</p>
+                  <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
                 </div>
               </div>
             `,
@@ -1239,15 +1240,15 @@ export async function sendNotificationWithEmail(params: {
       await resend.emails.send({
         from: process.env.FROM_EMAIL!,
         to: recipient.email,
-        subject: "New notification from TY Kobudo Library",
+        subject: `New notification from the ${siteTitle}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #1f2937; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+              <h1 style="color: white; margin: 0;">${siteTitle}</h1>
             </div>
             <div style="background: #f9fafb; padding: 30px;">
-              <p style="font-size: 16px; color: #374151;">Hi ${recipient.full_name},</p>
-              <p style="font-size: 16px; color: #374151;">${message}</p>
+              <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(recipient.full_name)},</p>
+              <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
             </div>
           </div>
         `,
@@ -1413,15 +1414,15 @@ async function sendNotificationEmail(params: {
   await resend.emails.send({
     from: process.env.FROM_EMAIL!,
     to: params.recipientEmail,
-    subject: "New Notification from TY Kobudo Library",
+    subject: `New Notification from the ${siteTitle}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #1f2937; padding: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">TY Kobudo Library</h1>
+          <h1 style="color: white; margin: 0;">${siteTitle}</h1>
         </div>
         <div style="background: #f9fafb; padding: 30px;">
-          <p style="font-size: 16px; color: #374151;">Hi ${params.recipientName},</p>
-          <p style="font-size: 16px; color: #374151;">${params.message}</p>
+          <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(params.recipientName)},</p>
+          <p style="font-size: 16px; color: #374151;">${sanitizeHtml(params.message)}</p>
         </div>
       </div>
     `,

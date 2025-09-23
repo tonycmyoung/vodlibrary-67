@@ -84,7 +84,7 @@ export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProp
             Invite User
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Send an invitation to join TY Kobudo Library. They'll receive an email with instructions to create their
+            Send an invitation to join the Okinawa Kobudo Library. They'll receive an email with instructions to create their
             account.
           </DialogDescription>
         </DialogHeader>
