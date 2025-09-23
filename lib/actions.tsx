@@ -288,10 +288,10 @@ export async function signUp(prevState: any, formData: FormData) {
 
       if (adminUser) {
         const message = `New user registration pending approval:<br><br>
-<strong>Name:</strong> ${fullName}<br>
-<strong>Email:</strong> ${email}<br>
-<strong>School:</strong> ${school}<br>
-<strong>Teacher:</strong> ${teacher}<br><br>
+<strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
+<strong>Email:</strong> ${sanitizeHtml(email)}<br>
+<strong>School:</strong> ${sanitizeHtml(school)}<br>
+<strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br><br>
 Please review and approve this user in the admin dashboard.`
 
         await sendNotificationEmail({
@@ -1422,7 +1422,7 @@ async function sendNotificationEmail(params: {
         </div>
         <div style="background: #f9fafb; padding: 30px;">
           <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(params.recipientName)},</p>
-          <p style="font-size: 16px; color: #374151;">${sanitizeHtml(params.message)}</p>
+          <p style="font-size: 16px; color: #374151;">${params.message}</p>
         </div>
       </div>
     `,

@@ -137,7 +137,7 @@ export async function sendNotificationEmail({
           <!-- Updated border color to match purple theme -->
           <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #7c3aed; margin: 20px 0;">
             <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0;">
-              ${sanitizeHtml(message)}
+              ${message}
             </p>
           </div>
           
