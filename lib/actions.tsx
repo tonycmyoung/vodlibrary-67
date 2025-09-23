@@ -451,9 +451,9 @@ export async function inviteUser(email: string) {
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY)
-    
+
     await resend.emails.send({
-      from: process.env.FROM_EMAIL!,
+      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
       to: email,
       subject: `You're invited to join the ${siteTitle}`,
       html: `
@@ -656,7 +656,7 @@ export async function approveUserServerAction(userId: string) {
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     await resend.emails.send({
-      from: process.env.FROM_EMAIL!,
+      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
       to: user.email,
       subject: `Your ${siteTitle} account has been approved!`,
       html: `
@@ -1192,7 +1192,7 @@ export async function sendNotificationWithEmail(params: {
           })
 
           await resend.emails.send({
-            from: process.env.FROM_EMAIL!,
+            from: `OKL Admin <${process.env.FROM_EMAIL}>`,
             to: user.email,
             subject: `New notification from the ${siteTitle}`,
             html: `
@@ -1238,7 +1238,7 @@ export async function sendNotificationWithEmail(params: {
       })
 
       await resend.emails.send({
-        from: process.env.FROM_EMAIL!,
+        from: `OKL Admin <${process.env.FROM_EMAIL}>`,
         to: recipient.email,
         subject: `New notification from the ${siteTitle}`,
         html: `
@@ -1412,7 +1412,7 @@ async function sendNotificationEmail(params: {
   const resend = new Resend(process.env.RESEND_API_KEY)
 
   await resend.emails.send({
-    from: process.env.FROM_EMAIL!,
+    from: `OKL Admin <${process.env.FROM_EMAIL}>`,
     to: params.recipientEmail,
     subject: `New Notification from the ${siteTitle}`,
     html: `

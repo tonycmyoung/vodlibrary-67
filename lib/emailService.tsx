@@ -37,7 +37,7 @@ export async function sendInvitationEmail({ recipientEmail, inviterName, invitat
   const signUpUrl = `${process.env.NEXT_PUBLIC_FULL_SITE_URL || "http://localhost:3000"}/auth/sign-up`
 
   const { data, error } = await resend.emails.send({
-    from: process.env.FROM_EMAIL,
+    from: `OKL Admin <${process.env.FROM_EMAIL}>`,
     to: recipientEmail,
     subject: `Invitation to Join the ${siteTitle}`,
     html: `
@@ -110,7 +110,7 @@ export async function sendNotificationEmail({
   const libraryUrl = `${process.env.NEXT_PUBLIC_FULL_SITE_URL || "http://localhost:3000"}`
 
   const { data, error } = await resend.emails.send({
-    from: process.env.FROM_EMAIL,
+    from: `OKL Admin <${process.env.FROM_EMAIL}>`,
     to: recipientEmail,
     subject: `New Message from the ${siteTitle}`,
     html: `
