@@ -98,6 +98,8 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - duration_seconds: integer
 - recorded: text
 - is_published: boolean
+- views: integer
+- last_viewed: timestamp with time zone
 - created_by: uuid (foreign key to users.id)
 - created_at: timestamp
 - updated_at: timestamp
@@ -120,6 +122,66 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - created_at: timestamp
 \`\`\`
 
+#### notifications
+\`\`\`sql
+- id: uuid (primary key)
+- sender_id: uuid (foreign key to users.id)
+- recipient_id: uuid (foreign key to users.id)
+- message: text
+- is_read: boolean
+- is_broadcast: boolean
+- created_at: timestamp
+- updated_at: timestamp
+\`\`\`
+
+### Additional Tables
+
+#### auth_debug_logs
+\`\`\`sql
+- id: uuid (primary key)
+- user_id: uuid (foreign key to users.id)
+- user_email: text
+- event_type: text
+- success: boolean
+- error_message: text
+- error_code: text
+- ip_address: text
+- user_agent: text
+- additional_data: jsonb
+- created_at: timestamp with time zone
+\`\`\`
+
+#### invitations
+\`\`\`sql
+- id: uuid (primary key)
+- email: text
+- token: text
+- status: text
+- invited_by: uuid (foreign key to users.id)
+- invited_at: timestamp with time zone
+- expires_at: timestamp with time zone
+- created_at: timestamp with time zone
+\`\`\`
+
+#### user_consents
+\`\`\`sql
+- id: uuid (primary key)
+- user_id: uuid (foreign key to users.id)
+- eula_accepted_at: timestamp
+- privacy_accepted_at: timestamp
+- created_at: timestamp
+- updated_at: timestamp
+\`\`\`
+
+#### user_logins
+\`\`\`sql
+- id: uuid (primary key)
+- user_id: uuid (foreign key to users.id)
+- login_time: timestamp with time zone
+- ip_address: text
+- user_agent: text
+\`\`\`
+
 ### Junction Tables
 
 #### video_categories
@@ -135,7 +197,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - id: uuid (primary key)
 - video_id: uuid (foreign key to videos.id)
 - performer_id: uuid (foreign key to performers.id)
-- created_at: timestamp
+- created_at: timestamp with time zone
 \`\`\`
 
 #### user_favorites
@@ -144,18 +206,6 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - user_id: uuid (foreign key to users.id)
 - video_id: uuid (foreign key to videos.id)
 - created_at: timestamp
-\`\`\`
-
-#### notifications
-\`\`\`sql
-- id: uuid (primary key)
-- sender_id: uuid (foreign key to users.id)
-- recipient_id: uuid (foreign key to users.id)
-- message: text
-- is_read: boolean
-- is_broadcast: boolean
-- created_at: timestamp
-- updated_at: timestamp
 \`\`\`
 
 ### Database Relationships
@@ -195,17 +245,34 @@ app/
 ├── page.tsx (Home page with video library)
 ├── auth/
 │   ├── login/page.tsx (Login page)
-│   └── sign-up/page.tsx (Registration page)
+│   ├── sign-up/page.tsx (Registration page)
+│   ├── callback/route.ts (Auth callback handler)
+│   └── confirm/
+│       ├── page.tsx (Email confirmation page)
+│       └── callback/route.ts (Confirmation callback)
 ├── admin/
 │   ├── page.tsx (Admin dashboard)
 │   ├── users/page.tsx (User management)
 │   ├── videos/page.tsx (Video management)
 │   ├── categories/page.tsx (Category management)
 │   ├── performers/page.tsx (Performer management)
-│   └── notifications/page.tsx (Notification management)
+│   ├── notifications/page.tsx (Notification management)
+│   └── debug/page.tsx (Admin debug tools)
 ├── profile/page.tsx (User profile)
 ├── favorites/page.tsx (User favorites)
-└── video/[id]/page.tsx (Individual video page)
+├── pending-approval/page.tsx (Pending approval status)
+├── change-password/page.tsx (Password change form)
+├── setup-admin/page.tsx (Initial admin setup)
+├── student-view/page.tsx (Student-specific view)
+├── contact/page.tsx (Contact information)
+├── eula/page.tsx (End User License Agreement)
+├── privacy-policy/page.tsx (Privacy Policy)
+├── signout/page.tsx (Sign out confirmation)
+├── error/page.tsx (Error handling page)
+├── video/[id]/page.tsx (Individual video page)
+└── api/
+    ├── upload-profile-image/route.ts (Profile image upload)
+    └── robots.txt/route.ts (SEO robots.txt)
 \`\`\`
 
 ### Component Hierarchy
@@ -229,7 +296,13 @@ Admin Components
 ├── VideoManagement
 ├── CategoryManagement
 ├── PerformerManagement
-└── AdminNotificationManagement
+├── AdminNotificationManagement
+└── DebugTools
+
+Legal & Utility Components
+├── LoadingProvider
+├── LegalFooter
+└── ConsentTracking
 \`\`\`
 
 ### Key Components
@@ -257,6 +330,11 @@ Admin Components
 - **UserProfile**: Profile editing with image upload
 - **FavoritesLibrary**: User's favorited videos
 - **ChangePasswordForm**: Secure password updates
+
+#### Legal Components
+- **LoadingProvider**: Provides loading state for asynchronous operations
+- **LegalFooter**: Footer with links to EULA and Privacy Policy
+- **ConsentTracking**: Tracks user consent for legal compliance
 
 ## API & Server Actions
 
@@ -311,6 +389,16 @@ SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
+# PostgreSQL Configuration (from Supabase)
+POSTGRES_URL=
+POSTGRES_PRISMA_URL=
+POSTGRES_URL_NON_POOLING=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DATABASE=
+POSTGRES_HOST=
+SUPABASE_JWT_SECRET=
+
 # Email Configuration
 RESEND_API_KEY=
 FROM_EMAIL=
@@ -319,6 +407,7 @@ FROM_EMAIL=
 BLOB_READ_WRITE_TOKEN=
 
 # Application URLs
+NEXT_PUBLIC_FULL_SITE_URL=
 NEXT_PUBLIC_SITE_URL=
 NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 \`\`\`
@@ -361,6 +450,24 @@ NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 - **Password Reset**: Secure password recovery via email
 - **Responsive Design**: Mobile-friendly interface
 - **Dark/Light Mode**: Theme support via Tailwind CSS
+
+### Email System Features
+- **Sender Display Name**: All emails sent from "OKL Admin" for consistent branding
+- **HTML Email Templates**: Rich HTML formatting with proper sanitization
+- **Notification Types**: User registration, approval, password reset, admin notifications
+- **Email Verification**: Required for new user accounts and password resets
+
+### Legal Compliance Features
+- **EULA Tracking**: End User License Agreement acceptance tracking
+- **Privacy Policy**: Comprehensive privacy policy with consent tracking
+- **Contact Information**: Dedicated contact page for user inquiries
+- **Consent Management**: User consent tracking for legal compliance
+
+### Debug and Monitoring Features
+- **Admin Debug Tools**: Comprehensive debugging interface for administrators
+- **Authentication Logging**: Detailed logs of authentication events and errors
+- **User Login Tracking**: IP address and user agent logging for security
+- **Error Monitoring**: Centralized error tracking and reporting
 
 ## Development Setup
 
