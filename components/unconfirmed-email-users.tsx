@@ -16,7 +16,7 @@ interface UnconfirmedUser {
   teacher: string | null
   school: string | null
   created_at: string
-  confirmation_sent_at: string | null // Add confirmation timestamp
+  confirmation_sent_at: string | null
 }
 
 interface ResendState {
@@ -52,6 +52,16 @@ export default function UnconfirmedEmailUsers() {
 
   useEffect(() => {
     fetchUnconfirmedUsersData()
+
+    const handleRefresh = () => {
+      fetchUnconfirmedUsersData()
+    }
+
+    window.addEventListener("admin-refresh-unconfirmed-users", handleRefresh)
+
+    return () => {
+      window.removeEventListener("admin-refresh-unconfirmed-users", handleRefresh)
+    }
   }, [])
 
   const getInitials = (name: string | null, email: string) => {

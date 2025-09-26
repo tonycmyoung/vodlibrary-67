@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
-import AdminStats from "@/components/admin-stats"
-import PendingUsers from "@/components/pending-users"
-import UnconfirmedEmailUsers from "@/components/unconfirmed-email-users"
+import AdminDashboardClient from "@/components/admin-dashboard-client"
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -58,16 +56,7 @@ export default async function AdminDashboard() {
     <div className="min-h-screen bg-gray-900">
       <AdminHeader user={userWithId} />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-300">Manage users, videos, and categories</p>
-        </div>
-
-        <div className="space-y-8">
-          <AdminStats key="admin-stats" />
-          <PendingUsers />
-          <UnconfirmedEmailUsers />
-        </div>
+        <AdminDashboardClient />
       </div>
     </div>
   )

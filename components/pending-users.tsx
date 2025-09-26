@@ -34,6 +34,7 @@ export default function PendingUsers() {
     teacher: "",
     school: "",
   })
+  const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({})
 
   const fetchPendingUsersData = async () => {
     try {
@@ -44,7 +45,14 @@ export default function PendingUsers() {
         return
       }
 
-      setPendingUsers(result.data || [])
+      const users = result.data || []
+      setPendingUsers(users)
+
+      const initialRoles: Record<string, string> = {}
+      users.forEach((user) => {
+        initialRoles[user.id] = "Student"
+      })
+      setSelectedRoles(initialRoles)
     } catch (error) {
       console.error("Error fetching pending users:", error)
     } finally {
@@ -54,13 +62,24 @@ export default function PendingUsers() {
 
   useEffect(() => {
     fetchPendingUsersData()
+
+    const handleRefresh = () => {
+      fetchPendingUsersData()
+    }
+
+    window.addEventListener("admin-refresh-pending-users", handleRefresh)
+
+    return () => {
+      window.removeEventListener("admin-refresh-pending-users", handleRefresh)
+    }
   }, [])
 
   const handleApproveUser = async (userId: string) => {
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const result = await approveUserServerAction(userId)
+      const selectedRole = selectedRoles[userId] || "Student"
+      const result = await approveUserServerAction(userId, selectedRole)
 
       if (result.error) {
         console.error("Error approving user:", result.error)
@@ -69,6 +88,11 @@ export default function PendingUsers() {
 
       // Remove user from pending list
       setPendingUsers((prev) => prev.filter((user) => user.id !== userId))
+      setSelectedRoles((prev) => {
+        const newRoles = { ...prev }
+        delete newRoles[userId]
+        return newRoles
+      })
     } catch (error) {
       console.error("Error approving user:", error)
     } finally {
@@ -93,6 +117,11 @@ export default function PendingUsers() {
 
       // Remove user from pending list
       setPendingUsers((prev) => prev.filter((user) => user.id !== userId))
+      setSelectedRoles((prev) => {
+        const newRoles = { ...prev }
+        delete newRoles[userId]
+        return newRoles
+      })
     } catch (error) {
       console.error("Error rejecting user:", error)
     } finally {
@@ -102,6 +131,13 @@ export default function PendingUsers() {
         return newSet
       })
     }
+  }
+
+  const handleRoleChange = (userId: string, role: string) => {
+    setSelectedRoles((prev) => ({
+      ...prev,
+      [userId]: role,
+    }))
   }
 
   const startEditing = (user: PendingUser) => {
@@ -212,7 +248,7 @@ export default function PendingUsers() {
               return (
                 <div
                   key={user.id}
-                  className="p-3 sm:p-4 bg-gray-900/50 rounded-lg border border-gray-700 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6 lg:items-center"
+                  className="p-3 sm:p-4 bg-gray-900/50 rounded-lg border border-gray-700 lg:grid lg:grid-cols-[auto_1fr_auto_auto] lg:gap-6 lg:items-center"
                 >
                   <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1 lg:flex-none">
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
@@ -301,6 +337,19 @@ export default function PendingUsers() {
                         <span className="text-sm text-gray-300 truncate">{user.school || "No school specified"}</span>
                       )}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col space-y-2 mt-3 lg:mt-0 lg:min-w-0">
+                    <div className="lg:hidden text-xs text-gray-400 mb-1">Role:</div>
+                    <select
+                      value={selectedRoles[user.id] || "Student"}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      disabled={isProcessing || isEditing}
+                      className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none min-w-[90px]"
+                    >
+                      <option value="Student">Student</option>
+                      <option value="Teacher">Teacher</option>
+                    </select>
                   </div>
 
                   <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 mt-3 lg:mt-0 justify-end lg:justify-start">

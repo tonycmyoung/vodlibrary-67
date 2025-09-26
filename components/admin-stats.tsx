@@ -28,6 +28,16 @@ export default function AdminStats() {
 
   useEffect(() => {
     fetchStats()
+
+    const handleRefresh = () => {
+      fetchStats()
+    }
+
+    window.addEventListener("admin-refresh-stats", handleRefresh)
+
+    return () => {
+      window.removeEventListener("admin-refresh-stats", handleRefresh)
+    }
   }, [])
 
   const fetchStats = async () => {
