@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Users, Video, TrendingUp, LogIn, FolderOpen } from "lucide-react"
+import { Users, TrendingUp, LogIn } from "lucide-react"
 import { getTelemetryData } from "@/lib/actions"
 
 interface Stats {
   totalUsers: number
-  totalVideos: number
-  totalCategories: number
   totalViews: number
   thisWeekViews: number
   lastWeekViews: number
@@ -19,8 +17,6 @@ interface Stats {
 export default function AdminStats() {
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
-    totalVideos: 0,
-    totalCategories: 0,
     totalViews: 0,
     thisWeekViews: 0,
     lastWeekViews: 0,
@@ -59,20 +55,6 @@ export default function AdminStats() {
       bgColor: "bg-blue-500/10",
     },
     {
-      title: "Total Videos",
-      value: stats.totalVideos,
-      icon: Video,
-      color: "text-green-400",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "Categories",
-      value: stats.totalCategories,
-      icon: FolderOpen,
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/10",
-    },
-    {
       title: "Videos Viewed This Week",
       value: stats.thisWeekViews,
       subtitle: `Last week: ${stats.lastWeekViews}`,
@@ -94,7 +76,7 @@ export default function AdminStats() {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(5)].map((_, i) => (
+        {[...Array(3)].map((_, i) => (
           <Card key={i} className="bg-black/60 border-gray-800">
             <div className="p-6">
               <div className="animate-pulse">
@@ -121,13 +103,17 @@ export default function AdminStats() {
                   <Icon className={`h-3.5 w-3.5 ${stat.color}`} />
                 </div>
               </div>
-              <div className={`text-2xl font-bold ${stat.color} mt-1`}>{stat.value}</div>
-              {stat.subtitle && <p className="text-xs text-gray-400">{stat.subtitle}</p>}
-              {stat.totalViews !== undefined && (
-                <p className="text-xs text-gray-500 mt-1 border-t border-gray-700 pt-1">
-                  Total Views: {stat.totalViews.toLocaleString()}
-                </p>
-              )}
+              <div className="flex items-center justify-between mt-1">
+                <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                {(stat.subtitle || stat.totalViews !== undefined) && (
+                  <div className="text-right">
+                    {stat.subtitle && <p className="text-xs text-gray-400">{stat.subtitle}</p>}
+                    {stat.totalViews !== undefined && (
+                      <p className="text-xs text-gray-500">Total Views: {stat.totalViews.toLocaleString()}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         )
