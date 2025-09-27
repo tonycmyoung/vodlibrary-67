@@ -281,10 +281,10 @@ export default function VideoManagement() {
             {paginatedVideos.map((video) => (
               <div
                 key={video.id}
-                className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700"
+                className="flex flex-col md:flex-row md:items-center md:justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4 md:space-y-0"
               >
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-12 bg-gray-800 rounded flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 flex-1">
+                  <div className="w-12 h-9 sm:w-16 sm:h-12 bg-gray-800 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
                     {video.thumbnail_url ? (
                       <img
                         src={video.thumbnail_url || "/placeholder.svg"}
@@ -302,7 +302,7 @@ export default function VideoManagement() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
                       <h4 className="font-medium text-white">{video.title}</h4>
                       <Badge
@@ -317,15 +317,19 @@ export default function VideoManagement() {
                       </Badge>
                     </div>
                     {video.description && (
-                      <p className="text-sm text-gray-300 mb-2 line-clamp-2 max-w-md">{video.description}</p>
+                      <p className="text-sm text-gray-300 mb-2 line-clamp-2">{video.description}</p>
                     )}
-                    <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      {video.recorded && video.recorded !== "Unset" && <span>Recorded: {video.recorded}</span>}
-                      {video.performers.length > 0 && (
-                        <span>Performers: {video.performers.map((p) => p.name).join(", ")}</span>
-                      )}
-                      <span>Added {formatShortDate(video.created_at)}</span>
-                      <div className="flex flex-wrap gap-1">
+
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-2 md:space-y-0 md:space-x-4">
+                      <div className="flex flex-col space-y-1 text-sm text-gray-400 md:min-w-[140px] md:max-w-[140px] lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:min-w-0 lg:max-w-none">
+                        {video.recorded && video.recorded !== "Unset" && <span>R: {video.recorded}</span>}
+                        {video.performers.length > 0 && (
+                          <span>P: {video.performers.map((p) => p.name).join(", ")}</span>
+                        )}
+                        <span>A: {formatShortDate(video.created_at)}</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 md:flex-1 md:justify-start lg:justify-start">
                         {video.categories.map((category) =>
                           category && category.id ? (
                             <Badge
@@ -342,30 +346,30 @@ export default function VideoManagement() {
                           ) : null,
                         )}
                       </div>
+
+                      <div className="flex flex-col items-end space-y-2 flex-shrink-0 md:min-w-[120px] md:max-w-[120px]">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditVideo(video)}
+                            className="hover:bg-gray-700"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteVideo(video.id)}
+                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="text-sm text-gray-400 font-medium">{video.views || 0} views</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex flex-col items-end space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEditVideo(video)}
-                      className="hover:bg-gray-700"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDeleteVideo(video.id)}
-                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="text-sm text-gray-400 font-medium">{video.views || 0} views</div>
                 </div>
               </div>
             ))}

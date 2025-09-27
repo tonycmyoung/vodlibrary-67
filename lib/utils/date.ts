@@ -20,7 +20,7 @@ export const formatDate = (dateString: string | null | undefined): string => {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true,
+      hour12: false, // switched from 12-hour to 24-hour format
     })
 
     return result

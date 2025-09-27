@@ -608,7 +608,7 @@ export default function UserManagement() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
                       <div className="space-y-1">
                         <div className="flex items-center space-x-1 min-w-0">
                           <Mail className="w-3 h-3 flex-shrink-0" />
