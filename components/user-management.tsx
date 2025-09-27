@@ -17,12 +17,12 @@ import {
   Trash2,
   Clock,
   LogIn,
-  Shield,
-  FileText,
   Filter,
   Edit2,
   Save,
   X,
+  GraduationCap,
+  Building,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -44,8 +44,6 @@ interface UserInterface {
   profile_image_url: string | null
   last_login: string | null
   login_count: number
-  eula_consent: string | null
-  privacy_consent: string | null
 }
 
 export default function UserManagement() {
@@ -254,26 +252,16 @@ export default function UserManagement() {
 
       if (loginError) throw loginError
 
-      const { data: consentData, error: consentError } = await supabase
-        .from("user_consents")
-        .select("user_id, eula_accepted_at, privacy_accepted_at")
-
-      if (consentError) throw consentError
-
       const usersWithStats =
         usersData?.map((user) => {
           const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
           const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
           const loginCount = userLogins.length
 
-          const userConsent = consentData?.find((consent) => consent.user_id === user.id)
-
           return {
             ...user,
             last_login: lastLogin,
             login_count: loginCount,
-            eula_consent: userConsent?.eula_accepted_at || null,
-            privacy_consent: userConsent?.privacy_accepted_at || null,
           }
         }) || []
 
@@ -620,151 +608,135 @@ export default function UserManagement() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1 text-sm text-gray-400">
-                      <div className="flex items-center space-x-1 min-w-0">
-                        <Mail className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{user.email}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 min-w-0">
-                        {isEditing ? (
-                          <Input
-                            value={editValues.teacher}
-                            onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-                            className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                            placeholder="Teacher name"
-                          />
-                        ) : (
-                          <span className="truncate">Teacher: {user.teacher || "Not specified"}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-1 min-w-0">
-                        {isEditing ? (
-                          <Input
-                            value={editValues.school}
-                            onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-                            className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                            placeholder="School name"
-                          />
-                        ) : (
-                          <span className="truncate">School: {user.school || "Not specified"}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-1 min-w-0">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>Joined {formatDate(user.created_at)}</span>
-                      </div>
-                      {user.is_approved && (
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+                      <div className="space-y-1">
                         <div className="flex items-center space-x-1 min-w-0">
-                          <UserCheck className="w-3 h-3 flex-shrink-0" />
-                          <span>Approved {user.approved_at ? formatDate(user.approved_at) : "Date unknown"}</span>
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
                         </div>
-                      )}
+                        <div className="flex items-center space-x-1 min-w-0">
+                          {isEditing ? (
+                            <Input
+                              value={editValues.teacher}
+                              onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                              placeholder="Teacher name"
+                            />
+                          ) : (
+                            <>
+                              <GraduationCap className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{user.teacher || "Not specified"}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          {isEditing ? (
+                            <Input
+                              value={editValues.school}
+                              onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                              placeholder="School name"
+                            />
+                          ) : (
+                            <>
+                              <Building className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{user.school || "Not specified"}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>J: {formatDate(user.created_at)}</span>
+                        </div>
+                        {user.approved_at && (
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                            <span>A: {formatDate(user.approved_at)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {!isAdmin && (
-                  <div className="flex flex-shrink-0 w-48 md:ml-4">
-                    <div className="grid grid-cols-2 gap-3 w-full">
-                      {/* Left column: EULA/Privacy badges stacked vertically */}
-                      <div className="flex flex-col gap-1">
-                        <Badge
-                          className={
-                            user.eula_consent
-                              ? "bg-green-700 text-green-100 text-xs px-1 py-0.5"
-                              : "bg-red-700 text-red-100 text-xs px-1 py-0.5"
-                          }
-                        >
-                          <Shield className="w-3 h-3 mr-1" />
-                          EULA {user.eula_consent ? "✓" : "✗"}
-                        </Badge>
-                        <Badge
-                          className={
-                            user.privacy_consent
-                              ? "bg-green-700 text-green-100 text-xs px-1 py-0.5"
-                              : "bg-red-700 text-red-100 text-xs px-1 py-0.5"
-                          }
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          Privacy {user.privacy_consent ? "✓" : "✗"}
-                        </Badge>
-                      </div>
+                  <div className="flex flex-shrink-0 w-32 md:ml-4">
+                    <div className="flex flex-col gap-1 w-full">
+                      {/* Role selector */}
+                      <select
+                        value={user.role || "Student"}
+                        onChange={(e) => updateUserRole(user.id, e.target.value)}
+                        disabled={isProcessing || isEditing}
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                      </select>
 
-                      {/* Right column: Role selector and action buttons */}
-                      <div className="flex flex-col gap-1">
-                        {/* Role selector */}
-                        <select
-                          value={user.role || "Student"}
-                          onChange={(e) => updateUserRole(user.id, e.target.value)}
-                          disabled={isProcessing || isEditing}
-                          className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
-                        >
-                          <option value="Student">Student</option>
-                          <option value="Teacher">Teacher</option>
-                        </select>
-
-                        <div className="flex gap-1">
-                          {isEditing ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={saveEditing}
-                                disabled={isProcessing}
-                                className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
-                                aria-label="Save changes"
-                              >
-                                <Save className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={cancelEditing}
-                                disabled={isProcessing}
-                                className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
-                                aria-label="Cancel editing"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => startEditing(user)}
-                                disabled={isProcessing}
-                                className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
-                                aria-label="Edit user"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={user.is_approved ? "outline" : "default"}
-                                onClick={() => toggleUserApproval(user.id, user.is_approved)}
-                                disabled={isProcessing}
-                                className={`p-1 h-6 w-6 ${
-                                  user.is_approved
-                                    ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                                    : "bg-green-600 hover:bg-green-700 text-white"
-                                }`}
-                                aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
-                              >
-                                {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => deleteUser(user.id, user.email)}
-                                disabled={isProcessing}
-                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
-                                aria-label="Delete user"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                      <div className="flex gap-1">
+                        {isEditing ? (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={saveEditing}
+                              disabled={isProcessing}
+                              className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+                              aria-label="Save changes"
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditing}
+                              disabled={isProcessing}
+                              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+                              aria-label="Cancel editing"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditing(user)}
+                              disabled={isProcessing}
+                              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+                              aria-label="Edit user"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={user.is_approved ? "outline" : "default"}
+                              onClick={() => toggleUserApproval(user.id, user.is_approved)}
+                              disabled={isProcessing}
+                              className={`p-1 h-6 w-6 ${
+                                user.is_approved
+                                  ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                                  : "bg-green-600 hover:bg-green-700 text-white"
+                              }`}
+                              aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
+                            >
+                              {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteUser(user.id, user.email)}
+                              disabled={isProcessing}
+                              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+                              aria-label="Delete user"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
