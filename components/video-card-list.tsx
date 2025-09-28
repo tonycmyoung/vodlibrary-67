@@ -33,12 +33,14 @@ interface VideoCardListProps {
   video: Video
   isFavorited?: boolean
   onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
+  viewCount?: number
 }
 
 export default function VideoCardList({
   video,
   isFavorited: initialIsFavorited = false,
   onFavoriteToggle,
+  viewCount,
 }: VideoCardListProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [user, setUser] = useState<any>(null)
@@ -181,7 +183,7 @@ export default function VideoCardList({
             >
               <Heart className={`w-4 h-4 ${isFavorited ? "fill-red-500 text-red-500" : "text-white"}`} />
             </Button>
-            <div className="text-xs text-gray-400 font-medium">{video.views || 0} views</div>
+            <div className="text-xs text-gray-400 font-medium">{viewCount ?? video.views ?? 0} views</div>
           </div>
         </div>
       </div>

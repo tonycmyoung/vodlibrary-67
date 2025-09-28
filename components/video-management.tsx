@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Trash2, Clock, Loader2, Pencil, Plus } from "lucide-react"
 import VideoModal from "./video-modal"
 import { formatShortDate } from "@/lib/utils/date"
+import { getBatchVideoViewCounts } from "@/lib/actions/video-views"
 
 interface Video {
   id: string
@@ -98,12 +99,21 @@ export default function VideoManagement() {
 
       const videosWithCategoriesAndPerformers = data?.map((video: any) => ({
         ...video,
+        views: 0, // Initialize with 0, will be updated with actual counts
         categories: video.video_categories?.map((vc: any) => vc.categories).filter((cat: any) => cat && cat.id) || [],
         performers:
           video.video_performers?.map((vp: any) => vp.performers).filter((perf: any) => perf && perf.id) || [],
       }))
 
-      setVideos(videosWithCategoriesAndPerformers || [])
+      const videoIds = videosWithCategoriesAndPerformers?.map((video: any) => video.id) || []
+      const viewCounts = await getBatchVideoViewCounts(videoIds)
+
+      const videosWithViewCounts = videosWithCategoriesAndPerformers?.map((video: any) => ({
+        ...video,
+        views: viewCounts[video.id] || 0,
+      }))
+
+      setVideos(videosWithViewCounts || [])
     } catch (error) {
       console.error("Error fetching videos:", error)
     } finally {

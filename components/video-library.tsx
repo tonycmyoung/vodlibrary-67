@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { getBatchVideoViewCounts } from "@/lib/actions/video-views"
 
 interface Video {
   id: string
@@ -188,7 +189,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             .from("videos")
             .select(`
               id, title, description, video_url, thumbnail_url, duration_seconds, 
-              created_at, recorded, views, updated_at
+              created_at, recorded, updated_at
             `)
             .order("created_at", { ascending: false }),
 
@@ -224,16 +225,25 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
             return {
               ...video,
+              views: 0, // Initialize with 0, will be updated with actual counts
               categories: videoCategories,
               performers: videoPerformers,
             }
           }) || []
 
+        const videoIds = videosWithMetadata.map((video) => video.id)
+        const viewCounts = await getBatchVideoViewCounts(videoIds)
+
+        const videosWithViewCounts = videosWithMetadata.map((video) => ({
+          ...video,
+          views: viewCounts[video.id] || 0,
+        }))
+
         recordCircuitBreakerSuccess()
-        saveToCache(videosWithMetadata)
+        saveToCache(videosWithViewCounts)
 
         if (mounted) {
-          setAllVideos(videosWithMetadata)
+          setAllVideos(videosWithViewCounts)
           setUserFavorites(new Set(favoritesResult.data?.map((f) => f.video_id) || []))
         }
       } catch (error) {

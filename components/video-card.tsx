@@ -35,12 +35,14 @@ interface VideoCardProps {
   video: Video
   isFavorited?: boolean
   onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
+  viewCount?: number
 }
 
 const VideoCard = memo(function VideoCard({
   video,
   isFavorited: initialIsFavorited = false,
   onFavoriteToggle,
+  viewCount,
 }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [user, setUser] = useState<any>(null)
@@ -211,7 +213,7 @@ const VideoCard = memo(function VideoCard({
           </div>
 
           <div className="flex justify-end">
-            <div className="text-xs text-gray-400 font-medium">{video.views || 0} views</div>
+            <div className="text-xs text-gray-400 font-medium">{viewCount ?? video.views ?? 0} views</div>
           </div>
         </CardContent>
       </Card>

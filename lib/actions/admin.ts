@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "../auth"
+import { getTotalVideoViews, getVideoViewsInDateRange } from "./video-views"
 
 export async function getTelemetryData() {
   try {
@@ -31,28 +32,9 @@ export async function getTelemetryData() {
 
     console.log("[v0] Last week range:", startOfLastWeek.toISOString(), "to", endOfLastWeek.toISOString())
 
-    const [
-      allVideosResult,
-      totalUsersResult,
-      pendingUsersResult,
-      thisWeekVideosResult,
-      lastWeekVideosResult,
-      thisWeekLoginsResult,
-      lastWeekLoginsResult,
-    ] = await Promise.all([
-      serviceSupabase.from("videos").select("views"),
+    const [totalUsersResult, pendingUsersResult, thisWeekLoginsResult, lastWeekLoginsResult] = await Promise.all([
       serviceSupabase.from("users").select("id", { count: "exact" }),
       serviceSupabase.from("users").select("id", { count: "exact" }).eq("is_approved", false),
-      serviceSupabase
-        .from("videos")
-        .select("id")
-        .gte("last_viewed::date", startOfWeek.toISOString().split("T")[0])
-        .lte("last_viewed::date", endOfWeek.toISOString().split("T")[0]),
-      serviceSupabase
-        .from("videos")
-        .select("id")
-        .gte("last_viewed::date", startOfLastWeek.toISOString().split("T")[0])
-        .lte("last_viewed::date", endOfLastWeek.toISOString().split("T")[0]),
       serviceSupabase
         .from("user_logins")
         .select("user_id")
@@ -65,25 +47,14 @@ export async function getTelemetryData() {
         .lte("login_time::date", endOfLastWeek.toISOString().split("T")[0]),
     ])
 
-    console.log("[v0] All videos query result:", allVideosResult.data?.length, "videos, error:", allVideosResult.error)
-    const totalViews = allVideosResult.data?.reduce((sum, video) => sum + (video.views || 0), 0) || 0
+    const totalViews = await getTotalVideoViews()
     console.log("[v0] Total views calculated:", totalViews)
 
-    console.log(
-      "[v0] This week videos query result:",
-      thisWeekVideosResult.data?.length,
-      "videos, error:",
-      thisWeekVideosResult.error,
-    )
-    const thisWeekViews = thisWeekVideosResult.data?.length || 0
+    const thisWeekViews = await getVideoViewsInDateRange(startOfWeek, endOfWeek)
+    console.log("[v0] This week views:", thisWeekViews)
 
-    console.log(
-      "[v0] Last week videos query result:",
-      lastWeekVideosResult.data?.length,
-      "videos, error:",
-      lastWeekVideosResult.error,
-    )
-    const lastWeekViews = lastWeekVideosResult.data?.length || 0
+    const lastWeekViews = await getVideoViewsInDateRange(startOfLastWeek, endOfLastWeek)
+    console.log("[v0] Last week views:", lastWeekViews)
 
     console.log(
       "[v0] This week logins query result:",

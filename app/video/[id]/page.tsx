@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import VideoPlayer from "@/components/video-player"
 import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getVideoViewCount } from "@/lib/actions/video-views"
 
 interface VideoPageProps {
   params: {
@@ -57,7 +58,6 @@ export default function VideoPage({ params }: VideoPageProps) {
     console.log("[v0] VideoPage component mounted for ID:", params.id)
   }, [params.id])
 
-  // Load user data immediately
   useEffect(() => {
     async function loadUser() {
       console.log("[v0] Loading user data...")
@@ -105,7 +105,6 @@ export default function VideoPage({ params }: VideoPageProps) {
     loadUser()
   }, [router, supabase])
 
-  // Load video data after user is confirmed
   useEffect(() => {
     if (!user) return
 
@@ -113,7 +112,7 @@ export default function VideoPage({ params }: VideoPageProps) {
       console.log("[v0] Loading video data for ID:", params.id)
 
       const [videoResult, favoriteResult, categoriesResult, performersResult] = await Promise.all([
-        supabase.from("videos").select("*, views").eq("id", params.id).eq("is_published", true).single(),
+        supabase.from("videos").select("*").eq("id", params.id).eq("is_published", true).single(),
         supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", params.id).maybeSingle(),
         supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", params.id),
         supabase.from("video_performers").select("performers(id, name)").eq("video_id", params.id),
@@ -138,8 +137,11 @@ export default function VideoPage({ params }: VideoPageProps) {
 
       console.log("[v0] Video data loaded successfully:", videoData.title)
 
+      const viewCount = await getVideoViewCount(params.id)
+
       const videoWithCategories: Video = {
         ...videoData,
+        views: viewCount,
         categories: videoCategories?.map((vc: any) => vc.categories) || [],
         performers: videoPerformers?.map((vp: any) => vp.performers) || [],
         isFavorited: !!favorite,
@@ -153,14 +155,12 @@ export default function VideoPage({ params }: VideoPageProps) {
     loadVideo()
   }, [user, params.id, router, supabase])
 
-  // Update overall loading state
   useEffect(() => {
     setLoading(userLoading || videoLoading)
   }, [userLoading, videoLoading])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
-      {/* Header loads immediately when user data is ready */}
       {userLoading ? (
         <div className="h-16 bg-black/20 border-b border-white/10">
           <div className="container mx-auto px-4 h-full flex items-center justify-between">
@@ -172,22 +172,18 @@ export default function VideoPage({ params }: VideoPageProps) {
         <Header user={user} />
       ) : null}
 
-      {/* Video player shows loading state until video data is ready */}
       {videoLoading ? (
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* Video player skeleton */}
             <div className="aspect-video bg-black/40 rounded-lg flex items-center justify-center">
               <div className="text-white/60 text-lg">Loading video...</div>
             </div>
 
-            {/* Title skeleton */}
             <div className="space-y-2">
               <Skeleton className="h-8 w-3/4 bg-white/10" />
               <Skeleton className="h-4 w-1/2 bg-white/10" />
             </div>
 
-            {/* Categories skeleton */}
             <div className="flex gap-2">
               <Skeleton className="h-6 w-16 bg-white/10 rounded-full" />
               <Skeleton className="h-6 w-20 bg-white/10 rounded-full" />

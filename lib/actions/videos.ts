@@ -7,40 +7,7 @@ export async function incrementVideoViews(videoId: string) {
     console.log("[v0] Incrementing views for video:", videoId)
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const { data: currentVideo, error: fetchError } = await serviceSupabase
-      .from("videos")
-      .select("views")
-      .eq("id", videoId)
-      .single()
-
-    if (fetchError) {
-      console.error("[v0] Error fetching current views:", fetchError)
-      return { error: "Failed to fetch current views" }
-    }
-
-    const currentViews = currentVideo?.views || 0
-    const newViews = currentViews + 1
-    const newLastViewed = new Date().toISOString()
-
-    console.log("[v0] Current views:", currentViews, "New views:", newViews)
-    console.log("[v0] Setting last_viewed to:", newLastViewed)
-
-    const { data: updateData, error } = await serviceSupabase
-      .from("videos")
-      .update({
-        views: newViews,
-        last_viewed: newLastViewed,
-      })
-      .eq("id", videoId)
-      .select()
-
-    console.log("[v0] Database update result - data:", updateData, "error:", error)
-
-    if (error) {
-      console.error("[v0] Error incrementing video views:", error)
-      return { error: "Failed to increment video views" }
-    }
-
+    let authenticatedUserId: string | null = null
     try {
       const cookieStore = cookies()
       const supabase = createServerClient(
@@ -71,29 +38,47 @@ export async function incrementVideoViews(videoId: string) {
         console.log("[v0] Auth error:", authError)
       }
 
-      if (user?.id) {
-        console.log("[v0] Tracking user view for user:", user.id)
-        const { error: userViewError } = await serviceSupabase.from("user_video_views").insert({
-          user_id: user.id,
-          video_id: videoId,
-          viewed_at: newLastViewed,
-        })
-
-        if (userViewError) {
-          console.error("[v0] Error tracking user view:", userViewError)
-          // Don't fail the main operation if user tracking fails
-        } else {
-          console.log("[v0] User view tracked successfully")
-        }
-      } else {
-        console.log("[v0] No authenticated user, skipping user view tracking")
-      }
-    } catch (userTrackingError) {
-      console.error("[v0] Error in user view tracking:", userTrackingError)
-      // Don't fail the main operation if user tracking fails
+      authenticatedUserId = user?.id || null
+      console.log("[v0] Authenticated user ID:", authenticatedUserId)
+    } catch (userAuthError) {
+      console.error("[v0] Error getting authenticated user:", userAuthError)
     }
 
-    console.log("[v0] View increment successful - updated record:", updateData)
+    const viewedAt = new Date().toISOString()
+
+    const { error: videoViewError } = await serviceSupabase.from("video_views").insert({
+      video_id: videoId,
+      user_id: authenticatedUserId,
+      viewed_at: viewedAt,
+      // TODO: Add ip_address and user_agent in future enhancement
+    })
+
+    if (videoViewError) {
+      console.error("[v0] Error inserting into video_views:", videoViewError)
+      return { error: "Failed to track video view" }
+    }
+
+    console.log("[v0] Successfully inserted into video_views table")
+
+    if (authenticatedUserId) {
+      console.log("[v0] Tracking user view for user:", authenticatedUserId)
+      const { error: userViewError } = await serviceSupabase.from("user_video_views").insert({
+        user_id: authenticatedUserId,
+        video_id: videoId,
+        viewed_at: viewedAt,
+      })
+
+      if (userViewError) {
+        console.error("[v0] Error tracking user view:", userViewError)
+        // Don't fail the main operation if user tracking fails
+      } else {
+        console.log("[v0] User view tracked successfully")
+      }
+    } else {
+      console.log("[v0] No authenticated user, skipping user view tracking")
+    }
+
+    console.log("[v0] View increment successful")
     return { success: true }
   } catch (error) {
     console.error("[v0] Error in incrementVideoViews:", error)
