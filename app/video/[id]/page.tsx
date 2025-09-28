@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import VideoPlayer from "@/components/video-player"
 import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getVideoViewCount } from "@/lib/actions/video-views"
+import { getVideoViewCount } from "@/lib/actions/videos"
 
 interface VideoPageProps {
   params: {

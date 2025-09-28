@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Trash2, Clock, Loader2, Pencil, Plus } from "lucide-react"
 import VideoModal from "./video-modal"
 import { formatShortDate } from "@/lib/utils/date"
-import { getBatchVideoViewCounts } from "@/lib/actions/video-views"
+import { getBatchVideoViewCounts } from "@/lib/actions/videos"
 
 interface Video {
   id: string

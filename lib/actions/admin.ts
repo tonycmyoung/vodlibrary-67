@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "../auth"
-import { getTotalVideoViews, getVideoViewsInDateRange } from "./video-views"
+import { getTotalVideoViews, getVideoViewsInDateRange } from "./videos"
 
 export async function getTelemetryData() {
   try {

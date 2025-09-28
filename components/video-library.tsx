@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { getBatchVideoViewCounts } from "@/lib/actions/video-views"
+import { getBatchVideoViewCounts } from "@/lib/actions/videos"
 
 interface Video {
   id: string
