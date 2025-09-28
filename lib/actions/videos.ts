@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
 export async function incrementVideoViews(videoId: string) {
   try {
@@ -37,6 +39,58 @@ export async function incrementVideoViews(videoId: string) {
     if (error) {
       console.error("[v0] Error incrementing video views:", error)
       return { error: "Failed to increment video views" }
+    }
+
+    try {
+      const cookieStore = cookies()
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll()
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+              } catch {
+                // The `setAll` method was called from a Server Component.
+              }
+            },
+          },
+        },
+      )
+
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError) {
+        console.log("[v0] Auth error:", authError)
+      }
+
+      if (user?.id) {
+        console.log("[v0] Tracking user view for user:", user.id)
+        const { error: userViewError } = await serviceSupabase.from("user_video_views").insert({
+          user_id: user.id,
+          video_id: videoId,
+          viewed_at: newLastViewed,
+        })
+
+        if (userViewError) {
+          console.error("[v0] Error tracking user view:", userViewError)
+          // Don't fail the main operation if user tracking fails
+        } else {
+          console.log("[v0] User view tracked successfully")
+        }
+      } else {
+        console.log("[v0] No authenticated user, skipping user view tracking")
+      }
+    } catch (userTrackingError) {
+      console.error("[v0] Error in user view tracking:", userTrackingError)
+      // Don't fail the main operation if user tracking fails
     }
 
     console.log("[v0] View increment successful - updated record:", updateData)

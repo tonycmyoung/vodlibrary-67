@@ -23,6 +23,8 @@ import {
   X,
   GraduationCap,
   Building,
+  Eye,
+  Play,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -44,6 +46,8 @@ interface UserInterface {
   profile_image_url: string | null
   last_login: string | null
   login_count: number
+  last_view: string | null
+  view_count: number
 }
 
 export default function UserManagement() {
@@ -80,11 +84,19 @@ export default function UserManagement() {
   const [selectedSchool, setSelectedSchool] = useState(urlState.school)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
-  const [sortBy, setSortBy] = useState<"full_name" | "created_at" | "last_login" | "login_count">(() => {
+  const [sortBy, setSortBy] = useState<
+    "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
+  >(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
       return (
-        (localStorage.getItem(storageKey) as "full_name" | "created_at" | "last_login" | "login_count") || "created_at"
+        (localStorage.getItem(storageKey) as
+          | "full_name"
+          | "created_at"
+          | "last_login"
+          | "login_count"
+          | "last_view"
+          | "view_count") || "created_at"
       )
     }
     return "created_at"
@@ -164,6 +176,14 @@ export default function UserManagement() {
         case "login_count":
           comparison = a.login_count - b.login_count
           break
+        case "last_view":
+          const aView = a.last_view ? new Date(a.last_view).getTime() : 0
+          const bView = b.last_view ? new Date(b.last_view).getTime() : 0
+          comparison = aView - bView
+          break
+        case "view_count":
+          comparison = a.view_count - b.view_count
+          break
       }
 
       // If primary sort values are equal and we're not sorting by name, use name as secondary sort
@@ -214,7 +234,7 @@ export default function UserManagement() {
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "full_name" | "created_at" | "last_login" | "login_count")
+    setSortBy(newSortBy as "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count")
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
@@ -252,16 +272,29 @@ export default function UserManagement() {
 
       if (loginError) throw loginError
 
+      const { data: viewStats, error: viewError } = await supabase
+        .from("user_video_views")
+        .select("user_id, viewed_at")
+        .order("viewed_at", { ascending: false })
+
+      if (viewError) throw viewError
+
       const usersWithStats =
         usersData?.map((user) => {
           const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
           const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
           const loginCount = userLogins.length
 
+          const userViews = viewStats?.filter((view) => view.user_id === user.id) || []
+          const lastView = userViews.length > 0 ? userViews[0].viewed_at : null
+          const viewCount = userViews.length
+
           return {
             ...user,
             last_login: lastLogin,
             login_count: loginCount,
+            last_view: lastView,
+            view_count: viewCount,
           }
         }) || []
 
@@ -604,6 +637,18 @@ export default function UserManagement() {
                         <LogIn className="w-3 h-3 flex-shrink-0" />
                         <span>
                           {user.login_count} login{user.login_count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Play className="w-3 h-3 flex-shrink-0" />
+                        <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Eye className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                          {user.view_count} view{user.view_count !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>

@@ -29,6 +29,10 @@ export default function UserSortControl({ sortBy, sortOrder, onSortChange }: Use
         return "Last Login"
       case "login_count":
         return "Login Count"
+      case "last_view":
+        return "Last View"
+      case "view_count":
+        return "Views"
       default:
         return "Name"
     }
@@ -53,6 +57,12 @@ export default function UserSortControl({ sortBy, sortOrder, onSortChange }: Use
           </SelectItem>
           <SelectItem value="login_count" className="text-gray-300 hover:text-gray-900">
             Login Count
+          </SelectItem>
+          <SelectItem value="last_view" className="text-gray-300 hover:text-gray-900">
+            Last View
+          </SelectItem>
+          <SelectItem value="view_count" className="text-gray-300 hover:text-gray-900">
+            Views
           </SelectItem>
         </SelectContent>
       </Select>

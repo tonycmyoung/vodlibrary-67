@@ -46,6 +46,12 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
   useEffect(() => {
     const incrementViews = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      console.log("[v0] Client-side user check:", user?.id || "no user")
       await incrementVideoViews(video.id)
       setViewCount((prev) => prev + 1)
     }
