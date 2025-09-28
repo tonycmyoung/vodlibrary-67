@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, X, Check, Trash2 } from "lucide-react"
+import { Bell, X, Check, Trash2, MessageCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { formatTimeAgo } from "@/lib/utils/date"
+import { useRouter } from "next/navigation"
 
 interface Notification {
   id: string
@@ -25,13 +26,16 @@ interface Notification {
 interface NotificationBellProps {
   userId: string
   isAdmin?: boolean
+  userRole?: string | null
+  userEmail?: string
 }
 
-export default function NotificationBell({ userId, isAdmin = false }: NotificationBellProps) {
+export default function NotificationBell({ userId, isAdmin = false, userRole, userEmail }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -135,6 +139,17 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
     } catch (error) {
       console.error("[v0] Error deleting all notifications:", error)
     }
+  }
+
+  const handleReply = (notification: Notification) => {
+    if (isAdmin) {
+      // For admin: navigate to admin notifications with sender prefilled
+      router.push(`/admin/notifications?replyTo=${notification.sender_id}`)
+    } else {
+      // For regular users: navigate to contact page
+      router.push("/contact")
+    }
+    setIsOpen(false) // Close the dropdown
   }
 
   useEffect(() => {
@@ -249,6 +264,15 @@ export default function NotificationBell({ userId, isAdmin = false }: Notificati
                     <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.created_at)}</p>
                   </div>
                   <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleReply(notification)}
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                      title="Reply"
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                    </Button>
                     {!notification.is_read && (
                       <Button
                         variant="ghost"

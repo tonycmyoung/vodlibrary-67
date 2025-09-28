@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MessageSquare, Send, Users, User, Search, Trash2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { sendNotificationWithEmail } from "@/lib/actions"
+import { useSearchParams } from "next/navigation"
 
 interface Notification {
   id: string
@@ -56,6 +57,7 @@ export default function AdminNotificationManagement() {
   })
 
   const supabase = createBrowserClient()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     fetchNotifications()
@@ -65,6 +67,17 @@ export default function AdminNotificationManagement() {
   useEffect(() => {
     filterNotifications()
   }, [notifications, searchQuery])
+
+  useEffect(() => {
+    const replyToUserId = searchParams.get("replyTo")
+    if (replyToUserId && users.length > 0) {
+      const replyUser = users.find((user) => user.id === replyToUserId)
+      if (replyUser) {
+        setMessageType("individual")
+        setSelectedRecipient(replyToUserId)
+      }
+    }
+  }, [searchParams, users, messageText])
 
   const fetchNotifications = async () => {
     try {

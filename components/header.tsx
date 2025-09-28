@@ -117,7 +117,7 @@ export default function Header({ user }: HeaderProps) {
               </svg>
             </Button>
 
-            <NotificationBell userId={user.id} isAdmin={isAdmin} />
+            <NotificationBell userId={user.id} isAdmin={isAdmin} userRole={user.role} userEmail={user.email} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
