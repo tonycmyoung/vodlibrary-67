@@ -1,11 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import LoginForm from "@/components/login-form"
+import { validateReturnTo, getAuthErrorMessage } from "@/lib/utils/auth"
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { confirmed?: string }
+  searchParams: { confirmed?: string; returnTo?: string; error?: string }
 }) {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
@@ -16,15 +18,31 @@ export default async function LoginPage({
     )
   }
 
+  const returnTo = searchParams.returnTo
+  const validatedReturnTo = validateReturnTo(returnTo)
+
+  const errorCode = searchParams.error
+  const errorMessage = getAuthErrorMessage(errorCode)
+
   // Check if user is already logged in
   const supabase = createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // If user is logged in, redirect to home page
   if (session) {
-    redirect("/")
+    const cookieStore = cookies()
+    const redirectCookie = cookieStore.get("auth_redirect")
+
+    if (redirectCookie?.value) {
+      cookieStore.delete("auth_redirect")
+      console.log("[v0] Login: Redirecting authenticated user to:", redirectCookie.value)
+      redirect(redirectCookie.value)
+    } else if (validatedReturnTo) {
+      redirect(validatedReturnTo)
+    } else {
+      redirect("/")
+    }
   }
 
   return (
@@ -43,7 +61,7 @@ export default async function LoginPage({
           </div>
         </div>
       )}
-      <LoginForm />
+      <LoginForm returnTo={validatedReturnTo} error={errorMessage} />
     </div>
   )
 }

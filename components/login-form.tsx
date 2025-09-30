@@ -1,18 +1,16 @@
 "use client"
 
 import type React from "react"
-
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions"
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { getAuthErrorMessage } from "@/lib/utils/auth"
+import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -35,9 +33,14 @@ function SubmitButton() {
   )
 }
 
-export default function LoginForm() {
-  const router = useRouter()
-  const [state, formAction] = useActionState(signIn, null)
+interface LoginFormProps {
+  returnTo?: string | null
+  error?: string | null
+}
+
+export default function LoginForm({ returnTo, error }: LoginFormProps) {
+  console.log("[v0] Login Form: Rendering with returnTo:", returnTo, "error:", error)
+
   const [resetEmail, setResetEmail] = useState("")
   const [resetMessage, setResetMessage] = useState("")
   const [resetError, setResetError] = useState("")
@@ -72,11 +75,16 @@ export default function LoginForm() {
     }
   }
 
+  const displayError = error ? getAuthErrorMessage(error) : null
+
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
       <CardHeader className="space-y-4 text-center">
         <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-          <span className="text-white font-bold text-lg leading-tight">古<br />武道</span>
+          <span className="text-white font-bold text-lg leading-tight">
+            古<br />
+            武道
+          </span>
         </div>
         <CardTitle className="text-3xl font-bold text-white">{"Welcome to the\nOkinawa Kobudo Library"}</CardTitle>
         <CardDescription className="text-gray-300 text-lg whitespace-pre-line">
@@ -87,20 +95,11 @@ export default function LoginForm() {
       </CardHeader>
 
       <CardContent>
-        <form action={formAction} className="space-y-3">
-          {state?.error && (
+        <form action={signIn} className="space-y-3">
+          {displayError && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
-              {state.error}
+              {displayError}
             </div>
-          )}
-
-          {resetMessage && (
-            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
-              {resetMessage}
-            </div>
-          )}
-          {resetError && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">{resetError}</div>
           )}
 
           <div className="space-y-3">
@@ -139,6 +138,8 @@ export default function LoginForm() {
               </div>
             </div>
           </div>
+
+          {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
           <SubmitButton />
 

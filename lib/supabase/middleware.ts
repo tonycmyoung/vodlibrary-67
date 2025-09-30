@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
+import { validateReturnTo } from "@/lib/utils/auth"
 
 // Check if Supabase environment variables are available
 export const isSupabaseConfigured =
@@ -39,9 +40,12 @@ function setCachedUserApproval(userId: string, isApproved: boolean, role: string
 }
 
 export async function updateSession(request: NextRequest) {
+  console.log("[v0] Middleware: Processing request for path:", request.nextUrl.pathname)
+
   try {
     // If Supabase is not configured, just continue without auth
     if (!isSupabaseConfigured) {
+      console.log("[v0] Middleware: Supabase not configured, skipping auth")
       return NextResponse.next({
         request,
       })
@@ -68,7 +72,7 @@ export async function updateSession(request: NextRequest) {
         },
       })
     } catch (clientError) {
-      console.error("Supabase client creation error:", clientError?.message)
+      console.error("[v0] Middleware: Supabase client creation error:", clientError?.message)
       const redirectUrl = new URL("/", request.url)
       return NextResponse.redirect(redirectUrl)
     }
@@ -80,8 +84,9 @@ export async function updateSession(request: NextRequest) {
       } = await supabase.auth.getSession()
 
       session = sessionData
+      console.log("[v0] Middleware: Session check result - authenticated:", !!session)
     } catch (error) {
-      console.error("Session error occurred:", error?.message)
+      console.error("[v0] Middleware: Session error occurred:", error?.message)
 
       const isAuthRoute =
         request.nextUrl.pathname.startsWith("/auth/login") ||
@@ -89,6 +94,7 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname === "/auth/callback"
 
       if (isAuthRoute) {
+        console.log("[v0] Middleware: Error on auth route, allowing through")
         return supabaseResponse
       }
 
@@ -98,11 +104,11 @@ export async function updateSession(request: NextRequest) {
         errorMessage.includes("SyntaxError") ||
         errorMessage.includes("Invalid Refresh Token")
       ) {
-        console.error("Auth error detected, redirecting to error page")
+        console.error("[v0] Middleware: Auth error detected, redirecting to error page")
         return AuthCookieService.createAuthErrorResponse(request, "session", "Session expired")
       }
 
-      console.error("General auth error, redirecting to error page")
+      console.error("[v0] Middleware: General auth error, redirecting to error page")
       return AuthCookieService.createAuthErrorResponse(request, "auth", "Authentication required")
     }
 
@@ -115,21 +121,28 @@ export async function updateSession(request: NextRequest) {
     const isPublicRoute =
       request.nextUrl.pathname === "/pending-approval" ||
       request.nextUrl.pathname === "/setup-admin" ||
-      request.nextUrl.pathname === "/privacy-policy" || // Updated route from privacy-notice to privacy-policy
+      request.nextUrl.pathname === "/privacy-policy" ||
       request.nextUrl.pathname === "/eula" ||
-      request.nextUrl.pathname === "/auth/confirm" || // Added confirmation routes to public routes to prevent redirect to login
+      request.nextUrl.pathname === "/auth/confirm" ||
       request.nextUrl.pathname === "/auth/confirm/callback"
 
-    if (isAuthRoute) {
-      return supabaseResponse
-    }
-
-    if (isPublicRoute) {
+    if (isAuthRoute || isPublicRoute) {
+      console.log("[v0] Middleware: Auth or public route, allowing through")
       return supabaseResponse
     }
 
     if (!session) {
+      const currentPath = request.nextUrl.pathname
+      const validReturnTo = validateReturnTo(currentPath)
+
       const redirectUrl = new URL("/auth/login", request.url)
+      if (validReturnTo) {
+        redirectUrl.searchParams.set("returnTo", validReturnTo)
+        console.log("[v0] Middleware: Redirecting to login with returnTo:", validReturnTo)
+      } else {
+        console.log("[v0] Middleware: Redirecting to login without returnTo (path excluded or invalid)")
+      }
+
       return NextResponse.redirect(redirectUrl)
     }
 
@@ -215,7 +228,7 @@ export async function updateSession(request: NextRequest) {
 
     return supabaseResponse
   } catch (middlewareError) {
-    console.error("Middleware unhandled error:", middlewareError?.message)
+    console.error("[v0] Middleware: Unhandled error:", middlewareError?.message)
     return AuthCookieService.createAuthErrorResponse(request, "server", "Server error occurred")
   }
 }
