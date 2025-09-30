@@ -1,6 +1,5 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import LoginForm from "@/components/login-form"
 import { validateReturnTo, getAuthErrorMessage } from "@/lib/utils/auth"
 
@@ -31,14 +30,7 @@ export default async function LoginPage({
   } = await supabase.auth.getSession()
 
   if (session) {
-    const cookieStore = cookies()
-    const redirectCookie = cookieStore.get("auth_redirect")
-
-    if (redirectCookie?.value) {
-      cookieStore.delete("auth_redirect")
-      console.log("[v0] Login: Redirecting authenticated user to:", redirectCookie.value)
-      redirect(redirectCookie.value)
-    } else if (validatedReturnTo) {
+    if (validatedReturnTo) {
       redirect(validatedReturnTo)
     } else {
       redirect("/")
