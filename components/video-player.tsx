@@ -43,6 +43,15 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const isAdminView = searchParams.get("admin-view") === "student"
+  const [isIOSSafari, setIsIOSSafari] = useState(false)
+
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent)
+    const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent)
+    const isIPhone = /iPhone/.test(userAgent)
+    setIsIOSSafari(isIPhone && isSafari)
+  }, [])
 
   useEffect(() => {
     const incrementViews = async () => {
@@ -148,6 +157,14 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Video Player */}
         <div className="lg:col-span-2">
+          {isIOSSafari && (
+            <div className="mb-4 p-3 bg-white/90 border border-gray-300 rounded-lg">
+              <p className="text-gray-900 text-sm text-center font-medium">
+                iPhone does not support fullscreen for the google video player used here.
+              </p>
+            </div>
+          )}
+
           <Card className="bg-black/60 border-gray-800 overflow-hidden">
             <div className="aspect-video bg-gray-900 relative">
               {video.video_url ? (
@@ -155,7 +172,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   <iframe
                     src={getEmbeddableVideoUrl(video.video_url)}
                     className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     title={video.title}
                     sandbox="allow-scripts allow-same-origin allow-presentation"
                     allowFullScreen
