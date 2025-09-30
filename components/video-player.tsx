@@ -1,10 +1,12 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Heart, Calendar, User } from "lucide-react"
+import { ArrowLeft, Heart, Calendar, User, Maximize, X } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { incrementVideoViews } from "@/lib/actions"
@@ -44,6 +46,8 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const router = useRouter()
   const isAdminView = searchParams.get("admin-view") === "student"
   const [isIOSSafari, setIsIOSSafari] = useState(false)
+  const [isCustomFullscreen, setIsCustomFullscreen] = useState(false)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent
@@ -66,6 +70,17 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     }
     incrementViews()
   }, [video.id])
+
+  useEffect(() => {
+    if (isCustomFullscreen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isCustomFullscreen])
 
   const toggleFavorite = async () => {
     setIsLoading(true)
@@ -140,6 +155,70 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     router.back()
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientY)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart === null) return
+
+    const touchEnd = e.touches[0].clientY
+    const distance = touchEnd - touchStart
+
+    // If swiped down more than 100px, exit fullscreen
+    if (distance > 100) {
+      setIsCustomFullscreen(false)
+      setTouchStart(null)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setTouchStart(null)
+  }
+
+  const toggleCustomFullscreen = () => {
+    setIsCustomFullscreen(!isCustomFullscreen)
+  }
+
+  if (isCustomFullscreen) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-300"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setIsCustomFullscreen(false)}
+          className="absolute top-4 right-4 z-50 w-11 h-11 flex items-center justify-center bg-black/70 hover:bg-black/90 rounded-full transition-colors"
+          aria-label="Exit fullscreen"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+
+        {/* Video container */}
+        <div className="w-full h-full flex items-center justify-center p-4">
+          {video.video_url ? (
+            <iframe
+              src={getEmbeddableVideoUrl(video.video_url)}
+              className="max-w-full max-h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              title={video.title}
+              sandbox="allow-scripts allow-same-origin allow-presentation"
+              allowFullScreen
+              style={{ aspectRatio: "16/9" }}
+            />
+          ) : (
+            <div className="text-center text-white">
+              <p className="text-lg">No Video Available</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Back button */}
@@ -189,6 +268,18 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               )}
             </div>
           </Card>
+
+          {/* Custom Fullscreen Button */}
+          <div className="mt-4 flex justify-center">
+            <Button
+              onClick={toggleCustomFullscreen}
+              variant="outline"
+              className="bg-black/60 border-gray-700 text-gray-300 hover:bg-black/80 hover:text-white"
+            >
+              <Maximize className="w-4 h-4 mr-2" />
+              Fullscreen View
+            </Button>
+          </div>
         </div>
 
         {/* Video Info */}
