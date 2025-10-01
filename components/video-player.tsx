@@ -184,6 +184,12 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     return (
       <div
         className="fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-300"
+        style={{
+          width: "100vw",
+          height: "100vh", // fallback for older browsers
+          // @ts-ignore - dvh is a valid CSS unit but TypeScript doesn't recognize it yet
+          height: "100dvh", // dynamic viewport height for modern mobile browsers
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -198,16 +204,21 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
         </button>
 
         {/* Video container */}
-        <div className="w-full h-full flex items-center justify-center p-4">
+        <div className="w-full h-full flex items-center justify-center">
           {video.video_url ? (
             <iframe
               src={getEmbeddableVideoUrl(video.video_url)}
-              className="max-w-full max-h-full"
+              className="w-full h-full"
+              style={{
+                maxWidth: "100vw",
+                maxHeight: "100vh",
+                // @ts-ignore
+                maxHeight: "100dvh",
+              }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               title={video.title}
               sandbox="allow-scripts allow-same-origin allow-presentation"
               allowFullScreen
-              style={{ aspectRatio: "16/9" }}
             />
           ) : (
             <div className="text-center text-white">
