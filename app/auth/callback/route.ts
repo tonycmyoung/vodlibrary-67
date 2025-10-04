@@ -40,19 +40,14 @@ export async function GET(request: NextRequest) {
       }
 
       if (data.session?.user) {
-        console.log("[v0] Callback: User authenticated, checking users table for:", data.session.user.email)
-
         const { data: existingUser } = await supabase
           .from("users")
           .select("id, is_approved")
           .eq("id", data.session.user.id)
           .single()
 
-        console.log("[v0] Callback: Existing user check result:", existingUser)
-
         // If user doesn't exist in our users table, this is likely an invitation acceptance
         if (!existingUser) {
-          console.log("[v0] Callback: No existing user found, redirecting to sign-up")
           // Redirect to sign-up completion for invited users
           const response = NextResponse.redirect(new URL("/auth/sign-up?invited=true", request.url))
 
@@ -77,8 +72,6 @@ export async function GET(request: NextRequest) {
 
           return response
         } else {
-          console.log("[v0] Callback: Existing user found, redirecting to home")
-
           const response = NextResponse.redirect(new URL("/", request.url))
 
           // Set cookies for the session

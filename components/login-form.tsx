@@ -39,8 +39,6 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ returnTo, error }: LoginFormProps) {
-  console.log("[v0] Login Form: Rendering with returnTo:", returnTo, "error:", error)
-
   const [resetEmail, setResetEmail] = useState("")
   const [resetMessage, setResetMessage] = useState("")
   const [resetError, setResetError] = useState("")

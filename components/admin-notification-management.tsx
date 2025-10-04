@@ -112,59 +112,12 @@ export default function AdminNotificationManagement() {
 
   const fetchUsers = async () => {
     try {
-      console.log("[v0] Fetching users for dropdown...")
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      console.log("[v0] Current session:", session)
-      console.log("[v0] JWT token:", session?.access_token)
-
-      // Parse JWT to see metadata
-      if (session?.access_token) {
-        try {
-          const payload = JSON.parse(atob(session.access_token.split(".")[1]))
-          console.log("[v0] JWT payload:", JSON.stringify(payload, null, 2))
-          console.log("[v0] JWT app_metadata:", payload.app_metadata)
-          console.log("[v0] JWT user_metadata:", payload.user_metadata)
-        } catch (e) {
-          console.log("[v0] Error parsing JWT:", e)
-        }
-      }
-
-      const { data: allUsers, error: allUsersError } = await supabase
-        .from("users")
-        .select("id, full_name, email, profile_image_url, is_approved")
-        .order("full_name", { ascending: true })
-
-      console.log("[v0] ALL users in database:", JSON.stringify(allUsers, null, 2))
-      console.log("[v0] Total users found:", allUsers?.length || 0)
-
-      if (allUsers) {
-        const acmyauUser = allUsers.find((u) => u.email === "acmyau@gmail.com")
-        console.log("[v0] acmyau@gmail.com user details:", acmyauUser)
-
-        const approvedUsers = allUsers.filter((u) => u.is_approved === true)
-        console.log(
-          "[v0] Approved users:",
-          approvedUsers.map((u) => ({ email: u.email, approved: u.is_approved })),
-        )
-
-        const nonAdminApproved = approvedUsers.filter((u) => u.email !== "acmyma@gmail.com")
-        console.log(
-          "[v0] Non-admin approved users:",
-          nonAdminApproved.map((u) => ({ email: u.email, approved: u.is_approved })),
-        )
-      }
-
       const { data, error } = await supabase
         .from("users")
         .select("id, full_name, email, profile_image_url, is_approved")
         .eq("is_approved", true)
-        .neq("email", "acmyma@gmail.com") // Re-added admin exclusion filter
+        .neq("email", "acmyma@gmail.com")
         .order("full_name", { ascending: true })
-
-      console.log("[v0] Filtered users query result:", { data, error })
 
       if (error) {
         console.error("Error fetching users:", error)

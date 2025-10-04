@@ -16,7 +16,6 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
 
   const handleSortOrderToggle = () => {
     const newSortOrder = sortOrder === "asc" ? "desc" : "asc"
-    console.log("[v0] Sort direction toggle:", { currentSortOrder: sortOrder, newSortOrder, sortBy })
     onSortChange(sortBy, newSortOrder)
   }
 

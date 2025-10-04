@@ -55,24 +55,15 @@ export default function VideoPage({ params }: VideoPageProps) {
   const supabase = createClient()
 
   useEffect(() => {
-    console.log("[v0] VideoPage component mounted for ID:", params.id)
-  }, [params.id])
-
-  useEffect(() => {
     async function loadUser() {
-      console.log("[v0] Loading user data...")
-
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser()
 
       if (!authUser) {
-        console.log("[v0] No authenticated user, redirecting to login")
         router.push("/auth/login")
         return
       }
-
-      console.log("[v0] Authenticated user found:", authUser.id)
 
       const { data: userProfile, error: profileError } = await supabase
         .from("users")
@@ -81,14 +72,10 @@ export default function VideoPage({ params }: VideoPageProps) {
         .single()
 
       if (profileError) {
-        console.log("[v0] Error fetching user profile:", profileError)
         return
       }
 
-      console.log("[v0] User profile loaded:", userProfile)
-
       if (!userProfile?.is_approved) {
-        console.log("[v0] User not approved, redirecting to pending-approval")
         router.push("/pending-approval")
         return
       }
@@ -99,7 +86,6 @@ export default function VideoPage({ params }: VideoPageProps) {
         ...userProfile,
       })
       setUserLoading(false)
-      console.log("[v0] User data loaded successfully")
     }
 
     loadUser()
@@ -109,8 +95,6 @@ export default function VideoPage({ params }: VideoPageProps) {
     if (!user) return
 
     async function loadVideo() {
-      console.log("[v0] Loading video data for ID:", params.id)
-
       const [videoResult, favoriteResult, categoriesResult, performersResult] = await Promise.all([
         supabase.from("videos").select("*").eq("id", params.id).eq("is_published", true).single(),
         supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", params.id).maybeSingle(),
@@ -123,19 +107,10 @@ export default function VideoPage({ params }: VideoPageProps) {
       const { data: videoCategories } = categoriesResult
       const { data: videoPerformers } = performersResult
 
-      if (error) {
-        console.log("[v0] Error loading video:", error)
+      if (error || !videoData) {
         router.push("/404")
         return
       }
-
-      if (!videoData) {
-        console.log("[v0] No video data found for ID:", params.id)
-        router.push("/404")
-        return
-      }
-
-      console.log("[v0] Video data loaded successfully:", videoData.title)
 
       const viewCount = await getVideoViewCount(params.id)
 
@@ -149,7 +124,6 @@ export default function VideoPage({ params }: VideoPageProps) {
 
       setVideo(videoWithCategories)
       setVideoLoading(false)
-      console.log("[v0] Video component ready to render")
     }
 
     loadVideo()

@@ -7,21 +7,17 @@ import { getTotalVideoViews, getVideoViewsInDateRange } from "./videos"
 
 export async function getTelemetryData() {
   try {
-    console.log("[v0] Starting getTelemetryData function")
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const now = new Date()
-    console.log("[v0] Current date:", now.toISOString())
 
     const startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDay() === 0 ? now.getDate() - 6 : now.getDate() - (now.getDay() - 1)) // Adjust for Sunday being the start of the week
+    startOfWeek.setDate(now.getDay() === 0 ? now.getDate() - 6 : now.getDate() - (now.getDay() - 1))
     startOfWeek.setHours(0, 0, 0, 0)
 
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6)
     endOfWeek.setHours(23, 59, 59, 999)
-
-    console.log("[v0] This week range:", startOfWeek.toISOString(), "to", endOfWeek.toISOString())
 
     const startOfLastWeek = new Date(startOfWeek)
     startOfLastWeek.setDate(startOfWeek.getDate() - 7)
@@ -29,8 +25,6 @@ export async function getTelemetryData() {
     const endOfLastWeek = new Date(startOfLastWeek)
     endOfLastWeek.setDate(startOfLastWeek.getDate() + 6)
     endOfLastWeek.setHours(23, 59, 59, 999)
-
-    console.log("[v0] Last week range:", startOfLastWeek.toISOString(), "to", endOfLastWeek.toISOString())
 
     const [totalUsersResult, pendingUsersResult, thisWeekLoginsResult, lastWeekLoginsResult] = await Promise.all([
       serviceSupabase.from("users").select("id", { count: "exact" }),
@@ -48,33 +42,11 @@ export async function getTelemetryData() {
     ])
 
     const totalViews = await getTotalVideoViews()
-    console.log("[v0] Total views calculated:", totalViews)
-
     const thisWeekViews = await getVideoViewsInDateRange(startOfWeek, endOfWeek)
-    console.log("[v0] This week views:", thisWeekViews)
-
     const lastWeekViews = await getVideoViewsInDateRange(startOfLastWeek, endOfLastWeek)
-    console.log("[v0] Last week views:", lastWeekViews)
-
-    console.log(
-      "[v0] This week logins query result:",
-      thisWeekLoginsResult.data?.length,
-      "logins, error:",
-      thisWeekLoginsResult.error,
-    )
 
     const thisWeekUserLogins = thisWeekLoginsResult.data?.length || 0
-    console.log("[v0] Total logins this week:", thisWeekUserLogins)
-
-    console.log(
-      "[v0] Last week logins query result:",
-      lastWeekLoginsResult.data?.length,
-      "logins, error:",
-      lastWeekLoginsResult.error,
-    )
-
     const lastWeekUserLogins = lastWeekLoginsResult.data?.length || 0
-    console.log("[v0] Total logins last week:", lastWeekUserLogins)
 
     const result = {
       success: true,
@@ -89,7 +61,6 @@ export async function getTelemetryData() {
       },
     }
 
-    console.log("[v0] Final telemetry result:", result)
     return result
   } catch (error) {
     console.error("[v0] Error getting telemetry data:", error)
@@ -129,17 +100,13 @@ export async function clearAuthDebugLogs() {
 }
 
 export async function fetchAuthDebugLogs() {
-  console.log("[v0] fetchAuthDebugLogs called")
   const user = await getCurrentUser()
-  console.log("[v0] Current user:", user ? { id: user.id, role: user.role } : "null")
 
   if (!user || user.role !== "Admin") {
-    console.log("[v0] Unauthorized access attempt")
     throw new Error("Unauthorized")
   }
 
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  console.log("[v0] Created service client")
 
   const { data, error } = await serviceSupabase
     .from("auth_debug_logs")
@@ -147,13 +114,10 @@ export async function fetchAuthDebugLogs() {
     .order("created_at", { ascending: false })
     .limit(100)
 
-  console.log("[v0] Query result:", { dataCount: data?.length || 0, error })
-
   if (error) {
-    console.log("[v0] Database error:", error)
+    console.error("[v0] Error fetching auth debug logs:", error)
     throw new Error("Failed to fetch debug logs")
   }
 
-  console.log("[v0] Returning data:", data)
   return data
 }

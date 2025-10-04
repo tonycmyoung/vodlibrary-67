@@ -107,14 +107,7 @@ const VideoCard = memo(function VideoCard({
   const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
 
   const handleVideoClick = async (e: React.MouseEvent) => {
-    console.log("[v0] Video card clicked:", video.id, video.title)
-    console.log("[v0] Navigating to:", `/video/${video.id}`)
-    console.log("[v0] Click event details:", {
-      target: e.target,
-      currentTarget: e.currentTarget,
-      defaultPrevented: e.defaultPrevented,
-      propagationStopped: e.isPropagationStopped?.(),
-    })
+    // Click handler without debug logs
   }
 
   const handleTouchStart = () => {

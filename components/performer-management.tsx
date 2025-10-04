@@ -64,11 +64,7 @@ export default function PerformerManagement() {
     if (!newPerformerName.trim()) return
 
     try {
-      console.log("[v0] Adding performer:", newPerformerName)
-      console.log("[v0] Current user session:", await supabase.auth.getUser())
-
       const result = await addPerformer(newPerformerName)
-      console.log("[v0] Add performer result:", result)
 
       if (result.error) {
         throw new Error(result.error)
@@ -78,12 +74,7 @@ export default function PerformerManagement() {
       setNewPerformerName("")
       await fetchPerformers()
     } catch (error) {
-      console.error("[v0] Error adding performer:", error)
-      console.log("[v0] Error details:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-      })
+      console.error("Error adding performer:", error)
       setMessage({ type: "error", text: `Error adding performer: ${error.message}` })
     }
   }
