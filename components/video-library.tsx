@@ -506,7 +506,13 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     }
 
     const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
-    router.replace(newURL, { scroll: false })
+
+    const currentSearch = window.location.search
+    const newSearch = params.toString() ? `?${params.toString()}` : ""
+
+    if (currentSearch !== newSearch) {
+      router.replace(newURL, { scroll: false })
+    }
   }
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -551,9 +557,16 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   useEffect(() => {
+    // Skip on initial mount - don't reconstruct URL if we're just loading from URL params
+    if (searchQuery === urlState.search) {
+      setDebouncedSearchQuery(searchQuery)
+      return
+    }
+
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
-      reconstructURL(selectedCategories, searchQuery, filterMode, 1) // Reset to page 1 when search changes
+      // Reset to page 1 only when search actually changes
+      reconstructURL(selectedCategories, searchQuery, filterMode, 1)
     }, 300)
 
     return () => clearTimeout(timer)

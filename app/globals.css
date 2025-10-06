@@ -5,6 +5,8 @@
  * Removed problematic tw-animate-css import that caused production styling failures
  */
 
+/* Force recompilation to clear CSS parsing errors */
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

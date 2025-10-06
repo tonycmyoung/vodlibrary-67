@@ -103,8 +103,10 @@ export default function VideoCardList({
 
   const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
 
+  const videoUrl = `/video/${video.id}`
+
   return (
-    <Link href={`/video/${video.id}`}>
+    <Link href={videoUrl}>
       <div className="group cursor-pointer bg-gray-900/50 border border-gray-800 hover:border-red-500/50 transition-all duration-200 hover:bg-gray-900/70 rounded-lg p-4 flex">
         <div className="flex items-center gap-2 flex-1">
           {/* Small thumbnail */}

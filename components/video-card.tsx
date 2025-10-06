@@ -118,8 +118,10 @@ const VideoCard = memo(function VideoCard({
     // No longer manage overlay state on mobile
   }
 
+  const videoUrl = `/video/${video.id}`
+
   return (
-    <Link href={`/video/${video.id}`} onClick={handleVideoClick}>
+    <Link href={videoUrl} onClick={handleVideoClick}>
       <Card
         className="group cursor-pointer bg-black/60 border-gray-800 hover:border-red-500/50 transition-all duration-300 hover:scale-105 overflow-hidden"
         onTouchStart={handleTouchStart}

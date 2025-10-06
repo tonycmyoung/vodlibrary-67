@@ -55,8 +55,6 @@ export default function CategoryFilter({
   onCategoryToggle,
   videoCount,
 }: CategoryFilterProps) {
-  console.log("[v0] CategoryFilter rendered with", videoCount, "videos")
-
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
       onCategoryToggle(categoryId)
