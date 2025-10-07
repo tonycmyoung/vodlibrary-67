@@ -547,24 +547,20 @@ export async function fetchUnconfirmedEmailUsers() {
 export async function resendConfirmationEmail(email: string) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
         },
       },
-    )
+    })
 
     // Check if user is authenticated and is admin
     const { data: currentUser } = await supabase.auth.getUser()
@@ -600,5 +596,62 @@ export async function resendConfirmationEmail(email: string) {
   } catch (error) {
     console.error("Error in resendConfirmationEmail:", error)
     return { error: "Failed to resend confirmation email" }
+  }
+}
+
+export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, headTeacherId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { data: usersData, error: usersError } = await serviceSupabase
+      .from("users")
+      .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
+      .eq("is_approved", true)
+      .ilike("school", `${headTeacherSchool}%`)
+      .neq("id", headTeacherId)
+      .order("full_name", { ascending: true })
+
+    if (usersError) throw usersError
+
+    // Fetch login stats
+    const { data: loginStats, error: loginError } = await serviceSupabase
+      .from("user_logins")
+      .select("user_id, login_time")
+      .order("login_time", { ascending: false })
+
+    if (loginError) throw loginError
+
+    // Fetch view stats
+    const { data: viewStats, error: viewError } = await serviceSupabase
+      .from("user_video_views")
+      .select("user_id, viewed_at")
+      .order("viewed_at", { ascending: false })
+
+    if (viewError) throw viewError
+
+    // Combine data with stats
+    const usersWithStats =
+      usersData?.map((user) => {
+        const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
+        const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
+        const loginCount = userLogins.length
+
+        const userViews = viewStats?.filter((view) => view.user_id === user.id) || []
+        const lastView = userViews.length > 0 ? userViews[0].viewed_at : null
+        const viewCount = userViews.length
+
+        return {
+          ...user,
+          last_login: lastLogin,
+          login_count: loginCount,
+          last_view: lastView,
+          view_count: viewCount,
+        }
+      }) || []
+
+    return { data: usersWithStats, error: null }
+  } catch (error) {
+    console.error("Error in fetchStudentsForHeadTeacher:", error)
+    return { error: "Failed to fetch students", data: [] }
   }
 }

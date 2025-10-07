@@ -14,6 +14,7 @@ import {
   BookOpen,
   LogOut,
   Upload,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -94,6 +95,15 @@ export default function Header({ user }: HeaderProps) {
               <Heart className="w-4 h-4" />
               <span>Favorites</span>
             </Link>
+            {user.role === "Head Teacher" && (
+              <Link
+                href="/students"
+                className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+              >
+                <Users className="w-4 h-4" />
+                <span>Students</span>
+              </Link>
+            )}
             {showAdminView && (
               <Link
                 href="/admin"
@@ -223,6 +233,16 @@ export default function Header({ user }: HeaderProps) {
                 <Heart className="w-4 h-4" />
                 <span>Favorites</span>
               </Link>
+              {user.role === "Head Teacher" && (
+                <Link
+                  href="/students"
+                  className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Students</span>
+                </Link>
+              )}
               {showAdminView && (
                 <Link
                   href="/admin"
