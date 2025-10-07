@@ -620,7 +620,9 @@ export default function UserManagement() {
                             className={
                               user.role === "Teacher"
                                 ? "bg-blue-600 text-white flex-shrink-0"
-                                : "bg-gray-600 text-white flex-shrink-0"
+                                : user.role === "Head Teacher"
+                                  ? "bg-teal-600 text-white flex-shrink-0"
+                                  : "bg-gray-600 text-white flex-shrink-0"
                             }
                           >
                             {user.role || "Student"}
@@ -719,6 +721,7 @@ export default function UserManagement() {
                       >
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
+                        <option value="Head Teacher">Head Teacher</option>
                       </select>
 
                       <div className="flex gap-1">

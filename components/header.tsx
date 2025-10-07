@@ -149,7 +149,7 @@ export default function Header({ user }: HeaderProps) {
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                {user.role === "Teacher" && (
+                {(user.role === "Teacher" || user.role === "Head Teacher") && (
                   <DropdownMenuItem
                     className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                     onClick={() => {
@@ -233,7 +233,7 @@ export default function Header({ user }: HeaderProps) {
                   <span>Admin View</span>
                 </Link>
               )}
-              {user.role === "Teacher" && (
+              {(user.role === "Teacher" || user.role === "Head Teacher") && (
                 <Link
                   href="/invite-user"
                   className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
