@@ -100,7 +100,6 @@ export async function sendNotificationWithEmail(params: {
                   <h1 style="color: white; margin: 0;">${siteTitle}</h1>
                 </div>
                 <div style="background: #f9fafb; padding: 30px;">
-                  <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(user.full_name)},</p>
                   <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
                 </div>
               </div>
@@ -146,7 +145,6 @@ export async function sendNotificationWithEmail(params: {
               <h1 style="color: white; margin: 0;">${siteTitle}</h1>
             </div>
             <div style="background: #f9fafb; padding: 30px;">
-              <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(recipient.full_name)},</p>
               <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
             </div>
           </div>

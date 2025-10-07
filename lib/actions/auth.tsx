@@ -414,7 +414,6 @@ async function sendNotificationEmail(params: {
           <h1 style="color: white; margin: 0;">${siteTitle}</h1>
         </div>
         <div style="background: #f9fafb; padding: 30px;">
-          <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(params.recipientName)},</p>
           <p style="font-size: 16px; color: #374151;">${params.message}</p>
         </div>
       </div>
