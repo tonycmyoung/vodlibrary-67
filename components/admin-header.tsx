@@ -60,7 +60,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
             >
               <Home className="w-4 h-4" />
-              <span>Student View</span>
+              <span>Library</span>
             </Link>
             <Link
               href="/admin/users"
@@ -143,15 +143,13 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                {user.role === "Teacher" && (
-                  <DropdownMenuItem
-                    className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
-                    onClick={() => setIsInviteModalOpen(true)}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Invite User
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={() => setIsInviteModalOpen(true)}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Invite User
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                   onClick={handleSignOutClick}
@@ -223,9 +221,19 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                 <Bug className="w-4 h-4" />
                 <span>Debug</span>
               </Link>
+              <button
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20 w-full text-left"
+                onClick={() => {
+                  setIsInviteModalOpen(true)
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Invite User</span>
+              </button>
               <Button
                 variant="ghost"
-                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
+                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20 w-full text-left"
                 onClick={handleSignOutClick}
               >
                 <LogOut className="w-4 h-4" />

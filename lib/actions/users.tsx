@@ -467,7 +467,10 @@ export async function fetchPendingUsers() {
 
     const { data, error } = await serviceSupabase
       .from("users")
-      .select("*")
+      .select(`
+        *,
+        inviter:invited_by(full_name)
+      `)
       .eq("is_approved", false)
       .order("created_at", { ascending: false })
 
@@ -601,7 +604,10 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
 
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
-      .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
+      .select(`
+        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
+        inviter:invited_by(full_name)
+      `)
       .eq("is_approved", true)
       .ilike("school", `${headTeacherSchool}%`)
       .neq("id", headTeacherId)

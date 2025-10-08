@@ -25,6 +25,7 @@ import {
   Building,
   Eye,
   Play,
+  User,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -48,6 +49,7 @@ interface UserInterface {
   login_count: number
   last_view: string | null
   view_count: number
+  inviter?: { full_name: string } | null
 }
 
 export default function UserManagement() {
@@ -260,7 +262,10 @@ export default function UserManagement() {
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
-        .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
+        .select(`
+          id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
+          inviter:invited_by(full_name)
+        `)
         .order("created_at", { ascending: false })
 
       if (usersError) throw usersError
@@ -702,6 +707,18 @@ export default function UserManagement() {
                           <div className="flex items-center space-x-1 min-w-0">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
                             <span>A: {formatDate(user.approved_at)}</span>
+                          </div>
+                        )}
+                        {user.inviter?.full_name && (
+                          <div className="flex items-center space-x-1 min-w-0 text-purple-400">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: {user.inviter.full_name}</span>
+                          </div>
+                        )}
+                        {!user.inviter && user.is_approved && (
+                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: Direct</span>
                           </div>
                         )}
                       </div>

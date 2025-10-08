@@ -24,6 +24,7 @@ import {
   Eye,
   Play,
   UserPlus,
+  User,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -49,6 +50,7 @@ interface UserInterface {
   login_count: number
   last_view: string | null
   view_count: number
+  inviter?: { full_name: string } | null
 }
 
 interface StudentManagementProps {
@@ -643,6 +645,18 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
                           <div className="flex items-center space-x-1 min-w-0">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
                             <span>A: {formatDate(user.approved_at)}</span>
+                          </div>
+                        )}
+                        {user.inviter?.full_name && (
+                          <div className="flex items-center space-x-1 min-w-0 text-purple-400">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: {user.inviter.full_name}</span>
+                          </div>
+                        )}
+                        {!user.inviter && user.is_approved && (
+                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: Direct</span>
                           </div>
                         )}
                       </div>

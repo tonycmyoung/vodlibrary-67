@@ -246,6 +246,20 @@ export async function signUp(prevState: any, formData: FormData) {
   if (data.user) {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    console.log("[v0] Checking for invitation for email:", email.toLowerCase())
+    const { data: invitationData, error: invitationError } = await serviceSupabase
+      .from("invitations")
+      .select("invited_by")
+      .eq("email", email.toLowerCase())
+      .single()
+
+    if (invitationError && invitationError.code !== "PGRST116") {
+      console.error("[v0] Error fetching invitation:", invitationError)
+    }
+
+    const invitedBy = invitationData?.invited_by || null
+    console.log("[v0] Invitation found, invited_by:", invitedBy)
+
     const { error: profileError } = await serviceSupabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
@@ -253,6 +267,7 @@ export async function signUp(prevState: any, formData: FormData) {
       school,
       teacher,
       is_approved: false,
+      invited_by: invitedBy,
     })
 
     if (profileError) {
@@ -299,11 +314,27 @@ export async function signUp(prevState: any, formData: FormData) {
         .single()
 
       if (adminUser) {
+        let inviterInfo = ""
+        if (invitedBy) {
+          const { data: inviterData } = await serviceSupabase
+            .from("users")
+            .select("full_name")
+            .eq("id", invitedBy)
+            .single()
+
+          if (inviterData) {
+            inviterInfo = `<strong>Invited by:</strong> ${sanitizeHtml(inviterData.full_name)}<br>`
+          }
+        } else {
+          inviterInfo = `<strong>Invited by:</strong> Direct signup<br>`
+        }
+
         const message = `New user registration pending approval:<br><br>
 <strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
 <strong>Email:</strong> ${sanitizeHtml(email)}<br>
 <strong>School:</strong> ${sanitizeHtml(school)}<br>
-<strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br><br>
+<strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
+${inviterInfo}<br>
 Please review and approve this user in the admin dashboard.`
 
         await sendNotificationEmail({
