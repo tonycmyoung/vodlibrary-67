@@ -3,9 +3,9 @@
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
-import { Resend } from "resend"
 import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
+import { sendEmail } from "./email"
 
 export async function inviteUser(email: string) {
   try {
@@ -90,34 +90,24 @@ export async function inviteUser(email: string) {
       return { error: "Failed to create invitation" }
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
-    await resend.emails.send({
-      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-      to: email,
-      subject: `You're invited to join the ${siteTitle}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">You're Invited!</h1>
-          </div>
-          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              ${sanitizeHtml(inviterUser.full_name)} has invited you to join the ${siteTitle}.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
-              This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_SITE_URL}/auth/sign-up" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                Accept Invitation
-              </a>
-            </div>
-          </div>
+    await sendEmail(
+      email,
+      `You're invited to join the ${siteTitle}`,
+      `You're Invited!`,
+      `
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          ${sanitizeHtml(inviterUser.full_name)} has invited you to join the ${siteTitle}.
+        </p>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+          This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}/auth/sign-up" 
+              style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+            Accept Invitation
+          </a>
         </div>
-      `,
-    })
+      `)
 
     return { success: "Invitation sent successfully" }
   } catch (emailError) {
@@ -192,40 +182,30 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "Failed to approve user" }
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
-    await resend.emails.send({
-      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-      to: user.email,
-      subject: `Your ${siteTitle} account has been approved!`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to the ${siteTitle}!</h1>
-          </div>
-          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Hi ${sanitizeHtml(user.full_name)},
-            </p>
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Great news! Your account has been approved and you now have access to the ${siteTitle}.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
-              You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                Access Library
-              </a>
-            </div>
-            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-              Happy training!
-            </p>
-          </div>
+    await sendEmail(
+      user.email,
+      `Your ${siteTitle} account has been approved!`,
+      `Welcome to the ${siteTitle}!`,
+      `
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          Hi ${sanitizeHtml(user.full_name)},
+        </p>
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          Great news! Your account has been approved and you now have access to the ${siteTitle}.
+        </p>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+          You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}" 
+             style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+            Access Library
+          </a>
         </div>
-      `,
-    })
+        <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+          Happy training!
+        </p>
+      `)
 
     revalidatePath("/admin")
     return { success: "User approved successfully" }
