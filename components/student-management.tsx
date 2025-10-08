@@ -648,7 +648,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
                           </div>
                         )}
                         {user.inviter?.full_name && (
-                          <div className="flex items-center space-x-1 min-w-0 text-purple-400">
+                          <div className="flex items-center space-x-1 min-w-0">
                             <User className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">I: {user.inviter.full_name}</span>
                           </div>
