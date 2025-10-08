@@ -251,7 +251,7 @@ export async function signUp(prevState: any, formData: FormData) {
       .from("invitations")
       .select("invited_by")
       .eq("email", email.toLowerCase())
-      .single()
+      .maybeSingle()
 
     if (invitationError && invitationError.code !== "PGRST116") {
       console.error("[v0] Error fetching invitation:", invitationError)

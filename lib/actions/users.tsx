@@ -50,7 +50,7 @@ export async function inviteUser(email: string) {
       .from("users")
       .select("id, email, is_approved")
       .eq("email", email.toLowerCase())
-      .single()
+      .maybeSingle()
 
     if (checkError && checkError.code !== "PGRST116") {
       console.error("Error checking existing user:", checkError)
@@ -67,7 +67,7 @@ export async function inviteUser(email: string) {
       .eq("email", email.toLowerCase())
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
-      .single()
+      .maybeSingle()
 
     if (existingInvitation) {
       return { error: "An invitation has already been sent to this email address." }
