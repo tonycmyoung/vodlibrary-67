@@ -385,14 +385,12 @@ export async function updateProfile(params: {
   userId: string
   email: string
   fullName: string | null
-  teacher: string | null
-  school: string | null
   profileImageUrl: string | null
 }) {
-  const { userId, email, fullName, teacher, school, profileImageUrl } = params
+  const { userId, email, fullName, profileImageUrl } = params
 
-  if (!fullName || !school || !teacher) {
-    return { error: "All fields are required", success: false }
+  if (!fullName) {
+    return { error: "Name is required", success: false }
   }
 
   try {
@@ -402,8 +400,6 @@ export async function updateProfile(params: {
       .from("users")
       .update({
         full_name: fullName,
-        school,
-        teacher,
         profile_image_url: profileImageUrl,
       })
       .eq("id", userId)

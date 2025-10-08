@@ -34,8 +34,6 @@ export default function UserProfile({ user }: UserProfileProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     full_name: user.full_name || "",
-    teacher: user.teacher || "",
-    school: user.school || "",
     profile_image_url: user.profile_image_url || "",
   })
 
@@ -97,8 +95,6 @@ export default function UserProfile({ user }: UserProfileProps) {
         userId: user.id,
         email: user.email,
         fullName: formData.full_name || null,
-        teacher: formData.teacher || null,
-        school: formData.school || null,
         profileImageUrl: formData.profile_image_url || null,
       })
 
@@ -120,8 +116,6 @@ export default function UserProfile({ user }: UserProfileProps) {
   const handleCancel = () => {
     setFormData({
       full_name: user.full_name || "",
-      teacher: user.teacher || "",
-      school: user.school || "",
       profile_image_url: user.profile_image_url || "",
     })
     setImagePreview(null)
@@ -150,18 +144,6 @@ export default function UserProfile({ user }: UserProfileProps) {
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       placeholder="Full name"
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                    <Input
-                      value={formData.teacher}
-                      onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
-                      placeholder="Teacher"
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                    <Input
-                      value={formData.school}
-                      onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                      placeholder="School/Dojo"
                       className="bg-gray-800 border-gray-600 text-white"
                     />
                     <div className="space-y-2">
@@ -216,7 +198,7 @@ export default function UserProfile({ user }: UserProfileProps) {
                         className={
                           user.isAdmin
                             ? "bg-purple-600 text-white"
-                            : user.role === "Teacher"
+                            : user.role === "Teacher" || user.role === "Head Teacher"
                               ? "bg-blue-600 text-white"
                               : "bg-green-600 text-white"
                         }
@@ -351,12 +333,14 @@ export default function UserProfile({ user }: UserProfileProps) {
               <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <span className="text-white">{user.teacher || "Not specified"}</span>
               </div>
+              <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">School/Dojo</label>
               <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <span className="text-white">{user.school || "Not specified"}</span>
               </div>
+              <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Account Status</label>
@@ -365,22 +349,22 @@ export default function UserProfile({ user }: UserProfileProps) {
                   className={
                     user.isAdmin
                       ? "bg-purple-600 text-white"
-                      : user.role === "Teacher"
+                      : user.role === "Teacher" || user.role === "Head Teacher"
                         ? "bg-blue-600 text-white"
                         : "bg-green-600 text-white"
                   }
                 >
                   {user.isAdmin
                     ? "System Administrator"
-                    : user.role === "Teacher"
-                      ? "Approved Teacher"
+                    : user.role === "Teacher" || user.role === "Head Teacher"
+                      ? `Approved ${user.role}`
                       : "Approved Student"}
                 </Badge>
               </div>
               <p className="text-xs text-gray-400 mt-1">
                 {user.isAdmin
                   ? "You have full administrative access to the system."
-                  : user.role === "Teacher"
+                  : user.role === "Teacher" || user.role === "Head Teacher"
                     ? "Your account has teacher privileges. Only administrators can change your role."
                     : "Your account has been approved for video access. Only administrators can change your role."}
               </p>

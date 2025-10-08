@@ -23,6 +23,7 @@ import {
   Building,
   Eye,
   Play,
+  UserPlus,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -31,6 +32,7 @@ import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
 import { fetchStudentsForHeadTeacher } from "@/lib/actions/users"
+import InviteUserModal from "@/components/invite-user-modal"
 
 interface UserInterface {
   id: string
@@ -58,6 +60,8 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
   const router = useRouter()
   const searchParams = useSearchParams()
   const storagePrefix = "studentManagement"
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
 
   const [urlState, setUrlState] = useState(() => {
     const role = searchParams.get("role") || "all"
@@ -430,15 +434,25 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
     <Card className="bg-black/60 border-gray-800">
       <div className="px-6 py-3 pt-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-white">Students ({users.length})</h2>
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
-            />
+          <h2 className="text-xl font-semibold text-white flex-shrink-0">Students ({users.length})</h2>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
+              />
+            </div>
+            <Button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white flex-shrink-0"
+              size="sm"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Invite User
+            </Button>
           </div>
         </div>
 
@@ -710,6 +724,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
           </div>
         )}
       </div>
+      <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
     </Card>
   )
 }

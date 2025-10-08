@@ -37,7 +37,8 @@ export default async function StudentsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Student Management</h1>
           <p className="text-gray-300">Manage students from your school: {userProfile.school}</p>
-          <p className="text-gray-300 italic">'Teacher's have the added ability to invite. 'Head Teacher's have access to this page, for their school.</p>
+          <p className="text-gray-300 italic"><strong>Teacher role:</strong> has the added ability to invite others.</p>
+          <p className="text-gray-300 italic"><strong>Head Teacher role:</strong> has access to this page, for their school.</p>
         </div>
 
         <StudentManagement headTeacherSchool={userProfile.school || ""} headTeacherId={user.id} />
