@@ -5,7 +5,6 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { Resend } from "resend"
 import { sanitizeHtml, siteTitle } from "../utils/helpers"
 import { validateReturnTo } from "../utils/auth"
 import { sendEmail } from "./email"
@@ -330,16 +329,6 @@ export async function signUp(prevState: any, formData: FormData) {
           inviterInfo = `<strong>Invited by:</strong> Direct signup<br>`
         }
 
-/*
-        const message = `New user registration pending approval:<br><br>
-          <strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
-          <strong>Email:</strong> ${sanitizeHtml(email)}<br>
-          <strong>School:</strong> ${sanitizeHtml(school)}<br>
-          <strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
-          ${inviterInfo}<br>
-          Please review and approve this user in the admin dashboard.`
-*/
-
         await sendEmail(
           adminUser.email,
           `New User to Approve`,
@@ -358,14 +347,6 @@ export async function signUp(prevState: any, formData: FormData) {
           `
         )
 
-/*
-        await sendNotificationEmail({
-          recipientEmail: adminUser.email,
-          recipientName: adminUser.full_name,
-          senderName: "System",
-          message: message,
-        })
-*/
       }
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError)
@@ -449,30 +430,3 @@ export async function signOutServerAction() {
 
   return { success: true }
 }
-
-/*
-async function sendNotificationEmail(params: {
-  recipientEmail: string
-  recipientName: string
-  senderName: string
-  message: string
-}) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
-
-  await resend.emails.send({
-    from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-    to: params.recipientEmail,
-    subject: `New Notification from the ${siteTitle}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #1f2937; padding: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">${siteTitle}</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 30px;">
-          <p style="font-size: 16px; color: #374151;">${params.message}</p>
-        </div>
-      </div>
-    `,
-  })
-}
-*/
