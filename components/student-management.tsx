@@ -639,24 +639,24 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
                       <div className="space-y-1">
                         <div className="flex items-center space-x-1 min-w-0">
                           <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>J: {formatDate(user.created_at)}</span>
+                          <span>Join: {formatDate(user.created_at)}</span>
                         </div>
                         {user.approved_at && (
                           <div className="flex items-center space-x-1 min-w-0">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>A: {formatDate(user.approved_at)}</span>
+                            <span>Appr: {formatDate(user.approved_at)}</span>
                           </div>
                         )}
                         {user.inviter?.full_name && (
                           <div className="flex items-center space-x-1 min-w-0">
                             <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">I: {user.inviter.full_name}</span>
+                            <span className="truncate">Inv: {user.inviter.full_name}</span>
                           </div>
                         )}
                         {!user.inviter && user.is_approved && (
                           <div className="flex items-center space-x-1 min-w-0 text-gray-500">
                             <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">I: Direct</span>
+                            <span className="truncate">Inv: Direct</span>
                           </div>
                         )}
                       </div>
