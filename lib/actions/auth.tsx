@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache"
 import { Resend } from "resend"
 import { sanitizeHtml, siteTitle } from "../utils/helpers"
 import { validateReturnTo } from "../utils/auth"
+import { sendEmail } from "./email"
 
 type SignInResult = {
   success: boolean
@@ -329,20 +330,42 @@ export async function signUp(prevState: any, formData: FormData) {
           inviterInfo = `<strong>Invited by:</strong> Direct signup<br>`
         }
 
+/*
         const message = `New user registration pending approval:<br><br>
-<strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
-<strong>Email:</strong> ${sanitizeHtml(email)}<br>
-<strong>School:</strong> ${sanitizeHtml(school)}<br>
-<strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
-${inviterInfo}<br>
-Please review and approve this user in the admin dashboard.`
+          <strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
+          <strong>Email:</strong> ${sanitizeHtml(email)}<br>
+          <strong>School:</strong> ${sanitizeHtml(school)}<br>
+          <strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
+          ${inviterInfo}<br>
+          Please review and approve this user in the admin dashboard.`
+*/
 
+        await sendEmail(
+          adminUser.email,
+          `New User to Approve`,
+          `New user registration`,
+          `
+            <p style="font-size: 16px; color: #374151; margin-bottom: 12px;">
+              <strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
+              <strong>Email:</strong> ${sanitizeHtml(email)}<br>
+              <strong>School:</strong> ${sanitizeHtml(school)}<br>
+              <strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
+              ${inviterInfo}
+            </p>
+            <p style="font-size: 14px; color: #6b7280;">
+              Please review and approve this user in the admin dashboard.
+            </p>
+          `
+        )
+
+/*
         await sendNotificationEmail({
           recipientEmail: adminUser.email,
           recipientName: adminUser.full_name,
           senderName: "System",
           message: message,
         })
+*/
       }
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError)
@@ -427,6 +450,7 @@ export async function signOutServerAction() {
   return { success: true }
 }
 
+/*
 async function sendNotificationEmail(params: {
   recipientEmail: string
   recipientName: string
@@ -451,3 +475,4 @@ async function sendNotificationEmail(params: {
     `,
   })
 }
+*/
