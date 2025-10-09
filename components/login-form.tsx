@@ -9,7 +9,6 @@ import Link from "next/link"
 import { signIn } from "@/lib/actions"
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { getAuthErrorMessage } from "@/lib/utils/auth"
 import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
@@ -73,7 +72,7 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
     }
   }
 
-  const displayError = error ? getAuthErrorMessage(error) : null
+  const displayError = error
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
