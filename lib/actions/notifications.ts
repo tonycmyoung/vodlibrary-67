@@ -3,8 +3,8 @@
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
-import { Resend } from "resend"
 import { sanitizeHtml, siteTitle } from "../utils/helpers"
+import { sendEmail } from "./email"
 
 export async function fetchNotificationsWithSenders(userId: string) {
   try {
@@ -76,8 +76,13 @@ export async function sendNotificationWithEmail(params: {
       return { error: "Not authenticated" }
     }
 
+    // Fetch the sender's profile information
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    const { data: senderProfile } = await serviceSupabase
+      .from("users")
+      .select("full_name")
+      .eq("id", currentUser.user.id)
+      .single()
 
     if (isBroadcast) {
       const { data: users } = await serviceSupabase.from("users").select("id, email, full_name").eq("is_approved", true)
@@ -90,21 +95,17 @@ export async function sendNotificationWithEmail(params: {
             message,
           })
 
-          await resend.emails.send({
-            from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-            to: user.email,
-            subject: `New notification from the ${siteTitle}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: #1f2937; padding: 20px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">${siteTitle}</h1>
-                </div>
-                <div style="background: #f9fafb; padding: 30px;">
-                  <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
-                </div>
-              </div>
-            `,
-          })
+          await sendEmail(
+            user.email,
+            `New notification from the ${siteTitle}`,
+            `New notification from ${sanitizeHtml(senderProfile?.full_name)}`,
+            `
+              <p style="font-size: 16px; color: #374151; margin-bottom: 12px;">
+                ${sanitizeHtml(message)}
+              </p>
+            `
+          )
+
         }
       }
     } else {
@@ -135,21 +136,16 @@ export async function sendNotificationWithEmail(params: {
         message,
       })
 
-      await resend.emails.send({
-        from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-        to: recipient.email,
-        subject: `New notification from the ${siteTitle}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #1f2937; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">${siteTitle}</h1>
-            </div>
-            <div style="background: #f9fafb; padding: 30px;">
-              <p style="font-size: 16px; color: #374151;">${sanitizeHtml(message)}</p>
-            </div>
-          </div>
-        `,
-      })
+      await sendEmail(
+        recipient.email,
+        `New notification from the ${siteTitle}`,
+        `New notification from ${sanitizeHtml(senderProfile?.full_name)}`,
+        `
+          <p style="font-size: 16px; color: #374151; margin-bottom: 12px;">
+            ${sanitizeHtml(message)}
+          </p>
+        `
+      )
     }
 
     return { success: "Notification sent successfully" }

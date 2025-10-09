@@ -127,7 +127,7 @@ export async function signIn(formData: FormData) {
         .select("id")
         .eq("user_id", data.user.id)
         .gte("login_time", today)
-        .single()
+        .maybeSingle()
 
       if (checkError && checkError.code !== "PGRST116") {
         throw checkError
