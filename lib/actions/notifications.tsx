@@ -31,11 +31,12 @@ export async function fetchNotificationsWithSenders(userId: string) {
 }
 
 export async function sendNotificationWithEmail(params: {
-  recipientId: string
+  recipientId?: string
   message: string
   isBroadcast: boolean
+  broadcastRole?: "all" | "Head Teacher" | "Teacher" | "Student"
 }) {
-  const { message, recipientId, isBroadcast } = params
+  const { message, recipientId, isBroadcast, broadcastRole } = params
 
   if (!message) {
     return { error: "Message is required" }
@@ -76,7 +77,14 @@ export async function sendNotificationWithEmail(params: {
       .single()
 
     if (isBroadcast) {
-      const { data: users } = await serviceSupabase.from("users").select("id, email, full_name").eq("is_approved", true)
+      let query = serviceSupabase.from("users").select("id, email, full_name").eq("is_approved", true)
+
+      // Filter by role if specified and not "all"
+      if (broadcastRole && broadcastRole !== "all") {
+        query = query.eq("role", broadcastRole)
+      }
+
+      const { data: users } = await query
 
       if (users && users.length > 0) {
         for (const user of users) {
