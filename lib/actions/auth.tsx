@@ -5,9 +5,10 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { sanitizeHtml, siteTitle } from "../utils/helpers"
+import { sanitizeHtml } from "../utils/helpers"
 import { validateReturnTo } from "../utils/auth"
 import { sendEmail } from "./email"
+import { logAuditEvent } from "./audit"
 
 type SignInResult = {
   success: boolean
@@ -344,13 +345,24 @@ export async function signUp(prevState: any, formData: FormData) {
             <p style="font-size: 14px; color: #6b7280;">
               Please review and approve this user in the admin dashboard.
             </p>
-          `
+          `,
         )
-
       }
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError)
     }
+
+    await logAuditEvent({
+      actor_id: data.user.id,
+      actor_email: data.user.email!,
+      action: "user_signup",
+      additional_data: {
+        full_name: fullName,
+        school,
+        teacher,
+        invited_by: invitedBy,
+      },
+    })
   }
 
   redirect("/pending-approval?from=signup")

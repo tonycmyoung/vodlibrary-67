@@ -18,6 +18,7 @@ import { incrementVideoViews, saveVideo } from "./videos"
 import { addPerformer, updatePerformer, deletePerformer } from "./performers"
 import { fetchNotificationsWithSenders, sendNotificationWithEmail } from "./notifications"
 import { getTelemetryData, clearAuthDebugLogs, fetchAuthDebugLogs } from "./admin"
+import { logAuditEvent, fetchAuditLogs, clearAuditLogs } from "./audit"
 
 export {
   signIn,
@@ -45,4 +46,7 @@ export {
   getTelemetryData,
   clearAuthDebugLogs,
   fetchAuthDebugLogs,
+  logAuditEvent,
+  fetchAuditLogs,
+  clearAuditLogs,
 }

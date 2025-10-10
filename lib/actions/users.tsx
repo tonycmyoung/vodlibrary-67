@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
 import { sendEmail } from "./email"
+import { logAuditEvent } from "./audit"
 
 export async function inviteUser(email: string) {
   try {
@@ -107,7 +108,8 @@ export async function inviteUser(email: string) {
             Accept Invitation
           </a>
         </div>
-      `)
+      `,
+    )
 
     return { success: "Invitation sent successfully" }
   } catch (emailError) {
@@ -141,20 +143,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "Not authenticated" }
     }
 
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const { data: user, error: userError } = await serviceSupabase
       .from("users")
@@ -173,7 +162,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: currentUser.user.id,
-        role: role, // Set the selected role during approval
+        role: role,
       })
       .eq("id", userId)
 
@@ -181,6 +170,18 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       console.error("Error approving user:", error)
       return { error: "Failed to approve user" }
     }
+
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "user_approval",
+      target_id: userId,
+      target_email: user.email,
+      additional_data: {
+        target_name: user.full_name,
+        assigned_role: role,
+      },
+    })
 
     await sendEmail(
       user.email,
@@ -205,7 +206,8 @@ export async function approveUserServerAction(userId: string, role = "Student") 
         <p style="font-size: 12px; color: #9ca3af; text-align: center;">
           Happy training!
         </p>
-      `)
+      `,
+    )
 
     revalidatePath("/admin")
     return { success: "User approved successfully" }
@@ -218,7 +220,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
 export async function rejectUserServerAction(userId: string) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -260,7 +262,7 @@ export async function rejectUserServerAction(userId: string) {
 export async function updatePendingUserFields(userId: string, fullName: string, teacher: string, school: string) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -300,7 +302,7 @@ export async function updatePendingUserFields(userId: string, fullName: string, 
 export async function updateUserFields(userId: string, fullName: string, teacher: string, school: string) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -341,6 +343,32 @@ export async function deleteUserCompletely(userId: string) {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    const { data: userToDelete } = await serviceSupabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userId)
+      .single()
+
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
+        },
+      },
+    )
+
+    const { data: currentUser } = await supabase.auth.getUser()
+
     const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
 
     if (publicError) {
@@ -352,6 +380,19 @@ export async function deleteUserCompletely(userId: string) {
 
     if (authError) {
       console.error("Error deleting user from auth (user may not exist in auth):", authError)
+    }
+
+    if (currentUser.user && userToDelete) {
+      await logAuditEvent({
+        actor_id: currentUser.user.id,
+        actor_email: currentUser.user.email!,
+        action: "user_deletion",
+        target_id: userId,
+        target_email: userToDelete.email,
+        additional_data: {
+          target_name: userToDelete.full_name,
+        },
+      })
     }
 
     return { success: "User deleted successfully" }
