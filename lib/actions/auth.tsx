@@ -58,18 +58,20 @@ export async function signIn(formData: FormData) {
     password,
   })
 
-  const serviceSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return []
-        },
-        setAll() {},
-      },
-    },
-  )
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  const additionalData: any = {
+    email_confirmed: data?.user?.email_confirmed_at ? true : false,
+    user_exists: data?.user ? true : false,
+    returnTo: returnTo || null,
+  }
+
+  // If authentication failed, check if email exists in users table to determine specific reason
+  if (error) {
+    const { data: userCheck } = await serviceSupabase.from("users").select("id").eq("email", email).maybeSingle()
+
+    additionalData.failure_reason = userCheck ? "Password incorrect" : "Email not registered"
+  }
 
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
@@ -79,11 +81,7 @@ export async function signIn(formData: FormData) {
       success: !error,
       error_message: error?.message || null,
       error_code: error?.code || null,
-      additional_data: {
-        email_confirmed: data?.user?.email_confirmed_at ? true : false,
-        user_exists: data?.user ? true : false,
-        returnTo: returnTo || null,
-      },
+      additional_data: additionalData,
     })
   } catch (logError) {
     console.error("[v0] Auth Action: Failed to log auth attempt:", logError)
@@ -108,19 +106,6 @@ export async function signIn(formData: FormData) {
 
   if (data.user?.id) {
     try {
-      const serviceSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return []
-            },
-            setAll() {},
-          },
-        },
-      )
-
       const today = new Date().toISOString().split("T")[0]
 
       const { data: existingLogin, error: checkError } = await serviceSupabase
