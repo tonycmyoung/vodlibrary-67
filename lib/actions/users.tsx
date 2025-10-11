@@ -98,7 +98,7 @@ export async function inviteUser(email: string) {
       target_id: null,
       target_email: email.toLowerCase(),
       additional_data: {
-        actor_name: inviterUser.full_name || currentUser.user.email!.split("@")[0],
+        actor_name: inviterUser.full_name,
         invited_email: email.toLowerCase(),
       },
     })
