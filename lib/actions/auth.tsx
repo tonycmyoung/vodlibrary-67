@@ -342,6 +342,7 @@ export async function signUp(prevState: any, formData: FormData) {
       actor_email: data.user.email!,
       action: "user_signup",
       additional_data: {
+        actor_name: fullName,
         full_name: fullName,
         school,
         teacher,

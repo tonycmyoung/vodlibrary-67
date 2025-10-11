@@ -91,6 +91,18 @@ export async function inviteUser(email: string) {
       return { error: "Failed to create invitation" }
     }
 
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "user_invitation",
+      target_id: null,
+      target_email: email.toLowerCase(),
+      additional_data: {
+        actor_name: inviterUser.full_name || currentUser.user.email!.split("@")[0],
+        invited_email: email.toLowerCase(),
+      },
+    })
+
     await sendEmail(
       email,
       `You're invited to join the ${siteTitle}`,
@@ -156,6 +168,12 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "User not found" }
     }
 
+    const { data: actorUser } = await serviceSupabase
+      .from("users")
+      .select("full_name")
+      .eq("id", currentUser.user.id)
+      .single()
+
     const { error } = await serviceSupabase
       .from("users")
       .update({
@@ -178,6 +196,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       target_id: userId,
       target_email: user.email,
       additional_data: {
+        actor_name: actorUser?.full_name || currentUser.user.email!.split("@")[0],
         target_name: user.full_name,
         assigned_role: role,
       },
@@ -369,6 +388,19 @@ export async function deleteUserCompletely(userId: string) {
 
     const { data: currentUser } = await supabase.auth.getUser()
 
+    let actorName = currentUser.user?.email?.split("@")[0] || "Unknown"
+    if (currentUser.user) {
+      const { data: actorUser } = await serviceSupabase
+        .from("users")
+        .select("full_name")
+        .eq("id", currentUser.user.id)
+        .single()
+
+      if (actorUser) {
+        actorName = actorUser.full_name
+      }
+    }
+
     const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
 
     if (publicError) {
@@ -390,6 +422,7 @@ export async function deleteUserCompletely(userId: string) {
         target_id: userId,
         target_email: userToDelete.email,
         additional_data: {
+          actor_name: actorName,
           target_name: userToDelete.full_name,
         },
       })

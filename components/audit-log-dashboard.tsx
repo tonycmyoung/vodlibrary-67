@@ -66,6 +66,8 @@ export default function AuditLogDashboard() {
         return <UserCheck className="w-4 h-4 text-green-500" />
       case "user_deletion":
         return <UserX className="w-4 h-4 text-red-500" />
+      case "user_invitation":
+        return <UserPlus className="w-4 h-4 text-amber-500" />
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />
     }
@@ -76,6 +78,7 @@ export default function AuditLogDashboard() {
       user_signup: { label: "Signup", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
       user_approval: { label: "Approval", className: "bg-green-500/20 text-green-400 border-green-500/30" },
       user_deletion: { label: "Deletion", className: "bg-red-500/20 text-red-400 border-red-500/30" },
+      user_invitation: { label: "Invitation", className: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
     }
 
     const variant = variants[action] || { label: action, className: "bg-gray-500/20 text-gray-400 border-gray-500/30" }
@@ -156,7 +159,7 @@ export default function AuditLogDashboard() {
                   </td>
                   <td className="p-3">
                     <div className="text-sm text-gray-300">
-                      {log.additional_data?.target_name || log.actor_email.split("@")[0]}
+                      {log.additional_data?.actor_name || log.actor_email.split("@")[0]}
                     </div>
                     <div className="text-xs text-gray-500 font-mono">{log.actor_email}</div>
                   </td>
