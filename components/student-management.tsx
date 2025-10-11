@@ -426,8 +426,19 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
             <p className="text-gray-500 text-sm mt-2">
               Students with school names starting with "{headTeacherSchool}" will appear here.
             </p>
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={() => setIsInviteModalOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                size="default"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Invite User
+              </Button>
+            </div>
           </div>
         </div>
+        <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
       </Card>
     )
   }
