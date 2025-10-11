@@ -2,7 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug, FileText } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -56,13 +62,6 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
 
           <nav className="hidden lg:flex items-center space-x-6">
             <Link
-              href="/student-view"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
-            >
-              <Home className="w-4 h-4" />
-              <span>Library</span>
-            </Link>
-            <Link
               href="/admin/users"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
             >
@@ -77,39 +76,11 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               <span>Videos</span>
             </Link>
             <Link
-              href="/admin/categories"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
-            >
-              <Tags className="w-4 h-4" />
-              <span>Categories</span>
-            </Link>
-            <Link
-              href="/admin/performers"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
-            >
-              <User className="w-4 h-4" />
-              <span>Performers</span>
-            </Link>
-            <Link
               href="/admin/notifications"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
             >
               <Bell className="w-4 h-4" />
               <span>Notifications</span>
-            </Link>
-            <Link
-              href="/admin/debug"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
-            >
-              <Bug className="w-4 h-4" />
-              <span>Debug</span>
-            </Link>
-            <Link
-              href="/admin/audit"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Audit</span>
             </Link>
           </nav>
 
@@ -144,6 +115,37 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                     <p className="text-xs text-purple-400">Administrator</p>
                   </div>
                 </div>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/student-view" className="flex items-center">
+                    <Home className="mr-2 h-4 w-4" />
+                    Library
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/categories" className="flex items-center">
+                    <Tags className="mr-2 h-4 w-4" />
+                    Categories
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/performers" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Performers
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/debug" className="flex items-center">
+                    <Bug className="mr-2 h-4 w-4" />
+                    Debug
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/audit" className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Audit
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-700" />
                 <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
                   <Link href="/profile" className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
