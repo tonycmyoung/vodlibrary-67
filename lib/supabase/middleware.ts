@@ -124,7 +124,8 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/privacy-policy" ||
       request.nextUrl.pathname === "/eula" ||
       request.nextUrl.pathname === "/auth/confirm" ||
-      request.nextUrl.pathname === "/auth/confirm/callback"
+      request.nextUrl.pathname === "/auth/confirm/callback" ||
+      request.nextUrl.pathname === "/auth/reset-password"
 
     if (isAuthRoute || isPublicRoute) {
       console.log("[v0] Middleware: Auth or public route, allowing through")

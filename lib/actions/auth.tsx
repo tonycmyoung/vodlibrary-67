@@ -433,18 +433,6 @@ export async function updatePassword(prevState: any, formData: FormData) {
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
 
-  if (!password || !confirmPassword) {
-    return { error: "Both password fields are required" }
-  }
-
-  if (password !== confirmPassword) {
-    return { error: "Passwords do not match" }
-  }
-
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters long" }
-  }
-
   const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -465,9 +453,90 @@ export async function updatePassword(prevState: any, formData: FormData) {
     },
   )
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const userEmail = user?.email || "unknown"
+  const userId = user?.id || null
+
+  if (!password || !confirmPassword) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Both password fields are required",
+        additional_data: {
+          validation_error: "missing_fields",
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset validation error:", logError)
+    }
+    return { error: "Both password fields are required" }
+  }
+
+  if (password !== confirmPassword) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Passwords do not match",
+        additional_data: {
+          validation_error: "password_mismatch",
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset mismatch error:", logError)
+    }
+    return { error: "Passwords do not match" }
+  }
+
+  if (password.length < 8) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Password must be at least 8 characters long",
+        additional_data: {
+          validation_error: "password_too_short",
+          password_length: password.length,
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset length error:", logError)
+    }
+    return { error: "Password must be at least 8 characters long" }
+  }
+
   const { error } = await supabase.auth.updateUser({
     password: password,
   })
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  try {
+    await serviceSupabase.from("auth_debug_logs").insert({
+      event_type: "password_reset",
+      user_email: userEmail,
+      user_id: userId,
+      success: !error,
+      error_message: error?.message || null,
+      error_code: error?.code || null,
+      additional_data: {
+        reset_method: "email_link",
+      },
+    })
+  } catch (logError) {
+    console.error("[v0] Failed to log password reset attempt:", logError)
+  }
 
   if (error) {
     return { error: error.message }
