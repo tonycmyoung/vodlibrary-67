@@ -1,6 +1,6 @@
 "use server"
 
-import { signIn, signUp, createAdminUser, signOutServerAction } from "./auth"
+import { signIn, signUp, createAdminUser, signOutServerAction, updatePassword } from "./auth"
 import {
   inviteUser,
   approveUserServerAction,
@@ -25,6 +25,7 @@ export {
   signUp,
   createAdminUser,
   signOutServerAction,
+  updatePassword,
   inviteUser,
   approveUserServerAction,
   rejectUserServerAction,
