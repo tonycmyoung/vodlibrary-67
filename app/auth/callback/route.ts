@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   const errorDescription = requestUrl.searchParams.get("error_description")
 
   if (error) {
-    // Handle various auth errors
     if (error === "access_denied" && errorDescription?.includes("expired")) {
       return NextResponse.redirect(new URL("/auth/login?error=expired", request.url))
     }
@@ -46,12 +45,9 @@ export async function GET(request: NextRequest) {
           .eq("id", data.session.user.id)
           .single()
 
-        // If user doesn't exist in our users table, this is likely an invitation acceptance
         if (!existingUser) {
-          // Redirect to sign-up completion for invited users
           const response = NextResponse.redirect(new URL("/auth/sign-up?invited=true", request.url))
 
-          // Set cookies for the session
           const {
             data: { session },
           } = await supabase.auth.getSession()
@@ -74,7 +70,6 @@ export async function GET(request: NextRequest) {
         } else {
           const response = NextResponse.redirect(new URL("/", request.url))
 
-          // Set cookies for the session
           const {
             data: { session },
           } = await supabase.auth.getSession()
@@ -102,6 +97,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // No code parameter - redirect to login
   return NextResponse.redirect(new URL("/auth/login", request.url))
 }
