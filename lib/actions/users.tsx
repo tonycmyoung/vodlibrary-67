@@ -470,51 +470,6 @@ export async function updateProfile(params: {
   }
 }
 
-export async function changePassword(prevState: any, formData: FormData) {
-  const currentPassword = formData.get("currentPassword") as string
-  const newPassword = formData.get("newPassword") as string
-  const confirmPassword = formData.get("confirmPassword") as string
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: "All fields are required" }
-  }
-
-  if (newPassword !== confirmPassword) {
-    return { error: "New passwords do not match" }
-  }
-
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
-      },
-    },
-  )
-
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword,
-  })
-
-  if (error) {
-    console.error("Error changing password:", error)
-    return { error: "Failed to change password" }
-  }
-
-  return { success: "Password changed successfully" }
-}
-
 export async function fetchPendingUsers() {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -709,5 +664,85 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
   } catch (error) {
     console.error("Error in fetchStudentsForHeadTeacher:", error)
     return { error: "Failed to fetch students", data: [] }
+  }
+}
+
+export async function adminResetUserPassword(userId: string, newPassword: string) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
+        },
+      },
+    )
+
+    // Verify the current user is an admin
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminProfile } = await supabase
+      .from("users")
+      .select("role, full_name")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminProfile || adminProfile.role !== "Admin") {
+      return { error: "Unauthorized - Admin access required" }
+    }
+
+    // Validate password
+    if (!newPassword || newPassword.length < 8) {
+      return { error: "Password must be at least 8 characters long" }
+    }
+
+    // Get target user details
+    const { data: targetUser } = await supabase.from("users").select("email, full_name").eq("id", userId).single()
+
+    if (!targetUser) {
+      return { error: "User not found" }
+    }
+
+    // Use service role to update password
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    })
+
+    if (updateError) {
+      console.error("Error updating password:", updateError)
+      return { error: "Failed to update password" }
+    }
+
+    // Log audit event
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "password_reset",
+      target_id: userId,
+      target_email: targetUser.email,
+      additional_data: {
+        actor_name: adminProfile.full_name,
+        target_name: targetUser.full_name,
+      },
+    })
+
+    return { success: "Password reset successfully" }
+  } catch (error) {
+    console.error("Error in adminResetUserPassword:", error)
+    return { error: "Failed to reset password" }
   }
 }

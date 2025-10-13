@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js"
 interface AuditLogEntry {
   actor_id: string
   actor_email: string
-  action: "user_signup" | "user_approval" | "user_deletion" | "user_invitation"
+  action: "user_signup" | "user_approval" | "user_deletion" | "user_invitation" | "password_reset"
   target_id?: string
   target_email?: string
   additional_data?: Record<string, any>

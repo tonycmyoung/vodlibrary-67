@@ -26,10 +26,11 @@ import {
   Eye,
   Play,
   User,
+  Key,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
-import { deleteUserCompletely, updateUserFields } from "@/lib/actions"
+import { deleteUserCompletely, updateUserFields, adminResetUserPassword } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
@@ -111,6 +112,11 @@ export default function UserManagement() {
     }
     return "desc"
   })
+
+  const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [resetPasswordError, setResetPasswordError] = useState("")
 
   const processedData = useMemo(() => {
     if (!users.length) return { roles: [], schools: [] }
@@ -460,6 +466,53 @@ export default function UserManagement() {
     }
   }
 
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return
+
+    if (newPassword.length < 8) {
+      setResetPasswordError("Password must be at least 8 characters long")
+      return
+    }
+
+    setProcessingUsers((prev) => new Set(prev).add(resetPasswordUser))
+    setResetPasswordError("")
+
+    try {
+      const result = await adminResetUserPassword(resetPasswordUser, newPassword)
+
+      if (result.error) {
+        setResetPasswordError(result.error)
+        return
+      }
+
+      // Success - close dialog and reset state
+      setResetPasswordUser(null)
+      setNewPassword("")
+      setShowPassword(false)
+      alert("Password reset successfully. The user can now log in with the new password.")
+    } catch (error) {
+      console.error("Error resetting password:", error)
+      setResetPasswordError("Failed to reset password. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(resetPasswordUser)
+        return newSet
+      })
+    }
+  }
+
+  const generateRandomPassword = () => {
+    const length = 12
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+    let password = ""
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length))
+    }
+    setNewPassword(password)
+    setShowPassword(true)
+  }
+
   const getInitials = (name: string | null, email: string) => {
     if (name) {
       return name
@@ -776,6 +829,107 @@ export default function UserManagement() {
                             >
                               <Edit2 className="w-3 h-3" />
                             </Button>
+                            <Dialog
+                              open={resetPasswordUser === user.id}
+                              onOpenChange={(open) => {
+                                if (!open) {
+                                  setResetPasswordUser(null)
+                                  setNewPassword("")
+                                  setShowPassword(false)
+                                  setResetPasswordError("")
+                                }
+                              }}
+                            >
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setResetPasswordUser(user.id)}
+                                  disabled={isProcessing}
+                                  className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
+                                  aria-label="Reset password"
+                                >
+                                  <Key className="w-3 h-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                                <DialogHeader>
+                                  <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-sm text-gray-400 mb-4">
+                                      Set a new password for{" "}
+                                      <span className="font-medium text-white">{user.email}</span>
+                                    </p>
+                                    <div className="space-y-2">
+                                      <label className="text-sm text-gray-300">New Password</label>
+                                      <div className="relative">
+                                        <Input
+                                          type={showPassword ? "text" : "password"}
+                                          value={newPassword}
+                                          onChange={(e) => {
+                                            setNewPassword(e.target.value)
+                                            setResetPasswordError("")
+                                          }}
+                                          placeholder="Enter new password"
+                                          className="bg-gray-800 border-gray-600 text-white pr-10"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowPassword(!showPassword)}
+                                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                        >
+                                          {showPassword ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                      </div>
+                                      <p className="text-xs text-gray-400">Minimum 8 characters</p>
+                                    </div>
+                                    <Button
+                                      onClick={generateRandomPassword}
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+                                    >
+                                      Generate Random Password
+                                    </Button>
+                                  </div>
+                                  {resetPasswordError && (
+                                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
+                                      {resetPasswordError}
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={handleResetPassword}
+                                      disabled={isProcessing || !newPassword}
+                                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                                    >
+                                      {isProcessing ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                          Resetting...
+                                        </>
+                                      ) : (
+                                        "Reset Password"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setResetPasswordUser(null)
+                                        setNewPassword("")
+                                        setShowPassword(false)
+                                        setResetPasswordError("")
+                                      }}
+                                      variant="outline"
+                                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                             <Button
                               size="sm"
                               variant={user.is_approved ? "outline" : "default"}

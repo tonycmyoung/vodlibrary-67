@@ -9,10 +9,10 @@ import {
   updateUserFields,
   deleteUserCompletely,
   updateProfile,
-  changePassword,
   fetchPendingUsers,
   fetchUnconfirmedEmailUsers,
   resendConfirmationEmail,
+  adminResetUserPassword,
 } from "./users"
 import { incrementVideoViews, saveVideo } from "./videos"
 import { addPerformer, updatePerformer, deletePerformer } from "./performers"
@@ -33,10 +33,10 @@ export {
   updateUserFields,
   deleteUserCompletely,
   updateProfile,
-  changePassword,
   fetchPendingUsers,
   fetchUnconfirmedEmailUsers,
   resendConfirmationEmail,
+  adminResetUserPassword,
   incrementVideoViews,
   saveVideo,
   addPerformer,
