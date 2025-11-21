@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import CategoryFilter from "@/components/category-filter"
 import SortControl from "@/components/sort-control"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, Trash2, Clock, Loader2, Pencil, Plus, Filter, X } from "lucide-react"
+import { Search, Trash2, Clock, Loader2, Pencil, Plus, Filter, X, ChevronDown, ChevronUp } from "lucide-react"
 import VideoModal from "./video-modal"
 import { formatShortDate } from "@/lib/utils/date"
 import { getBatchVideoViewCounts, getBatchVideoLastViewed } from "@/lib/actions/videos"
@@ -62,6 +62,7 @@ export default function VideoManagement() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true)
 
   const [sortBy, setSortBy] = useState<string>(() => {
     if (typeof window !== "undefined") {
@@ -598,8 +599,15 @@ export default function VideoManagement() {
         <Card className="bg-black/60 border-gray-800">
           <CardContent className="p-6">
             <div className="space-y-4">
+              {/* Toggle button for collapse/expand */}
               <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Filters</h3>
+                <button
+                  onClick={() => setFiltersCollapsed(!filtersCollapsed)}
+                  className="flex items-center gap-2 text-white font-semibold hover:text-purple-400 transition-colors"
+                >
+                  <h3>Filters</h3>
+                  {filtersCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </button>
                 {activeFilterCount > 0 && (
                   <Button
                     variant="ghost"
@@ -613,78 +621,82 @@ export default function VideoManagement() {
                 )}
               </div>
 
-              <CategoryFilter
-                categories={categories}
-                recordedValues={recordedValues}
-                performers={performers}
-                selectedCategories={selectedCategories}
-                onCategoryToggle={handleCategoryToggle}
-                videoCount={videos.length}
-              />
+              {!filtersCollapsed && (
+                <>
+                  <CategoryFilter
+                    categories={categories}
+                    recordedValues={recordedValues}
+                    performers={performers}
+                    selectedCategories={selectedCategories}
+                    onCategoryToggle={handleCategoryToggle}
+                    videoCount={videos.length}
+                  />
 
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-400 uppercase">Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Badge
-                    variant={selectedPublished.includes("published") ? "default" : "outline"}
-                    className={`cursor-pointer ${
-                      selectedPublished.includes("published")
-                        ? "bg-green-600 text-white hover:bg-green-700"
-                        : "border-gray-600 text-gray-300 hover:bg-gray-800"
-                    }`}
-                    onClick={() => handlePublishedToggle("published")}
-                  >
-                    Published
-                  </Badge>
-                  <Badge
-                    variant={selectedPublished.includes("draft") ? "default" : "outline"}
-                    className={`cursor-pointer ${
-                      selectedPublished.includes("draft")
-                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                        : "border-gray-600 text-gray-300 hover:bg-gray-800"
-                    }`}
-                    onClick={() => handlePublishedToggle("draft")}
-                  >
-                    Draft
-                  </Badge>
-                </div>
-              </div>
-
-              {selectedCategories.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Filter mode:</span>
-                  <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
-                    <Button
-                      variant={filterMode === "AND" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => handleFilterModeChange("AND")}
-                      className={`text-xs px-3 py-1 ${
-                        filterMode === "AND"
-                          ? "bg-purple-600 text-white hover:bg-purple-700"
-                          : "text-gray-400 hover:text-white hover:bg-gray-800"
-                      }`}
-                    >
-                      AND
-                    </Button>
-                    <Button
-                      variant={filterMode === "OR" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => handleFilterModeChange("OR")}
-                      className={`text-xs px-3 py-1 ${
-                        filterMode === "OR"
-                          ? "bg-purple-600 text-white hover:bg-purple-700"
-                          : "text-gray-400 hover:text-white hover:bg-gray-800"
-                      }`}
-                    >
-                      OR
-                    </Button>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-400 uppercase">Status</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant={selectedPublished.includes("published") ? "default" : "outline"}
+                        className={`cursor-pointer ${
+                          selectedPublished.includes("published")
+                            ? "bg-green-600 text-white hover:bg-green-700"
+                            : "border-gray-600 text-gray-300 hover:bg-gray-800"
+                        }`}
+                        onClick={() => handlePublishedToggle("published")}
+                      >
+                        Published
+                      </Badge>
+                      <Badge
+                        variant={selectedPublished.includes("draft") ? "default" : "outline"}
+                        className={`cursor-pointer ${
+                          selectedPublished.includes("draft")
+                            ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                            : "border-gray-600 text-gray-300 hover:bg-gray-800"
+                        }`}
+                        onClick={() => handlePublishedToggle("draft")}
+                      >
+                        Draft
+                      </Badge>
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {filterMode === "AND"
-                      ? "Videos must have ALL selected categories"
-                      : "Videos can have ANY selected categories"}
-                  </span>
-                </div>
+
+                  {selectedCategories.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-400">Filter mode:</span>
+                      <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
+                        <Button
+                          variant={filterMode === "AND" ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handleFilterModeChange("AND")}
+                          className={`text-xs px-3 py-1 ${
+                            filterMode === "AND"
+                              ? "bg-purple-600 text-white hover:bg-purple-700"
+                              : "text-gray-400 hover:text-white hover:bg-gray-800"
+                          }`}
+                        >
+                          AND
+                        </Button>
+                        <Button
+                          variant={filterMode === "OR" ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handleFilterModeChange("OR")}
+                          className={`text-xs px-3 py-1 ${
+                            filterMode === "OR"
+                              ? "bg-purple-600 text-white hover:bg-purple-700"
+                              : "text-gray-400 hover:text-white hover:bg-gray-800"
+                          }`}
+                        >
+                          OR
+                        </Button>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {filterMode === "AND"
+                          ? "Videos must have ALL selected categories"
+                          : "Videos can have ANY selected categories"}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </CardContent>
