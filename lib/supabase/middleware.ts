@@ -3,13 +3,6 @@ import { NextResponse, type NextRequest } from "next/server"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { validateReturnTo } from "@/lib/utils/auth"
 
-// Check if Supabase environment variables are available
-export const isSupabaseConfigured =
-  typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
-  typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
-
 const userApprovalCache = new Map<string, { isApproved: boolean; role: string; timestamp: number }>()
 const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
 
@@ -42,15 +35,14 @@ function setCachedUserApproval(userId: string, isApproved: boolean, role: string
 export async function updateSession(request: NextRequest) {
   console.log("[v0] Middleware: Processing request for path:", request.nextUrl.pathname)
 
-  try {
-    // If Supabase is not configured, just continue without auth
-    if (!isSupabaseConfigured) {
-      console.log("[v0] Middleware: Supabase not configured, skipping auth")
-      return NextResponse.next({
-        request,
-      })
-    }
+  const hasEnvVars = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  if (!hasEnvVars) {
+    console.log("[v0] Middleware: Env vars not available, skipping middleware auth (page-level auth will handle)")
+    return NextResponse.next({ request })
+  }
+
+  try {
     let supabaseResponse = NextResponse.next({
       request,
     })

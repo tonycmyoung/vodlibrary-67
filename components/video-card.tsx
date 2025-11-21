@@ -180,19 +180,26 @@ const VideoCard = memo(function VideoCard({
           {video.description && <p className="text-gray-400 text-sm mb-3 line-clamp-2">{video.description}</p>}
 
           <div className="flex flex-wrap gap-1 mb-2">
-            {validCategories.map((category) => (
-              <Badge
-                key={category.id}
-                variant="outline"
-                className="text-xs border-gray-600 text-gray-300"
-                style={{
-                  borderColor: (category?.color || "#6b7280") + "60",
-                  color: category?.color || "#9ca3af",
-                }}
-              >
-                {category?.name || "Uncategorized"}
-              </Badge>
-            ))}
+            {validCategories.map((category) => {
+              const hasValidColor = category?.color && category.color.startsWith("#") && category.color.length >= 7
+              return (
+                <Badge
+                  key={category.id}
+                  variant="outline"
+                  className="text-xs border-gray-600 text-gray-300"
+                  style={
+                    hasValidColor
+                      ? {
+                          borderColor: category.color + "60",
+                          color: category.color,
+                        }
+                      : undefined
+                  }
+                >
+                  {category?.name || "Uncategorized"}
+                </Badge>
+              )
+            })}
             {video.performers &&
               video.performers.length > 0 &&
               video.performers.map((performer) => (

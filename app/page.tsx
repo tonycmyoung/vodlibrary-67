@@ -35,6 +35,11 @@ export default async function Home() {
     redirect("/pending-approval")
   }
 
+  const isAdminEmail = user.email === "acmyma@gmail.com"
+  if (userProfile?.role === "Admin" || isAdminEmail) {
+    redirect("/admin")
+  }
+
   const userWithEmail = {
     id: user.id, // Always use the authenticated user's ID
     email: user.email,

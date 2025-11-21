@@ -339,16 +339,26 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-gray-300 mb-2">Categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {video.categories.map((category) => (
-                    <Badge
-                      key={category.id}
-                      variant="outline"
-                      className="border-gray-600 text-gray-300"
-                      style={{ borderColor: category.color + "60", color: category.color }}
-                    >
-                      {category.name}
-                    </Badge>
-                  ))}
+                  {video.categories.map((category) => {
+                    const hasValidColor = category.color && category.color.startsWith("#") && category.color.length >= 7
+                    return (
+                      <Badge
+                        key={category.id}
+                        variant="outline"
+                        className="border-gray-600 text-gray-300"
+                        style={
+                          hasValidColor
+                            ? {
+                                borderColor: category.color + "60",
+                                color: category.color,
+                              }
+                            : undefined
+                        }
+                      >
+                        {category.name}
+                      </Badge>
+                    )
+                  })}
                 </div>
               </div>
             </CardContent>

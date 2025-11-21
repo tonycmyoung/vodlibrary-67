@@ -20,6 +20,13 @@ function getContrastColor(hexColor: string): string {
   return luminance > 0.5 ? "#000000" : "#ffffff"
 }
 
+function addTransparency(color: string, alpha: string): string | null {
+  if (!color || !color.startsWith("#") || color.length < 7) {
+    return null
+  }
+  return color + alpha
+}
+
 interface Category {
   id: string
   name: string
@@ -101,6 +108,7 @@ export default function CategoryFilter({
             <div className="flex flex-wrap gap-2">
               {gradingCategories.map((item) => {
                 const isSelected = selectedCategories.includes(item.id)
+                const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
                 return (
                   <Badge
                     key={item.id}
@@ -111,17 +119,19 @@ export default function CategoryFilter({
                         : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                     }`}
                     style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
+                      hasValidColor
+                        ? isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : {
+                              borderColor: addTransparency(item.color, "90") || item.color,
+                              borderLeftColor: item.color,
+                              borderLeftWidth: "4px",
+                            }
+                        : undefined
                     }
                     onClick={() => onCategoryToggle(item.id)}
                   >
@@ -140,6 +150,7 @@ export default function CategoryFilter({
             <div className="flex flex-wrap gap-2">
               {weaponCategories.map((item) => {
                 const isSelected = selectedCategories.includes(item.id)
+                const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
                 return (
                   <Badge
                     key={item.id}
@@ -150,17 +161,19 @@ export default function CategoryFilter({
                         : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                     }`}
                     style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
+                      hasValidColor
+                        ? isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : {
+                              borderColor: addTransparency(item.color, "90") || item.color,
+                              borderLeftColor: item.color,
+                              borderLeftWidth: "4px",
+                            }
+                        : undefined
                     }
                     onClick={() => onCategoryToggle(item.id)}
                   >
@@ -184,6 +197,7 @@ export default function CategoryFilter({
                   color: "#a855f7",
                 }
                 const isSelected = selectedCategories.includes(item.id)
+                const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
                 return (
                   <Badge
                     key={item.id}
@@ -194,17 +208,19 @@ export default function CategoryFilter({
                         : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                     }`}
                     style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
+                      hasValidColor
+                        ? isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : {
+                              borderColor: addTransparency(item.color, "90") || item.color,
+                              borderLeftColor: item.color,
+                              borderLeftWidth: "4px",
+                            }
+                        : undefined
                     }
                     onClick={() => onCategoryToggle(item.id)}
                   >
@@ -228,6 +244,7 @@ export default function CategoryFilter({
                   color: "#6b7280",
                 }
                 const isSelected = selectedCategories.includes(item.id)
+                const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
                 return (
                   <Badge
                     key={item.id}
@@ -238,17 +255,19 @@ export default function CategoryFilter({
                         : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                     }`}
                     style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
+                      hasValidColor
+                        ? isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : {
+                              borderColor: addTransparency(item.color, "90") || item.color,
+                              borderLeftColor: item.color,
+                              borderLeftWidth: "4px",
+                            }
+                        : undefined
                     }
                     onClick={() => onCategoryToggle(item.id)}
                   >

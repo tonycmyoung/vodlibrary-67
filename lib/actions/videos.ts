@@ -363,3 +363,37 @@ export async function getBatchVideoViewCounts(videoIds: string[]): Promise<Recor
 
   return viewCounts
 }
+
+export async function getBatchVideoLastViewed(videoIds: string[]): Promise<Record<string, string | null>> {
+  if (videoIds.length === 0) return {}
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  const { data, error } = await serviceSupabase
+    .from("video_views")
+    .select("video_id, viewed_at")
+    .in("video_id", videoIds)
+    .order("viewed_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching video last viewed:", error)
+    return {}
+  }
+
+  // Group by video_id and take the most recent viewed_at for each
+  const lastViewedMap: Record<string, string | null> = {}
+
+  // Initialize all video IDs with null
+  for (const videoId of videoIds) {
+    lastViewedMap[videoId] = null
+  }
+
+  // Set the most recent viewed_at for each video
+  for (const view of data) {
+    if (!lastViewedMap[view.video_id]) {
+      lastViewedMap[view.video_id] = view.viewed_at
+    }
+  }
+
+  return lastViewedMap
+}
