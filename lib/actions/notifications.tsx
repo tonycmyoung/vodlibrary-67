@@ -97,7 +97,7 @@ export async function sendNotificationWithEmail(params: {
 
         const allEmails = users.map((user) => user.email)
         await sendEmail(
-          undefined,
+          process.env.ADMIN_EMAIL!,
           `New notification from the ${siteTitle}`,
           `New notification from ${sanitizeHtml(senderProfile?.full_name)}`,
           `
