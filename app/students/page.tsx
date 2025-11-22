@@ -13,14 +13,13 @@ export default async function StudentsPage() {
     redirect("/auth/login")
   }
 
-  // Check if user is a Head Teacher
   const { data: userProfile } = await supabase
     .from("users")
     .select("is_approved, full_name, email, profile_image_url, role, school")
     .eq("id", user.id)
     .single()
 
-  if (!userProfile?.is_approved || userProfile.role !== "Head Teacher") {
+  if (!userProfile?.is_approved || !["Teacher", "Head Teacher"].includes(userProfile.role || "")) {
     redirect("/")
   }
 
@@ -37,11 +36,19 @@ export default async function StudentsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Student Management</h1>
           <p className="text-gray-300">Manage students from your school: {userProfile.school}</p>
-          <p className="text-gray-300 italic"><strong>Teacher role:</strong> has the added ability to invite others.</p>
-          <p className="text-gray-300 italic"><strong>Head Teacher role:</strong> has access to this page, for their school.</p>
+          <p className="text-gray-300 italic">
+            <strong>Teacher role:</strong> view access to this page, for their school and the ability to invite.
+          </p>
+          <p className="text-gray-300 italic">
+            <strong>Head Teacher role:</strong> has full edit access to this page, for their school.
+          </p>
         </div>
 
-        <StudentManagement headTeacherSchool={userProfile.school || ""} headTeacherId={user.id} />
+        <StudentManagement
+          headTeacherSchool={userProfile.school || ""}
+          headTeacherId={user.id}
+          userRole={userProfile.role || "Student"}
+        />
       </div>
     </div>
   )

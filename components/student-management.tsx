@@ -56,9 +56,10 @@ interface UserInterface {
 interface StudentManagementProps {
   headTeacherSchool: string
   headTeacherId: string
+  userRole: string
 }
 
-export default function StudentManagement({ headTeacherSchool, headTeacherId }: StudentManagementProps) {
+export default function StudentManagement({ headTeacherSchool, headTeacherId, userRole }: StudentManagementProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const storagePrefix = "studentManagement"
@@ -678,16 +679,18 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
                 <div className="flex flex-shrink-0 w-32 md:ml-4">
                   <div className="flex flex-col gap-1 w-full">
                     {/* Role selector */}
-                    <select
-                      value={user.role || "Student"}
-                      onChange={(e) => updateUserRole(user.id, e.target.value)}
-                      disabled={isProcessing || isEditing}
-                      className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none"
-                    >
-                      <option value="Student">Student</option>
-                      <option value="Teacher">Teacher</option>
-                      <option value="Head Teacher">Head Teacher</option>
-                    </select>
+                    {userRole === "Head Teacher" && user.role !== "Teacher" && (
+                      <select
+                        value={user.role || "Student"}
+                        onChange={(e) => updateUserRole(user.id, e.target.value)}
+                        disabled={isProcessing || isEditing}
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Head Teacher">Head Teacher</option>
+                      </select>
+                    )}
 
                     <div className="flex gap-1">
                       {isEditing ? (
@@ -714,26 +717,30 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId }: 
                         </>
                       ) : (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => startEditing(user)}
-                            disabled={isProcessing}
-                            className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
-                            aria-label="Edit user"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteUser(user.id, user.email)}
-                            disabled={isProcessing}
-                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
-                            aria-label="Delete user"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          {userRole === "Head Teacher" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditing(user)}
+                              disabled={isProcessing}
+                              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+                              aria-label="Edit user"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                          {userRole === "Head Teacher" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteUser(user.id, user.email)}
+                              disabled={isProcessing}
+                              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+                              aria-label="Delete user"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>

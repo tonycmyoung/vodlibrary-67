@@ -186,7 +186,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-80 bg-gray-900 border-gray-700 max-h-96 overflow-y-auto"
+        className="w-[28rem] bg-gray-900 border-gray-700 max-h-96 overflow-y-auto"
         align="end"
         sideOffset={5}
       >
@@ -260,7 +260,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
                         <div className={`w-2 h-2 rounded-full ${isAdmin ? "bg-purple-500" : "bg-red-500"}`} />
                       )}
                     </div>
-                    <p className="text-sm text-white break-words">{notification.message}</p>
+                    <p className="text-sm text-white break-words whitespace-pre-line">{notification.message}</p>
                     <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.created_at)}</p>
                   </div>
                   <div className="flex flex-col gap-1">

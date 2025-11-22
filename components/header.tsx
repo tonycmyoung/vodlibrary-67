@@ -95,7 +95,7 @@ export default function Header({ user }: HeaderProps) {
               <Heart className="w-4 h-4" />
               <span>Favorites</span>
             </Link>
-            {user.role === "Head Teacher" && (
+            {(user.role === "Teacher" || user.role === "Head Teacher") && (
               <Link
                 href="/students"
                 className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
@@ -233,7 +233,7 @@ export default function Header({ user }: HeaderProps) {
                 <Heart className="w-4 h-4" />
                 <span>Favorites</span>
               </Link>
-              {user.role === "Head Teacher" && (
+              {(user.role === "Teacher" || user.role === "Head Teacher") && (
                 <Link
                   href="/students"
                   className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"

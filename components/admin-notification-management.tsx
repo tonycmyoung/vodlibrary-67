@@ -473,7 +473,7 @@ export default function AdminNotificationManagement() {
                         {!notification.is_read && <div className="w-2 h-2 rounded-full bg-purple-500" />}
                       </div>
 
-                      <p className="text-white mb-2 break-words">{notification.message}</p>
+                      <p className="text-white mb-2 break-words whitespace-pre-line">{notification.message}</p>
 
                       <p className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</p>
                     </div>
