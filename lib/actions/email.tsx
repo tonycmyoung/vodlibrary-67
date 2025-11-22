@@ -3,7 +3,7 @@
 import { Resend } from "resend"
 
 export async function sendEmail(
-  recipient: string,
+  recipient: string | undefined,
   subject: string,
   title: string,
   body: string,
@@ -13,7 +13,7 @@ export async function sendEmail(
     const resend = new Resend(process.env.RESEND_API_KEY)
     const { error } = await resend.emails.send({
       from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-      to: recipient,
+      to: recipient || process.env.FROM_EMAIL!,
       bcc: bcc,
       subject: subject,
       html: `
