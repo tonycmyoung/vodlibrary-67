@@ -40,7 +40,12 @@ export async function sendEmail(
           </tr>
           <tr>
             <td style="padding: 40px 30px; text-align: center;">
-              <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">${title}</h2>
+              <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">
+              ${title}</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px; text-align: left;">
               ${htmlBody}
             </td>
           </tr>
