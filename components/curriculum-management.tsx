@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Loader2 } from "lucide-react"
 import {
   getCurriculums,
   addCurriculum,
@@ -129,8 +129,13 @@ export default function CurriculumManagement() {
     const newOrder = [...curriculums]
     ;[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]]
 
+    const reorderData = newOrder.map((curriculum, idx) => ({
+      id: curriculum.id,
+      display_order: idx,
+    }))
+
     setCurriculums(newOrder)
-    await reorderCurriculums(newOrder.map((c) => c.id))
+    await reorderCurriculums(reorderData)
   }
 
   const handleMoveDown = async (index: number) => {
@@ -139,8 +144,45 @@ export default function CurriculumManagement() {
     const newOrder = [...curriculums]
     ;[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]]
 
+    const reorderData = newOrder.map((curriculum, idx) => ({
+      id: curriculum.id,
+      display_order: idx,
+    }))
+
     setCurriculums(newOrder)
-    await reorderCurriculums(newOrder.map((c) => c.id))
+    await reorderCurriculums(reorderData)
+  }
+
+  const handleMoveToTop = async (index: number) => {
+    if (index === 0) return
+
+    const newOrder = [...curriculums]
+    const [item] = newOrder.splice(index, 1)
+    newOrder.unshift(item)
+
+    const reorderData = newOrder.map((curriculum, idx) => ({
+      id: curriculum.id,
+      display_order: idx,
+    }))
+
+    setCurriculums(newOrder)
+    await reorderCurriculums(reorderData)
+  }
+
+  const handleMoveToBottom = async (index: number) => {
+    if (index === curriculums.length - 1) return
+
+    const newOrder = [...curriculums]
+    const [item] = newOrder.splice(index, 1)
+    newOrder.push(item)
+
+    const reorderData = newOrder.map((curriculum, idx) => ({
+      id: curriculum.id,
+      display_order: idx,
+    }))
+
+    setCurriculums(newOrder)
+    await reorderCurriculums(reorderData)
   }
 
   if (loading) {
@@ -232,9 +274,20 @@ export default function CurriculumManagement() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={() => handleMoveToTop(index)}
+                    disabled={index === 0}
+                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
+                    title="Move to top"
+                  >
+                    <ChevronsUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
                     className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
+                    title="Move up"
                   >
                     <ChevronUp className="w-4 h-4" />
                   </Button>
@@ -244,8 +297,19 @@ export default function CurriculumManagement() {
                     onClick={() => handleMoveDown(index)}
                     disabled={index === curriculums.length - 1}
                     className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
+                    title="Move down"
                   >
                     <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleMoveToBottom(index)}
+                    disabled={index === curriculums.length - 1}
+                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
+                    title="Move to bottom"
+                  >
+                    <ChevronsDown className="w-4 h-4" />
                   </Button>
                 </div>
 
