@@ -7,7 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, ChevronsUp, ChevronsDown, Loader2 } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  MoreVertical,
+  ChevronsUp,
+  ChevronUp,
+  ChevronDown,
+  ChevronsDown,
+  Loader2,
+} from "lucide-react"
 import {
   getCurriculums,
   addCurriculum,
@@ -270,48 +281,52 @@ export default function CurriculumManagement() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleMoveToTop(index)}
-                    disabled={index === 0}
-                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
-                    title="Move to top"
-                  >
-                    <ChevronsUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleMoveUp(index)}
-                    disabled={index === 0}
-                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
-                    title="Move up"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleMoveDown(index)}
-                    disabled={index === curriculums.length - 1}
-                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
-                    title="Move down"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleMoveToBottom(index)}
-                    disabled={index === curriculums.length - 1}
-                    className="h-6 w-7 p-0 hover:bg-purple-600/50 disabled:opacity-30 text-gray-300 hover:text-white"
-                    title="Move to bottom"
-                  >
-                    <ChevronsDown className="w-4 h-4" />
-                  </Button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-purple-600/50 text-gray-300 hover:text-white"
+                      title="Reorder"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-gray-900 border-gray-700 text-white">
+                    <DropdownMenuItem
+                      onClick={() => handleMoveToTop(index)}
+                      disabled={index === 0}
+                      className="hover:bg-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronsUp className="w-4 h-4 mr-2" />
+                      Move to Top
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleMoveUp(index)}
+                      disabled={index === 0}
+                      className="hover:bg-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Move Up
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleMoveDown(index)}
+                      disabled={index === curriculums.length - 1}
+                      className="hover:bg-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      Move Down
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleMoveToBottom(index)}
+                      disabled={index === curriculums.length - 1}
+                      className="hover:bg-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronsDown className="w-4 h-4 mr-2" />
+                      Move to Bottom
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: curriculum.color }} />
 
