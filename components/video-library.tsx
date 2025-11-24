@@ -362,10 +362,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           | "performers"
           | "category"
           | "curriculum"
-          | "views") || "category"
+          | "views") || "curriculum"
       )
     }
-    return "category"
+    return "curriculum"
   })
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
