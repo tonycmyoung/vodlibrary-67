@@ -76,6 +76,13 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               <span>Videos</span>
             </Link>
             <Link
+              href="/admin/metadata"
+              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
+            >
+              <Tags className="w-4 h-4" />
+              <span>Metadata</span>
+            </Link>
+            <Link
               href="/admin/notifications"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-purple-800/20"
             >
@@ -122,9 +129,9 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
-                  <Link href="/admin/categories" className="flex items-center">
+                  <Link href="/admin/metadata" className="flex items-center">
                     <Tags className="mr-2 h-4 w-4" />
-                    Categories
+                    Metadata
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
@@ -199,20 +206,12 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                 <span>Videos</span>
               </Link>
               <Link
-                href="/admin/categories"
+                href="/admin/metadata"
                 className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Tags className="w-4 h-4" />
-                <span>Categories</span>
-              </Link>
-              <Link
-                href="/admin/performers"
-                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <User className="w-4 h-4" />
-                <span>Performers</span>
+                <span>Metadata</span>
               </Link>
               <Link
                 href="/admin/notifications"
@@ -221,22 +220,6 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               >
                 <Bell className="w-4 h-4" />
                 <span>Notifications</span>
-              </Link>
-              <Link
-                href="/admin/debug"
-                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Bug className="w-4 h-4" />
-                <span>Debug</span>
-              </Link>
-              <Link
-                href="/admin/audit"
-                className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <FileText className="w-4 h-4" />
-                <span>Audit</span>
               </Link>
               <button
                 className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-purple-800/20 w-full text-left"

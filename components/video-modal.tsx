@@ -19,8 +19,16 @@ interface Video {
   duration_seconds: number | null
   is_published: boolean
   recorded: string | null
+  curriculums: Array<{ id: string; name: string; color: string; display_order: number }>
   categories: Array<{ id: string; name: string; color: string }>
   performers: Array<{ id: string; name: string }>
+}
+
+interface Curriculum {
+  id: string
+  name: string
+  color: string
+  display_order: number
 }
 
 interface Category {
@@ -39,11 +47,20 @@ interface VideoModalProps {
   onClose: () => void
   onSave: () => void
   editingVideo: Video | null
+  curriculums: Curriculum[]
   categories: Category[]
   performers: Performer[]
 }
 
-export default function VideoModal({ isOpen, onClose, onSave, editingVideo, categories, performers }: VideoModalProps) {
+export default function VideoModal({
+  isOpen,
+  onClose,
+  onSave,
+  editingVideo,
+  curriculums,
+  categories,
+  performers,
+}: VideoModalProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -52,6 +69,7 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
     duration_seconds: "",
     is_published: true,
     recorded: "",
+    curriculum_ids: [] as string[],
     category_ids: [] as string[],
     performer_ids: [] as string[],
   })
@@ -60,7 +78,6 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
   const [isAutoFilling, setIsAutoFilling] = useState(false)
   const [thumbnailError, setThumbnailError] = useState<string | null>(null)
 
-  // Reset form when modal opens/closes or editing video changes
   useEffect(() => {
     if (isOpen) {
       if (editingVideo) {
@@ -72,6 +89,7 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
           duration_seconds: editingVideo.duration_seconds?.toString() || "",
           is_published: editingVideo.is_published,
           recorded: editingVideo.recorded === "Unset" ? "" : editingVideo.recorded || "",
+          curriculum_ids: editingVideo.curriculums.map((c) => c.id),
           category_ids: editingVideo.categories.map((c) => c.id),
           performer_ids: editingVideo.performers.map((p) => p.id),
         })
@@ -84,6 +102,7 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
           duration_seconds: "",
           is_published: true,
           recorded: "",
+          curriculum_ids: [],
           category_ids: [],
           performer_ids: [],
         })
@@ -128,6 +147,7 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
         description: formData.description || "",
         videoUrl: formData.video_url,
         thumbnailUrl: formData.thumbnail_url || "",
+        curriculumIds: formData.curriculum_ids,
         categoryIds: formData.category_ids,
         performerIds: formData.performer_ids,
         durationSeconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
@@ -225,7 +245,39 @@ export default function VideoModal({ isOpen, onClose, onSave, editingVideo, cate
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Curriculum</label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30">
+                {curriculums
+                  .sort((a, b) => a.display_order - b.display_order)
+                  .map((curriculum) => (
+                    <label key={curriculum.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.curriculum_ids.includes(curriculum.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              curriculum_ids: [...formData.curriculum_ids, curriculum.id],
+                            })
+                          } else {
+                            setFormData({
+                              ...formData,
+                              curriculum_ids: formData.curriculum_ids.filter((id) => id !== curriculum.id),
+                            })
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium" style={{ color: curriculum.color || "#9ca3af" }}>
+                        {curriculum.name}
+                      </span>
+                    </label>
+                  ))}
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Categories</label>
               <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30">

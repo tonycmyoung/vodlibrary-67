@@ -94,6 +94,7 @@ export async function saveVideo(videoData: {
   videoUrl: string
   thumbnailUrl?: string
   categoryIds?: string[]
+  curriculumIds?: string[]
   performerIds?: string[]
   durationSeconds?: number | null
   isPublished?: boolean
@@ -106,6 +107,7 @@ export async function saveVideo(videoData: {
     videoUrl,
     thumbnailUrl,
     categoryIds = [],
+    curriculumIds = [],
     performerIds = [],
     durationSeconds,
     isPublished = true,
@@ -144,6 +146,8 @@ export async function saveVideo(videoData: {
       // Delete existing category relationships
       await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
 
+      await serviceSupabase.from("video_curriculums").delete().eq("video_id", videoId)
+
       // Delete existing performer relationships
       await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
 
@@ -158,6 +162,19 @@ export async function saveVideo(videoData: {
 
         if (categoryError) {
           console.error("Error inserting video categories:", categoryError)
+        }
+      }
+
+      if (curriculumIds.length > 0) {
+        const curriculumInserts = curriculumIds.map((curriculumId) => ({
+          video_id: videoId,
+          curriculum_id: curriculumId,
+        }))
+
+        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
+
+        if (curriculumError) {
+          console.error("Error inserting video curriculums:", curriculumError)
         }
       }
 
@@ -208,6 +225,19 @@ export async function saveVideo(videoData: {
 
         if (categoryError) {
           console.error("Error inserting video categories:", categoryError)
+        }
+      }
+
+      if (curriculumIds.length > 0) {
+        const curriculumInserts = curriculumIds.map((curriculumId) => ({
+          video_id: newVideoId,
+          curriculum_id: curriculumId,
+        }))
+
+        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
+
+        if (curriculumError) {
+          console.error("Error inserting video curriculums:", curriculumError)
         }
       }
 

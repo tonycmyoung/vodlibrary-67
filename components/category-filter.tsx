@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import CurriculumFilter from "./curriculum-filter"
 
 function getContrastColor(hexColor: string): string {
   // Remove # if present
@@ -52,6 +53,9 @@ interface CategoryFilterProps {
   selectedCategories: string[]
   onCategoryToggle: (categoryId: string) => void
   videoCount: number
+  curriculums?: Array<{ id: string; name: string; color: string; display_order: number }>
+  selectedCurriculums?: string[]
+  onCurriculumToggle?: (curriculumId: string) => void
 }
 
 export default function CategoryFilter({
@@ -61,10 +65,16 @@ export default function CategoryFilter({
   selectedCategories,
   onCategoryToggle,
   videoCount,
+  curriculums = [],
+  selectedCurriculums = [],
+  onCurriculumToggle,
 }: CategoryFilterProps) {
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
       onCategoryToggle(categoryId)
+    })
+    selectedCurriculums.forEach((curriculumId) => {
+      onCurriculumToggle?.(curriculumId)
     })
   }
 
@@ -85,14 +95,13 @@ export default function CategoryFilter({
       }
     })
 
-  const gradingCategories = categories.filter((cat) => /^\d/.test(cat.name))
   const weaponCategories = categories.filter((cat) => !/^\d/.test(cat.name))
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">Filter by</h3>
-        {selectedCategories.length > 0 && (
+        {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-gray-400 hover:text-white">
             <X className="w-4 h-4 mr-1" />
             Clear All
@@ -101,46 +110,12 @@ export default function CategoryFilter({
       </div>
 
       <div className="space-y-3">
-        {/* Gradings Section */}
-        {gradingCategories.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">GRADINGS</div>
-            <div className="flex flex-wrap gap-2">
-              {gradingCategories.map((item) => {
-                const isSelected = selectedCategories.includes(item.id)
-                const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
-                return (
-                  <Badge
-                    key={item.id}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all hover:scale-105 relative ${
-                      isSelected
-                        ? "text-white border-2 shadow-lg"
-                        : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                    }`}
-                    style={
-                      hasValidColor
-                        ? isSelected
-                          ? {
-                              backgroundColor: item.color,
-                              borderColor: item.color,
-                              color: getContrastColor(item.color),
-                            }
-                          : {
-                              borderColor: addTransparency(item.color, "90") || item.color,
-                              borderLeftColor: item.color,
-                              borderLeftWidth: "4px",
-                            }
-                        : undefined
-                    }
-                    onClick={() => onCategoryToggle(item.id)}
-                  >
-                    {item.name}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
+        {curriculums.length > 0 && onCurriculumToggle && (
+          <CurriculumFilter
+            curriculums={curriculums}
+            selectedCurriculums={selectedCurriculums}
+            onCurriculumToggle={onCurriculumToggle}
+          />
         )}
 
         {/* Weapons Section */}
@@ -281,10 +256,11 @@ export default function CategoryFilter({
       </div>
 
       <div className="text-sm text-gray-400">
-        {selectedCategories.length > 0 ? (
+        {selectedCategories.length > 0 || selectedCurriculums.length > 0 ? (
           <>
-            Showing {videoCount} video{videoCount === 1 ? "" : "s"} matching: {selectedCategories.length} filter
-            {selectedCategories.length === 1 ? "" : "s"}
+            Showing {videoCount} video{videoCount === 1 ? "" : "s"} matching:{" "}
+            {selectedCategories.length + selectedCurriculums.length} filter
+            {selectedCategories.length + selectedCurriculums.length === 1 ? "" : "s"}
           </>
         ) : (
           <>

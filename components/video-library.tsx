@@ -30,6 +30,12 @@ interface Video {
     name: string
     color: string
   }>
+  curriculums: Array<{
+    id: string
+    name: string
+    color: string
+    display_order: number
+  }>
   performers: Array<{
     id: string
     name: string
@@ -40,6 +46,13 @@ interface Category {
   id: string
   name: string
   color: string
+}
+
+interface Curriculum {
+  id: string
+  name: string
+  color: string
+  display_order: number
 }
 
 interface Performer {
@@ -85,6 +98,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const [allVideos, setAllVideos] = useState<Video[]>([])
   const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<Category[]>([])
+  const [curriculums, setCurriculums] = useState<Curriculum[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [recordedValues, setRecordedValues] = useState<string[]>([])
   const [view, setView] = useState<"grid" | "list">(() => {
@@ -96,6 +110,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   })
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(urlState.filters)
+  const [selectedCurriculums, setSelectedCurriculums] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -117,9 +132,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   const supabase = createClient()
 
   const processedData = useMemo(() => {
-    if (!allVideos.length) return { categories: [], performers: [], recordedValues: [] }
+    if (!allVideos.length) return { categories: [], curriculums: [], performers: [], recordedValues: [] }
 
     const categoryMap = new Map<string, Category>()
+    const curriculumMap = new Map<string, Curriculum>()
     const performerMap = new Map<string, Performer>()
     const recordedSet = new Set<string>()
 
@@ -127,6 +143,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       video.categories?.forEach((category) => {
         if (category?.id && category?.name) {
           categoryMap.set(category.id, category)
+        }
+      })
+
+      video.curriculums?.forEach((curriculum) => {
+        if (curriculum?.id && curriculum?.name) {
+          curriculumMap.set(curriculum.id, curriculum)
         }
       })
 
@@ -143,6 +165,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
     return {
       categories: Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      curriculums: Array.from(curriculumMap.values()).sort((a, b) => a.display_order - b.display_order),
       performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       recordedValues: Array.from(recordedSet),
     }
@@ -184,29 +207,35 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       }
 
       try {
-        const [videosResult, favoritesResult, categoriesResult, performersResult] = await Promise.all([
-          supabase
-            .from("videos")
-            .select(`
+        const [videosResult, favoritesResult, categoriesResult, curriculumsResult, performersResult] =
+          await Promise.all([
+            supabase
+              .from("videos")
+              .select(`
               id, title, description, video_url, thumbnail_url, duration_seconds, 
               created_at, recorded, updated_at
             `)
-            .order("created_at", { ascending: false }),
+              .order("created_at", { ascending: false }),
 
-          user
-            ? supabase.from("user_favorites").select("video_id").eq("user_id", user.id)
-            : Promise.resolve({ data: [], error: null }),
+            user
+              ? supabase.from("user_favorites").select("video_id").eq("user_id", user.id)
+              : Promise.resolve({ data: [], error: null }),
 
-          supabase.from("video_categories").select(`
+            supabase.from("video_categories").select(`
               video_id,
               categories(id, name, color)
             `),
 
-          supabase.from("video_performers").select(`
+            supabase.from("video_curriculums").select(`
+              video_id,
+              curriculums(id, name, color, display_order)
+            `),
+
+            supabase.from("video_performers").select(`
               video_id,
               performers(id, name)
             `),
-        ])
+          ])
 
         if (!mounted) return
 
@@ -220,6 +249,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             const videoCategories =
               categoriesResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.categories) || []
 
+            const videoCurriculums =
+              curriculumsResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.curriculums) || []
+
             const videoPerformers =
               performersResult.data?.filter((vp) => vp.video_id === video.id).map((vp) => vp.performers) || []
 
@@ -227,6 +259,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               ...video,
               views: 0, // Initialize with 0, will be updated with actual counts
               categories: videoCategories,
+              curriculums: videoCurriculums,
               performers: videoPerformers,
             }
           }) || []
@@ -311,27 +344,29 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
   useEffect(() => {
     setCategories(processedData.categories)
+    setCurriculums(processedData.curriculums)
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
   }, [processedData])
 
-  const [sortBy, setSortBy] = useState<"title" | "created_at" | "recorded" | "performers" | "category" | "views">(
-    () => {
-      if (typeof window !== "undefined") {
-        const storageKey = `${storagePrefix}SortBy`
-        return (
-          (localStorage.getItem(storageKey) as
-            | "title"
-            | "created_at"
-            | "recorded"
-            | "performers"
-            | "category"
-            | "views") || "category"
-        )
-      }
-      return "category"
-    },
-  )
+  const [sortBy, setSortBy] = useState<
+    "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
+  >(() => {
+    if (typeof window !== "undefined") {
+      const storageKey = `${storagePrefix}SortBy`
+      return (
+        (localStorage.getItem(storageKey) as
+          | "title"
+          | "created_at"
+          | "recorded"
+          | "performers"
+          | "category"
+          | "curriculum"
+          | "views") || "category"
+      )
+    }
+    return "category"
+  })
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
     if (typeof window !== "undefined") {
@@ -359,9 +394,10 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       })
     }
 
-    if (selectedCategories.length > 0) {
+    if (selectedCategories.length > 0 || selectedCurriculums.length > 0) {
       result = result.filter((video) => {
         const videoCategories = video.categories.map((cat) => cat.id)
+        const videoCurriculums = video.curriculums.map((curr) => curr.id)
         const videoPerformers = video.performers.map((perf) => perf.id)
 
         const selectedCategoryIds = selectedCategories.filter(
@@ -378,6 +414,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           .map((id) => id.replace("views:", ""))
 
         let categoryMatches = selectedCategoryIds.length === 0 ? true : false
+        let curriculumMatches = selectedCurriculums.length === 0 ? true : false
         let recordedMatches = selectedRecordedValues.length === 0 ? true : false
         let performerMatches = selectedPerformerIds.length === 0 ? true : false
         let viewsMatches = selectedViews.length === 0 ? true : false
@@ -387,6 +424,14 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
             categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
           } else {
             categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+          }
+        }
+
+        if (selectedCurriculums.length > 0) {
+          if (filterMode === "AND") {
+            curriculumMatches = selectedCurriculums.every((selectedId) => videoCurriculums.includes(selectedId))
+          } else {
+            curriculumMatches = selectedCurriculums.some((selectedId) => videoCurriculums.includes(selectedId))
           }
         }
 
@@ -414,6 +459,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
         const activeFilters = [
           selectedCategoryIds.length > 0 ? categoryMatches : null,
+          selectedCurriculums.length > 0 ? curriculumMatches : null,
           selectedRecordedValues.length > 0 ? recordedMatches : null,
           selectedPerformerIds.length > 0 ? performerMatches : null,
           selectedViews.length > 0 ? viewsMatches : null,
@@ -454,6 +500,14 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
           comparison = aCategories.localeCompare(bCategories)
           break
+        case "curriculum":
+          const aMinOrder =
+            a.curriculums.length > 0 ? Math.min(...a.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
+          const bMinOrder =
+            b.curriculums.length > 0 ? Math.min(...b.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
+
+          comparison = aMinOrder - bMinOrder
+          break
         case "views":
           comparison = (a.views || 0) - (b.views || 0)
           break
@@ -468,7 +522,17 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     })
 
     return result
-  }, [allVideos, debouncedSearchQuery, selectedCategories, filterMode, sortBy, sortOrder, favoritesOnly, userFavorites])
+  }, [
+    allVideos,
+    debouncedSearchQuery,
+    selectedCategories,
+    selectedCurriculums,
+    filterMode,
+    sortBy,
+    sortOrder,
+    favoritesOnly,
+    userFavorites,
+  ])
 
   const totalPages = Math.ceil(processedVideos.length / itemsPerPage)
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
@@ -515,6 +579,13 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     }
   }
 
+  const handleCurriculumToggle = (curriculumId: string) => {
+    setSelectedCurriculums((prev) =>
+      prev.includes(curriculumId) ? prev.filter((id) => id !== curriculumId) : [...prev, curriculumId],
+    )
+    setCurrentPage(1) // Reset to page 1 when filters change
+  }
+
   const handleCategoryToggle = (categoryId: string) => {
     const newSelectedCategories = selectedCategories.includes(categoryId)
       ? selectedCategories.filter((id) => id !== categoryId)
@@ -531,7 +602,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "views")
+    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views")
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
@@ -742,7 +813,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     )
   }
 
-  if (videos.length === 0 && !debouncedSearchQuery && selectedCategories.length === 0) {
+  if (
+    videos.length === 0 &&
+    !debouncedSearchQuery &&
+    selectedCategories.length === 0 &&
+    selectedCurriculums.length === 0
+  ) {
     if (favoritesOnly) {
       return (
         <div className="text-center py-12">
@@ -761,6 +837,22 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       )
     }
   }
+
+  const FilterSection = () => (
+    <div className="space-y-6">
+      <CategoryFilter
+        categories={categories}
+        recordedValues={recordedValues}
+        performers={performers}
+        selectedCategories={selectedCategories}
+        onCategoryToggle={handleCategoryToggle}
+        videoCount={videos.length}
+        curriculums={curriculums}
+        selectedCurriculums={selectedCurriculums}
+        onCurriculumToggle={handleCurriculumToggle}
+      />
+    </div>
+  )
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
@@ -799,9 +891,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    {selectedCategories.length > 0 && (
+                    {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
                       <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
-                        {selectedCategories.length}
+                        {selectedCategories.length + selectedCurriculums.length}
                       </span>
                     )}
                   </Button>
@@ -811,16 +903,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
                     <DialogTitle className="text-white">Filter Videos</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <CategoryFilter
-                      categories={categories}
-                      recordedValues={recordedValues}
-                      performers={performers}
-                      selectedCategories={selectedCategories}
-                      onCategoryToggle={handleCategoryToggle}
-                      videoCount={videos.length}
-                      compact={true}
-                    />
-                    {selectedCategories.length > 1 && (
+                    <FilterSection />
+                    {/* Conditionally show filter mode selector only if there are multiple filters selected */}
+                    {selectedCategories.length + selectedCurriculums.length > 1 && (
                       <div className="space-y-2">
                         <span className="text-sm text-gray-400">Filter mode:</span>
                         <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
@@ -867,15 +952,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
           </div>
         </div>
         <div className="hidden lg:block">
-          <CategoryFilter
-            categories={categories}
-            recordedValues={recordedValues}
-            performers={performers}
-            selectedCategories={selectedCategories}
-            onCategoryToggle={handleCategoryToggle}
-            videoCount={videos.length}
-          />
-          {selectedCategories.length > 1 && (
+          <FilterSection />
+          {/* Conditionally show filter mode selector only if there are multiple filters selected */}
+          {selectedCategories.length + selectedCurriculums.length > 1 && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-gray-400">Filter mode:</span>
               <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
@@ -906,8 +985,8 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
               </div>
               <span className="text-xs text-gray-500">
                 {filterMode === "AND"
-                  ? "Videos must have ALL selected categories"
-                  : "Videos can have ANY selected categories"}
+                  ? "Videos must have ALL selected categories/curriculums"
+                  : "Videos can have ANY selected categories/curriculums"}
               </span>
             </div>
           )}

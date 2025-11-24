@@ -21,6 +21,8 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
 
   const getSortLabel = (value: string) => {
     switch (value) {
+      case "curriculum":
+        return "Curriculum"
       case "category":
         return "Category"
       case "title":
@@ -46,6 +48,9 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-gray-900 border-gray-700">
+          <SelectItem value="curriculum" className="text-gray-300 hover:text-gray-900">
+            Curriculum
+          </SelectItem>
           <SelectItem value="category" className="text-gray-300 hover:text-gray-900">
             Category
           </SelectItem>
