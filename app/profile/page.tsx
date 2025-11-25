@@ -24,10 +24,20 @@ export default async function ProfilePage() {
     redirect("/auth/login")
   }
 
-  // Check if user is approved and get full profile
   const { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, email, teacher, school, role, created_at, profile_image_url")
+    .select(`
+      is_approved,
+      full_name,
+      email,
+      teacher,
+      school,
+      role,
+      created_at,
+      profile_image_url,
+      current_belt_id,
+      current_belt:curriculums!current_belt_id(id, name, color, display_order)
+    `)
     .eq("id", user.id)
     .single()
 
@@ -41,14 +51,20 @@ export default async function ProfilePage() {
     .select("id", { count: "exact" })
     .eq("user_id", user.id)
 
+  const { data: curriculums } = await supabase
+    .from("curriculums")
+    .select("id, name, color, display_order")
+    .order("display_order", { ascending: true })
+
   const isAdmin = user.email === "acmyma@gmail.com"
 
   const userWithStats = {
     ...userProfile,
     id: user.id,
-    email: user.email, // Add email from auth user
+    email: user.email,
+    current_belt: userProfile?.current_belt || null,
     favorite_count: favoriteCount?.length || 0,
-    isAdmin, // Add admin status
+    isAdmin,
   }
 
   const userForHeader = {
@@ -68,7 +84,7 @@ export default async function ProfilePage() {
           <h1 className="text-3xl font-bold text-white mb-2">My Profile</h1>
           <p className="text-gray-300">Manage your account information</p>
         </div>
-        <UserProfile user={userWithStats} />
+        <UserProfile user={userWithStats} curriculums={curriculums || []} />
       </div>
     </div>
   )

@@ -27,13 +27,14 @@ import {
   User,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createClient } from "@/lib/supabase/client"
-import { deleteUserCompletely, updateUserFields } from "@/lib/actions"
+import { createClient as createBrowserClient } from "@/lib/supabase/client"
+import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { fetchStudentsForHeadTeacher } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
+import { toast } from "react-toastify"
 
 interface UserInterface {
   id: string
@@ -50,7 +51,16 @@ interface UserInterface {
   login_count: number
   last_view: string | null
   view_count: number
-  inviter?: { full_name: string } | null
+  current_belt_id: string | null
+  current_belt?: {
+    id: string
+    name: string
+    color: string
+    display_order: number
+  } | null
+  inviter?: {
+    full_name: string
+  }
 }
 
 interface StudentManagementProps {
@@ -65,12 +75,16 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   const storagePrefix = "studentManagement"
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const [urlState, setUrlState] = useState(() => {
     const role = searchParams.get("role") || "all"
     const school = searchParams.get("school") || "all"
     const search = searchParams.get("search") || ""
-    return { role, school, search }
+    const belt = searchParams.get("belt") || "all"
+    const sortBy = searchParams.get("sortBy") || "full_name"
+    const sortOrder = searchParams.get("sortOrder") || "asc"
+    return { role, school, search, belt, sortBy, sortOrder }
   })
 
   const [users, setUsers] = useState<UserInterface[]>([])
@@ -85,47 +99,29 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     full_name: string
     teacher: string
     school: string
+    current_belt_id: string | null
   }>({
     full_name: "",
     teacher: "",
     school: "",
+    current_belt_id: null,
   })
 
   const [selectedRole, setSelectedRole] = useState(urlState.role)
   const [selectedSchool, setSelectedSchool] = useState(urlState.school)
-  const [showMobileFilters, setShowMobileFilters] = useState(false)
-
-  const [sortBy, setSortBy] = useState<
-    "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
-  >(() => {
-    if (typeof window !== "undefined") {
-      const storageKey = `${storagePrefix}SortBy`
-      return (
-        (localStorage.getItem(storageKey) as
-          | "full_name"
-          | "created_at"
-          | "last_login"
-          | "login_count"
-          | "last_view"
-          | "view_count") || "full_name"
-      )
-    }
-    return "full_name"
-  })
-
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
-    if (typeof window !== "undefined") {
-      const storageKey = `${storagePrefix}SortOrder`
-      return (localStorage.getItem(storageKey) as "asc" | "desc") || "asc"
-    }
-    return "asc"
-  })
+  const [selectedBelt, setSelectedBelt] = useState(urlState.belt)
+  const [sortBy, setSortBy] = useState(urlState.sortBy)
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(urlState.sortOrder)
+  const [curriculums, setCurriculums] = useState<
+    Array<{ id: string; name: string; color: string; display_order: number }>
+  >([])
 
   const processedData = useMemo(() => {
-    if (!users.length) return { roles: [], schools: [] }
+    if (!users.length) return { roles: [], schools: [], belts: [] }
 
     const roleSet = new Set<string>()
     const schoolSet = new Set<string>()
+    const beltSet = new Set<string>()
 
     users.forEach((user) => {
       if (user.role && user.role.trim()) {
@@ -134,11 +130,15 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       if (user.school && user.school.trim()) {
         schoolSet.add(user.school)
       }
+      if (user.current_belt && user.current_belt.id.trim()) {
+        beltSet.add(user.current_belt.id)
+      }
     })
 
     return {
       roles: Array.from(roleSet).sort(),
       schools: Array.from(schoolSet).sort(),
+      belts: Array.from(beltSet).sort(),
     }
   }, [users])
 
@@ -165,6 +165,11 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     // Apply school filter
     if (selectedSchool && selectedSchool !== "all") {
       result = result.filter((user) => user.school === selectedSchool)
+    }
+
+    // Apply belt filter
+    if (selectedBelt && selectedBelt !== "all") {
+      result = result.filter((user) => user.current_belt_id === selectedBelt)
     }
 
     // Apply sorting
@@ -207,13 +212,20 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     })
 
     return result
-  }, [users, debouncedSearchQuery, selectedRole, selectedSchool, sortBy, sortOrder])
+  }, [users, debouncedSearchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
 
   useEffect(() => {
     setFilteredUsers(processedUsers)
   }, [processedUsers])
 
-  const reconstructURL = (role: string, school: string, search: string) => {
+  const reconstructURL = (
+    role: string,
+    school: string,
+    search: string,
+    belt: string,
+    sortBy: string,
+    sortOrder: "asc" | "desc",
+  ) => {
     const params = new URLSearchParams()
 
     if (role.trim() && role !== "all") {
@@ -228,6 +240,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       params.set("search", search)
     }
 
+    if (belt.trim() && belt !== "all") {
+      params.set("belt", belt)
+    }
+
+    params.set("sortBy", sortBy)
+    params.set("sortOrder", sortOrder)
+
     const currentPath = "/students"
     const newURL = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
     router.replace(newURL, { scroll: false })
@@ -235,16 +254,21 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
 
   const handleRoleChange = (role: string) => {
     setSelectedRole(role)
-    reconstructURL(role, selectedSchool, searchQuery)
+    reconstructURL(role, selectedSchool, searchQuery, selectedBelt, sortBy, sortOrder)
   }
 
   const handleSchoolChange = (school: string) => {
     setSelectedSchool(school)
-    reconstructURL(selectedRole, school, searchQuery)
+    reconstructURL(selectedRole, school, searchQuery, selectedBelt, sortBy, sortOrder)
+  }
+
+  const handleBeltChange = (belt: string) => {
+    setSelectedBelt(belt)
+    reconstructURL(selectedRole, selectedSchool, searchQuery, belt, sortBy, sortOrder)
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count")
+    setSortBy(newSortBy)
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
@@ -254,17 +278,18 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
-      reconstructURL(selectedRole, selectedSchool, searchQuery)
+      reconstructURL(selectedRole, selectedSchool, searchQuery, selectedBelt, sortBy, sortOrder)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedRole, selectedSchool])
+  }, [searchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
 
   useEffect(() => {
-    fetchUsers()
+    fetchStudents()
+    fetchCurriculums()
   }, [])
 
-  const fetchUsers = async () => {
+  const fetchStudents = async () => {
     try {
       const result = await fetchStudentsForHeadTeacher(headTeacherSchool, headTeacherId)
 
@@ -279,6 +304,24 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       setUsers([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCurriculums = async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+
+    const { data, error } = await supabase
+      .from("curriculums")
+      .select("id, name, color, display_order")
+      .order("display_order", { ascending: true })
+
+    if (error) {
+      console.error("Error fetching curriculums:", error)
+    } else {
+      setCurriculums(data || [])
     }
   }
 
@@ -299,9 +342,10 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       }
 
       setUsers((prev) => prev.filter((user) => user.id !== userId))
+      toast.success("User deleted successfully")
     } catch (error) {
       console.error("Error deleting user:", error)
-      alert("Failed to delete user. Please try again.")
+      toast.error("Failed to delete user. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -315,15 +359,61 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const supabase = createClient()
+      const supabase = createBrowserClient()
       const { error } = await supabase.from("users").update({ role: newRole }).eq("id", userId)
 
       if (error) throw error
 
       setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user)))
+      toast.success("User role updated successfully")
     } catch (error) {
       console.error("Error updating user role:", error)
-      alert("Failed to update user role. Please try again.")
+      toast.error("Failed to update user role. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  const updateUserBelt = async (userId: string, newBeltId: string | null) => {
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const supabase = createBrowserClient()
+      const { error } = await supabase
+        .from("users")
+        .update({ current_belt_id: newBeltId || null })
+        .eq("id", userId)
+
+      if (error) throw error
+
+      // Fetch the updated user with belt data to maintain the curriculum information
+      const { data: updatedUser, error: fetchError } = await supabase
+        .from("users")
+        .select("*, current_belt:curriculums!current_belt_id(id, name, color, display_order)")
+        .eq("id", userId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                current_belt_id: newBeltId,
+                current_belt: updatedUser.current_belt || null,
+              }
+            : user,
+        ),
+      )
+      toast.success("User belt updated successfully")
+    } catch (error) {
+      console.error("Error updating user belt:", error)
+      toast.error("Failed to update user belt. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -339,6 +429,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       full_name: user.full_name || "",
       teacher: user.teacher || "",
       school: user.school || "",
+      current_belt_id: user.current_belt_id,
     })
   }
 
@@ -348,6 +439,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       full_name: "",
       teacher: "",
       school: "",
+      current_belt_id: null,
     })
   }
 
@@ -357,7 +449,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     setProcessingUsers((prev) => new Set(prev).add(editingUser))
 
     try {
-      const result = await updateUserFields(editingUser, editValues.full_name, editValues.teacher, editValues.school)
+      const result = await updateUserFields(
+        editingUser,
+        editValues.full_name,
+        editValues.teacher,
+        editValues.school,
+        editValues.current_belt_id,
+      )
 
       if (result.error) {
         throw new Error(result.error)
@@ -371,6 +469,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                 full_name: editValues.full_name.trim(),
                 teacher: editValues.teacher.trim(),
                 school: editValues.school.trim(),
+                current_belt_id: editValues.current_belt_id,
               }
             : user,
         ),
@@ -381,10 +480,12 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         full_name: "",
         teacher: "",
         school: "",
+        current_belt_id: null,
       })
+      toast.success("User details updated successfully")
     } catch (error) {
       console.error("Error updating user fields:", error)
-      alert("Failed to update user fields. Please try again.")
+      toast.error("Failed to update user fields. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -482,12 +583,16 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    {((selectedRole && selectedRole !== "all") || (selectedSchool && selectedSchool !== "all")) && (
+                    {((selectedRole && selectedRole !== "all") ||
+                      (selectedSchool && selectedSchool !== "all") ||
+                      (selectedBelt && selectedBelt !== "all")) && (
                       <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
                         {
-                          [selectedRole !== "all" && selectedRole, selectedSchool !== "all" && selectedSchool].filter(
-                            Boolean,
-                          ).length
+                          [
+                            selectedRole !== "all" && selectedRole,
+                            selectedSchool !== "all" && selectedSchool,
+                            selectedBelt !== "all" && selectedBelt,
+                          ].filter(Boolean).length
                         }
                       </span>
                     )}
@@ -501,10 +606,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                     <UserFilter
                       roles={processedData.roles}
                       schools={processedData.schools}
+                      belts={curriculums}
                       selectedRole={selectedRole}
                       selectedSchool={selectedSchool}
+                      selectedBelt={selectedBelt}
                       onRoleChange={handleRoleChange}
                       onSchoolChange={handleSchoolChange}
+                      onBeltChange={handleBeltChange}
                       userCount={filteredUsers.length}
                     />
                     <Button
@@ -523,10 +631,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                 <UserFilter
                   roles={processedData.roles}
                   schools={processedData.schools}
+                  belts={curriculums}
                   selectedRole={selectedRole}
                   selectedSchool={selectedSchool}
+                  selectedBelt={selectedBelt}
                   onRoleChange={handleRoleChange}
                   onSchoolChange={handleSchoolChange}
+                  onBeltChange={handleBeltChange}
                   userCount={filteredUsers.length}
                 />
               </div>
@@ -676,12 +787,11 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                   </div>
                 </div>
 
-                <div className="flex flex-shrink-0 w-32 md:ml-4">
+                <div className="flex items-center justify-end ml-auto pl-4">
                   <div className="flex flex-col gap-1 w-full">
-                    {/* Role selector */}
-                    {userRole === "Head Teacher" && user.role !== "Teacher" && (
+                    {userRole === "Head Teacher" && (
                       <select
-                        value={user.role || "Student"}
+                        value={isEditing ? editValues.role || "Student" : user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
                         disabled={isProcessing || isEditing}
                         className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -691,6 +801,29 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         <option value="Head Teacher">Head Teacher</option>
                       </select>
                     )}
+
+                    <select
+                      value={isEditing ? editValues.current_belt_id || "" : user.current_belt_id || ""}
+                      onChange={(e) => {
+                        if (isEditing) {
+                          setEditValues({
+                            ...editValues,
+                            current_belt_id: e.target.value || null,
+                          })
+                        } else {
+                          updateUserBelt(user.id, e.target.value || null)
+                        }
+                      }}
+                      disabled={isProcessing}
+                      className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">No belt</option>
+                      {curriculums.map((curriculum) => (
+                        <option key={curriculum.id} value={curriculum.id}>
+                          {curriculum.name}
+                        </option>
+                      ))}
+                    </select>
 
                     <div className="flex gap-1">
                       {isEditing ? (

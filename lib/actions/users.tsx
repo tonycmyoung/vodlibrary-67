@@ -133,7 +133,7 @@ export async function inviteUser(email: string) {
 export async function approveUserServerAction(userId: string, role = "Student") {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -306,19 +306,25 @@ export async function updatePendingUserFields(userId: string, fullName: string, 
       .eq("id", userId)
 
     if (error) {
-      console.error("Error updating user fields:", error)
-      return { error: "Failed to update user fields" }
+      console.error("Error updating pending user fields:", error)
+      return { error: "Failed to update pending user fields" }
     }
 
     revalidatePath("/admin")
-    return { success: "User fields updated successfully" }
+    return { success: "Pending user fields updated successfully" }
   } catch (error) {
     console.error("Error in updatePendingUserFields:", error)
-    return { error: "Failed to update user fields" }
+    return { error: "Failed to update pending user fields" }
   }
 }
 
-export async function updateUserFields(userId: string, fullName: string, teacher: string, school: string) {
+export async function updateUserFields(
+  userId: string,
+  fullName: string,
+  teacher: string,
+  school: string,
+  currentBeltId?: string | null,
+) {
   try {
     const cookieStore = await cookies()
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -336,14 +342,17 @@ export async function updateUserFields(userId: string, fullName: string, teacher
       },
     })
 
-    const { error } = await serviceSupabase
-      .from("users")
-      .update({
-        full_name: fullName.trim(),
-        teacher: teacher.trim(),
-        school: school.trim(),
-      })
-      .eq("id", userId)
+    const updateData: any = {
+      full_name: fullName.trim(),
+      teacher: teacher.trim(),
+      school: school.trim(),
+    }
+
+    if (currentBeltId !== undefined) {
+      updateData.current_belt_id = currentBeltId
+    }
+
+    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", userId)
 
     if (error) {
       console.error("Error updating user fields:", error)
@@ -351,6 +360,7 @@ export async function updateUserFields(userId: string, fullName: string, teacher
     }
 
     revalidatePath("/admin/users")
+    revalidatePath("/students")
     return { success: "User fields updated successfully" }
   } catch (error) {
     console.error("Error in updateUserFields:", error)
@@ -470,6 +480,69 @@ export async function updateProfile(params: {
   }
 }
 
+export async function updateUserBelt(userId: string, beltId: string | null) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
+        },
+      },
+    )
+
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated", success: false }
+    }
+
+    // Check permissions
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("role, school")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    const { data: targetUser } = await supabase.from("users").select("school").eq("id", userId).single()
+
+    const isAdmin = userProfile?.role === "Admin"
+    const isTeacher = userProfile?.role === "Teacher" || userProfile?.role === "Head Teacher"
+    const isSameSchool = userProfile?.school === targetUser?.school
+    const isOwnProfile = currentUser.user.id === userId
+
+    if (!isOwnProfile && !isAdmin && !(isTeacher && isSameSchool)) {
+      return { error: "Unauthorized to update this user's belt", success: false }
+    }
+
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.from("users").update({ current_belt_id: beltId }).eq("id", userId)
+
+    if (error) {
+      console.error("Error updating user belt:", error)
+      return { error: "Failed to update belt", success: false }
+    }
+
+    revalidatePath("/profile")
+    revalidatePath("/admin/users")
+    revalidatePath("/students")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in updateUserBelt:", error)
+    return { error: "Failed to update belt", success: false }
+  }
+}
+
 export async function fetchPendingUsers() {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -555,7 +628,7 @@ export async function fetchUnconfirmedEmailUsers() {
 export async function resendConfirmationEmail(email: string) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -614,8 +687,9 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
       .select(`
-        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
-        inviter:invited_by(full_name)
+        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id,
+        inviter:invited_by(full_name),
+        current_belt:curriculums!current_belt_id(id, name, color, display_order)
       `)
       .eq("is_approved", true)
       .ilike("school", `${headTeacherSchool}%`)
@@ -669,7 +743,7 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
 
 export async function adminResetUserPassword(userId: string, newPassword: string) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
