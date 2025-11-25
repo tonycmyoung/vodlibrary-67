@@ -29,12 +29,14 @@ interface Video {
     id: string
     name: string
     color: string
+    description: string | null
   }>
   curriculums: Array<{
     id: string
     name: string
     color: string
     display_order: number
+    description: string | null
   }>
   performers: Array<{
     id: string
@@ -46,6 +48,7 @@ interface Category {
   id: string
   name: string
   color: string
+  description: string | null
 }
 
 interface Curriculum {
@@ -53,6 +56,7 @@ interface Curriculum {
   name: string
   color: string
   display_order: number
+  description: string | null
 }
 
 interface Performer {
@@ -223,12 +227,12 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
             supabase.from("video_categories").select(`
               video_id,
-              categories(id, name, color)
+              categories(id, name, color, description)
             `),
 
             supabase.from("video_curriculums").select(`
               video_id,
-              curriculums(id, name, color, display_order)
+              curriculums(id, name, color, display_order, description)
             `),
 
             supabase.from("video_performers").select(`
