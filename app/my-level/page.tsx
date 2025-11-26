@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
 
-export default async function Home() {
+export default async function MyLevelPage() {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -24,7 +24,7 @@ export default async function Home() {
     redirect("/auth/login")
   }
 
-  // Check if user is approved
+  // Check if user is approved and get belt info
   const { data: userProfile, error } = await supabase
     .from("users")
     .select(`
@@ -32,6 +32,7 @@ export default async function Home() {
       full_name, 
       profile_image_url, 
       role,
+      current_belt_id,
       current_belt:curriculums!current_belt_id(id, name, display_order, color)
     `)
     .eq("id", user.id)
@@ -47,19 +48,22 @@ export default async function Home() {
   }
 
   const userWithEmail = {
-    id: user.id, // Always use the authenticated user's ID
+    id: user.id,
     email: user.email,
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null, // Pass belt info to header
+    current_belt: userProfile?.current_belt || null,
   }
+
+  // Calculate max curriculum order (user's belt + 1 for next level)
+  const maxCurriculumOrder = userProfile?.current_belt ? userProfile.current_belt.display_order + 1 : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <VideoLibrary />
+      <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" />
     </div>
   )
 }

@@ -33,6 +33,13 @@ interface HeaderProps {
     email?: string
     profile_image_url?: string | null
     role?: string | null
+    current_belt?: {
+      // Added belt info to determine if My Level link should show
+      id: string
+      name: string
+      display_order: number
+      color: string
+    } | null
   }
 }
 
@@ -88,6 +95,15 @@ export default function Header({ user }: HeaderProps) {
             <Link href="/" className="text-gray-300 hover:text-white transition-colors">
               Library
             </Link>
+            {user.current_belt && (
+              <Link
+                href="/my-level"
+                className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>My Level</span>
+              </Link>
+            )}
             <Link
               href="/favorites"
               className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
@@ -225,6 +241,16 @@ export default function Header({ user }: HeaderProps) {
               >
                 Library
               </Link>
+              {user.current_belt && (
+                <Link
+                  href="/my-level"
+                  className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>My Level</span>
+                </Link>
+              )}
               <Link
                 href="/favorites"
                 className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"

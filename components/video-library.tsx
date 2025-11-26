@@ -66,6 +66,8 @@ interface Performer {
 
 interface VideoLibraryProps {
   favoritesOnly?: boolean
+  maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
+  storagePrefix?: string // Allow custom storage prefix for separate UI state
 }
 
 let lastFailureTime = 0
@@ -75,10 +77,14 @@ const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
 const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
-export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
+export default function VideoLibrary({
+  favoritesOnly = false,
+  maxCurriculumOrder,
+  storagePrefix: customStoragePrefix,
+}: VideoLibraryProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
+  const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
 
   const [urlState, setUrlState] = useState(() => {
     const filters = searchParams.get("filters")
@@ -113,7 +119,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     return "grid"
   })
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(urlState.filters)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedCurriculums, setSelectedCurriculums] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
@@ -135,15 +141,28 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
   const supabase = createClient()
 
+  const filteredByLevel = useMemo(() => {
+    if (!maxCurriculumOrder) return allVideos
+
+    return allVideos.filter((video) => {
+      if (video.curriculums.length === 0) return false
+
+      return video.curriculums.some((curr) => curr.display_order <= maxCurriculumOrder)
+    })
+  }, [allVideos, maxCurriculumOrder])
+
   const processedData = useMemo(() => {
-    if (!allVideos.length) return { categories: [], curriculums: [], performers: [], recordedValues: [] }
+    // Use filtered videos if maxCurriculumOrder is set, otherwise use all videos
+    const videosToProcess = maxCurriculumOrder ? filteredByLevel : allVideos
+
+    if (!videosToProcess.length) return { categories: [], curriculums: [], performers: [], recordedValues: [] }
 
     const categoryMap = new Map<string, Category>()
     const curriculumMap = new Map<string, Curriculum>()
     const performerMap = new Map<string, Performer>()
     const recordedSet = new Set<string>()
 
-    allVideos.forEach((video) => {
+    videosToProcess.forEach((video) => {
       video.categories?.forEach((category) => {
         if (category?.id && category?.name) {
           categoryMap.set(category.id, category)
@@ -152,7 +171,9 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
 
       video.curriculums?.forEach((curriculum) => {
         if (curriculum?.id && curriculum?.name) {
-          curriculumMap.set(curriculum.id, curriculum)
+          if (!maxCurriculumOrder || curriculum.display_order <= maxCurriculumOrder) {
+            curriculumMap.set(curriculum.id, curriculum)
+          }
         }
       })
 
@@ -173,7 +194,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       recordedValues: Array.from(recordedSet),
     }
-  }, [allVideos])
+  }, [allVideos, filteredByLevel, maxCurriculumOrder])
 
   useEffect(() => {
     let mounted = true
@@ -351,6 +372,37 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     setCurriculums(processedData.curriculums)
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
+
+    if (urlState.filters.length > 0 && processedData.categories.length > 0 && processedData.curriculums.length > 0) {
+      const categoryIds = processedData.categories.map((c) => c.id)
+      const curriculumIds = processedData.curriculums.map((c) => c.id)
+
+      const separatedCategories: string[] = []
+      const separatedCurriculums: string[] = []
+
+      urlState.filters.forEach((filterId) => {
+        if (
+          categoryIds.includes(filterId) ||
+          filterId.startsWith("recorded:") ||
+          filterId.startsWith("performer:") ||
+          filterId.startsWith("views:")
+        ) {
+          separatedCategories.push(filterId)
+        } else if (curriculumIds.includes(filterId)) {
+          separatedCurriculums.push(filterId)
+        }
+      })
+
+      console.log(
+        "[v0] Separated filters on load - categories:",
+        separatedCategories,
+        "curriculums:",
+        separatedCurriculums,
+      )
+
+      setSelectedCategories(separatedCategories)
+      setSelectedCurriculums(separatedCurriculums)
+    }
   }, [processedData])
 
   const [sortBy, setSortBy] = useState<
@@ -381,7 +433,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   })
 
   const processedVideos = useMemo(() => {
-    let result = [...allVideos]
+    let result = maxCurriculumOrder ? [...filteredByLevel] : [...allVideos]
 
     if (favoritesOnly) {
       result = result.filter((video) => userFavorites.has(video.id))
@@ -536,6 +588,8 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
     sortOrder,
     favoritesOnly,
     userFavorites,
+    filteredByLevel,
+    maxCurriculumOrder,
   ])
 
   const totalPages = Math.ceil(processedVideos.length / itemsPerPage)
@@ -573,7 +627,7 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
       params.set("page", page.toString())
     }
 
-    const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
+    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
 
     const currentSearch = window.location.search
     const newSearch = params.toString() ? `?${params.toString()}` : ""
@@ -614,8 +668,18 @@ export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProp
   }
 
   const handleFilterModeChange = (newMode: "AND" | "OR") => {
+    console.log("[v0] handleFilterModeChange called")
+    console.log("[v0] newMode:", newMode)
+    console.log("[v0] selectedCategories:", selectedCategories)
+    console.log("[v0] selectedCurriculums:", selectedCurriculums)
+
     setFilterMode(newMode)
-    reconstructURL(selectedCategories, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
+    const allFilters = [...selectedCategories, ...selectedCurriculums]
+
+    console.log("[v0] allFilters combined:", allFilters)
+    console.log("[v0] searchQuery:", searchQuery)
+
+    reconstructURL(allFilters, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
   }
 
   const handleItemsPerPageChange = (value: string) => {
