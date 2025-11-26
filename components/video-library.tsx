@@ -11,7 +11,7 @@ import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight, Ribbon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
 
@@ -924,10 +924,32 @@ export default function VideoLibrary({
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
+      {maxCurriculumOrder && (
+        <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
+          <Ribbon className="w-4 h-4 text-red-500" />
+          <span className="text-sm text-gray-300">
+            Training for:{" "}
+            <span className="font-semibold text-white">
+              {curriculums.find((c) => c.display_order === maxCurriculumOrder)?.name || "Next Level"}
+            </span>
+          </span>
+        </div>
+      )}
       <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
         <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {maxCurriculumOrder && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
+                <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span className="text-sm text-gray-300">
+                  Training for:{" "}
+                  <span className="font-semibold text-white">
+                    {curriculums.find((c) => c.display_order === maxCurriculumOrder)?.name || "Next Level"}
+                  </span>
+                </span>
+              </div>
+            )}
+            <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
@@ -946,7 +968,12 @@ export default function VideoLibrary({
                 </Button>
               )}
             </div>
-            <ViewToggle view={view} onViewChange={handleViewChange} />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ViewToggle view={view} onViewChange={handleViewChange} />
+              <div className="hidden sm:block">
+                <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
+              </div>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -972,7 +999,6 @@ export default function VideoLibrary({
                   </DialogHeader>
                   <div className="space-y-4">
                     <FilterSection />
-                    {/* Conditionally show filter mode selector only if there are multiple filters selected */}
                     {selectedCategories.length + selectedCurriculums.length > 1 && (
                       <div className="space-y-2">
                         <span className="text-sm text-gray-400">Filter mode:</span>
@@ -1013,7 +1039,7 @@ export default function VideoLibrary({
                   </div>
                 </DialogContent>
               </Dialog>
-              <div className="flex-1 sm:flex-none">
+              <div className="flex-1 sm:hidden">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
             </div>
@@ -1021,7 +1047,6 @@ export default function VideoLibrary({
         </div>
         <div className="hidden lg:block">
           <FilterSection />
-          {/* Conditionally show filter mode selector only if there are multiple filters selected */}
           {selectedCategories.length + selectedCurriculums.length > 1 && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-gray-400">Filter mode:</span>

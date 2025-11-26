@@ -19,7 +19,7 @@ import {
   Ribbon,
 } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
@@ -48,6 +48,7 @@ interface HeaderProps {
 export default function Header({ user }: HeaderProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const pathname = usePathname()
   const isAdmin = user.email === "acmyma@gmail.com"
   const isStudentView = typeof window !== "undefined" && window.location.pathname === "/student-view"
   const isProfilePage = typeof window !== "undefined" && window.location.pathname === "/profile"
@@ -94,14 +95,25 @@ export default function Header({ user }: HeaderProps) {
           </div>
 
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/" className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1">
+            <Link
+              href="/"
+              className={`transition-colors flex items-center space-x-1 ${
+                pathname === "/"
+                  ? "text-white font-semibold border-b-2 border-red-500 pb-1"
+                  : "text-gray-300 hover:text-white"
+              }`}
+            >
               <SquarePlay className="w-4 h-4" />
               <span>Library</span>
             </Link>
             {user.current_belt && (
               <Link
                 href="/my-level"
-                className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+                className={`transition-colors flex items-center space-x-1 ${
+                  pathname === "/my-level"
+                    ? "text-white font-semibold border-b-2 border-red-500 pb-1"
+                    : "text-gray-300 hover:text-white"
+                }`}
               >
                 <Ribbon className="w-4 h-4" />
                 <span>My Level</span>
@@ -109,7 +121,11 @@ export default function Header({ user }: HeaderProps) {
             )}
             <Link
               href="/favorites"
-              className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+              className={`transition-colors flex items-center space-x-1 ${
+                pathname === "/favorites"
+                  ? "text-white font-semibold border-b-2 border-red-500 pb-1"
+                  : "text-gray-300 hover:text-white"
+              }`}
             >
               <Heart className="w-4 h-4" />
               <span>Favorites</span>
@@ -117,7 +133,11 @@ export default function Header({ user }: HeaderProps) {
             {(user.role === "Teacher" || user.role === "Head Teacher") && (
               <Link
                 href="/students"
-                className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
+                className={`transition-colors flex items-center space-x-1 ${
+                  pathname === "/students"
+                    ? "text-white font-semibold border-b-2 border-red-500 pb-1"
+                    : "text-gray-300 hover:text-white"
+                }`}
               >
                 <Users className="w-4 h-4" />
                 <span>Students</span>
@@ -239,7 +259,11 @@ export default function Header({ user }: HeaderProps) {
             <nav className="container mx-auto px-4 py-4 space-y-2">
               <Link
                 href="/"
-                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                className={`block transition-colors py-2 px-3 rounded-md flex items-center space-x-2 ${
+                  pathname === "/"
+                    ? "text-white font-semibold bg-red-500/20 border-l-2 border-red-500"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <SquarePlay className="w-4 h-4" />
@@ -248,7 +272,11 @@ export default function Header({ user }: HeaderProps) {
               {user.current_belt && (
                 <Link
                   href="/my-level"
-                  className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                  className={`block transition-colors py-2 px-3 rounded-md flex items-center space-x-2 ${
+                    pathname === "/my-level"
+                      ? "text-white font-semibold bg-red-500/20 border-l-2 border-red-500"
+                      : "text-gray-300 hover:text-white hover:bg-white/10"
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Ribbon className="w-4 h-4" />
@@ -257,7 +285,11 @@ export default function Header({ user }: HeaderProps) {
               )}
               <Link
                 href="/favorites"
-                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                className={`block transition-colors py-2 px-3 rounded-md flex items-center space-x-2 ${
+                  pathname === "/favorites"
+                    ? "text-white font-semibold bg-red-500/20 border-l-2 border-red-500"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Heart className="w-4 h-4" />
@@ -266,7 +298,11 @@ export default function Header({ user }: HeaderProps) {
               {(user.role === "Teacher" || user.role === "Head Teacher") && (
                 <Link
                   href="/students"
-                  className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
+                  className={`block transition-colors py-2 px-3 rounded-md flex items-center space-x-2 ${
+                    pathname === "/students"
+                      ? "text-white font-semibold bg-red-500/20 border-l-2 border-red-500"
+                      : "text-gray-300 hover:text-white hover:bg-white/10"
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Users className="w-4 h-4" />
