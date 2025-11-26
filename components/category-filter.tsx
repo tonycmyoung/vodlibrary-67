@@ -124,7 +124,7 @@ export default function CategoryFilter({
           {/* Weapons Section */}
           {weaponCategories.length > 0 && (
             <div>
-              <div className="text-xs font-medium text-gray-500 mb-2">WEAPONS</div>
+              <div className="text-xs font-medium text-gray-500 mb-2">CATEGORY</div>
               <div className="flex flex-wrap gap-2">
                 {weaponCategories.map((item) => {
                   const isSelected = selectedCategories.includes(item.id)
