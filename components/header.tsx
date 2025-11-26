@@ -15,6 +15,8 @@ import {
   LogOut,
   Upload,
   Users,
+  SquarePlay,
+  Ribbon,
 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -92,15 +94,16 @@ export default function Header({ user }: HeaderProps) {
           </div>
 
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-              Library
+            <Link href="/" className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1">
+              <SquarePlay className="w-4 h-4" />
+              <span>Library</span>
             </Link>
             {user.current_belt && (
               <Link
                 href="/my-level"
                 className="text-gray-300 hover:text-white transition-colors flex items-center space-x-1"
               >
-                <BookOpen className="w-4 h-4" />
+                <Ribbon className="w-4 h-4" />
                 <span>My Level</span>
               </Link>
             )}
@@ -236,10 +239,11 @@ export default function Header({ user }: HeaderProps) {
             <nav className="container mx-auto px-4 py-4 space-y-2">
               <Link
                 href="/"
-                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10"
+                className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Library
+                <SquarePlay className="w-4 h-4" />
+                <span>Library</span>
               </Link>
               {user.current_belt && (
                 <Link
@@ -247,7 +251,7 @@ export default function Header({ user }: HeaderProps) {
                   className="block text-gray-300 hover:text-white transition-colors py-2 px-3 rounded-md hover:bg-white/10 flex items-center space-x-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <BookOpen className="w-4 h-4" />
+                  <Ribbon className="w-4 h-4" />
                   <span>My Level</span>
                 </Link>
               )}
