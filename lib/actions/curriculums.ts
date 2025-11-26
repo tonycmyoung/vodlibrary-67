@@ -141,11 +141,38 @@ export async function deleteCurriculum(curriculumId: string): Promise<{ success?
       return { error: `Cannot delete curriculum. It is used by ${count} video(s).` }
     }
 
-    const { error } = await serviceSupabase.from("curriculums").delete().eq("id", curriculumId)
+    const { data: curriculumToDelete } = await serviceSupabase
+      .from("curriculums")
+      .select("display_order")
+      .eq("id", curriculumId)
+      .single()
 
-    if (error) {
-      console.error("Error deleting curriculum:", error)
+    if (!curriculumToDelete) {
+      return { error: "Curriculum not found" }
+    }
+
+    const deletedDisplayOrder = curriculumToDelete.display_order
+
+    const { error: deleteError } = await serviceSupabase.from("curriculums").delete().eq("id", curriculumId)
+
+    if (deleteError) {
+      console.error("Error deleting curriculum:", deleteError)
       return { error: "Failed to delete curriculum" }
+    }
+
+    const { data: curriculumsToUpdate } = await serviceSupabase
+      .from("curriculums")
+      .select("id, display_order")
+      .gt("display_order", deletedDisplayOrder)
+      .order("display_order", { ascending: true })
+
+    if (curriculumsToUpdate && curriculumsToUpdate.length > 0) {
+      for (const curr of curriculumsToUpdate) {
+        await serviceSupabase
+          .from("curriculums")
+          .update({ display_order: curr.display_order - 1 })
+          .eq("id", curr.id)
+      }
     }
 
     return { success: "Curriculum deleted successfully" }

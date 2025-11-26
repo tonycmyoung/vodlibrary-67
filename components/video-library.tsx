@@ -68,6 +68,7 @@ interface VideoLibraryProps {
   favoritesOnly?: boolean
   maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
   storagePrefix?: string // Allow custom storage prefix for separate UI state
+  nextBeltName?: string // Add prop for next belt name
 }
 
 let lastFailureTime = 0
@@ -81,6 +82,7 @@ export default function VideoLibrary({
   favoritesOnly = false,
   maxCurriculumOrder,
   storagePrefix: customStoragePrefix,
+  nextBeltName, // Destructure new prop
 }: VideoLibraryProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -928,10 +930,7 @@ export default function VideoLibrary({
         <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
           <Ribbon className="w-4 h-4 text-red-500" />
           <span className="text-sm text-gray-300">
-            Training for:{" "}
-            <span className="font-semibold text-white">
-              {curriculums.find((c) => c.display_order === maxCurriculumOrder)?.name || "Next Level"}
-            </span>
+            Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
           </span>
         </div>
       )}
@@ -942,10 +941,7 @@ export default function VideoLibrary({
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
                 <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
                 <span className="text-sm text-gray-300">
-                  Training for:{" "}
-                  <span className="font-semibold text-white">
-                    {curriculums.find((c) => c.display_order === maxCurriculumOrder)?.name || "Next Level"}
-                  </span>
+                  Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
                 </span>
               </div>
             )}

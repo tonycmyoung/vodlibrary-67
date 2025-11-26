@@ -60,14 +60,26 @@ export default async function MyLevelPage() {
   // Calculate max curriculum order (user's belt + 1 for next level)
   const maxCurriculumOrder = userProfile?.current_belt ? userProfile.current_belt.display_order + 1 : null
 
+  let nextBeltName = "Next Level"
+  if (maxCurriculumOrder) {
+    const { data: nextBelt } = await supabase
+      .from("curriculums")
+      .select("name")
+      .eq("display_order", maxCurriculumOrder)
+      .maybeSingle() // Use maybeSingle() instead of single() to handle 0 rows gracefully
+
+    if (nextBelt) {
+      nextBeltName = nextBelt.name
+    } else if (userProfile?.current_belt) {
+      // User is at maximum belt level, use current belt name
+      nextBeltName = userProfile.current_belt.name
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <VideoLibrary
-        maxCurriculumOrder={maxCurriculumOrder}
-        storagePrefix="myLevel"
-        currentBeltName={userProfile?.current_belt?.name}
-      />
+      <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" nextBeltName={nextBeltName} />
     </div>
   )
 }

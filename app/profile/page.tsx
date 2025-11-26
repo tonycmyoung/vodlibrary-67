@@ -74,6 +74,7 @@ export default async function ProfilePage() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
+    current_belt: userProfile?.current_belt || null,
   }
 
   return (
