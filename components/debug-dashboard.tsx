@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, RefreshCw, AlertCircle, CheckCircle, XCircle } from "lucide-react"
+import { Trash2, RefreshCw, AlertCircle, CheckCircle, XCircle, LogIn, UserPlus, Mail, UserCheck } from "lucide-react"
 import { fetchAuthDebugLogs, clearAuthDebugLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
 
@@ -22,6 +22,7 @@ export default function DebugDashboard() {
   const [logs, setLogs] = useState<DebugLog[]>([])
   const [loading, setLoading] = useState(true)
   const [clearing, setClearing] = useState(false)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const loadLogs = async () => {
     setLoading(true)
@@ -53,16 +54,79 @@ export default function DebugDashboard() {
     loadLogs()
   }, [])
 
-  const getStatusIcon = (success: boolean) => {
-    return success ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />
+  const toggleRow = (logId: string) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(logId)) {
+      newExpanded.delete(logId)
+    } else {
+      newExpanded.add(logId)
+    }
+    setExpandedRows(newExpanded)
   }
 
-  const getStatusBadge = (success: boolean) => {
+  const getEventIcon = (eventType: string) => {
+    switch (eventType) {
+      case "login_attempt":
+        return <LogIn className="w-4 h-4 text-blue-500" />
+      case "signup":
+        return <UserPlus className="w-4 h-4 text-green-500" />
+      case "email_confirmation":
+        return <Mail className="w-4 h-4 text-purple-500" />
+      case "approval":
+        return <UserCheck className="w-4 h-4 text-amber-500" />
+      default:
+        return <AlertCircle className="w-4 h-4 text-gray-500" />
+    }
+  }
+
+  const getEventBadge = (eventType: string) => {
+    const variants: Record<string, { label: string; className: string }> = {
+      login_attempt: { label: "Login", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+      signup: { label: "Signup", className: "bg-green-500/20 text-green-400 border-green-500/30" },
+      email_confirmation: { label: "Email", className: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+      approval: { label: "Approval", className: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+    }
+
+    const variant = variants[eventType] || {
+      label: eventType.replace("_", " "),
+      className: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    }
+
     return (
-      <Badge variant={success ? "default" : "destructive"} className="text-xs">
-        {success ? "Success" : "Failed"}
+      <Badge variant="outline" className={`text-xs ${variant.className}`}>
+        {variant.label}
       </Badge>
     )
+  }
+
+  const getResultBadge = (success: boolean) => {
+    return success ? (
+      <div className="flex items-center space-x-1">
+        <CheckCircle className="w-4 h-4 text-green-500" />
+        <span className="text-xs text-green-400">Success</span>
+      </div>
+    ) : (
+      <div className="flex items-center space-x-1">
+        <XCircle className="w-4 h-4 text-red-500" />
+        <span className="text-xs text-red-400">Failed</span>
+      </div>
+    )
+  }
+
+  const getKeyAdditionalData = (additionalData: any) => {
+    if (!additionalData) return null
+
+    // Show failure_reason if it exists
+    if (additionalData.failure_reason) {
+      return <span className="text-xs text-amber-400">Reason: {additionalData.failure_reason}</span>
+    }
+
+    // Show user_exists status if it exists
+    if (additionalData.user_exists !== undefined) {
+      return <span className="text-xs text-gray-400">User exists: {additionalData.user_exists ? "Yes" : "No"}</span>
+    }
+
+    return null
   }
 
   return (
@@ -105,52 +169,66 @@ export default function DebugDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {logs.map((log) => (
-            <Card key={log.id} className="bg-gray-800 border-gray-700">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(log.success)}
-                    <CardTitle className="text-lg text-white">
-                      {log.event_type.charAt(0).toUpperCase() + log.event_type.slice(1).replace("_", " ")}
-                    </CardTitle>
-                    {getStatusBadge(log.success)}
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                  </div>
-                </div>
-                <CardDescription className="text-gray-300">
-                  Email: <span className="font-mono text-purple-400">{log.user_email}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {log.error_message && (
-                  <div className="bg-red-900/20 border border-red-800 rounded-md p-3">
-                    <div className="flex items-start space-x-2">
-                      <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-red-400">Error Message</p>
-                        <p className="text-sm text-red-300 mt-1">{log.error_message}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Event</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Result</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Email</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Error / Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <>
+                  <tr
+                    key={log.id}
+                    className="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer"
+                    onClick={() => toggleRow(log.id)}
+                  >
+                    <td className="p-3">
+                      <div className="text-sm text-gray-300">
+                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                       </div>
-                    </div>
-                  </div>
-                )}
-                {log.additional_data && (
-                  <div className="bg-gray-700/50 rounded-md p-3">
-                    <p className="text-sm font-medium text-gray-300 mb-2">Additional Data</p>
-                    <pre className="text-xs text-gray-400 font-mono overflow-x-auto">
-                      {JSON.stringify(log.additional_data, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                <div className="text-xs text-gray-500">
-                  Log ID: {log.id} • {new Date(log.created_at).toLocaleString()}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center space-x-2">
+                        {getEventIcon(log.event_type)}
+                        {getEventBadge(log.event_type)}
+                      </div>
+                    </td>
+                    <td className="p-3">{getResultBadge(log.success)}</td>
+                    <td className="p-3">
+                      <div className="text-sm text-gray-300 font-mono">{log.user_email}</div>
+                    </td>
+                    <td className="p-3">
+                      {log.error_message ? (
+                        <div className="text-sm text-red-400">{log.error_message}</div>
+                      ) : (
+                        <div className="text-sm text-gray-500">{getKeyAdditionalData(log.additional_data) || "-"}</div>
+                      )}
+                    </td>
+                  </tr>
+                  {expandedRows.has(log.id) && log.additional_data && (
+                    <tr key={`${log.id}-expanded`} className="border-b border-gray-800 bg-gray-800/30">
+                      <td colSpan={5} className="p-3">
+                        <div className="bg-gray-700/50 rounded-md p-3">
+                          <p className="text-sm font-medium text-gray-300 mb-2">Additional Data</p>
+                          <pre className="text-xs text-gray-400 font-mono overflow-x-auto">
+                            {JSON.stringify(log.additional_data, null, 2)}
+                          </pre>
+                          <p className="text-xs text-gray-500 mt-2">Log ID: {log.id}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

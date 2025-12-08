@@ -33,6 +33,12 @@ interface Video {
   views: number
   is_published: boolean
   created_at: string
+  curriculums: Array<{
+    id: string
+    name: string
+    color: string
+    display_order: number
+  }>
   categories: Array<{
     id: string
     name: string
@@ -95,15 +101,20 @@ export default function VideoPage({ params }: VideoPageProps) {
     if (!user) return
 
     async function loadVideo() {
-      const [videoResult, favoriteResult, categoriesResult, performersResult] = await Promise.all([
+      const [videoResult, favoriteResult, curriculumsResult, categoriesResult, performersResult] = await Promise.all([
         supabase.from("videos").select("*").eq("id", params.id).eq("is_published", true).single(),
         supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", params.id).maybeSingle(),
+        supabase
+          .from("video_curriculums")
+          .select("curriculums(id, name, color, display_order)")
+          .eq("video_id", params.id),
         supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", params.id),
         supabase.from("video_performers").select("performers(id, name)").eq("video_id", params.id),
       ])
 
       const { data: videoData, error } = videoResult
       const { data: favorite } = favoriteResult
+      const { data: videoCurriculums } = curriculumsResult
       const { data: videoCategories } = categoriesResult
       const { data: videoPerformers } = performersResult
 
@@ -117,6 +128,11 @@ export default function VideoPage({ params }: VideoPageProps) {
       const videoWithCategories: Video = {
         ...videoData,
         views: viewCount,
+        curriculums:
+          videoCurriculums
+            ?.map((vc: any) => vc.curriculums)
+            .filter(Boolean)
+            .sort((a, b) => a.display_order - b.display_order) || [],
         categories: videoCategories?.map((vc: any) => vc.categories) || [],
         performers: videoPerformers?.map((vp: any) => vp.performers) || [],
         isFavorited: !!favorite,

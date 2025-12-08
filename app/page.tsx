@@ -27,12 +27,23 @@ export default async function Home() {
   // Check if user is approved
   const { data: userProfile, error } = await supabase
     .from("users")
-    .select("is_approved, full_name, profile_image_url, role")
+    .select(`
+      is_approved, 
+      full_name, 
+      profile_image_url, 
+      role,
+      current_belt:curriculums!current_belt_id(id, name, display_order, color)
+    `)
     .eq("id", user.id)
     .single()
 
   if (!userProfile?.is_approved) {
     redirect("/pending-approval")
+  }
+
+  const isAdminEmail = user.email === "acmyma@gmail.com"
+  if (userProfile?.role === "Admin" || isAdminEmail) {
+    redirect("/admin")
   }
 
   const userWithEmail = {
@@ -42,6 +53,7 @@ export default async function Home() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
+    current_belt: userProfile?.current_belt || null, // Pass belt info to header
   }
 
   return (

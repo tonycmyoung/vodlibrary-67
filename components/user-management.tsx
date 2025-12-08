@@ -25,13 +25,17 @@ import {
   Building,
   Eye,
   Play,
+  User,
+  Key,
+  Award,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
-import { deleteUserCompletely, updateUserFields } from "@/lib/actions"
+import { deleteUserCompletely, updateUserFields, adminResetUserPassword } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface UserInterface {
   id: string
@@ -48,6 +52,14 @@ interface UserInterface {
   login_count: number
   last_view: string | null
   view_count: number
+  inviter?: { full_name: string } | null
+  current_belt_id: string | null
+  current_belt?: {
+    id: string
+    name: string
+    color: string
+    display_order: number
+  } | null
 }
 
 export default function UserManagement() {
@@ -59,7 +71,8 @@ export default function UserManagement() {
     const role = searchParams.get("role") || "all"
     const school = searchParams.get("school") || "all"
     const search = searchParams.get("search") || ""
-    return { role, school, search }
+    const belt = searchParams.get("belt") || "all"
+    return { role, school, search, belt }
   })
 
   const [users, setUsers] = useState<UserInterface[]>([])
@@ -69,19 +82,26 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
 
+  const [curriculums, setCurriculums] = useState<
+    Array<{ id: string; name: string; color: string; display_order: number }>
+  >([])
+
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{
     full_name: string
     teacher: string
     school: string
+    current_belt_id: string | null
   }>({
     full_name: "",
     teacher: "",
     school: "",
+    current_belt_id: null,
   })
 
   const [selectedRole, setSelectedRole] = useState(urlState.role)
   const [selectedSchool, setSelectedSchool] = useState(urlState.school)
+  const [selectedBelt, setSelectedBelt] = useState(urlState.belt)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const [sortBy, setSortBy] = useState<
@@ -109,6 +129,11 @@ export default function UserManagement() {
     }
     return "desc"
   })
+
+  const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [resetPasswordError, setResetPasswordError] = useState("")
 
   const processedData = useMemo(() => {
     if (!users.length) return { roles: [], schools: [] }
@@ -142,7 +167,8 @@ export default function UserManagement() {
           user.full_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
           user.teacher?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
           user.school?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-          user.role?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
+          user.role?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.current_belt?.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
       )
     }
 
@@ -154,6 +180,14 @@ export default function UserManagement() {
     // Apply school filter
     if (selectedSchool && selectedSchool !== "all") {
       result = result.filter((user) => user.school === selectedSchool)
+    }
+
+    if (selectedBelt && selectedBelt !== "all") {
+      if (selectedBelt === "none") {
+        result = result.filter((user) => !user.current_belt_id)
+      } else {
+        result = result.filter((user) => user.current_belt_id === selectedBelt)
+      }
     }
 
     // Apply sorting
@@ -197,13 +231,13 @@ export default function UserManagement() {
     })
 
     return result
-  }, [users, debouncedSearchQuery, selectedRole, selectedSchool, sortBy, sortOrder])
+  }, [users, debouncedSearchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
 
   useEffect(() => {
     setFilteredUsers(processedUsers)
   }, [processedUsers])
 
-  const reconstructURL = (role: string, school: string, search: string) => {
+  const reconstructURL = (role: string, school: string, belt: string, search: string) => {
     const params = new URLSearchParams()
 
     if (role.trim() && role !== "all") {
@@ -212,6 +246,10 @@ export default function UserManagement() {
 
     if (school.trim() && school !== "all") {
       params.set("school", school)
+    }
+
+    if (belt.trim() && belt !== "all") {
+      params.set("belt", belt)
     }
 
     if (search.trim()) {
@@ -225,12 +263,17 @@ export default function UserManagement() {
 
   const handleRoleChange = (role: string) => {
     setSelectedRole(role)
-    reconstructURL(role, selectedSchool, searchQuery)
+    reconstructURL(role, selectedSchool, selectedBelt, searchQuery)
   }
 
   const handleSchoolChange = (school: string) => {
     setSelectedSchool(school)
-    reconstructURL(selectedRole, school, searchQuery)
+    reconstructURL(selectedRole, school, selectedBelt, searchQuery)
+  }
+
+  const handleBeltChange = (belt: string) => {
+    setSelectedBelt(belt)
+    reconstructURL(selectedRole, selectedSchool, belt, searchQuery)
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
@@ -244,15 +287,31 @@ export default function UserManagement() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
-      reconstructURL(selectedRole, selectedSchool, searchQuery)
+      reconstructURL(selectedRole, selectedSchool, selectedBelt, searchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedRole, selectedSchool])
+  }, [searchQuery, selectedRole, selectedSchool, selectedBelt])
 
   useEffect(() => {
     fetchUsers()
+    fetchCurriculums()
   }, [])
+
+  const fetchCurriculums = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("curriculums")
+        .select("id, name, color, display_order")
+        .order("display_order", { ascending: true })
+
+      if (error) throw error
+      setCurriculums(data || [])
+    } catch (error) {
+      console.error("Error fetching curriculums:", error)
+    }
+  }
 
   const fetchUsers = async () => {
     try {
@@ -260,7 +319,12 @@ export default function UserManagement() {
 
       const { data: usersData, error: usersError } = await supabase
         .from("users")
-        .select("id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url")
+        .select(`
+          id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
+          inviter:invited_by(full_name),
+          current_belt_id,
+          current_belt:curriculums!current_belt_id(id, name, color, display_order)
+        `)
         .order("created_at", { ascending: false })
 
       if (usersError) throw usersError
@@ -393,12 +457,55 @@ export default function UserManagement() {
     }
   }
 
+  const updateUserBelt = async (userId: string, newBeltId: string | null) => {
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("users").update({ current_belt_id: newBeltId }).eq("id", userId)
+
+      if (error) throw error
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((user) => {
+          if (user.id === userId) {
+            const newBelt = newBeltId ? curriculums.find((c) => c.id === newBeltId) : null
+            return {
+              ...user,
+              current_belt_id: newBeltId,
+              current_belt: newBelt
+                ? {
+                    id: newBelt.id,
+                    name: newBelt.name,
+                    color: newBelt.color,
+                    display_order: newBelt.display_order,
+                  }
+                : undefined,
+            }
+          }
+          return user
+        }),
+      )
+    } catch (error) {
+      console.error("Error updating user belt:", error)
+      alert("Failed to update user belt. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
   const startEditing = (user: UserInterface) => {
     setEditingUser(user.id)
     setEditValues({
       full_name: user.full_name || "",
       teacher: user.teacher || "",
       school: user.school || "",
+      current_belt_id: user.current_belt_id,
     })
   }
 
@@ -408,6 +515,7 @@ export default function UserManagement() {
       full_name: "",
       teacher: "",
       school: "",
+      current_belt_id: null,
     })
   }
 
@@ -417,13 +525,18 @@ export default function UserManagement() {
     setProcessingUsers((prev) => new Set(prev).add(editingUser))
 
     try {
-      const result = await updateUserFields(editingUser, editValues.full_name, editValues.teacher, editValues.school)
+      const result = await updateUserFields(
+        editingUser,
+        editValues.full_name,
+        editValues.teacher,
+        editValues.school,
+        editValues.current_belt_id,
+      )
 
       if (result.error) {
         throw new Error(result.error)
       }
 
-      // Update local state
       setUsers((prev) =>
         prev.map((user) =>
           user.id === editingUser
@@ -432,6 +545,7 @@ export default function UserManagement() {
                 full_name: editValues.full_name.trim(),
                 teacher: editValues.teacher.trim(),
                 school: editValues.school.trim(),
+                current_belt_id: editValues.current_belt_id,
               }
             : user,
         ),
@@ -442,7 +556,9 @@ export default function UserManagement() {
         full_name: "",
         teacher: "",
         school: "",
+        current_belt_id: null,
       })
+      await fetchUsers()
     } catch (error) {
       console.error("Error updating user fields:", error)
       alert("Failed to update user fields. Please try again.")
@@ -453,6 +569,52 @@ export default function UserManagement() {
         return newSet
       })
     }
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return
+
+    if (newPassword.length < 8) {
+      setResetPasswordError("Password must be at least 8 characters long")
+      return
+    }
+
+    setProcessingUsers((prev) => new Set(prev).add(resetPasswordUser))
+    setResetPasswordError("")
+
+    try {
+      const result = await adminResetUserPassword(resetPasswordUser, newPassword)
+
+      if (result.error) {
+        setResetPasswordError(result.error)
+        return
+      }
+
+      setResetPasswordUser(null)
+      setNewPassword("")
+      setShowPassword(false)
+      alert("Password reset successfully. The user can now log in with the new password.")
+    } catch (error) {
+      console.error("Error resetting password:", error)
+      setResetPasswordError("Failed to reset password. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(resetPasswordUser)
+        return newSet
+      })
+    }
+  }
+
+  const generateRandomPassword = () => {
+    const length = 12
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+    let password = ""
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length))
+    }
+    setNewPassword(password)
+    setShowPassword(true)
   }
 
   const getInitials = (name: string | null, email: string) => {
@@ -497,7 +659,6 @@ export default function UserManagement() {
 
         <div>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            {/* Mobile filter button - only visible on mobile */}
             <div className="lg:hidden">
               <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
                 <DialogTrigger asChild>
@@ -508,12 +669,16 @@ export default function UserManagement() {
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    {((selectedRole && selectedRole !== "all") || (selectedSchool && selectedSchool !== "all")) && (
+                    {((selectedRole && selectedRole !== "all") ||
+                      (selectedSchool && selectedSchool !== "all") ||
+                      (selectedBelt && selectedBelt !== "all")) && (
                       <span className="ml-2 bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">
                         {
-                          [selectedRole !== "all" && selectedRole, selectedSchool !== "all" && selectedSchool].filter(
-                            Boolean,
-                          ).length
+                          [
+                            selectedRole !== "all" && selectedRole,
+                            selectedSchool !== "all" && selectedSchool,
+                            selectedBelt !== "all" && selectedBelt,
+                          ].filter(Boolean).length
                         }
                       </span>
                     )}
@@ -527,10 +692,13 @@ export default function UserManagement() {
                     <UserFilter
                       roles={processedData.roles}
                       schools={processedData.schools}
+                      belts={curriculums}
                       selectedRole={selectedRole}
                       selectedSchool={selectedSchool}
+                      selectedBelt={selectedBelt}
                       onRoleChange={handleRoleChange}
                       onSchoolChange={handleSchoolChange}
+                      onBeltChange={handleBeltChange}
                       userCount={filteredUsers.length}
                     />
                     <Button
@@ -544,16 +712,18 @@ export default function UserManagement() {
               </Dialog>
             </div>
 
-            {/* Desktop filters with sort controls inline */}
             <div className="hidden lg:flex lg:items-start lg:justify-between lg:w-full">
               <div className="flex-1">
                 <UserFilter
                   roles={processedData.roles}
                   schools={processedData.schools}
+                  belts={curriculums}
                   selectedRole={selectedRole}
                   selectedSchool={selectedSchool}
+                  selectedBelt={selectedBelt}
                   onRoleChange={handleRoleChange}
                   onSchoolChange={handleSchoolChange}
+                  onBeltChange={handleBeltChange}
                   userCount={filteredUsers.length}
                 />
               </div>
@@ -562,7 +732,6 @@ export default function UserManagement() {
               </div>
             </div>
 
-            {/* Mobile sort controls - only visible on mobile */}
             <div className="lg:hidden">
               <UserSortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
             </div>
@@ -620,7 +789,9 @@ export default function UserManagement() {
                             className={
                               user.role === "Teacher"
                                 ? "bg-blue-600 text-white flex-shrink-0"
-                                : "bg-gray-600 text-white flex-shrink-0"
+                                : user.role === "Head Teacher"
+                                  ? "bg-teal-600 text-white flex-shrink-0"
+                                  : "bg-gray-600 text-white flex-shrink-0"
                             }
                           >
                             {user.role || "Student"}
@@ -689,6 +860,37 @@ export default function UserManagement() {
                             </>
                           )}
                         </div>
+                        {isEditing && (
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <Award className="w-3 h-3 flex-shrink-0" />
+                            <Select
+                              value={editValues.current_belt_id || "none"}
+                              onValueChange={(value) =>
+                                setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })
+                              }
+                            >
+                              <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
+                                <SelectValue placeholder="Belt" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-700">
+                                <SelectItem value="none" className="text-white text-xs">
+                                  No Belt
+                                </SelectItem>
+                                {curriculums.map((curriculum) => (
+                                  <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
+                                    <span className="flex items-center">
+                                      <span
+                                        className="w-2 h-2 rounded-full mr-1"
+                                        style={{ backgroundColor: curriculum.color }}
+                                      />
+                                      {curriculum.name}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-1">
@@ -702,6 +904,18 @@ export default function UserManagement() {
                             <span>A: {formatDate(user.approved_at)}</span>
                           </div>
                         )}
+                        {user.inviter?.full_name && (
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: {user.inviter.full_name}</span>
+                          </div>
+                        )}
+                        {!user.inviter && user.is_approved && (
+                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">I: Direct</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -710,7 +924,6 @@ export default function UserManagement() {
                 {!isAdmin && (
                   <div className="flex flex-shrink-0 w-32 md:ml-4">
                     <div className="flex flex-col gap-1 w-full">
-                      {/* Role selector */}
                       <select
                         value={user.role || "Student"}
                         onChange={(e) => updateUserRole(user.id, e.target.value)}
@@ -719,6 +932,21 @@ export default function UserManagement() {
                       >
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
+                        <option value="Head Teacher">Head Teacher</option>
+                      </select>
+
+                      <select
+                        value={user.current_belt_id || ""}
+                        onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
+                        disabled={isProcessing || isEditing}
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+                      >
+                        <option value="">No belt</option>
+                        {curriculums.map((curriculum) => (
+                          <option key={curriculum.id} value={curriculum.id}>
+                            {curriculum.name}
+                          </option>
+                        ))}
                       </select>
 
                       <div className="flex gap-1">
@@ -756,6 +984,107 @@ export default function UserManagement() {
                             >
                               <Edit2 className="w-3 h-3" />
                             </Button>
+                            <Dialog
+                              open={resetPasswordUser === user.id}
+                              onOpenChange={(open) => {
+                                if (!open) {
+                                  setResetPasswordUser(null)
+                                  setNewPassword("")
+                                  setShowPassword(false)
+                                  setResetPasswordError("")
+                                }
+                              }}
+                            >
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setResetPasswordUser(user.id)}
+                                  disabled={isProcessing}
+                                  className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
+                                  aria-label="Reset password"
+                                >
+                                  <Key className="w-3 h-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                                <DialogHeader>
+                                  <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <p className="text-sm text-gray-400 mb-4">
+                                      Set a new password for{" "}
+                                      <span className="font-medium text-white">{user.email}</span>
+                                    </p>
+                                    <div className="space-y-2">
+                                      <label className="text-sm text-gray-300">New Password</label>
+                                      <div className="relative">
+                                        <Input
+                                          type={showPassword ? "text" : "password"}
+                                          value={newPassword}
+                                          onChange={(e) => {
+                                            setNewPassword(e.target.value)
+                                            setResetPasswordError("")
+                                          }}
+                                          placeholder="Enter new password"
+                                          className="bg-gray-800 border-gray-600 text-white pr-10"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowPassword(!showPassword)}
+                                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                        >
+                                          {showPassword ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                      </div>
+                                      <p className="text-xs text-gray-400">Minimum 8 characters</p>
+                                    </div>
+                                    <Button
+                                      onClick={generateRandomPassword}
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+                                    >
+                                      Generate Random Password
+                                    </Button>
+                                  </div>
+                                  {resetPasswordError && (
+                                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
+                                      {resetPasswordError}
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={handleResetPassword}
+                                      disabled={isProcessing || !newPassword}
+                                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                                    >
+                                      {isProcessing ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                          Resetting...
+                                        </>
+                                      ) : (
+                                        "Reset Password"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setResetPasswordUser(null)
+                                        setNewPassword("")
+                                        setShowPassword(false)
+                                        setResetPasswordError("")
+                                      }}
+                                      variant="outline"
+                                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                             <Button
                               size="sm"
                               variant={user.is_approved ? "outline" : "default"}

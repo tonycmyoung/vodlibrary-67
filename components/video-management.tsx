@@ -1,15 +1,16 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { getBatchVideoViewCounts, getBatchVideoLastViewed } from "@/lib/actions/videos"
+import VideoModal from "@/components/video-modal"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Loader2, X, ChevronDown, ChevronUp, Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
-import { Search, Trash2, Clock, Loader2, Pencil, Plus } from "lucide-react"
-import VideoModal from "./video-modal"
-import { formatShortDate } from "@/lib/utils/date"
-import { getBatchVideoViewCounts } from "@/lib/actions/videos"
+import CategoryFilter from "@/components/category-filter"
 
 interface Video {
   id: string
@@ -22,6 +23,13 @@ interface Video {
   created_at: string
   recorded: string | null
   views: number | null
+  last_viewed_at: string | null
+  curriculums: Array<{
+    id: string
+    name: string
+    color: string
+    display_order: number
+  }>
   categories: Array<{
     id: string
     name: string
@@ -31,6 +39,13 @@ interface Video {
     id: string
     name: string
   }>
+}
+
+interface Curriculum {
+  id: string
+  name: string
+  color: string
+  display_order: number
 }
 
 interface Category {
@@ -46,92 +61,102 @@ interface Performer {
 
 export default function VideoManagement() {
   const [videos, setVideos] = useState<Video[]>([])
-  const [filteredVideos, setFilteredVideos] = useState<Video[]>([])
-  const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
   const [categories, setCategories] = useState<Category[]>([])
+  const [curriculums, setCurriculums] = useState<Curriculum[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
+  const [recordedValues, setRecordedValues] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedCurriculums, setSelectedCurriculums] = useState<string[]>([])
+  const [filterMode, setFilterMode] = useState<"AND" | "OR">("OR")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [itemsPerPage, setItemsPerPage] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number.parseInt(localStorage.getItem("adminVideoManagement_itemsPerPage") || "10", 10)
+    }
+    return 10
+  })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("adminVideoManagement_sortBy") || "title"
+    }
+    return "title"
+  })
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVideo, setEditingVideo] = useState<Video | null>(null)
 
-  const supabase = createClient()
+  const loadData = async () => {
+    const supabase = createClient()
+    setLoading(true)
 
-  // Fetch functions
-  const fetchCategories = useCallback(async () => {
-    const { data, error } = await supabase.from("categories").select("*").order("name")
-    if (error) {
-      console.error("Error fetching categories:", error)
-      return
-    }
-    setCategories(data || [])
-  }, [supabase])
-
-  const fetchPerformers = useCallback(async () => {
-    const { data, error } = await supabase.from("performers").select("*").order("name")
-    if (error) {
-      console.error("Error fetching performers:", error)
-      return
-    }
-    setPerformers(data || [])
-  }, [supabase])
-
-  const fetchVideos = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data: curriculumsData } = await supabase.from("curriculums").select("*").order("display_order")
+      setCurriculums(curriculumsData || [])
+
+      const { data: categoriesData } = await supabase.from("categories").select("*").order("name")
+      setCategories(categoriesData || [])
+
+      const { data: performersData } = await supabase.from("performers").select("*").order("name")
+      setPerformers(performersData || [])
+
+      const { data: videosData } = await supabase
         .from("videos")
         .select(`
           *,
-          video_categories(
-            categories(id, name, color)
-          ),
-          video_performers(
-            performers(id, name)
-          )
+          video_categories(categories(id, name, color)),
+          video_curriculums(curriculums(id, name, color, display_order)),
+          video_performers(performers(id, name))
         `)
         .order("created_at", { ascending: false })
 
-      if (error) throw error
+      if (videosData) {
+        const videosWithMetadata = videosData.map((video: any) => ({
+          ...video,
+          views: 0,
+          last_viewed_at: null,
+          categories: video.video_categories?.map((vc: any) => vc.categories).filter((cat: any) => cat && cat.id) || [],
+          curriculums:
+            video.video_curriculums?.map((vc: any) => vc.curriculums).filter((curr: any) => curr && curr.id) || [],
+          performers:
+            video.video_performers?.map((vp: any) => vp.performers).filter((perf: any) => perf && perf.id) || [],
+        }))
 
-      const videosWithCategoriesAndPerformers = data?.map((video: any) => ({
-        ...video,
-        views: 0, // Initialize with 0, will be updated with actual counts
-        categories: video.video_categories?.map((vc: any) => vc.categories).filter((cat: any) => cat && cat.id) || [],
-        performers:
-          video.video_performers?.map((vp: any) => vp.performers).filter((perf: any) => perf && perf.id) || [],
-      }))
+        const videoIds = videosWithMetadata.map((video: any) => video.id)
+        const viewCounts = await getBatchVideoViewCounts(videoIds)
+        const lastViewedDates = await getBatchVideoLastViewed(videoIds)
 
-      const videoIds = videosWithCategoriesAndPerformers?.map((video: any) => video.id) || []
-      const viewCounts = await getBatchVideoViewCounts(videoIds)
+        const videosWithViewData = videosWithMetadata.map((video: any) => ({
+          ...video,
+          views: viewCounts[video.id] || 0,
+          last_viewed_at: lastViewedDates[video.id] || null,
+        }))
 
-      const videosWithViewCounts = videosWithCategoriesAndPerformers?.map((video: any) => ({
-        ...video,
-        views: viewCounts[video.id] || 0,
-      }))
+        setVideos(videosWithViewData)
 
-      setVideos(videosWithViewCounts || [])
+        const uniqueRecorded = Array.from(
+          new Set(videosWithViewData.map((v: any) => v.recorded).filter((r: any) => r)),
+        ).sort() as string[]
+        setRecordedValues(uniqueRecorded)
+      }
     } catch (error) {
-      console.error("Error fetching videos:", error)
+      console.error("Error loading data:", error)
     } finally {
       setLoading(false)
     }
-  }, [supabase])
-
-  // Effects
-  useEffect(() => {
-    fetchVideos()
-    fetchCategories()
-    fetchPerformers()
-  }, [fetchVideos, fetchCategories, fetchPerformers])
+  }
 
   useEffect(() => {
-    let filtered = videos
+    loadData()
+  }, [])
+
+  const filteredVideos = useMemo(() => {
+    let filtered = [...videos]
+
     if (searchQuery) {
-      filtered = videos.filter(
+      filtered = filtered.filter(
         (video) =>
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -139,260 +164,501 @@ export default function VideoManagement() {
       )
     }
 
-    // Sort by category
+    if (selectedCurriculums.length > 0) {
+      filtered = filtered.filter((video) => {
+        const videoCurriculums = video.curriculums.map((curr) => curr.id)
+        if (filterMode === "AND") {
+          return selectedCurriculums.every((selectedId) => videoCurriculums.includes(selectedId))
+        } else {
+          return selectedCurriculums.some((selectedId) => videoCurriculums.includes(selectedId))
+        }
+      })
+    }
+
+    const selectedCategoryIds = selectedCategories.filter(
+      (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
+    )
+    if (selectedCategoryIds.length > 0) {
+      filtered = filtered.filter((video) => {
+        const videoCategories = video.categories.map((cat) => cat.id)
+        if (filterMode === "AND") {
+          return selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
+        } else {
+          return selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+        }
+      })
+    }
+
+    const selectedPerformerIds = selectedCategories
+      .filter((id) => id.startsWith("performer:"))
+      .map((id) => id.replace("performer:", ""))
+    if (selectedPerformerIds.length > 0) {
+      filtered = filtered.filter((video) => {
+        const videoPerformers = video.performers.map((perf) => perf.id)
+        if (filterMode === "AND") {
+          return selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
+        } else {
+          return selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
+        }
+      })
+    }
+
+    const selectedRecordedValues = selectedCategories
+      .filter((id) => id.startsWith("recorded:"))
+      .map((id) => id.replace("recorded:", ""))
+    if (selectedRecordedValues.length > 0) {
+      filtered = filtered.filter((video) => selectedRecordedValues.includes(video.recorded || ""))
+    }
+
     filtered.sort((a, b) => {
-      const aCats = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz_uncategorized"
-      const bCats = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz_uncategorized"
-      const result = aCats < bCats ? -1 : aCats > bCats ? 1 : 0
-      if (result === 0) {
-        return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1
+      let aValue: any
+      let bValue: any
+
+      switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case "created_at":
+          aValue = new Date(a.created_at).getTime()
+          bValue = new Date(b.created_at).getTime()
+          break
+        case "recorded":
+          aValue = a.recorded || ""
+          bValue = b.recorded || ""
+          break
+        case "curriculum":
+          if (a.curriculums.length === 0 && b.curriculums.length === 0) {
+            aValue = Number.MAX_SAFE_INTEGER
+            bValue = Number.MAX_SAFE_INTEGER
+          } else if (a.curriculums.length === 0) {
+            aValue = Number.MAX_SAFE_INTEGER
+            bValue = b.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+          } else if (b.curriculums.length === 0) {
+            aValue = a.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+            bValue = Number.MAX_SAFE_INTEGER
+          } else {
+            aValue = a.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+            bValue = b.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+          }
+          break
+        case "category":
+          aValue = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz"
+          bValue = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz"
+          break
+        case "views":
+          aValue = a.views || 0
+          bValue = b.views || 0
+          break
+        case "last_viewed":
+          aValue = a.last_viewed_at ? new Date(a.last_viewed_at).getTime() : 0
+          bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
+          break
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
       }
-      return result
+
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1
+      return 0
     })
 
-    setFilteredVideos(filtered)
-    setCurrentPage(1)
-  }, [videos, searchQuery])
+    return filtered
+  }, [videos, searchQuery, selectedCategories, selectedCurriculums, filterMode, sortBy, sortOrder])
+
+  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage)
+  const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
+
+  const paginatedVideos = useMemo(() => {
+    const startIndex = (validCurrentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredVideos.slice(startIndex, endIndex)
+  }, [filteredVideos, validCurrentPage, itemsPerPage])
 
   useEffect(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    setPaginatedVideos(filteredVideos.slice(startIndex, endIndex))
-  }, [filteredVideos, currentPage, itemsPerPage])
+    setCurrentPage(1)
+  }, [searchQuery, selectedCategories, selectedCurriculums, filterMode, sortBy, sortOrder])
 
-  // Event handlers
+  const handleCurriculumToggle = (curriculumId: string) => {
+    setSelectedCurriculums((prev) =>
+      prev.includes(curriculumId) ? prev.filter((id) => id !== curriculumId) : [...prev, curriculumId],
+    )
+  }
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
+    )
+  }
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value)
+    localStorage.setItem("adminVideoManagement_sortBy", value)
+  }
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+  }
+
+  const handleItemsPerPageChange = (value: string) => {
+    const newItemsPerPage = Number.parseInt(value, 10)
+    setItemsPerPage(newItemsPerPage)
+    localStorage.setItem("adminVideoManagement_itemsPerPage", value)
+    setCurrentPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(Math.max(1, Math.min(newPage, totalPages || 1)))
+  }
+
+  const clearAllFilters = () => {
+    setSelectedCategories([])
+    setSelectedCurriculums([])
+    setSearchQuery("")
+  }
+
   const handleAddVideo = () => {
     setEditingVideo(null)
-    setModalOpen(true)
+    setIsModalOpen(true)
   }
 
   const handleEditVideo = (video: Video) => {
     setEditingVideo(video)
-    setModalOpen(true)
+    setIsModalOpen(true)
   }
 
   const handleDeleteVideo = async (videoId: string) => {
     if (!confirm("Are you sure you want to delete this video?")) return
 
-    try {
-      const { error } = await supabase.from("videos").delete().eq("id", videoId)
-      if (error) throw error
-      await fetchVideos()
-    } catch (error) {
+    const supabase = createClient()
+    const { error } = await supabase.from("videos").delete().eq("id", videoId)
+
+    if (error) {
       console.error("Error deleting video:", error)
+      alert("Failed to delete video")
+    } else {
+      await loadData()
     }
   }
 
   const handleModalClose = () => {
-    setModalOpen(false)
+    setIsModalOpen(false)
     setEditingVideo(null)
   }
 
-  const handleVideoSaved = () => {
-    fetchVideos()
-    handleModalClose()
+  const handleModalSave = async () => {
+    setIsModalOpen(false)
+    setEditingVideo(null)
+    await loadData()
   }
 
-  // Pagination
-  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = Math.min(startIndex + itemsPerPage, filteredVideos.length)
-
-  const handlePageChange = (page: number) => {
-    const validPage = Math.max(1, Math.min(page, totalPages))
-    setCurrentPage(validPage)
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
   }
 
-  // Utility functions
+  const formatLastViewed = (dateString: string | null) => {
+    if (!dateString) return "Never"
+    return new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+  }
+
+  const activeFilterCount = selectedCategories.length + selectedCurriculums.length
 
   if (loading) {
     return (
-      <Card className="bg-black/60 border-gray-800">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
-            <span className="ml-2 text-gray-300">Loading videos...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-black/60 border-gray-800">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Video Management</CardTitle>
-            <Button onClick={handleAddVideo} className="bg-purple-600 hover:bg-purple-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Video
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="space-y-4">
+      {/* Header with Add Button */}
+      <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-white">Video Management</h2>
+        <Button onClick={handleAddVideo} className="bg-purple-600 hover:bg-purple-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Video
+        </Button>
+      </div>
 
-      {/* Search */}
-      <Card className="bg-black/60 border-gray-800">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Videos ({videos.length})</CardTitle>
-            <div className="relative max-w-sm">
+      {/* Search and Sort */}
+      <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-white mb-2">Videos ({filteredVideos.length})</h3>
+          </div>
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1 sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search videos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-purple-500"
+                className="pl-10 pr-10 bg-black/50 border-gray-700 text-white"
               />
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Video List */}
-      <Card className="bg-black/60 border-gray-800">
-        <CardContent className="p-6">
-          {filteredVideos.length > 0 && (
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-400">
-                Showing {startIndex + 1}-{endIndex} of {filteredVideos.length} videos
-              </p>
-              {totalPages > 1 && (
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
-                  >
-                    Next
-                  </Button>
-                </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
             </div>
-          )}
+            <span className="text-sm text-gray-400 whitespace-nowrap">Sort by:</span>
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="w-40 bg-black/50 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="title" className="text-white">
+                  Name
+                </SelectItem>
+                <SelectItem value="curriculum" className="text-white">
+                  Curriculum
+                </SelectItem>
+                <SelectItem value="category" className="text-white">
+                  Category
+                </SelectItem>
+                <SelectItem value="recorded" className="text-white">
+                  Recorded
+                </SelectItem>
+                <SelectItem value="created_at" className="text-white">
+                  Date Added
+                </SelectItem>
+                <SelectItem value="views" className="text-white">
+                  Views
+                </SelectItem>
+                <SelectItem value="last_viewed" className="text-white">
+                  Last View
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleSortOrder}
+              className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
-          <div className="space-y-4">
+      {/* Collapsible Filters */}
+      <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4">
+        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <div className="flex items-center justify-between mb-4">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 text-gray-300 hover:text-white p-0">
+                <h3 className="text-lg font-semibold">Filters</h3>
+                {isFiltersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {activeFilterCount > 0 && (
+                  <span className="bg-red-600 text-white text-xs rounded-full px-2 py-0.5">{activeFilterCount}</span>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-red-400 hover:text-red-300">
+                Clear all
+              </Button>
+            )}
+          </div>
+
+          <CollapsibleContent className="space-y-4">
+            <CategoryFilter
+              categories={categories}
+              recordedValues={recordedValues}
+              performers={performers}
+              selectedCategories={selectedCategories}
+              onCategoryToggle={handleCategoryToggle}
+              videoCount={filteredVideos.length}
+              curriculums={curriculums}
+              selectedCurriculums={selectedCurriculums}
+              onCurriculumToggle={handleCurriculumToggle}
+            />
+
+            {(selectedCategories.length > 1 || selectedCurriculums.length > 1) && (
+              <div className="flex items-center gap-2 pt-2">
+                <span className="text-sm text-gray-400">Filter mode:</span>
+                <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
+                  <Button
+                    size="sm"
+                    onClick={() => setFilterMode("AND")}
+                    className={`text-xs ${
+                      filterMode === "AND" ? "bg-red-600 text-white" : "text-gray-400 hover:text-white bg-transparent"
+                    }`}
+                  >
+                    AND
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setFilterMode("OR")}
+                    className={`text-xs ${
+                      filterMode === "OR" ? "bg-red-600 text-white" : "text-gray-400 hover:text-white bg-transparent"
+                    }`}
+                  >
+                    OR
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
+      {/* Pagination and Video List */}
+      <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 space-y-4">
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">
+              Showing {filteredVideos.length === 0 ? 0 : (validCurrentPage - 1) * itemsPerPage + 1}-
+              {Math.min(validCurrentPage * itemsPerPage, filteredVideos.length)} of {filteredVideos.length} videos
+            </span>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(validCurrentPage - 1)}
+                disabled={validCurrentPage === 1}
+                className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-400">
+                Page {validCurrentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(validCurrentPage + 1)}
+                disabled={validCurrentPage === totalPages}
+                className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Video List */}
+        {filteredVideos.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">No videos found matching your criteria.</div>
+        ) : (
+          <div className="space-y-3">
             {paginatedVideos.map((video) => (
               <div
                 key={video.id}
-                className="flex flex-col md:flex-row md:items-center md:justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4 md:space-y-0"
+                className="flex gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 flex-1">
-                  <div className="w-12 h-9 sm:w-16 sm:h-12 bg-gray-800 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {video.thumbnail_url ? (
-                      <img
-                        src={video.thumbnail_url || "/placeholder.svg"}
-                        alt={video.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = "none"
-                          target.nextElementSibling?.classList.remove("hidden")
-                        }}
-                      />
-                    ) : null}
-                    <div className={`flex items-center justify-center ${video.thumbnail_url ? "hidden" : ""}`}>
-                      <Clock className="w-6 h-6 text-gray-400" />
-                    </div>
-                  </div>
+                {/* Thumbnail */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={video.thumbnail_url || "/placeholder.svg"}
+                    alt={video.title}
+                    className="w-32 h-20 object-cover rounded"
+                  />
+                </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-medium text-white">{video.title}</h4>
-                      <Badge
-                        variant={video.is_published ? "default" : "outline"}
-                        className={
-                          video.is_published
-                            ? "bg-green-600 text-white"
-                            : "border-yellow-600 text-yellow-400 bg-transparent"
-                        }
+                {/* Content */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-white text-sm flex items-center gap-2">
+                        {video.title}
+                        {video.is_published ? (
+                          <Badge className="bg-green-600 text-white text-xs">Published</Badge>
+                        ) : (
+                          <Badge className="bg-gray-600 text-white text-xs">Draft</Badge>
+                        )}
+                      </h4>
+                      {video.description && (
+                        <p className="text-gray-400 text-xs mt-1 line-clamp-2">{video.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditVideo(video)}
+                        className="h-8 w-8 p-0 border-gray-600 hover:bg-gray-700"
                       >
-                        {video.is_published ? "Published" : "Draft"}
-                      </Badge>
-                    </div>
-                    {video.description && (
-                      <p className="text-sm text-gray-300 mb-2 line-clamp-2">{video.description}</p>
-                    )}
-
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-2 md:space-y-0 md:space-x-4">
-                      <div className="flex flex-col space-y-1 text-sm text-gray-400 md:min-w-[140px] md:max-w-[140px] lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:min-w-0 lg:max-w-none">
-                        {video.recorded && video.recorded !== "Unset" && <span>R: {video.recorded}</span>}
-                        {video.performers.length > 0 && (
-                          <span>P: {video.performers.map((p) => p.name).join(", ")}</span>
-                        )}
-                        <span>A: {formatShortDate(video.created_at)}</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 md:flex-1 md:justify-start lg:justify-start">
-                        {video.categories.map((category) =>
-                          category && category.id ? (
-                            <Badge
-                              key={category.id}
-                              variant="outline"
-                              className="text-xs border-gray-600"
-                              style={{
-                                borderColor: category.color ? category.color + "60" : "#6b7280",
-                                color: category.color || "#9ca3af",
-                              }}
-                            >
-                              {category.name}
-                            </Badge>
-                          ) : null,
-                        )}
-                      </div>
-
-                      <div className="flex flex-col items-end space-y-2 flex-shrink-0 md:min-w-[120px] md:max-w-[120px]">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditVideo(video)}
-                            className="hover:bg-gray-700"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteVideo(video.id)}
-                            className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="text-sm text-gray-400 font-medium">{video.views || 0} views</div>
-                      </div>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteVideo(video.id)}
+                        className="h-8 w-8 p-0 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                    <span>R: {video.recorded || "Unset"}</span>
+                    <span>A: {formatDate(video.created_at)}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {video.curriculums
+                      .sort((a, b) => a.display_order - b.display_order)
+                      .map((curriculum) => (
+                        <Badge
+                          key={curriculum.id}
+                          variant="outline"
+                          className="text-xs"
+                          style={{
+                            borderColor: curriculum.color,
+                            color: curriculum.color,
+                          }}
+                        >
+                          {curriculum.name}
+                        </Badge>
+                      ))}
+                    {video.categories.map((category) => (
+                      <Badge
+                        key={category.id}
+                        className="text-xs"
+                        style={{
+                          backgroundColor: category.color + "40",
+                          borderColor: category.color,
+                          color: category.color,
+                        }}
+                      >
+                        {category.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex flex-col items-end justify-between text-xs text-gray-400 flex-shrink-0">
+                  <div>{video.views || 0} views</div>
+                  <div>Last Viewed: {formatLastViewed(video.last_viewed_at)}</div>
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {/* Modal */}
+      {/* Video Modal */}
       <VideoModal
-        isOpen={modalOpen}
+        isOpen={isModalOpen}
         onClose={handleModalClose}
-        onSave={handleVideoSaved}
+        onSave={handleModalSave}
         editingVideo={editingVideo}
+        curriculums={curriculums}
         categories={categories}
         performers={performers}
       />

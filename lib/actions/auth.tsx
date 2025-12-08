@@ -5,9 +5,10 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { Resend } from "resend"
-import { sanitizeHtml, siteTitle } from "../utils/helpers"
+import { sanitizeHtml } from "../utils/helpers"
 import { validateReturnTo } from "../utils/auth"
+import { sendEmail } from "./email"
+import { logAuditEvent } from "./audit"
 
 type SignInResult = {
   success: boolean
@@ -57,18 +58,20 @@ export async function signIn(formData: FormData) {
     password,
   })
 
-  const serviceSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return []
-        },
-        setAll() {},
-      },
-    },
-  )
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  const additionalData: any = {
+    email_confirmed: data?.user?.email_confirmed_at ? true : false,
+    user_exists: data?.user ? true : false,
+    returnTo: returnTo || null,
+  }
+
+  // If authentication failed, check if email exists in users table to determine specific reason
+  if (error) {
+    const { data: userCheck } = await serviceSupabase.from("users").select("id").eq("email", email).maybeSingle()
+
+    additionalData.failure_reason = userCheck ? "Password incorrect" : "Email not registered"
+  }
 
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
@@ -78,11 +81,7 @@ export async function signIn(formData: FormData) {
       success: !error,
       error_message: error?.message || null,
       error_code: error?.code || null,
-      additional_data: {
-        email_confirmed: data?.user?.email_confirmed_at ? true : false,
-        user_exists: data?.user ? true : false,
-        returnTo: returnTo || null,
-      },
+      additional_data: additionalData,
     })
   } catch (logError) {
     console.error("[v0] Auth Action: Failed to log auth attempt:", logError)
@@ -107,19 +106,6 @@ export async function signIn(formData: FormData) {
 
   if (data.user?.id) {
     try {
-      const serviceSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return []
-            },
-            setAll() {},
-          },
-        },
-      )
-
       const today = new Date().toISOString().split("T")[0]
 
       const { data: existingLogin, error: checkError } = await serviceSupabase
@@ -127,7 +113,7 @@ export async function signIn(formData: FormData) {
         .select("id")
         .eq("user_id", data.user.id)
         .gte("login_time", today)
-        .single()
+        .maybeSingle()
 
       if (checkError && checkError.code !== "PGRST116") {
         throw checkError
@@ -246,6 +232,20 @@ export async function signUp(prevState: any, formData: FormData) {
   if (data.user) {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    console.log("[v0] Checking for invitation for email:", email.toLowerCase())
+    const { data: invitationData, error: invitationError } = await serviceSupabase
+      .from("invitations")
+      .select("invited_by")
+      .eq("email", email.toLowerCase())
+      .maybeSingle()
+
+    if (invitationError && invitationError.code !== "PGRST116") {
+      console.error("[v0] Error fetching invitation:", invitationError)
+    }
+
+    const invitedBy = invitationData?.invited_by || null
+    console.log("[v0] Invitation found, invited_by:", invitedBy)
+
     const { error: profileError } = await serviceSupabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
@@ -253,6 +253,7 @@ export async function signUp(prevState: any, formData: FormData) {
       school,
       teacher,
       is_approved: false,
+      invited_by: invitedBy,
     })
 
     if (profileError) {
@@ -299,23 +300,55 @@ export async function signUp(prevState: any, formData: FormData) {
         .single()
 
       if (adminUser) {
-        const message = `New user registration pending approval:<br><br>
-<strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
-<strong>Email:</strong> ${sanitizeHtml(email)}<br>
-<strong>School:</strong> ${sanitizeHtml(school)}<br>
-<strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br><br>
-Please review and approve this user in the admin dashboard.`
+        let inviterInfo = ""
+        if (invitedBy) {
+          const { data: inviterData } = await serviceSupabase
+            .from("users")
+            .select("full_name")
+            .eq("id", invitedBy)
+            .single()
 
-        await sendNotificationEmail({
-          recipientEmail: adminUser.email,
-          recipientName: adminUser.full_name,
-          senderName: "System",
-          message: message,
-        })
+          if (inviterData) {
+            inviterInfo = `<strong>Invited by:</strong> ${sanitizeHtml(inviterData.full_name)}<br>`
+          }
+        } else {
+          inviterInfo = `<strong>Invited by:</strong> Direct signup<br>`
+        }
+
+        await sendEmail(
+          adminUser.email,
+          `New User to Approve`,
+          `New user registration`,
+          `
+            <p style="font-size: 16px; color: #374151; margin-bottom: 12px;">
+              <strong>Name:</strong> ${sanitizeHtml(fullName)}<br>
+              <strong>Email:</strong> ${sanitizeHtml(email)}<br>
+              <strong>School:</strong> ${sanitizeHtml(school)}<br>
+              <strong>Teacher:</strong> ${sanitizeHtml(teacher)}<br>
+              ${inviterInfo}
+            </p>
+            <p style="font-size: 14px; color: #6b7280;">
+              Please review and approve this user in the admin dashboard.
+            </p>
+          `,
+        )
       }
     } catch (emailError) {
       console.error("Failed to send admin notification email:", emailError)
     }
+
+    await logAuditEvent({
+      actor_id: data.user.id,
+      actor_email: data.user.email!,
+      action: "user_signup",
+      additional_data: {
+        actor_name: fullName,
+        full_name: fullName,
+        school,
+        teacher,
+        invited_by: invitedBy,
+      },
+    })
   }
 
   redirect("/pending-approval?from=signup")
@@ -396,28 +429,118 @@ export async function signOutServerAction() {
   return { success: true }
 }
 
-async function sendNotificationEmail(params: {
-  recipientEmail: string
-  recipientName: string
-  senderName: string
-  message: string
-}) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
+export async function updatePassword(prevState: any, formData: FormData) {
+  const password = formData.get("password") as string
+  const confirmPassword = formData.get("confirmPassword") as string
 
-  await resend.emails.send({
-    from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-    to: params.recipientEmail,
-    subject: `New Notification from the ${siteTitle}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #1f2937; padding: 20px; text-align: center;">
-          <h1 style="color: white; margin: 0;">${siteTitle}</h1>
-        </div>
-        <div style="background: #f9fafb; padding: 30px;">
-          <p style="font-size: 16px; color: #374151;">Hi ${sanitizeHtml(params.recipientName)},</p>
-          <p style="font-size: 16px; color: #374151;">${params.message}</p>
-        </div>
-      </div>
-    `,
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    },
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const userEmail = user?.email || "unknown"
+  const userId = user?.id || null
+
+  if (!password || !confirmPassword) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Both password fields are required",
+        additional_data: {
+          validation_error: "missing_fields",
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset validation error:", logError)
+    }
+    return { error: "Both password fields are required" }
+  }
+
+  if (password !== confirmPassword) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Passwords do not match",
+        additional_data: {
+          validation_error: "password_mismatch",
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset mismatch error:", logError)
+    }
+    return { error: "Passwords do not match" }
+  }
+
+  if (password.length < 8) {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    try {
+      await serviceSupabase.from("auth_debug_logs").insert({
+        event_type: "password_reset",
+        user_email: userEmail,
+        user_id: userId,
+        success: false,
+        error_message: "Password must be at least 8 characters long",
+        additional_data: {
+          validation_error: "password_too_short",
+          password_length: password.length,
+        },
+      })
+    } catch (logError) {
+      console.error("[v0] Failed to log password reset length error:", logError)
+    }
+    return { error: "Password must be at least 8 characters long" }
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: password,
   })
+
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  try {
+    await serviceSupabase.from("auth_debug_logs").insert({
+      event_type: "password_reset",
+      user_email: userEmail,
+      user_id: userId,
+      success: !error,
+      error_message: error?.message || null,
+      error_code: error?.code || null,
+      additional_data: {
+        reset_method: "email_link",
+      },
+    })
+  } catch (logError) {
+    console.error("[v0] Failed to log password reset attempt:", logError)
+  }
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  redirect("/auth/login?reset=success")
 }

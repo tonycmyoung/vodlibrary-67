@@ -2,7 +2,9 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
 import { X } from "lucide-react"
+import CurriculumFilter from "./curriculum-filter"
 
 function getContrastColor(hexColor: string): string {
   // Remove # if present
@@ -20,10 +22,18 @@ function getContrastColor(hexColor: string): string {
   return luminance > 0.5 ? "#000000" : "#ffffff"
 }
 
+function addTransparency(color: string, alpha: string): string | null {
+  if (!color || !color.startsWith("#") || color.length < 7) {
+    return null
+  }
+  return color + alpha
+}
+
 interface Category {
   id: string
   name: string
   color: string
+  description?: string | null
 }
 
 interface Performer {
@@ -45,6 +55,9 @@ interface CategoryFilterProps {
   selectedCategories: string[]
   onCategoryToggle: (categoryId: string) => void
   videoCount: number
+  curriculums?: Array<{ id: string; name: string; color: string; display_order: number; description?: string | null }>
+  selectedCurriculums?: string[]
+  onCurriculumToggle?: (curriculumId: string) => void
 }
 
 export default function CategoryFilter({
@@ -54,10 +67,16 @@ export default function CategoryFilter({
   selectedCategories,
   onCategoryToggle,
   videoCount,
+  curriculums = [],
+  selectedCurriculums = [],
+  onCurriculumToggle,
 }: CategoryFilterProps) {
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
       onCategoryToggle(categoryId)
+    })
+    selectedCurriculums.forEach((curriculumId) => {
+      onCurriculumToggle?.(curriculumId)
     })
   }
 
@@ -78,201 +97,194 @@ export default function CategoryFilter({
       }
     })
 
-  const gradingCategories = categories.filter((cat) => /^\d/.test(cat.name))
   const weaponCategories = categories.filter((cat) => !/^\d/.test(cat.name))
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Filter by</h3>
-        {selectedCategories.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-gray-400 hover:text-white">
-            <X className="w-4 h-4 mr-1" />
-            Clear All
-          </Button>
-        )}
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white">Filter by</h3>
+          {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
+            <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-gray-400 hover:text-white">
+              <X className="w-4 h-4 mr-1" />
+              Clear All
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {curriculums.length > 0 && onCurriculumToggle && (
+            <CurriculumFilter
+              curriculums={curriculums}
+              selectedCurriculums={selectedCurriculums}
+              onCurriculumToggle={onCurriculumToggle}
+            />
+          )}
+
+          {/* Weapons Section */}
+          {weaponCategories.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-2">CATEGORY</div>
+              <div className="flex flex-wrap gap-2">
+                {weaponCategories.map((item) => {
+                  const isSelected = selectedCategories.includes(item.id)
+                  const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
+
+                  const badge = (
+                    <Badge
+                      variant={isSelected ? "default" : "outline"}
+                      className={`cursor-pointer transition-all hover:scale-105 relative ${
+                        isSelected
+                          ? "text-white border-2 shadow-lg"
+                          : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
+                      }`}
+                      style={
+                        hasValidColor
+                          ? isSelected
+                            ? {
+                                backgroundColor: item.color,
+                                borderColor: item.color,
+                                color: getContrastColor(item.color),
+                              }
+                            : {
+                                borderColor: addTransparency(item.color, "90") || item.color,
+                                borderLeftColor: item.color,
+                                borderLeftWidth: "4px",
+                              }
+                          : undefined
+                      }
+                      onClick={() => onCategoryToggle(item.id)}
+                    >
+                      {item.name}
+                    </Badge>
+                  )
+
+                  if (item.description) {
+                    return (
+                      <Tooltip key={item.id}>
+                        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          {item.description}
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  }
+
+                  return <div key={item.id}>{badge}</div>
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Performers Section */}
+          {performers.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-2">PERFORMERS</div>
+              <div className="flex flex-wrap gap-2">
+                {performers.map((performer) => {
+                  const item = {
+                    id: `performer:${performer.id}`,
+                    name: performer.name,
+                    color: "#a855f7",
+                  }
+                  const isSelected = selectedCategories.includes(item.id)
+                  const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
+                  return (
+                    <Badge
+                      key={item.id}
+                      variant={isSelected ? "default" : "outline"}
+                      className={`cursor-pointer transition-all hover:scale-105 relative ${
+                        isSelected
+                          ? "text-white border-2 shadow-lg"
+                          : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
+                      }`}
+                      style={
+                        hasValidColor
+                          ? isSelected
+                            ? {
+                                backgroundColor: item.color,
+                                borderColor: item.color,
+                                color: getContrastColor(item.color),
+                              }
+                            : {
+                                borderColor: addTransparency(item.color, "90") || item.color,
+                                borderLeftColor: item.color,
+                                borderLeftWidth: "4px",
+                              }
+                          : undefined
+                      }
+                      onClick={() => onCategoryToggle(item.id)}
+                    >
+                      {item.name}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recorded Section */}
+          {sortedRecordedValues.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-2">RECORDED</div>
+              <div className="flex flex-wrap gap-2">
+                {sortedRecordedValues.map((value) => {
+                  const item = {
+                    id: `recorded:${value}`,
+                    name: value,
+                    color: "#6b7280",
+                  }
+                  const isSelected = selectedCategories.includes(item.id)
+                  const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
+                  return (
+                    <Badge
+                      key={item.id}
+                      variant={isSelected ? "default" : "outline"}
+                      className={`cursor-pointer transition-all hover:scale-105 relative ${
+                        isSelected
+                          ? "text-white border-2 shadow-lg"
+                          : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
+                      }`}
+                      style={
+                        hasValidColor
+                          ? isSelected
+                            ? {
+                                backgroundColor: item.color,
+                                borderColor: item.color,
+                                color: getContrastColor(item.color),
+                              }
+                            : {
+                                borderColor: addTransparency(item.color, "90") || item.color,
+                                borderLeftColor: item.color,
+                                borderLeftWidth: "4px",
+                              }
+                          : undefined
+                      }
+                      onClick={() => onCategoryToggle(item.id)}
+                    >
+                      {item.name}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="text-sm text-gray-400">
+          {selectedCategories.length > 0 || selectedCurriculums.length > 0 ? (
+            <>
+              Showing {videoCount} video{videoCount === 1 ? "" : "s"} matching:{" "}
+              {selectedCategories.length + selectedCurriculums.length} filter
+              {selectedCategories.length + selectedCurriculums.length === 1 ? "" : "s"}
+            </>
+          ) : (
+            <>
+              Showing {videoCount} video{videoCount === 1 ? "" : "s"}
+            </>
+          )}
+        </div>
       </div>
-
-      <div className="space-y-3">
-        {/* Gradings Section */}
-        {gradingCategories.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">GRADINGS</div>
-            <div className="flex flex-wrap gap-2">
-              {gradingCategories.map((item) => {
-                const isSelected = selectedCategories.includes(item.id)
-                return (
-                  <Badge
-                    key={item.id}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all hover:scale-105 relative ${
-                      isSelected
-                        ? "text-white border-2 shadow-lg"
-                        : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                    }`}
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
-                    }
-                    onClick={() => onCategoryToggle(item.id)}
-                  >
-                    {item.name}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Weapons Section */}
-        {weaponCategories.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">WEAPONS</div>
-            <div className="flex flex-wrap gap-2">
-              {weaponCategories.map((item) => {
-                const isSelected = selectedCategories.includes(item.id)
-                return (
-                  <Badge
-                    key={item.id}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all hover:scale-105 relative ${
-                      isSelected
-                        ? "text-white border-2 shadow-lg"
-                        : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                    }`}
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
-                    }
-                    onClick={() => onCategoryToggle(item.id)}
-                  >
-                    {item.name}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Performers Section */}
-        {performers.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">PERFORMERS</div>
-            <div className="flex flex-wrap gap-2">
-              {performers.map((performer) => {
-                const item = {
-                  id: `performer:${performer.id}`,
-                  name: performer.name,
-                  color: "#a855f7",
-                }
-                const isSelected = selectedCategories.includes(item.id)
-                return (
-                  <Badge
-                    key={item.id}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all hover:scale-105 relative ${
-                      isSelected
-                        ? "text-white border-2 shadow-lg"
-                        : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                    }`}
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
-                    }
-                    onClick={() => onCategoryToggle(item.id)}
-                  >
-                    {item.name}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Recorded Section */}
-        {sortedRecordedValues.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 mb-2">RECORDED</div>
-            <div className="flex flex-wrap gap-2">
-              {sortedRecordedValues.map((value) => {
-                const item = {
-                  id: `recorded:${value}`,
-                  name: value,
-                  color: "#6b7280",
-                }
-                const isSelected = selectedCategories.includes(item.id)
-                return (
-                  <Badge
-                    key={item.id}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all hover:scale-105 relative ${
-                      isSelected
-                        ? "text-white border-2 shadow-lg"
-                        : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                    }`}
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            color: getContrastColor(item.color),
-                          }
-                        : {
-                            borderColor: item.color + "90",
-                            borderLeftColor: item.color,
-                            borderLeftWidth: "4px",
-                          }
-                    }
-                    onClick={() => onCategoryToggle(item.id)}
-                  >
-                    {item.name}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="text-sm text-gray-400">
-        {selectedCategories.length > 0 ? (
-          <>
-            Showing {videoCount} video{videoCount === 1 ? "" : "s"} matching: {selectedCategories.length} filter
-            {selectedCategories.length === 1 ? "" : "s"}
-          </>
-        ) : (
-          <>
-            Showing {videoCount} video{videoCount === 1 ? "" : "s"}
-          </>
-        )}
-      </div>
-    </div>
+    </TooltipProvider>
   )
 }

@@ -59,6 +59,7 @@
     "react-dom": "^19",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^2.1.7",
+    "react-toastify": "latest",
     "recharts": "2.15.4",
     "resend": "latest",
     "sonner": "^1.7.4",

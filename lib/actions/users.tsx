@@ -3,9 +3,10 @@
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
-import { Resend } from "resend"
 import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
+import { sendEmail } from "./email"
+import { logAuditEvent } from "./audit"
 
 export async function inviteUser(email: string) {
   try {
@@ -50,7 +51,7 @@ export async function inviteUser(email: string) {
       .from("users")
       .select("id, email, is_approved")
       .eq("email", email.toLowerCase())
-      .single()
+      .maybeSingle()
 
     if (checkError && checkError.code !== "PGRST116") {
       console.error("Error checking existing user:", checkError)
@@ -67,7 +68,7 @@ export async function inviteUser(email: string) {
       .eq("email", email.toLowerCase())
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
-      .single()
+      .maybeSingle()
 
     if (existingInvitation) {
       return { error: "An invitation has already been sent to this email address." }
@@ -90,34 +91,37 @@ export async function inviteUser(email: string) {
       return { error: "Failed to create invitation" }
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "user_invitation",
+      target_id: null,
+      target_email: email.toLowerCase(),
+      additional_data: {
+        actor_name: inviterUser.full_name,
+        invited_email: email.toLowerCase(),
+      },
+    })
 
-    await resend.emails.send({
-      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-      to: email,
-      subject: `You're invited to join the ${siteTitle}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">You're Invited!</h1>
-          </div>
-          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              ${sanitizeHtml(inviterUser.full_name)} has invited you to join the ${siteTitle}.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
-              This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_SITE_URL}/auth/sign-up" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                Accept Invitation
-              </a>
-            </div>
-          </div>
+    await sendEmail(
+      email,
+      `You're invited to join the ${siteTitle}`,
+      `You're Invited!`,
+      `
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          ${sanitizeHtml(inviterUser.full_name)} has invited you to join the ${siteTitle}.
+        </p>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+          This library is invite-only for Matayoshi/Okinawa Kobudo Australia Students.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}/auth/sign-up" 
+              style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+            Accept Invitation
+          </a>
         </div>
       `,
-    })
+    )
 
     return { success: "Invitation sent successfully" }
   } catch (emailError) {
@@ -129,7 +133,7 @@ export async function inviteUser(email: string) {
 export async function approveUserServerAction(userId: string, role = "Student") {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -151,20 +155,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "Not authenticated" }
     }
 
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const { data: user, error: userError } = await serviceSupabase
       .from("users")
@@ -177,13 +168,19 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "User not found" }
     }
 
+    const { data: actorUser } = await serviceSupabase
+      .from("users")
+      .select("full_name")
+      .eq("id", currentUser.user.id)
+      .single()
+
     const { error } = await serviceSupabase
       .from("users")
       .update({
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: currentUser.user.id,
-        role: role, // Set the selected role during approval
+        role: role,
       })
       .eq("id", userId)
 
@@ -192,40 +189,44 @@ export async function approveUserServerAction(userId: string, role = "Student") 
       return { error: "Failed to approve user" }
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
-
-    await resend.emails.send({
-      from: `OKL Admin <${process.env.FROM_EMAIL}>`,
-      to: user.email,
-      subject: `Your ${siteTitle} account has been approved!`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to the ${siteTitle}!</h1>
-          </div>
-          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Hi ${sanitizeHtml(user.full_name)},
-            </p>
-            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Great news! Your account has been approved and you now have access to the ${siteTitle}.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
-              You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}" 
-                 style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                Access Library
-              </a>
-            </div>
-            <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-              Happy training!
-            </p>
-          </div>
-        </div>
-      `,
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "user_approval",
+      target_id: userId,
+      target_email: user.email,
+      additional_data: {
+        actor_name: actorUser?.full_name || currentUser.user.email!.split("@")[0],
+        target_name: user.full_name,
+        assigned_role: role,
+      },
     })
+
+    await sendEmail(
+      user.email,
+      `Your ${siteTitle} account has been approved!`,
+      `Welcome to the ${siteTitle}!`,
+      `
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          Hi ${sanitizeHtml(user.full_name)},
+        </p>
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          Great news! Your account has been approved and you now have access to the ${siteTitle}.
+        </p>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 30px;">
+          You can now access our complete collection of instructional videos, techniques, and resources for Matayoshi/Okinawa Kobudo training.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXT_PUBLIC_FULL_SITE_URL}" 
+             style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+            Access Library
+          </a>
+        </div>
+        <p style="font-size: 12px; color: #9ca3af; text-align: center;">
+          Happy training!
+        </p>
+      `,
+    )
 
     revalidatePath("/admin")
     return { success: "User approved successfully" }
@@ -238,7 +239,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
 export async function rejectUserServerAction(userId: string) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -280,7 +281,7 @@ export async function rejectUserServerAction(userId: string) {
 export async function updatePendingUserFields(userId: string, fullName: string, teacher: string, school: string) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -305,22 +306,28 @@ export async function updatePendingUserFields(userId: string, fullName: string, 
       .eq("id", userId)
 
     if (error) {
-      console.error("Error updating user fields:", error)
-      return { error: "Failed to update user fields" }
+      console.error("Error updating pending user fields:", error)
+      return { error: "Failed to update pending user fields" }
     }
 
     revalidatePath("/admin")
-    return { success: "User fields updated successfully" }
+    return { success: "Pending user fields updated successfully" }
   } catch (error) {
     console.error("Error in updatePendingUserFields:", error)
-    return { error: "Failed to update user fields" }
+    return { error: "Failed to update pending user fields" }
   }
 }
 
-export async function updateUserFields(userId: string, fullName: string, teacher: string, school: string) {
+export async function updateUserFields(
+  userId: string,
+  fullName: string,
+  teacher: string,
+  school: string,
+  currentBeltId?: string | null,
+) {
   try {
     const cookieStore = await cookies()
-    const serviceSupabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -335,14 +342,17 @@ export async function updateUserFields(userId: string, fullName: string, teacher
       },
     })
 
-    const { error } = await serviceSupabase
-      .from("users")
-      .update({
-        full_name: fullName.trim(),
-        teacher: teacher.trim(),
-        school: school.trim(),
-      })
-      .eq("id", userId)
+    const updateData: any = {
+      full_name: fullName.trim(),
+      teacher: teacher.trim(),
+      school: school.trim(),
+    }
+
+    if (currentBeltId !== undefined) {
+      updateData.current_belt_id = currentBeltId
+    }
+
+    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", userId)
 
     if (error) {
       console.error("Error updating user fields:", error)
@@ -350,6 +360,7 @@ export async function updateUserFields(userId: string, fullName: string, teacher
     }
 
     revalidatePath("/admin/users")
+    revalidatePath("/students")
     return { success: "User fields updated successfully" }
   } catch (error) {
     console.error("Error in updateUserFields:", error)
@@ -360,6 +371,45 @@ export async function updateUserFields(userId: string, fullName: string, teacher
 export async function deleteUserCompletely(userId: string) {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { data: userToDelete } = await serviceSupabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userId)
+      .single()
+
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
+        },
+      },
+    )
+
+    const { data: currentUser } = await supabase.auth.getUser()
+
+    let actorName = currentUser.user?.email?.split("@")[0] || "Unknown"
+    if (currentUser.user) {
+      const { data: actorUser } = await serviceSupabase
+        .from("users")
+        .select("full_name")
+        .eq("id", currentUser.user.id)
+        .single()
+
+      if (actorUser) {
+        actorName = actorUser.full_name
+      }
+    }
 
     const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
 
@@ -374,6 +424,20 @@ export async function deleteUserCompletely(userId: string) {
       console.error("Error deleting user from auth (user may not exist in auth):", authError)
     }
 
+    if (currentUser.user && userToDelete) {
+      await logAuditEvent({
+        actor_id: currentUser.user.id,
+        actor_email: currentUser.user.email!,
+        action: "user_deletion",
+        target_id: userId,
+        target_email: userToDelete.email,
+        additional_data: {
+          actor_name: actorName,
+          target_name: userToDelete.full_name,
+        },
+      })
+    }
+
     return { success: "User deleted successfully" }
   } catch (error) {
     console.error("Error in deleteUserCompletely:", error)
@@ -385,14 +449,12 @@ export async function updateProfile(params: {
   userId: string
   email: string
   fullName: string | null
-  teacher: string | null
-  school: string | null
   profileImageUrl: string | null
 }) {
-  const { userId, email, fullName, teacher, school, profileImageUrl } = params
+  const { userId, email, fullName, profileImageUrl } = params
 
-  if (!fullName || !school || !teacher) {
-    return { error: "All fields are required", success: false }
+  if (!fullName) {
+    return { error: "Name is required", success: false }
   }
 
   try {
@@ -402,8 +464,6 @@ export async function updateProfile(params: {
       .from("users")
       .update({
         full_name: fullName,
-        school,
-        teacher,
         profile_image_url: profileImageUrl,
       })
       .eq("id", userId)
@@ -420,49 +480,67 @@ export async function updateProfile(params: {
   }
 }
 
-export async function changePassword(prevState: any, formData: FormData) {
-  const currentPassword = formData.get("currentPassword") as string
-  const newPassword = formData.get("newPassword") as string
-  const confirmPassword = formData.get("confirmPassword") as string
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: "All fields are required" }
-  }
-
-  if (newPassword !== confirmPassword) {
-    return { error: "New passwords do not match" }
-  }
-
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
+export async function updateUserBelt(userId: string, beltId: string | null) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
         },
       },
-    },
-  )
+    )
 
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword,
-  })
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated", success: false }
+    }
 
-  if (error) {
-    console.error("Error changing password:", error)
-    return { error: "Failed to change password" }
+    // Check permissions
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("role, school")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    const { data: targetUser } = await supabase.from("users").select("school").eq("id", userId).single()
+
+    const isAdmin = userProfile?.role === "Admin"
+    const isTeacher = userProfile?.role === "Teacher" || userProfile?.role === "Head Teacher"
+    const isSameSchool = userProfile?.school === targetUser?.school
+    const isOwnProfile = currentUser.user.id === userId
+
+    if (!isOwnProfile && !isAdmin && !(isTeacher && isSameSchool)) {
+      return { error: "Unauthorized to update this user's belt", success: false }
+    }
+
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase.from("users").update({ current_belt_id: beltId }).eq("id", userId)
+
+    if (error) {
+      console.error("Error updating user belt:", error)
+      return { error: "Failed to update belt", success: false }
+    }
+
+    revalidatePath("/profile")
+    revalidatePath("/admin/users")
+    revalidatePath("/students")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in updateUserBelt:", error)
+    return { error: "Failed to update belt", success: false }
   }
-
-  return { success: "Password changed successfully" }
 }
 
 export async function fetchPendingUsers() {
@@ -471,7 +549,10 @@ export async function fetchPendingUsers() {
 
     const { data, error } = await serviceSupabase
       .from("users")
-      .select("*")
+      .select(`
+        *,
+        inviter:invited_by(full_name)
+      `)
       .eq("is_approved", false)
       .order("created_at", { ascending: false })
 
@@ -547,24 +628,20 @@ export async function fetchUnconfirmedEmailUsers() {
 export async function resendConfirmationEmail(email: string) {
   try {
     const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // The `setAll` method was called from a Server Component.
+          }
         },
       },
-    )
+    })
 
     // Check if user is authenticated and is admin
     const { data: currentUser } = await supabase.auth.getUser()
@@ -600,5 +677,146 @@ export async function resendConfirmationEmail(email: string) {
   } catch (error) {
     console.error("Error in resendConfirmationEmail:", error)
     return { error: "Failed to resend confirmation email" }
+  }
+}
+
+export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, headTeacherId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { data: usersData, error: usersError } = await serviceSupabase
+      .from("users")
+      .select(`
+        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id,
+        inviter:invited_by(full_name),
+        current_belt:curriculums!current_belt_id(id, name, color, display_order)
+      `)
+      .eq("is_approved", true)
+      .ilike("school", `${headTeacherSchool}%`)
+      .neq("id", headTeacherId)
+      .order("full_name", { ascending: true })
+
+    if (usersError) throw usersError
+
+    // Fetch login stats
+    const { data: loginStats, error: loginError } = await serviceSupabase
+      .from("user_logins")
+      .select("user_id, login_time")
+      .order("login_time", { ascending: false })
+
+    if (loginError) throw loginError
+
+    // Fetch view stats
+    const { data: viewStats, error: viewError } = await serviceSupabase
+      .from("user_video_views")
+      .select("user_id, viewed_at")
+      .order("viewed_at", { ascending: false })
+
+    if (viewError) throw viewError
+
+    // Combine data with stats
+    const usersWithStats =
+      usersData?.map((user) => {
+        const userLogins = loginStats?.filter((login) => login.user_id === user.id) || []
+        const lastLogin = userLogins.length > 0 ? userLogins[0].login_time : null
+        const loginCount = userLogins.length
+
+        const userViews = viewStats?.filter((view) => view.user_id === user.id) || []
+        const lastView = userViews.length > 0 ? userViews[0].viewed_at : null
+        const viewCount = userViews.length
+
+        return {
+          ...user,
+          last_login: lastLogin,
+          login_count: loginCount,
+          last_view: lastView,
+          view_count: viewCount,
+        }
+      }) || []
+
+    return { data: usersWithStats, error: null }
+  } catch (error) {
+    console.error("Error in fetchStudentsForHeadTeacher:", error)
+    return { error: "Failed to fetch students", data: [] }
+  }
+}
+
+export async function adminResetUserPassword(userId: string, newPassword: string) {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {}
+          },
+        },
+      },
+    )
+
+    // Verify the current user is an admin
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    const { data: adminProfile } = await supabase
+      .from("users")
+      .select("role, full_name")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!adminProfile || adminProfile.role !== "Admin") {
+      return { error: "Unauthorized - Admin access required" }
+    }
+
+    // Validate password
+    if (!newPassword || newPassword.length < 8) {
+      return { error: "Password must be at least 8 characters long" }
+    }
+
+    // Get target user details
+    const { data: targetUser } = await supabase.from("users").select("email, full_name").eq("id", userId).single()
+
+    if (!targetUser) {
+      return { error: "User not found" }
+    }
+
+    // Use service role to update password
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    })
+
+    if (updateError) {
+      console.error("Error updating password:", updateError)
+      return { error: "Failed to update password" }
+    }
+
+    // Log audit event
+    await logAuditEvent({
+      actor_id: currentUser.user.id,
+      actor_email: currentUser.user.email!,
+      action: "password_reset",
+      target_id: userId,
+      target_email: targetUser.email,
+      additional_data: {
+        actor_name: adminProfile.full_name,
+        target_name: targetUser.full_name,
+      },
+    })
+
+    return { success: "Password reset successfully" }
+  } catch (error) {
+    console.error("Error in adminResetUserPassword:", error)
+    return { error: "Failed to reset password" }
   }
 }

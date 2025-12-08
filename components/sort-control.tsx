@@ -21,6 +21,8 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
 
   const getSortLabel = (value: string) => {
     switch (value) {
+      case "curriculum":
+        return "Curriculum"
       case "category":
         return "Category"
       case "title":
@@ -31,6 +33,8 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
         return "Recorded"
       case "views":
         return "Views"
+      case "last_viewed_at":
+        return "Last View"
       default:
         return "Category"
     }
@@ -44,6 +48,9 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-gray-900 border-gray-700">
+          <SelectItem value="curriculum" className="text-gray-300 hover:text-gray-900">
+            Curriculum
+          </SelectItem>
           <SelectItem value="category" className="text-gray-300 hover:text-gray-900">
             Category
           </SelectItem>
@@ -58,6 +65,9 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
           </SelectItem>
           <SelectItem value="views" className="text-gray-300 hover:text-gray-900">
             Views
+          </SelectItem>
+          <SelectItem value="last_viewed_at" className="text-gray-300 hover:text-gray-900">
+            Last View
           </SelectItem>
         </SelectContent>
       </Select>
