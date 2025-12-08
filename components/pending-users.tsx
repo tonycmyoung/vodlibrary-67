@@ -22,7 +22,6 @@ interface PendingUser {
   teacher: string | null
   school: string | null
   created_at: string
-  inviter?: { full_name: string } | null
 }
 
 export default function PendingUsers() {
@@ -281,18 +280,6 @@ export default function PendingUsers() {
                           <Calendar className="w-3 h-3" />
                           <span>{formatDate(user.created_at)}</span>
                         </div>
-                        {user.inviter?.full_name && (
-                          <div className="flex items-center space-x-1 min-w-0 text-purple-400">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">Invited by: {user.inviter.full_name}</span>
-                          </div>
-                        )}
-                        {!user.inviter && (
-                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">Direct signup</span>
-                          </div>
-                        )}
                         <div className="flex items-center space-x-1 min-w-0 lg:hidden">
                           <User className="w-3 h-3 flex-shrink-0" />
                           {isEditing ? (
@@ -362,7 +349,6 @@ export default function PendingUsers() {
                     >
                       <option value="Student">Student</option>
                       <option value="Teacher">Teacher</option>
-                      <option value="Head Teacher">Head Teacher</option>
                     </select>
                   </div>
 

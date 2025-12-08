@@ -94,7 +94,6 @@ export async function saveVideo(videoData: {
   videoUrl: string
   thumbnailUrl?: string
   categoryIds?: string[]
-  curriculumIds?: string[]
   performerIds?: string[]
   durationSeconds?: number | null
   isPublished?: boolean
@@ -107,7 +106,6 @@ export async function saveVideo(videoData: {
     videoUrl,
     thumbnailUrl,
     categoryIds = [],
-    curriculumIds = [],
     performerIds = [],
     durationSeconds,
     isPublished = true,
@@ -146,8 +144,6 @@ export async function saveVideo(videoData: {
       // Delete existing category relationships
       await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
 
-      await serviceSupabase.from("video_curriculums").delete().eq("video_id", videoId)
-
       // Delete existing performer relationships
       await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
 
@@ -162,19 +158,6 @@ export async function saveVideo(videoData: {
 
         if (categoryError) {
           console.error("Error inserting video categories:", categoryError)
-        }
-      }
-
-      if (curriculumIds.length > 0) {
-        const curriculumInserts = curriculumIds.map((curriculumId) => ({
-          video_id: videoId,
-          curriculum_id: curriculumId,
-        }))
-
-        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
-
-        if (curriculumError) {
-          console.error("Error inserting video curriculums:", curriculumError)
         }
       }
 
@@ -225,19 +208,6 @@ export async function saveVideo(videoData: {
 
         if (categoryError) {
           console.error("Error inserting video categories:", categoryError)
-        }
-      }
-
-      if (curriculumIds.length > 0) {
-        const curriculumInserts = curriculumIds.map((curriculumId) => ({
-          video_id: newVideoId,
-          curriculum_id: curriculumId,
-        }))
-
-        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
-
-        if (curriculumError) {
-          console.error("Error inserting video curriculums:", curriculumError)
         }
       }
 
@@ -392,38 +362,4 @@ export async function getBatchVideoViewCounts(videoIds: string[]): Promise<Recor
   })
 
   return viewCounts
-}
-
-export async function getBatchVideoLastViewed(videoIds: string[]): Promise<Record<string, string | null>> {
-  if (videoIds.length === 0) return {}
-
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
-  const { data, error } = await serviceSupabase
-    .from("video_views")
-    .select("video_id, viewed_at")
-    .in("video_id", videoIds)
-    .order("viewed_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching video last viewed:", error)
-    return {}
-  }
-
-  // Group by video_id and take the most recent viewed_at for each
-  const lastViewedMap: Record<string, string | null> = {}
-
-  // Initialize all video IDs with null
-  for (const videoId of videoIds) {
-    lastViewedMap[videoId] = null
-  }
-
-  // Set the most recent viewed_at for each video
-  for (const view of data) {
-    if (!lastViewedMap[view.video_id]) {
-      lastViewedMap[view.video_id] = view.viewed_at
-    }
-  }
-
-  return lastViewedMap
 }

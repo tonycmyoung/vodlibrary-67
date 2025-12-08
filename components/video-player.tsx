@@ -24,12 +24,6 @@ interface VideoPlayerProps {
     recorded: string | null
     isFavorited?: boolean
     views?: number
-    curriculums: Array<{
-      id: string
-      name: string
-      color: string
-      display_order: number
-    }>
     categories: Array<{
       id: string
       name: string
@@ -343,57 +337,18 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               </div>
 
               <div className="mt-6">
-                {video.curriculums && video.curriculums.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-medium text-gray-300 mb-2">Curriculum</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {video.curriculums.map((curriculum) => {
-                        const hasValidColor =
-                          curriculum.color && curriculum.color.startsWith("#") && curriculum.color.length >= 7
-                        return (
-                          <Badge
-                            key={curriculum.id}
-                            variant="outline"
-                            className="border-2 bg-gray-800/50"
-                            style={
-                              hasValidColor
-                                ? {
-                                    borderColor: curriculum.color + "80",
-                                    color: curriculum.color,
-                                  }
-                                : undefined
-                            }
-                          >
-                            {curriculum.name}
-                          </Badge>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 <h3 className="text-sm font-medium text-gray-300 mb-2">Categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {video.categories.map((category) => {
-                    const hasValidColor = category.color && category.color.startsWith("#") && category.color.length >= 7
-                    return (
-                      <Badge
-                        key={category.id}
-                        variant="outline"
-                        className="border-gray-600 text-gray-300"
-                        style={
-                          hasValidColor
-                            ? {
-                                borderColor: category.color + "60",
-                                color: category.color,
-                              }
-                            : undefined
-                        }
-                      >
-                        {category.name}
-                      </Badge>
-                    )
-                  })}
+                  {video.categories.map((category) => (
+                    <Badge
+                      key={category.id}
+                      variant="outline"
+                      className="border-gray-600 text-gray-300"
+                      style={{ borderColor: category.color + "60", color: category.color }}
+                    >
+                      {category.name}
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </CardContent>

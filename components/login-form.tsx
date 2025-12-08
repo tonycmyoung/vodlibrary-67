@@ -9,6 +9,7 @@ import Link from "next/link"
 import { signIn } from "@/lib/actions"
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { getAuthErrorMessage } from "@/lib/utils/auth"
 import { useFormStatus } from "react-dom"
 
 function SubmitButton() {
@@ -57,13 +58,13 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
     setResetMessage("")
 
     const supabase = createClient()
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     })
 
     setIsResetting(false)
 
-    if (resetError) {
+    if (error) {
       setResetError("Failed to send reset email. Please try again.")
     } else {
       setResetMessage("Password reset email sent! Check your inbox.")
@@ -72,7 +73,7 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
     }
   }
 
-  const displayError = error
+  const displayError = error ? getAuthErrorMessage(error) : null
 
   return (
     <Card className="w-full max-w-md bg-black/80 border-red-800/50 backdrop-blur-sm">
@@ -191,16 +192,6 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
                   Cancel
                 </Button>
               </div>
-              {resetError && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
-                  {resetError}
-                </div>
-              )}
-              {resetMessage && (
-                <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
-                  {resetMessage}
-                </div>
-              )}
             </form>
           )}
         </div>

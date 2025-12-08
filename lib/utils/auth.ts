@@ -62,7 +62,6 @@ export function getAuthErrorMessage(errorCode: string | null | undefined): strin
     email_not_confirmed: "Please check your email and click the confirmation link before signing in.",
     invalid_return_path: "Invalid redirect destination. Please try again.",
     auth_error: "An authentication error occurred. Please try again.",
-    reset_expired: "Your password reset link has expired or is invalid. Please request a new one.",
   }
 
   const message = errorMessages[errorCode] || "An unexpected error occurred. Please try again."

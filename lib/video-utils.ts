@@ -5,14 +5,6 @@ export interface VideoMetadata {
   height?: number
 }
 
-export interface Curriculum {
-  id: string
-  name: string
-  description: string | null
-  color: string
-  display_order: number
-}
-
 export function isGoogleDriveUrl(url: string): boolean {
   return url.includes("drive.google.com") || url.includes("docs.google.com")
 }

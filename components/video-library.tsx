@@ -11,7 +11,7 @@ import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight, Ribbon } from "lucide-react"
+import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
 
@@ -29,14 +29,6 @@ interface Video {
     id: string
     name: string
     color: string
-    description: string | null
-  }>
-  curriculums: Array<{
-    id: string
-    name: string
-    color: string
-    display_order: number
-    description: string | null
   }>
   performers: Array<{
     id: string
@@ -48,15 +40,6 @@ interface Category {
   id: string
   name: string
   color: string
-  description: string | null
-}
-
-interface Curriculum {
-  id: string
-  name: string
-  color: string
-  display_order: number
-  description: string | null
 }
 
 interface Performer {
@@ -66,9 +49,6 @@ interface Performer {
 
 interface VideoLibraryProps {
   favoritesOnly?: boolean
-  maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
-  storagePrefix?: string // Allow custom storage prefix for separate UI state
-  nextBeltName?: string // Add prop for next belt name
 }
 
 let lastFailureTime = 0
@@ -78,15 +58,10 @@ const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
 const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
-export default function VideoLibrary({
-  favoritesOnly = false,
-  maxCurriculumOrder,
-  storagePrefix: customStoragePrefix,
-  nextBeltName, // Destructure new prop
-}: VideoLibraryProps) {
+export default function VideoLibrary({ favoritesOnly = false }: VideoLibraryProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
+  const storagePrefix = favoritesOnly ? "favoritesLibrary" : "videoLibrary"
 
   const [urlState, setUrlState] = useState(() => {
     const filters = searchParams.get("filters")
@@ -110,7 +85,6 @@ export default function VideoLibrary({
   const [allVideos, setAllVideos] = useState<Video[]>([])
   const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<Category[]>([])
-  const [curriculums, setCurriculums] = useState<Curriculum[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [recordedValues, setRecordedValues] = useState<string[]>([])
   const [view, setView] = useState<"grid" | "list">(() => {
@@ -121,8 +95,7 @@ export default function VideoLibrary({
     return "grid"
   })
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedCurriculums, setSelectedCurriculums] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(urlState.filters)
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -143,39 +116,17 @@ export default function VideoLibrary({
 
   const supabase = createClient()
 
-  const filteredByLevel = useMemo(() => {
-    if (!maxCurriculumOrder) return allVideos
-
-    return allVideos.filter((video) => {
-      if (video.curriculums.length === 0) return false
-
-      return video.curriculums.some((curr) => curr.display_order <= maxCurriculumOrder)
-    })
-  }, [allVideos, maxCurriculumOrder])
-
   const processedData = useMemo(() => {
-    // Use filtered videos if maxCurriculumOrder is set, otherwise use all videos
-    const videosToProcess = maxCurriculumOrder ? filteredByLevel : allVideos
-
-    if (!videosToProcess.length) return { categories: [], curriculums: [], performers: [], recordedValues: [] }
+    if (!allVideos.length) return { categories: [], performers: [], recordedValues: [] }
 
     const categoryMap = new Map<string, Category>()
-    const curriculumMap = new Map<string, Curriculum>()
     const performerMap = new Map<string, Performer>()
     const recordedSet = new Set<string>()
 
-    videosToProcess.forEach((video) => {
+    allVideos.forEach((video) => {
       video.categories?.forEach((category) => {
         if (category?.id && category?.name) {
           categoryMap.set(category.id, category)
-        }
-      })
-
-      video.curriculums?.forEach((curriculum) => {
-        if (curriculum?.id && curriculum?.name) {
-          if (!maxCurriculumOrder || curriculum.display_order <= maxCurriculumOrder) {
-            curriculumMap.set(curriculum.id, curriculum)
-          }
         }
       })
 
@@ -192,11 +143,10 @@ export default function VideoLibrary({
 
     return {
       categories: Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      curriculums: Array.from(curriculumMap.values()).sort((a, b) => a.display_order - b.display_order),
       performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       recordedValues: Array.from(recordedSet),
     }
-  }, [allVideos, filteredByLevel, maxCurriculumOrder])
+  }, [allVideos])
 
   useEffect(() => {
     let mounted = true
@@ -234,35 +184,29 @@ export default function VideoLibrary({
       }
 
       try {
-        const [videosResult, favoritesResult, categoriesResult, curriculumsResult, performersResult] =
-          await Promise.all([
-            supabase
-              .from("videos")
-              .select(`
+        const [videosResult, favoritesResult, categoriesResult, performersResult] = await Promise.all([
+          supabase
+            .from("videos")
+            .select(`
               id, title, description, video_url, thumbnail_url, duration_seconds, 
               created_at, recorded, updated_at
             `)
-              .order("created_at", { ascending: false }),
+            .order("created_at", { ascending: false }),
 
-            user
-              ? supabase.from("user_favorites").select("video_id").eq("user_id", user.id)
-              : Promise.resolve({ data: [], error: null }),
+          user
+            ? supabase.from("user_favorites").select("video_id").eq("user_id", user.id)
+            : Promise.resolve({ data: [], error: null }),
 
-            supabase.from("video_categories").select(`
+          supabase.from("video_categories").select(`
               video_id,
-              categories(id, name, color, description)
+              categories(id, name, color)
             `),
 
-            supabase.from("video_curriculums").select(`
-              video_id,
-              curriculums(id, name, color, display_order, description)
-            `),
-
-            supabase.from("video_performers").select(`
+          supabase.from("video_performers").select(`
               video_id,
               performers(id, name)
             `),
-          ])
+        ])
 
         if (!mounted) return
 
@@ -276,9 +220,6 @@ export default function VideoLibrary({
             const videoCategories =
               categoriesResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.categories) || []
 
-            const videoCurriculums =
-              curriculumsResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.curriculums) || []
-
             const videoPerformers =
               performersResult.data?.filter((vp) => vp.video_id === video.id).map((vp) => vp.performers) || []
 
@@ -286,7 +227,6 @@ export default function VideoLibrary({
               ...video,
               views: 0, // Initialize with 0, will be updated with actual counts
               categories: videoCategories,
-              curriculums: videoCurriculums,
               performers: videoPerformers,
             }
           }) || []
@@ -371,60 +311,27 @@ export default function VideoLibrary({
 
   useEffect(() => {
     setCategories(processedData.categories)
-    setCurriculums(processedData.curriculums)
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
-
-    if (urlState.filters.length > 0 && processedData.categories.length > 0 && processedData.curriculums.length > 0) {
-      const categoryIds = processedData.categories.map((c) => c.id)
-      const curriculumIds = processedData.curriculums.map((c) => c.id)
-
-      const separatedCategories: string[] = []
-      const separatedCurriculums: string[] = []
-
-      urlState.filters.forEach((filterId) => {
-        if (
-          categoryIds.includes(filterId) ||
-          filterId.startsWith("recorded:") ||
-          filterId.startsWith("performer:") ||
-          filterId.startsWith("views:")
-        ) {
-          separatedCategories.push(filterId)
-        } else if (curriculumIds.includes(filterId)) {
-          separatedCurriculums.push(filterId)
-        }
-      })
-
-      console.log(
-        "[v0] Separated filters on load - categories:",
-        separatedCategories,
-        "curriculums:",
-        separatedCurriculums,
-      )
-
-      setSelectedCategories(separatedCategories)
-      setSelectedCurriculums(separatedCurriculums)
-    }
   }, [processedData])
 
-  const [sortBy, setSortBy] = useState<
-    "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
-  >(() => {
-    if (typeof window !== "undefined") {
-      const storageKey = `${storagePrefix}SortBy`
-      return (
-        (localStorage.getItem(storageKey) as
-          | "title"
-          | "created_at"
-          | "recorded"
-          | "performers"
-          | "category"
-          | "curriculum"
-          | "views") || "curriculum"
-      )
-    }
-    return "curriculum"
-  })
+  const [sortBy, setSortBy] = useState<"title" | "created_at" | "recorded" | "performers" | "category" | "views">(
+    () => {
+      if (typeof window !== "undefined") {
+        const storageKey = `${storagePrefix}SortBy`
+        return (
+          (localStorage.getItem(storageKey) as
+            | "title"
+            | "created_at"
+            | "recorded"
+            | "performers"
+            | "category"
+            | "views") || "category"
+        )
+      }
+      return "category"
+    },
+  )
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
     if (typeof window !== "undefined") {
@@ -435,7 +342,7 @@ export default function VideoLibrary({
   })
 
   const processedVideos = useMemo(() => {
-    let result = maxCurriculumOrder ? [...filteredByLevel] : [...allVideos]
+    let result = [...allVideos]
 
     if (favoritesOnly) {
       result = result.filter((video) => userFavorites.has(video.id))
@@ -452,10 +359,9 @@ export default function VideoLibrary({
       })
     }
 
-    if (selectedCategories.length > 0 || selectedCurriculums.length > 0) {
+    if (selectedCategories.length > 0) {
       result = result.filter((video) => {
         const videoCategories = video.categories.map((cat) => cat.id)
-        const videoCurriculums = video.curriculums.map((curr) => curr.id)
         const videoPerformers = video.performers.map((perf) => perf.id)
 
         const selectedCategoryIds = selectedCategories.filter(
@@ -472,7 +378,6 @@ export default function VideoLibrary({
           .map((id) => id.replace("views:", ""))
 
         let categoryMatches = selectedCategoryIds.length === 0 ? true : false
-        let curriculumMatches = selectedCurriculums.length === 0 ? true : false
         let recordedMatches = selectedRecordedValues.length === 0 ? true : false
         let performerMatches = selectedPerformerIds.length === 0 ? true : false
         let viewsMatches = selectedViews.length === 0 ? true : false
@@ -482,14 +387,6 @@ export default function VideoLibrary({
             categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
           } else {
             categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
-          }
-        }
-
-        if (selectedCurriculums.length > 0) {
-          if (filterMode === "AND") {
-            curriculumMatches = selectedCurriculums.every((selectedId) => videoCurriculums.includes(selectedId))
-          } else {
-            curriculumMatches = selectedCurriculums.some((selectedId) => videoCurriculums.includes(selectedId))
           }
         }
 
@@ -517,7 +414,6 @@ export default function VideoLibrary({
 
         const activeFilters = [
           selectedCategoryIds.length > 0 ? categoryMatches : null,
-          selectedCurriculums.length > 0 ? curriculumMatches : null,
           selectedRecordedValues.length > 0 ? recordedMatches : null,
           selectedPerformerIds.length > 0 ? performerMatches : null,
           selectedViews.length > 0 ? viewsMatches : null,
@@ -558,14 +454,6 @@ export default function VideoLibrary({
 
           comparison = aCategories.localeCompare(bCategories)
           break
-        case "curriculum":
-          const aMinOrder =
-            a.curriculums.length > 0 ? Math.min(...a.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
-          const bMinOrder =
-            b.curriculums.length > 0 ? Math.min(...b.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
-
-          comparison = aMinOrder - bMinOrder
-          break
         case "views":
           comparison = (a.views || 0) - (b.views || 0)
           break
@@ -580,19 +468,7 @@ export default function VideoLibrary({
     })
 
     return result
-  }, [
-    allVideos,
-    debouncedSearchQuery,
-    selectedCategories,
-    selectedCurriculums,
-    filterMode,
-    sortBy,
-    sortOrder,
-    favoritesOnly,
-    userFavorites,
-    filteredByLevel,
-    maxCurriculumOrder,
-  ])
+  }, [allVideos, debouncedSearchQuery, selectedCategories, filterMode, sortBy, sortOrder, favoritesOnly, userFavorites])
 
   const totalPages = Math.ceil(processedVideos.length / itemsPerPage)
   const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
@@ -629,7 +505,7 @@ export default function VideoLibrary({
       params.set("page", page.toString())
     }
 
-    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
+    const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname
 
     const currentSearch = window.location.search
     const newSearch = params.toString() ? `?${params.toString()}` : ""
@@ -637,13 +513,6 @@ export default function VideoLibrary({
     if (currentSearch !== newSearch) {
       router.replace(newURL, { scroll: false })
     }
-  }
-
-  const handleCurriculumToggle = (curriculumId: string) => {
-    setSelectedCurriculums((prev) =>
-      prev.includes(curriculumId) ? prev.filter((id) => id !== curriculumId) : [...prev, curriculumId],
-    )
-    setCurrentPage(1) // Reset to page 1 when filters change
   }
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -662,7 +531,7 @@ export default function VideoLibrary({
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views")
+    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "views")
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
@@ -670,18 +539,8 @@ export default function VideoLibrary({
   }
 
   const handleFilterModeChange = (newMode: "AND" | "OR") => {
-    console.log("[v0] handleFilterModeChange called")
-    console.log("[v0] newMode:", newMode)
-    console.log("[v0] selectedCategories:", selectedCategories)
-    console.log("[v0] selectedCurriculums:", selectedCurriculums)
-
     setFilterMode(newMode)
-    const allFilters = [...selectedCategories, ...selectedCurriculums]
-
-    console.log("[v0] allFilters combined:", allFilters)
-    console.log("[v0] searchQuery:", searchQuery)
-
-    reconstructURL(allFilters, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
+    reconstructURL(selectedCategories, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
   }
 
   const handleItemsPerPageChange = (value: string) => {
@@ -883,12 +742,7 @@ export default function VideoLibrary({
     )
   }
 
-  if (
-    videos.length === 0 &&
-    !debouncedSearchQuery &&
-    selectedCategories.length === 0 &&
-    selectedCurriculums.length === 0
-  ) {
+  if (videos.length === 0 && !debouncedSearchQuery && selectedCategories.length === 0) {
     if (favoritesOnly) {
       return (
         <div className="text-center py-12">
@@ -908,44 +762,12 @@ export default function VideoLibrary({
     }
   }
 
-  const FilterSection = () => (
-    <div className="space-y-6">
-      <CategoryFilter
-        categories={categories}
-        recordedValues={recordedValues}
-        performers={performers}
-        selectedCategories={selectedCategories}
-        onCategoryToggle={handleCategoryToggle}
-        videoCount={videos.length}
-        curriculums={curriculums}
-        selectedCurriculums={selectedCurriculums}
-        onCurriculumToggle={handleCurriculumToggle}
-      />
-    </div>
-  )
-
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
-      {maxCurriculumOrder && (
-        <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
-          <Ribbon className="w-4 h-4 text-red-500" />
-          <span className="text-sm text-gray-300">
-            Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-          </span>
-        </div>
-      )}
       <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
         <div className="space-y-2 sm:space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            {maxCurriculumOrder && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
-                <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span className="text-sm text-gray-300">
-                  Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-                </span>
-              </div>
-            )}
-            <div className="relative flex-1 max-w-md w-full">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
@@ -964,12 +786,7 @@ export default function VideoLibrary({
                 </Button>
               )}
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <ViewToggle view={view} onViewChange={handleViewChange} />
-              <div className="hidden sm:block">
-                <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
-              </div>
-            </div>
+            <ViewToggle view={view} onViewChange={handleViewChange} />
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -982,9 +799,9 @@ export default function VideoLibrary({
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
+                    {selectedCategories.length > 0 && (
                       <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
-                        {selectedCategories.length + selectedCurriculums.length}
+                        {selectedCategories.length}
                       </span>
                     )}
                   </Button>
@@ -994,8 +811,16 @@ export default function VideoLibrary({
                     <DialogTitle className="text-white">Filter Videos</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <FilterSection />
-                    {selectedCategories.length + selectedCurriculums.length > 1 && (
+                    <CategoryFilter
+                      categories={categories}
+                      recordedValues={recordedValues}
+                      performers={performers}
+                      selectedCategories={selectedCategories}
+                      onCategoryToggle={handleCategoryToggle}
+                      videoCount={videos.length}
+                      compact={true}
+                    />
+                    {selectedCategories.length > 1 && (
                       <div className="space-y-2">
                         <span className="text-sm text-gray-400">Filter mode:</span>
                         <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
@@ -1035,15 +860,22 @@ export default function VideoLibrary({
                   </div>
                 </DialogContent>
               </Dialog>
-              <div className="flex-1 sm:hidden">
+              <div className="flex-1 sm:flex-none">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
             </div>
           </div>
         </div>
         <div className="hidden lg:block">
-          <FilterSection />
-          {selectedCategories.length + selectedCurriculums.length > 1 && (
+          <CategoryFilter
+            categories={categories}
+            recordedValues={recordedValues}
+            performers={performers}
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
+            videoCount={videos.length}
+          />
+          {selectedCategories.length > 1 && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-gray-400">Filter mode:</span>
               <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
@@ -1074,8 +906,8 @@ export default function VideoLibrary({
               </div>
               <span className="text-xs text-gray-500">
                 {filterMode === "AND"
-                  ? "Videos must have ALL selected categories/curriculums"
-                  : "Videos can have ANY selected categories/curriculums"}
+                  ? "Videos must have ALL selected categories"
+                  : "Videos can have ANY selected categories"}
               </span>
             </div>
           )}

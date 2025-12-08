@@ -37,7 +37,6 @@ interface UserOption {
   email: string
   profile_image_url: string | null
   is_approved: boolean
-  role: string
 }
 
 export default function AdminNotificationManagement() {
@@ -52,13 +51,6 @@ export default function AdminNotificationManagement() {
   const [messageText, setMessageText] = useState("")
   const [selectedRecipient, setSelectedRecipient] = useState<string>("")
   const [messageType, setMessageType] = useState<"individual" | "broadcast">("individual")
-  const [broadcastRole, setBroadcastRole] = useState<"all" | "Head Teacher" | "Teacher" | "Student">("all")
-  const [roleCounts, setRoleCounts] = useState<Record<string, number>>({
-    all: 0,
-    "Head Teacher": 0,
-    Teacher: 0,
-    Student: 0,
-  })
   const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({
     type: null,
     message: "",
@@ -122,7 +114,7 @@ export default function AdminNotificationManagement() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, profile_image_url, is_approved, role")
+        .select("id, full_name, email, profile_image_url, is_approved")
         .eq("is_approved", true)
         .neq("email", "acmyma@gmail.com")
         .order("full_name", { ascending: true })
@@ -133,14 +125,6 @@ export default function AdminNotificationManagement() {
       }
 
       setUsers(data || [])
-
-      const counts = {
-        all: data?.length || 0,
-        "Head Teacher": data?.filter((u) => u.role === "Head Teacher").length || 0,
-        Teacher: data?.filter((u) => u.role === "Teacher").length || 0,
-        Student: data?.filter((u) => u.role === "Student").length || 0,
-      }
-      setRoleCounts(counts)
     } catch (error) {
       console.error("Error fetching users:", error)
     }
@@ -182,7 +166,6 @@ export default function AdminNotificationManagement() {
         recipientId: messageType === "individual" ? selectedRecipient : undefined,
         message: messageText.trim(),
         isBroadcast: messageType === "broadcast",
-        broadcastRole: messageType === "broadcast" ? broadcastRole : undefined,
       })
 
       if (result.error) {
@@ -190,9 +173,7 @@ export default function AdminNotificationManagement() {
       }
 
       if (messageType === "broadcast") {
-        const roleLabel = broadcastRole === "all" ? "All Users" : `${broadcastRole}s`
-        const count = roleCounts[broadcastRole]
-        setStatus({ type: "success", message: `Email notifications sent to ${count} ${roleLabel}!` })
+        setStatus({ type: "success", message: `${result.success} Email notifications sent to all users!` })
       } else {
         const recipientUser = users.find((u) => u.id === selectedRecipient)
         setStatus({
@@ -203,7 +184,7 @@ export default function AdminNotificationManagement() {
 
       setMessageText("")
       setSelectedRecipient("")
-      fetchNotifications()
+      fetchNotifications() // Refresh notifications list
     } catch (error) {
       console.error("Error sending message:", error)
       setStatus({ type: "error", message: "Failed to send message. Please try again." })
@@ -299,7 +280,7 @@ export default function AdminNotificationManagement() {
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Broadcast</span>
+              <span>Broadcast to All</span>
             </Button>
           </div>
 
@@ -328,31 +309,6 @@ export default function AdminNotificationManagement() {
                       </SelectItem>
                     ))
                   )}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {messageType === "broadcast" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Select Recipients</label>
-              <Select value={broadcastRole} onValueChange={(value) => setBroadcastRole(value as typeof broadcastRole)}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="all" className="text-white hover:bg-gray-700">
-                    All Users ({roleCounts.all})
-                  </SelectItem>
-                  <SelectItem value="Head Teacher" className="text-white hover:bg-gray-700">
-                    Head Teachers ({roleCounts["Head Teacher"]})
-                  </SelectItem>
-                  <SelectItem value="Teacher" className="text-white hover:bg-gray-700">
-                    Teachers ({roleCounts.Teacher})
-                  </SelectItem>
-                  <SelectItem value="Student" className="text-white hover:bg-gray-700">
-                    Students ({roleCounts.Student})
-                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -398,9 +354,7 @@ export default function AdminNotificationManagement() {
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
-                {messageType === "broadcast"
-                  ? `Send to ${broadcastRole === "all" ? "All Users" : `${broadcastRole}s`} (${roleCounts[broadcastRole]})`
-                  : "Send Message"}
+                {messageType === "broadcast" ? `Send to All Users (${users.length})` : "Send Message"}
               </>
             )}
           </Button>
@@ -473,7 +427,7 @@ export default function AdminNotificationManagement() {
                         {!notification.is_read && <div className="w-2 h-2 rounded-full bg-purple-500" />}
                       </div>
 
-                      <p className="text-white mb-2 break-words whitespace-pre-line">{notification.message}</p>
+                      <p className="text-white mb-2 break-words">{notification.message}</p>
 
                       <p className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</p>
                     </div>
