@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+dist
+build
+coverage
+*.md
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.env*
+scripts/
+user_read_only_context/

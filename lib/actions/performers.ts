@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js"
 
-export async function addPerformer(nameOrFormData: string | FormData, formData?: FormData) {
+export async function addPerformer(
+  nameOrFormData: string | FormData,
+  formData?: FormData,
+): Promise<{ success?: string; error?: string }> {
   let name: string
 
   // Handle both direct string call and FormData call
@@ -33,7 +36,11 @@ export async function addPerformer(nameOrFormData: string | FormData, formData?:
   }
 }
 
-export async function updatePerformer(performerId: string, name: string, bio: string) {
+export async function updatePerformer(
+  performerId: string,
+  name: string,
+  bio: string,
+): Promise<{ success?: string; error?: string }> {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -51,7 +58,7 @@ export async function updatePerformer(performerId: string, name: string, bio: st
   }
 }
 
-export async function deletePerformer(performerId: string) {
+export async function deletePerformer(performerId: string): Promise<{ success?: string; error?: string }> {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 

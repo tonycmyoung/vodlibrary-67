@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-export async function incrementVideoViews(videoId: string) {
+export async function incrementVideoViews(videoId: string): Promise<{ success?: boolean; error?: string }> {
   try {
     console.log("[v0] Incrementing views for video:", videoId)
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -329,8 +329,14 @@ export async function getVideoViewsInDateRange(startDate: Date, endDate: Date): 
   return count || 0
 }
 
-// Get videos with their aggregated view counts
-export async function getVideosWithViewCounts() {
+export async function getVideosWithViewCounts(): Promise<
+  Array<{
+    video_id: string
+    total_views: number
+    last_viewed: string
+    unique_user_views: number
+  }>
+> {
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
   const { data, error } = await serviceSupabase.from("video_views").select(`
