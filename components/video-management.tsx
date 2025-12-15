@@ -217,19 +217,22 @@ export default function VideoManagement() {
       let bValue: any
 
       switch (sortBy) {
-        case "title":
+        case "title": {
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
           break
-        case "created_at":
+        }
+        case "created_at": {
           aValue = new Date(a.created_at).getTime()
           bValue = new Date(b.created_at).getTime()
           break
-        case "recorded":
+        }
+        case "recorded": {
           aValue = a.recorded || ""
           bValue = b.recorded || ""
           break
-        case "curriculum":
+        }
+        case "curriculum": {
           if (a.curriculums.length === 0 && b.curriculums.length === 0) {
             aValue = Number.MAX_SAFE_INTEGER
             bValue = Number.MAX_SAFE_INTEGER
@@ -244,21 +247,26 @@ export default function VideoManagement() {
             bValue = b.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
           }
           break
-        case "category":
+        }
+        case "category": {
           aValue = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz"
           bValue = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz"
           break
-        case "views":
+        }
+        case "views": {
           aValue = a.views || 0
           bValue = b.views || 0
           break
-        case "last_viewed":
+        }
+        case "last_viewed": {
           aValue = a.last_viewed_at ? new Date(a.last_viewed_at).getTime() : 0
           bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
           break
-        default:
+        }
+        default: {
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
+        }
       }
 
       if (aValue < bValue) return sortOrder === "asc" ? -1 : 1

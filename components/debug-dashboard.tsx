@@ -99,18 +99,26 @@ export default function DebugDashboard() {
     )
   }
 
-  const getResultBadge = (success: boolean) => {
-    return success ? (
+  const getSuccessBadge = () => {
+    return (
       <div className="flex items-center space-x-1">
         <CheckCircle className="w-4 h-4 text-green-500" />
         <span className="text-xs text-green-400">Success</span>
       </div>
-    ) : (
+    )
+  }
+
+  const getFailureBadge = () => {
+    return (
       <div className="flex items-center space-x-1">
         <XCircle className="w-4 h-4 text-red-500" />
-        <span className="text-xs text-red-400">Failed</span>
+        <span className="text-xs text-red-400">Error</span>
       </div>
     )
+  }
+
+  const getResultBadge = (success: boolean) => {
+    return success ? getSuccessBadge() : getFailureBadge()
   }
 
   const getKeyAdditionalData = (additionalData: any) => {
