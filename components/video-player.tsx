@@ -236,17 +236,15 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
           <Card className="bg-black/60 border-gray-800 overflow-hidden">
             <div className="aspect-video bg-gray-900 relative">
               {video.video_url ? (
-                <>
-                  <iframe
-                    src={getEmbeddableVideoUrl(video.video_url)}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    title={video.title}
-                    sandbox="allow-scripts allow-same-origin allow-presentation"
-                    allowFullScreen
-                    onLoad={() => {}} // Simplified onLoad handler
-                  />
-                </>
+                <iframe
+                  src={getEmbeddableVideoUrl(video.video_url)}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  title={video.title}
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                  allowFullScreen
+                  onLoad={() => {}} // Simplified onLoad handler
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-red-900 to-orange-900 flex items-center justify-center">
                   <div className="text-center text-white">

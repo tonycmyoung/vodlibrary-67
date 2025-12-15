@@ -63,6 +63,8 @@ interface UserInterface {
   } | null
 }
 
+type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
+
 export default function UserManagement() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -104,20 +106,10 @@ export default function UserManagement() {
   const [selectedBelt, setSelectedBelt] = useState(urlState.belt)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
-  const [sortBy, setSortBy] = useState<
-    "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
-  >(() => {
+  const [sortBy, setSortBy] = useState<UserSortBy>(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
-      return (
-        (localStorage.getItem(storageKey) as
-          | "full_name"
-          | "created_at"
-          | "last_login"
-          | "login_count"
-          | "last_view"
-          | "view_count") || "created_at"
-      )
+      return (localStorage.getItem(storageKey) as UserSortBy) || "full_name"
     }
     return "created_at"
   })
@@ -280,7 +272,7 @@ export default function UserManagement() {
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count")
+    setSortBy(newSortBy as UserSortBy)
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)

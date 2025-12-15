@@ -596,23 +596,14 @@ export default function VideoLibrary({
     }
   }, [processedData])
 
-  const [sortBy, setSortBy] = useState<
-    "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
-  >(() => {
+  type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
+
+  const [sortBy, setSortBy] = useState<VideoSortBy>(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
-      return (
-        (localStorage.getItem(storageKey) as
-          | "title"
-          | "created_at"
-          | "recorded"
-          | "performers"
-          | "category"
-          | "curriculum"
-          | "views") || "curriculum"
-      )
+      return (localStorage.getItem(storageKey) as VideoSortBy) || "created_at"
     }
-    return "curriculum"
+    return "created_at"
   })
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
@@ -854,7 +845,7 @@ export default function VideoLibrary({
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views")
+    setSortBy(newSortBy as VideoSortBy)
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
