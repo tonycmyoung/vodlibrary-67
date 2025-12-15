@@ -35,6 +35,7 @@ import UserFilter from "@/components/user-filter"
 import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
+import { TableRow } from "@/components/ui/table"
 
 interface UserInterface {
   id: string
@@ -77,7 +78,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
-  const [urlState, setUrlState] = useState(() => {
+  const [urlState] = useState(() => {
     const role = searchParams.get("role") || "all"
     const school = searchParams.get("school") || "all"
     const search = searchParams.get("search") || ""
@@ -509,19 +510,6 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     return email[0].toUpperCase()
   }
 
-  const getBadgeClassName = (role: string | null) => {
-    switch (role) {
-      case "Admin":
-        return "bg-red-600 text-white flex-shrink-0"
-      case "Teacher":
-        return "bg-purple-600 text-white flex-shrink-0"
-      case "Head Teacher":
-        return "bg-teal-600 text-white flex-shrink-0"
-      default:
-        return "bg-gray-600 text-white flex-shrink-0"
-    }
-  }
-
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -668,227 +656,237 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
           </div>
         </div>
         <div className="space-y-3 mt-4">
-          {filteredUsers.map((user) => {
-            const isProcessing = processingUsers.has(user.id)
-            const isEditing = editingUser === user.id
+          {filteredUsers.map((student) => {
+            const isProcessing = processingUsers.has(student.id)
+            const isEditing = editingUser === student.id
+
+            let roleBadgeClass: string
+            if (student.role === "Admin") {
+              roleBadgeClass = "bg-red-600 text-white"
+            } else if (student.role === "Teacher") {
+              roleBadgeClass = "bg-purple-600 text-white"
+            } else if (student.role === "Head Teacher") {
+              roleBadgeClass = "bg-teal-600 text-white"
+            } else {
+              roleBadgeClass = "bg-gray-600 text-white"
+            }
 
             return (
-              <div
-                key={user.id}
-                className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3"
-              >
-                <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
-                  <Avatar className="h-12 w-12 flex-shrink-0">
-                    <AvatarImage
-                      src={user.profile_image_url || "/placeholder.svg"}
-                      alt={user.full_name || user.email}
-                    />
-                    <AvatarFallback className="bg-red-600 text-white flex-shrink-0">
-                      {getInitials(user.full_name, user.email)}
-                    </AvatarFallback>
-                  </Avatar>
+              <TableRow key={student.id} className="border-gray-700 hover:bg-gray-800/50">
+                <div className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3">
+                  <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
+                    <Avatar className="h-12 w-12 flex-shrink-0">
+                      <AvatarImage
+                        src={student.profile_image_url || "/placeholder.svg"}
+                        alt={student.full_name || student.email}
+                      />
+                      <AvatarFallback className="bg-red-600 text-white flex-shrink-0">
+                        {getInitials(student.full_name, student.email)}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      {isEditing ? (
-                        <Input
-                          value={editValues.full_name}
-                          onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
-                          className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
-                          placeholder="Full name"
-                        />
-                      ) : (
-                        <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
-                      )}
-                      <Badge variant="default" className={getBadgeClassName(user.role)}>
-                        {user.role || "Student"}
-                      </Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        {isEditing ? (
+                          <Input
+                            value={editValues.full_name}
+                            onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
+                            className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+                            placeholder="Full name"
+                          />
+                        ) : (
+                          <h4 className="font-medium text-white truncate">{student.full_name || "No name provided"}</h4>
+                        )}
+                        <Badge variant="default" className={roleBadgeClass}>
+                          {student.role || "Student"}
+                        </Badge>
 
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Clock className="w-3 h-3 flex-shrink-0" />
-                        <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <LogIn className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          {user.login_count} login{user.login_count !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Play className="w-3 h-3 flex-shrink-0" />
-                        <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Eye className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          {user.view_count} view{user.view_count !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
+                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                          <Clock className="w-3 h-3 flex-shrink-0" />
+                          <span>{student.last_login ? formatDate(student.last_login) : "Never"}</span>
                         </div>
-                        <div className="flex items-center space-x-1 min-w-0">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.teacher}
-                              onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                              placeholder="Teacher name"
-                            />
-                          ) : (
-                            <>
-                              <GraduationCap className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{user.teacher || "Not specified"}</span>
-                            </>
-                          )}
+
+                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                          <LogIn className="w-3 h-3 flex-shrink-0" />
+                          <span>
+                            {student.login_count} login{student.login_count !== 1 ? "s" : ""}
+                          </span>
                         </div>
-                        <div className="flex items-center space-x-1 min-w-0">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.school}
-                              onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                              placeholder="School name"
-                            />
-                          ) : (
-                            <>
-                              <Building className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{user.school || "Not specified"}</span>
-                            </>
-                          )}
+
+                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                          <Play className="w-3 h-3 flex-shrink-0" />
+                          <span>{student.last_view ? formatDate(student.last_view) : "Never"}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                          <Eye className="w-3 h-3 flex-shrink-0" />
+                          <span>
+                            {student.view_count} view{student.view_count !== 1 ? "s" : ""}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>Join: {formatDate(user.created_at)}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{student.email}</span>
+                          </div>
+                          <div className="flex items-center space-x-1 min-w-0">
+                            {isEditing ? (
+                              <Input
+                                value={editValues.teacher}
+                                onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+                                className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                                placeholder="Teacher name"
+                              />
+                            ) : (
+                              <>
+                                <GraduationCap className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{student.teacher || "Not specified"}</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1 min-w-0">
+                            {isEditing ? (
+                              <Input
+                                value={editValues.school}
+                                onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+                                className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                                placeholder="School name"
+                              />
+                            ) : (
+                              <>
+                                <Building className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{student.school || "Not specified"}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        {user.approved_at && (
+
+                        <div className="space-y-1">
                           <div className="flex items-center space-x-1 min-w-0">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>Appr: {formatDate(user.approved_at)}</span>
+                            <span>Join: {formatDate(student.created_at)}</span>
                           </div>
-                        )}
-                        {user.inviter?.full_name && (
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">Inv: {user.inviter.full_name}</span>
-                          </div>
-                        )}
-                        {!user.inviter && user.is_approved && (
-                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">Inv: Direct</span>
-                          </div>
+                          {student.approved_at && (
+                            <div className="flex items-center space-x-1 min-w-0">
+                              <Calendar className="w-3 h-3 flex-shrink-0" />
+                              <span>Appr: {formatDate(student.approved_at)}</span>
+                            </div>
+                          )}
+                          {student.inviter?.full_name && (
+                            <div className="flex items-center space-x-1 min-w-0">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">Inv: {student.inviter.full_name}</span>
+                            </div>
+                          )}
+                          {!student.inviter && student.is_approved && (
+                            <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">Inv: Direct</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end ml-auto pl-4">
+                    <div className="flex flex-col gap-1 w-full">
+                      {userRole === "Head Teacher" && (
+                        <select
+                          value={isEditing ? editValues.role || "Student" : student.role || "Student"}
+                          onChange={(e) => updateUserRole(student.id, e.target.value)}
+                          disabled={isProcessing || isEditing}
+                          className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="Student">Student</option>
+                          <option value="Teacher">Teacher</option>
+                          <option value="Head Teacher">Head Teacher</option>
+                          <option value="Admin">Admin</option>
+                        </select>
+                      )}
+
+                      <select
+                        value={isEditing ? editValues.current_belt_id || "" : student.current_belt_id || ""}
+                        onChange={(e) => {
+                          if (isEditing) {
+                            setEditValues({
+                              ...editValues,
+                              current_belt_id: e.target.value || null,
+                            })
+                          } else {
+                            updateUserBelt(student.id, e.target.value || null)
+                          }
+                        }}
+                        disabled={isProcessing}
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">No belt</option>
+                        {curriculums.map((curriculum) => (
+                          <option key={curriculum.id} value={curriculum.id}>
+                            {curriculum.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex gap-1">
+                        {isEditing ? (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={saveEditing}
+                              disabled={isProcessing}
+                              className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+                              aria-label="Save changes"
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditing}
+                              disabled={isProcessing}
+                              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+                              aria-label="Cancel editing"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            {userRole === "Head Teacher" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEditing(student)}
+                                disabled={isProcessing}
+                                className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+                                aria-label="Edit user"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                            {userRole === "Head Teacher" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteUser(student.id, student.email)}
+                                disabled={isProcessing}
+                                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+                                aria-label="Delete user"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-end ml-auto pl-4">
-                  <div className="flex flex-col gap-1 w-full">
-                    {userRole === "Head Teacher" && (
-                      <select
-                        value={isEditing ? editValues.role || "Student" : user.role || "Student"}
-                        onChange={(e) => updateUserRole(user.id, e.target.value)}
-                        disabled={isProcessing || isEditing}
-                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="Student">Student</option>
-                        <option value="Teacher">Teacher</option>
-                        <option value="Head Teacher">Head Teacher</option>
-                        <option value="Admin">Admin</option>
-                      </select>
-                    )}
-
-                    <select
-                      value={isEditing ? editValues.current_belt_id || "" : user.current_belt_id || ""}
-                      onChange={(e) => {
-                        if (isEditing) {
-                          setEditValues({
-                            ...editValues,
-                            current_belt_id: e.target.value || null,
-                          })
-                        } else {
-                          updateUserBelt(user.id, e.target.value || null)
-                        }
-                      }}
-                      disabled={isProcessing}
-                      className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">No belt</option>
-                      {curriculums.map((curriculum) => (
-                        <option key={curriculum.id} value={curriculum.id}>
-                          {curriculum.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="flex gap-1">
-                      {isEditing ? (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={saveEditing}
-                            disabled={isProcessing}
-                            className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
-                            aria-label="Save changes"
-                          >
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelEditing}
-                            disabled={isProcessing}
-                            className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
-                            aria-label="Cancel editing"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {userRole === "Head Teacher" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEditing(user)}
-                              disabled={isProcessing}
-                              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
-                              aria-label="Edit user"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                          {userRole === "Head Teacher" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteUser(user.id, user.email)}
-                              disabled={isProcessing}
-                              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
-                              aria-label="Delete user"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </TableRow>
             )
           })}
         </div>

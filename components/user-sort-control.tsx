@@ -19,24 +19,11 @@ export default function UserSortControl({ sortBy, sortOrder, onSortChange }: Use
     onSortChange(sortBy, newSortOrder)
   }
 
-  const getSortLabel = (value: string) => {
-    switch (value) {
-      case "full_name":
-        return "Name"
-      case "created_at":
-        return "Joined Date"
-      case "last_login":
-        return "Last Login"
-      case "login_count":
-        return "Login Count"
-      case "last_view":
-        return "Last View"
-      case "view_count":
-        return "Views"
-      default:
-        return "Name"
-    }
-  }
+  const options = [
+    { value: "full_name", label: "Name" },
+    { value: "created_at", label: "Joined Date" },
+    { value: "last_login", label: "Last Login" },
+  ]
 
   return (
     <div className="flex items-center gap-2">
@@ -46,24 +33,11 @@ export default function UserSortControl({ sortBy, sortOrder, onSortChange }: Use
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-gray-900 border-gray-700">
-          <SelectItem value="full_name" className="text-gray-300 hover:text-gray-900">
-            Name
-          </SelectItem>
-          <SelectItem value="created_at" className="text-gray-300 hover:text-gray-900">
-            Joined Date
-          </SelectItem>
-          <SelectItem value="last_login" className="text-gray-300 hover:text-gray-900">
-            Last Login
-          </SelectItem>
-          <SelectItem value="login_count" className="text-gray-300 hover:text-gray-900">
-            Login Count
-          </SelectItem>
-          <SelectItem value="last_view" className="text-gray-300 hover:text-gray-900">
-            Last View
-          </SelectItem>
-          <SelectItem value="view_count" className="text-gray-300 hover:text-gray-900">
-            Views
-          </SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value} className="text-gray-300 hover:text-gray-900">
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <button

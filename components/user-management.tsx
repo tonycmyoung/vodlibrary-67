@@ -788,45 +788,45 @@ export default function UserManagement() {
                           >
                             {user.is_approved ? "Approved" : "Pending"}
                           </Badge>
-                          <Badge
-                            className={
-                              user.role === "Admin"
-                                ? "bg-red-600 text-white flex-shrink-0"
-                                : user.role === "Teacher"
-                                  ? "bg-purple-600 text-white flex-shrink-0"
-                                  : user.role === "Head Teacher"
-                                    ? "bg-teal-600 text-white flex-shrink-0"
-                                    : "bg-gray-600 text-white flex-shrink-0"
+                          {(() => {
+                            let badgeClass: string
+                            if (user.role === "Admin") {
+                              badgeClass = "bg-red-600 text-white flex-shrink-0"
+                            } else if (user.role === "Teacher") {
+                              badgeClass = "bg-purple-600 text-white flex-shrink-0"
+                            } else if (user.role === "Head Teacher") {
+                              badgeClass = "bg-teal-600 text-white flex-shrink-0"
+                            } else {
+                              badgeClass = "bg-gray-600 text-white flex-shrink-0"
                             }
-                          >
-                            {user.role || "Student"}
-                          </Badge>
+
+                            return <Badge className={badgeClass}>{user.role || "Student"}</Badge>
+                          })()}
+                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                            <LogIn className="w-3 h-3 flex-shrink-0" />
+                            <span>
+                              {user.login_count} login{user.login_count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                            <Play className="w-3 h-3 flex-shrink-0" />
+                            <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                            <Eye className="w-3 h-3 flex-shrink-0" />
+                            <span>
+                              {user.view_count} view{user.view_count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
                         </>
                       )}
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Clock className="w-3 h-3 flex-shrink-0" />
-                        <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <LogIn className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          {user.login_count} login{user.login_count !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Play className="w-3 h-3 flex-shrink-0" />
-                        <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                        <Eye className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          {user.view_count} view{user.view_count !== 1 ? "s" : ""}
-                        </span>
-                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">

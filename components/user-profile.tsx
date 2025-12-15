@@ -240,13 +240,15 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
                         <span>{user.email}</span>
                       </div>
                       <Badge
-                        className={
-                          user.isAdmin
-                            ? "bg-purple-600 text-white"
-                            : user.role === "Teacher" || user.role === "Head Teacher"
-                              ? "bg-blue-600 text-white"
-                              : "bg-green-600 text-white"
-                        }
+                        className={(() => {
+                          if (user.isAdmin) {
+                            return "bg-purple-600 text-white"
+                          } else if (user.role === "Teacher" || user.role === "Head Teacher") {
+                            return "bg-blue-600 text-white"
+                          } else {
+                            return "bg-green-600 text-white"
+                          }
+                        })()}
                       >
                         {user.isAdmin ? "Administrator" : user.role || "Student"}
                       </Badge>
@@ -405,7 +407,7 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
                     Not specified
                   </SelectItem>
                   {curriculums
-                    .sort((a, b) => a.display_order - b.display_order)
+                    .toSorted((a, b) => a.display_order - b.display_order)
                     .map((curriculum) => (
                       <SelectItem key={curriculum.id} value={curriculum.id} className="text-white">
                         <span className="flex items-center">
@@ -445,27 +447,37 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
               </label>
               <div id="profile-status" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <Badge
-                  className={
-                    user.isAdmin
-                      ? "bg-purple-600 text-white"
-                      : user.role === "Teacher" || user.role === "Head Teacher"
-                        ? "bg-blue-600 text-white"
-                        : "bg-green-600 text-white"
-                  }
+                  className={(() => {
+                    if (user.isAdmin) {
+                      return "bg-purple-600 text-white"
+                    } else if (user.role === "Teacher" || user.role === "Head Teacher") {
+                      return "bg-blue-600 text-white"
+                    } else {
+                      return "bg-green-600 text-white"
+                    }
+                  })()}
                 >
-                  {user.isAdmin
-                    ? "System Administrator"
-                    : user.role === "Teacher" || user.role === "Head Teacher"
-                      ? `Approved ${user.role}`
-                      : "Approved Student"}
+                  {(() => {
+                    if (user.isAdmin) {
+                      return "System Administrator"
+                    } else if (user.role === "Teacher" || user.role === "Head Teacher") {
+                      return `Approved ${user.role}`
+                    } else {
+                      return "Approved Student"
+                    }
+                  })()}
                 </Badge>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                {user.isAdmin
-                  ? "You have full administrative access to the system."
-                  : user.role === "Teacher" || user.role === "Head Teacher"
-                    ? "Your account has teacher privileges. Only administrators can change your role."
-                    : "Your account has been approved for video access. Only administrators can change your role."}
+                {(() => {
+                  if (user.isAdmin) {
+                    return "You have full administrative access to the system."
+                  } else if (user.role === "Teacher" || user.role === "Head Teacher") {
+                    return "Your account has teacher privileges. Only administrators can change your role."
+                  } else {
+                    return "Your account has been approved for video access. Only administrators can change your role."
+                  }
+                })()}
               </p>
             </div>
           </div>

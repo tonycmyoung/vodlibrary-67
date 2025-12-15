@@ -25,6 +25,7 @@ interface ResendState {
     lastSent?: number
     message?: string
     isError?: boolean
+    userId?: string
   }
 }
 
@@ -97,33 +98,35 @@ export default function UnconfirmedEmailUsers() {
     }
   }
 
-  const handleResendEmail = async (email: string) => {
+  const handleResendEmail = async (user: UnconfirmedUser) => {
     setResendStates((prev) => ({
       ...prev,
-      [email]: { loading: true },
+      [user.email]: { loading: true, userId: user.id },
     }))
 
     try {
-      const result = await resendConfirmationEmail(email)
+      const result = await resendConfirmationEmail(user.email)
 
       if (result.error) {
         setResendStates((prev) => ({
           ...prev,
-          [email]: {
+          [user.email]: {
             loading: false,
             message: result.error,
             isError: true,
             lastSent: Date.now(),
+            userId: user.id,
           },
         }))
       } else {
         setResendStates((prev) => ({
           ...prev,
-          [email]: {
+          [user.email]: {
             loading: false,
             message: "Confirmation email sent!",
             isError: false,
             lastSent: Date.now(),
+            userId: user.id,
           },
         }))
 
@@ -136,8 +139,8 @@ export default function UnconfirmedEmailUsers() {
       setTimeout(() => {
         setResendStates((prev) => ({
           ...prev,
-          [email]: {
-            ...prev[email],
+          [user.email]: {
+            ...prev[user.email],
             message: undefined,
             isError: undefined,
           },
@@ -146,11 +149,12 @@ export default function UnconfirmedEmailUsers() {
     } catch (error) {
       setResendStates((prev) => ({
         ...prev,
-        [email]: {
+        [user.email]: {
           loading: false,
           message: "Failed to send email",
           isError: true,
           lastSent: Date.now(),
+          userId: user.id,
         },
       }))
     }
@@ -282,35 +286,43 @@ export default function UnconfirmedEmailUsers() {
                         </div>
                       )}
 
-                      {resendState.message ? (
-                        <Badge variant="outline" className={getBadgeClassName(resendState.isError)}>
-                          {resendState.message}
-                        </Badge>
-                      ) : onCooldown ? (
-                        <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">
-                          Resent {cooldownTime}s ago
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleResendEmail(user.email)}
-                          disabled={resendState.loading}
-                          className="border-orange-600 text-orange-400 hover:bg-orange-600 hover:text-white text-xs"
-                        >
-                          {resendState.loading ? (
-                            <>
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-3 h-3 mr-1" />
-                              Resend
-                            </>
-                          )}
-                        </Button>
-                      )}
+                      {(() => {
+                        if (resendState.userId === user.id) {
+                          return (
+                            <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">
+                              {resendState.message}
+                            </Badge>
+                          )
+                        } else if (onCooldown) {
+                          return (
+                            <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">
+                              Resent {cooldownTime}s ago
+                            </Badge>
+                          )
+                        } else {
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleResendEmail(user)}
+                              disabled={resendState.loading}
+                              className="border-orange-600 text-orange-400 hover:bg-orange-600 hover:text-white text-xs"
+                            >
+                              {resendState.loading ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  Sending...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Resend
+                                </>
+                              )}
+                            </Button>
+                          )
+                        }
+                      })()}
 
                       {timeSinceLastSend && (
                         <div className="hidden lg:flex lg:items-center lg:space-x-1">

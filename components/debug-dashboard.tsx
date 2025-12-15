@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, RefreshCw, AlertCircle, Check, X, LogIn, UserPlus, Mail, UserCheck } from "lucide-react"
+import { Trash2, RefreshCw, AlertCircle, Check, X, LogIn, UserPlus, Mail, UserCheck, Loader2 } from "lucide-react"
 import { fetchAuthDebugLogs, clearAuthDebugLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
 
@@ -158,7 +158,7 @@ export default function DebugDashboard() {
       {loading ? (
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-8 text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-500" />
+            <Loader2 className="w-8 h-8 mx-auto mb-4 text-gray-400 animate-spin" />
             <p className="text-gray-400">Loading debug logs...</p>
           </CardContent>
         </Card>

@@ -46,6 +46,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  let confirmationMethod: string
+  if (token_hash) {
+    confirmationMethod = "token_hash"
+  } else if (code) {
+    confirmationMethod = "code"
+  } else {
+    confirmationMethod = "no_params"
+  }
+
   try {
     await serviceSupabase.from("auth_debug_logs").insert({
       event_type: "email_confirm_callback_success",
@@ -60,7 +69,7 @@ export async function GET(request: NextRequest) {
         has_code: !!code,
         has_token_hash: !!token_hash,
         error_description: errorDescription,
-        confirmation_method: token_hash ? "token_hash" : code ? "code" : "no_params",
+        confirmation_method: confirmationMethod,
         timestamp: new Date().toISOString(),
       },
     })
