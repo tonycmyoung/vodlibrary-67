@@ -283,12 +283,7 @@ export default function UnconfirmedEmailUsers() {
                       )}
 
                       {resendState.message ? (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            resendState.isError ? "border-red-600 text-red-400" : "border-green-600 text-green-400"
-                          }`}
-                        >
+                        <Badge variant="outline" className={getBadgeClassName(resendState.isError)}>
                           {resendState.message}
                         </Badge>
                       ) : onCooldown ? (
@@ -333,4 +328,8 @@ export default function UnconfirmedEmailUsers() {
       </CardContent>
     </Card>
   )
+}
+
+const getBadgeClassName = (isError?: boolean) => {
+  return isError ? "border-red-600 text-red-400" : "border-green-600 text-green-400"
 }

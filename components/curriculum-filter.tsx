@@ -50,7 +50,6 @@ export default function CurriculumFilter({
         <div className="flex flex-wrap gap-2">
           {sortedCurriculums.map((item) => {
             const isSelected = selectedCurriculums.includes(item.id)
-            const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
 
             const badgeStyle = {
               backgroundColor: isSelected ? item.color : undefined,

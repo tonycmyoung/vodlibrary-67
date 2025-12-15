@@ -124,13 +124,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     const beltSet = new Set<string>()
 
     users.forEach((user) => {
-      if (user.role && user.role.trim()) {
+      if (user.role?.trim()) {
         roleSet.add(user.role)
       }
-      if (user.school && user.school.trim()) {
+      if (user.school?.trim()) {
         schoolSet.add(user.school)
       }
-      if (user.current_belt && user.current_belt.id.trim()) {
+      if (user.current_belt?.id?.trim()) {
         beltSet.add(user.current_belt.id)
       }
     })
@@ -509,6 +509,19 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     return email[0].toUpperCase()
   }
 
+  const getBadgeClassName = (role: string | null) => {
+    switch (role) {
+      case "Admin":
+        return "bg-red-600 text-white flex-shrink-0"
+      case "Teacher":
+        return "bg-purple-600 text-white flex-shrink-0"
+      case "Head Teacher":
+        return "bg-teal-600 text-white flex-shrink-0"
+      default:
+        return "bg-gray-600 text-white flex-shrink-0"
+    }
+  }
+
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -687,15 +700,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                       ) : (
                         <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
                       )}
-                      <Badge
-                        className={
-                          user.role === "Teacher"
-                            ? "bg-blue-600 text-white flex-shrink-0"
-                            : user.role === "Head Teacher"
-                              ? "bg-teal-600 text-white flex-shrink-0"
-                              : "bg-gray-600 text-white flex-shrink-0"
-                        }
-                      >
+                      <Badge variant="default" className={getBadgeClassName(user.role)}>
                         {user.role || "Student"}
                       </Badge>
 
@@ -802,6 +807,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         <option value="Student">Student</option>
                         <option value="Teacher">Teacher</option>
                         <option value="Head Teacher">Head Teacher</option>
+                        <option value="Admin">Admin</option>
                       </select>
                     )}
 

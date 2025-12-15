@@ -120,12 +120,10 @@ export default function DebugDashboard() {
   const getKeyAdditionalData = (additionalData: any) => {
     if (!additionalData) return null
 
-    // Show failure_reason if it exists
     if (additionalData.failure_reason) {
       return <span className="text-xs text-amber-400">Reason: {additionalData.failure_reason}</span>
     }
 
-    // Show user_exists status if it exists
     if (additionalData.user_exists !== undefined) {
       return <span className="text-xs text-gray-400">User exists: {additionalData.user_exists ? "Yes" : "No"}</span>
     }

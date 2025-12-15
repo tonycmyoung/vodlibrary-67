@@ -68,13 +68,12 @@ export default function UserManagement() {
   const searchParams = useSearchParams()
   const storagePrefix = "userManagement"
 
-  const [urlState, setUrlState] = useState(() => {
-    const role = searchParams.get("role") || "all"
-    const school = searchParams.get("school") || "all"
-    const search = searchParams.get("search") || ""
-    const belt = searchParams.get("belt") || "all"
-    return { role, school, search, belt }
-  })
+  const urlState = {
+    role: searchParams.get("role") || "all",
+    school: searchParams.get("school") || "all",
+    search: searchParams.get("search") || "",
+    belt: searchParams.get("belt") || "all",
+  }
 
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
@@ -143,10 +142,10 @@ export default function UserManagement() {
     const schoolSet = new Set<string>()
 
     users.forEach((user) => {
-      if (user.role && user.role.trim()) {
+      if (user.role?.trim()) {
         roleSet.add(user.role)
       }
-      if (user.school && user.school.trim()) {
+      if (user.school?.trim()) {
         schoolSet.add(user.school)
       }
     })
@@ -384,7 +383,7 @@ export default function UserManagement() {
       }
 
       const supabase = createClient()
-      const { error, data } = await supabase.from("users").update(updateData).eq("id", userId).select()
+      const { error } = await supabase.from("users").update(updateData).eq("id", userId).select()
 
       if (error) throw error
 
@@ -791,11 +790,13 @@ export default function UserManagement() {
                           </Badge>
                           <Badge
                             className={
-                              user.role === "Teacher"
-                                ? "bg-blue-600 text-white flex-shrink-0"
-                                : user.role === "Head Teacher"
-                                  ? "bg-teal-600 text-white flex-shrink-0"
-                                  : "bg-gray-600 text-white flex-shrink-0"
+                              user.role === "Admin"
+                                ? "bg-red-600 text-white flex-shrink-0"
+                                : user.role === "Teacher"
+                                  ? "bg-purple-600 text-white flex-shrink-0"
+                                  : user.role === "Head Teacher"
+                                    ? "bg-teal-600 text-white flex-shrink-0"
+                                    : "bg-gray-600 text-white flex-shrink-0"
                             }
                           >
                             {user.role || "Student"}
