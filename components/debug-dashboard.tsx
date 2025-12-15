@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, RefreshCw, AlertCircle, CheckCircle, XCircle, LogIn, UserPlus, Mail, UserCheck } from "lucide-react"
+import { Trash2, RefreshCw, AlertCircle, Check, X, LogIn, UserPlus, Mail, UserCheck } from "lucide-react"
 import { fetchAuthDebugLogs, clearAuthDebugLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
 
@@ -101,8 +101,8 @@ export default function DebugDashboard() {
 
   const getSuccessBadge = () => {
     return (
-      <div className="flex items-center space-x-1">
-        <CheckCircle className="w-4 h-4 text-green-500" />
+      <div className="flex items-center gap-1.5">
+        <Check className="h-3 w-3 text-green-400" />
         <span className="text-xs text-green-400">Success</span>
       </div>
     )
@@ -110,15 +110,11 @@ export default function DebugDashboard() {
 
   const getFailureBadge = () => {
     return (
-      <div className="flex items-center space-x-1">
-        <XCircle className="w-4 h-4 text-red-500" />
+      <div className="flex items-center gap-1.5">
+        <X className="h-3 w-3 text-red-400" />
         <span className="text-xs text-red-400">Error</span>
       </div>
     )
-  }
-
-  const getResultBadge = (success: boolean) => {
-    return success ? getSuccessBadge() : getFailureBadge()
   }
 
   const getKeyAdditionalData = (additionalData: any) => {
@@ -208,7 +204,7 @@ export default function DebugDashboard() {
                         {getEventBadge(log.event_type)}
                       </div>
                     </td>
-                    <td className="p-3">{getResultBadge(log.success)}</td>
+                    <td className="p-3">{log.success ? getSuccessBadge() : getFailureBadge()}</td>
                     <td className="p-3">
                       <div className="text-sm text-gray-300 font-mono">{log.user_email}</div>
                     </td>

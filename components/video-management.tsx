@@ -263,9 +263,11 @@ export default function VideoManagement() {
           bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
           break
         }
-        default: {
+        default:
+        case "title": {
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
+          break
         }
       }
 
