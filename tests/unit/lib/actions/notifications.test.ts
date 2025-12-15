@@ -185,31 +185,34 @@ describe("Notification Actions", () => {
         { id: "user-2", email: "user2@example.com", full_name: "User 2" },
       ]
 
+      let fromCallCount = 0
       mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users" && !vi.mocked(mockServiceClient.from).mock.calls[0]) {
+        fromCallCount++
+
+        if (fromCallCount === 1) {
+          // Get sender profile
           return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Sender Name" },
-              error: null,
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { full_name: "Sender Name" },
+                  error: null,
+                }),
+              }),
             }),
           }
-        }
-        if (table === "users") {
+        } else if (fromCallCount === 2) {
+          // Get all users
           return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
+            }),
           }
-        }
-        if (table === "notifications") {
+        } else {
+          // Insert notifications
           return {
             insert: vi.fn().mockResolvedValue({ error: null }),
           }
-        }
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
         }
       })
 
