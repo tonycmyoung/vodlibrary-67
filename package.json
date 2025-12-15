@@ -56,11 +56,7 @@
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
-    "@testing-library/dom": "latest",
     "@vercel/blob": "latest",
-    "@vitest/browser-playwright": "latest",
-    "@vitest/browser-preview": "latest",
-    "@vitest/browser-webdriverio": "latest",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -70,7 +66,6 @@
     "embla-carousel-react": "8.5.1",
     "geist": "latest",
     "input-otp": "1.4.1",
-    "jsdom": "latest",
     "lucide-react": "^0.454.0",
     "next": "15.2.8",
     "next-themes": "latest",
@@ -87,7 +82,6 @@
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "latest",
     "vaul": "^0.9.9",
-    "vite": "latest",
     "zod": "3.25.67"
   },
   "devDependencies": {
