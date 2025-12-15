@@ -125,6 +125,11 @@ describe("User Actions", () => {
 
   describe("updateProfile", () => {
     it("should successfully update user profile", async () => {
+      mockServiceClient.from.mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      })
+
       const result = await updateProfile({
         userId: "user-123",
         email: "test@example.com",

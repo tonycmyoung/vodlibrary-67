@@ -55,7 +55,6 @@ describe("Curriculum Actions", () => {
       mockFrom.mockImplementation((table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
-          // First call: get curriculums
           return {
             select: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
@@ -64,12 +63,9 @@ describe("Curriculum Actions", () => {
             }),
           }
         } else {
-          // Subsequent calls: get video counts
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ count: 5, error: null }),
-              }),
+              eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
             }),
           }
         }
@@ -271,9 +267,7 @@ describe("Curriculum Actions", () => {
     it("should prevent deletion if curriculum has videos", async () => {
       mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ count: 5, error: null }),
-          }),
+          eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
         }),
       })
 
