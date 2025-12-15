@@ -117,11 +117,9 @@ export default function VideoManagement() {
           ...video,
           views: 0,
           last_viewed_at: null,
-          categories: video.video_categories?.map((vc: any) => vc.categories).filter((cat: any) => cat && cat.id) || [],
-          curriculums:
-            video.video_curriculums?.map((vc: any) => vc.curriculums).filter((curr: any) => curr && curr.id) || [],
-          performers:
-            video.video_performers?.map((vp: any) => vp.performers).filter((perf: any) => perf && perf.id) || [],
+          categories: video.video_categories?.map((vc: any) => vc.categories) || [],
+          curriculums: video.video_curriculums?.map((vc: any) => vc.curriculums) || [],
+          performers: video.video_performers?.map((vp: any) => vp.performers) || [],
         }))
 
         const videoIds = videosWithMetadata.map((video: any) => video.id)
@@ -168,11 +166,11 @@ export default function VideoManagement() {
 
     if (selectedCurriculums.length > 0) {
       filtered = filtered.filter((video) => {
-        const videoCurriculums = video.curriculums.map((curr) => curr.id)
+        const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
         if (filterMode === "AND") {
-          return selectedCurriculums.every((selectedId) => videoCurriculums.includes(selectedId))
+          return selectedCurriculums.every((selectedId) => videoCurriculums.has(selectedId))
         } else {
-          return selectedCurriculums.some((selectedId) => videoCurriculums.includes(selectedId))
+          return selectedCurriculums.some((selectedId) => videoCurriculums.has(selectedId))
         }
       })
     }
@@ -182,11 +180,11 @@ export default function VideoManagement() {
     )
     if (selectedCategoryIds.length > 0) {
       filtered = filtered.filter((video) => {
-        const videoCategories = video.categories.map((cat) => cat.id)
+        const videoCategories = new Set(video.categories.map((cat) => cat.id))
         if (filterMode === "AND") {
-          return selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
+          return selectedCategoryIds.every((selectedId) => videoCategories.has(selectedId))
         } else {
-          return selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+          return selectedCategoryIds.some((selectedId) => videoCategories.has(selectedId))
         }
       })
     }
@@ -196,11 +194,11 @@ export default function VideoManagement() {
       .map((id) => id.replace("performer:", ""))
     if (selectedPerformerIds.length > 0) {
       filtered = filtered.filter((video) => {
-        const videoPerformers = video.performers.map((perf) => perf.id)
+        const videoPerformers = new Set(video.performers.map((perf) => perf.id))
         if (filterMode === "AND") {
-          return selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
+          return selectedPerformerIds.every((selectedId) => videoPerformers.has(selectedId))
         } else {
-          return selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
+          return selectedPerformerIds.some((selectedId) => videoPerformers.has(selectedId))
         }
       })
     }
@@ -236,15 +234,15 @@ export default function VideoManagement() {
           if (a.curriculums.length === 0 && b.curriculums.length === 0) {
             aValue = Number.MAX_SAFE_INTEGER
             bValue = Number.MAX_SAFE_INTEGER
-          } else if (a.curriculums.length === 0) {
-            aValue = Number.MAX_SAFE_INTEGER
-            bValue = b.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
-          } else if (b.curriculums.length === 0) {
-            aValue = a.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+          } else if (a.curriculums.length > 0 && b.curriculums.length === 0) {
+            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
             bValue = Number.MAX_SAFE_INTEGER
+          } else if (a.curriculums.length === 0 && b.curriculums.length > 0) {
+            aValue = Number.MAX_SAFE_INTEGER
+            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
           } else {
-            aValue = a.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
-            bValue = b.curriculums.sort((x, y) => x.display_order - y.display_order)[0].display_order
+            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
+            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
           }
           break
         }
@@ -317,8 +315,7 @@ export default function VideoManagement() {
   }
 
   const handleItemsPerPageChange = (value: string) => {
-    const newItemsPerPage = Number.parseInt(value, 10)
-    setItemsPerPage(newItemsPerPage)
+    setItemsPerPage(Number.parseInt(value, 10))
     localStorage.setItem("adminVideoManagement_itemsPerPage", value)
     setCurrentPage(1)
   }
@@ -626,7 +623,7 @@ export default function VideoManagement() {
 
                   <div className="flex flex-wrap gap-1">
                     {video.curriculums
-                      .sort((a, b) => a.display_order - b.display_order)
+                      .toSorted((a, b) => a.display_order - b.display_order)
                       .map((curriculum) => (
                         <Badge
                           key={curriculum.id}

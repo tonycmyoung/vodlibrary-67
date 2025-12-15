@@ -11,7 +11,7 @@ import SortControl from "@/components/sort-control"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, X, Heart, Filter, ChevronLeft, ChevronRight, Ribbon } from "lucide-react"
+import { Search, Loader2, X, Heart, Filter, Ribbon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
 
@@ -69,7 +69,195 @@ interface VideoLibraryProps {
   maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
   storagePrefix?: string // Allow custom storage prefix for separate UI state
   nextBeltName?: string // Add prop for next belt name
+  userProfile?: any // Added prop for user profile
 }
+
+const PaginationControls = ({
+  totalPages,
+  itemsPerPage,
+  handleItemsPerPageChange,
+  currentPage,
+  handlePageChange,
+}: {
+  totalPages: number
+  itemsPerPage: number
+  handleItemsPerPageChange: (value: string) => void
+  currentPage: number
+  handlePageChange: (page: number) => void
+}) => {
+  const showNavigation = totalPages > 1
+
+  return (
+    <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
+      <div className="flex flex-col flex-row items-start items-center justify-between gap-2 gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-sm text-gray-400">Show</span>
+          <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+            <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-black border-gray-700">
+              <SelectItem value="12">12</SelectItem>
+              <SelectItem value="24">24</SelectItem>
+              <SelectItem value="48">48</SelectItem>
+              <SelectItem value="96">96</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-gray-400">per page</span>
+        </div>
+
+        {showNavigation && (
+          <div className="flex items-center gap-1 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              First
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              Previous
+            </Button>
+
+            {(() => {
+              const pages = []
+              const maxVisible = 5
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
+              const endPage = Math.min(totalPages, startPage + maxVisible - 1)
+
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1)
+              }
+
+              if (startPage > 1) {
+                pages.push(
+                  <Button
+                    key={1}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(1)}
+                    className="h-8 w-8 p-0 text-white hover:bg-gray-800"
+                  >
+                    1
+                  </Button>,
+                )
+                if (startPage > 2) {
+                  pages.push(
+                    <span key={`ellipsis-${currentPage}-start`} className="px-2 text-gray-400">
+                      ...
+                    </span>,
+                  )
+                }
+              }
+
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <Button
+                    key={i}
+                    variant={currentPage === i ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => handlePageChange(i)}
+                    className={`h-8 w-8 p-0 ${
+                      currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "text-white hover:bg-gray-800"
+                    }`}
+                  >
+                    {i}
+                  </Button>,
+                )
+              }
+
+              if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                  pages.push(
+                    <span key={`ellipsis-${currentPage}-end`} className="px-2 text-gray-400">
+                      ...
+                    </span>,
+                  )
+                }
+                pages.push(
+                  <Button
+                    key={totalPages}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(totalPages)}
+                    className="h-8 w-8 p-0 text-white hover:bg-gray-800"
+                  >
+                    {totalPages}
+                  </Button>,
+                )
+              }
+
+              return pages
+            })()}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              Next
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              Last
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const FilterSection = ({
+  categories,
+  recordedValues,
+  performers,
+  selectedCategories,
+  onCategoryToggle,
+  videoCount,
+  curriculums,
+  selectedCurriculums,
+  onCurriculumToggle,
+}: {
+  categories: any[]
+  recordedValues: any[]
+  performers: any[]
+  selectedCategories: string[]
+  onCategoryToggle: (id: string) => void
+  videoCount: number
+  curriculums: any[]
+  selectedCurriculums: string[]
+  onCurriculumToggle: (id: string) => void
+}) => (
+  <div className="space-y-6">
+    <CategoryFilter
+      categories={categories}
+      recordedValues={recordedValues}
+      performers={performers}
+      selectedCategories={selectedCategories}
+      onCategoryToggle={onCategoryToggle}
+      videoCount={videoCount}
+      curriculums={curriculums}
+      selectedCurriculums={selectedCurriculums}
+      onCurriculumToggle={onCurriculumToggle}
+    />
+  </div>
+)
 
 let lastFailureTime = 0
 let failureCount = 0
@@ -83,6 +271,7 @@ export default function VideoLibrary({
   maxCurriculumOrder,
   storagePrefix: customStoragePrefix,
   nextBeltName, // Destructure new prop
+  userProfile, // Destructure userProfile
 }: VideoLibraryProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -132,9 +321,9 @@ export default function VideoLibrary({
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}ItemsPerPage`
-      return Number.parseInt(localStorage.getItem(storageKey) || "10")
+      return Number.parseInt(localStorage.getItem(storageKey) || "12") // Default to 12
     }
-    return 10
+    return 12
   })
 
   const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
@@ -716,153 +905,16 @@ export default function VideoLibrary({
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const PaginationControls = () => {
-    const showNavigation = totalPages > 1
-
-    return (
-      <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
-        <div className="flex flex-col flex-row items-start items-center justify-between gap-2 gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-sm text-gray-400">Show</span>
-            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-              <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem
-                  value="5"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  5
-                </SelectItem>
-                <SelectItem
-                  value="10"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  10
-                </SelectItem>
-                <SelectItem
-                  value="20"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  20
-                </SelectItem>
-                <SelectItem
-                  value="50"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  50
-                </SelectItem>
-                <SelectItem
-                  value="100"
-                  className="text-white hover:bg-gray-600 focus:bg-gray-600 hover:text-white focus:text-white"
-                >
-                  100
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-400">per page</span>
-          </div>
-          {showNavigation && (
-            <div className="flex items-center justify-between justify-end gap-4 w-full w-auto">
-              <div className="hidden xl:block text-sm text-gray-400 whitespace-nowrap">
-                Showing {validCurrentPage * itemsPerPage - itemsPerPage + 1}-
-                {Math.min(validCurrentPage * itemsPerPage, processedVideos.length)} of {processedVideos.length} videos
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="text-white hover:bg-gray-700 disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Previous</span>
-                </Button>
-                <div className="xl:hidden text-sm text-gray-400 px-2">
-                  {currentPage} of {totalPages}
-                </div>
-                <div className="hidden xl:flex items-center gap-1">
-                  {(() => {
-                    const pages = []
-
-                    if (totalPages <= 7) {
-                      for (let i = 1; i <= totalPages; i++) {
-                        pages.push(i)
-                      }
-                    } else {
-                      pages.push(1)
-
-                      if (currentPage <= 4) {
-                        for (let i = 2; i <= 5; i++) {
-                          pages.push(i)
-                        }
-                        if (totalPages > 6) {
-                          pages.push("ellipsis")
-                          pages.push(totalPages)
-                        }
-                      } else if (currentPage >= totalPages - 3) {
-                        if (totalPages > 6) {
-                          pages.push("ellipsis")
-                        }
-                        for (let i = totalPages - 4; i <= totalPages; i++) {
-                          pages.push(i)
-                        }
-                      } else {
-                        pages.push("ellipsis")
-                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                          pages.push(i)
-                        }
-                        pages.push("ellipsis")
-                        pages.push(totalPages)
-                      }
-                    }
-
-                    return pages.map((page, index) => {
-                      if (page === "ellipsis") {
-                        return (
-                          <span key={`ellipsis-${index}-${currentPage}`} className="px-2 text-gray-400">
-                            ...
-                          </span>
-                        )
-                      }
-
-                      return (
-                        <Button
-                          key={page}
-                          variant={page === currentPage ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handlePageChange(page as number)}
-                          disabled={page === currentPage}
-                          className={`w-8 h-8 p-0 ${
-                            page === currentPage
-                              ? "bg-red-600 text-white hover:bg-red-700"
-                              : "text-white hover:bg-gray-700"
-                          }`}
-                        >
-                          {page}
-                        </Button>
-                      )
-                    })
-                  })()}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className="text-white hover:bg-gray-700 disabled:opacity-50"
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
+    setUserFavorites((prev) => {
+      const newFavorites = new Set(prev)
+      if (isFavorited) {
+        newFavorites.add(videoId)
+      } else {
+        newFavorites.delete(videoId)
+      }
+      return newFavorites
+    })
   }
 
   if (loading || userLoading) {
@@ -897,34 +949,6 @@ export default function VideoLibrary({
         </div>
       )
     }
-  }
-
-  const FilterSection = () => (
-    <div className="space-y-6">
-      <CategoryFilter
-        categories={categories}
-        recordedValues={recordedValues}
-        performers={performers}
-        selectedCategories={selectedCategories}
-        onCategoryToggle={handleCategoryToggle}
-        videoCount={videos.length}
-        curriculums={curriculums}
-        selectedCurriculums={selectedCurriculums}
-        onCurriculumToggle={handleCurriculumToggle}
-      />
-    </div>
-  )
-
-  const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
-    setUserFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (isFavorited) {
-        newFavorites.add(videoId)
-      } else {
-        newFavorites.delete(videoId)
-      }
-      return newFavorites
-    })
   }
 
   return (
@@ -997,7 +1021,17 @@ export default function VideoLibrary({
                     <DialogTitle className="text-white">Filter Videos</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <FilterSection />
+                    <FilterSection
+                      categories={categories}
+                      recordedValues={recordedValues}
+                      performers={performers}
+                      selectedCategories={selectedCategories}
+                      onCategoryToggle={handleCategoryToggle}
+                      videoCount={videos.length}
+                      curriculums={curriculums}
+                      selectedCurriculums={selectedCurriculums}
+                      onCurriculumToggle={handleCurriculumToggle}
+                    />
                     {selectedCategories.length + selectedCurriculums.length > 1 && (
                       <div className="space-y-2">
                         <span className="text-sm text-gray-400">Filter mode:</span>
@@ -1045,7 +1079,17 @@ export default function VideoLibrary({
           </div>
         </div>
         <div className="hidden lg:block">
-          <FilterSection />
+          <FilterSection
+            categories={categories}
+            recordedValues={recordedValues}
+            performers={performers}
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
+            videoCount={videos.length}
+            curriculums={curriculums}
+            selectedCurriculums={selectedCurriculums}
+            onCurriculumToggle={handleCurriculumToggle}
+          />
           {selectedCategories.length + selectedCurriculums.length > 1 && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-gray-400">Filter mode:</span>
@@ -1091,7 +1135,13 @@ export default function VideoLibrary({
           </div>
         ) : (
           <>
-            <PaginationControls />
+            <PaginationControls
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              handleItemsPerPageChange={handleItemsPerPageChange}
+              currentPage={currentPage}
+              handlePageChange={handlePageChange}
+            />
             {view === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {paginatedVideos.map((video) => (
@@ -1115,7 +1165,13 @@ export default function VideoLibrary({
                 ))}
               </div>
             )}
-            <PaginationControls />
+            <PaginationControls
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              handleItemsPerPageChange={handleItemsPerPageChange}
+              currentPage={currentPage}
+              handlePageChange={handlePageChange}
+            />
           </>
         )}
       </div>
