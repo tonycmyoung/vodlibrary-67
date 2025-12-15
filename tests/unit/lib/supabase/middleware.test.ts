@@ -12,7 +12,7 @@ vi.mock("next/server", async () => {
     NextResponse: {
       next: vi.fn((options) => ({
         status: 200,
-        headers: new Map(),
+        headers: new Headers(),
         cookies: {
           set: vi.fn(),
           delete: vi.fn(),
@@ -20,19 +20,19 @@ vi.mock("next/server", async () => {
         },
       })),
       redirect: vi.fn((url) => {
-        const mockResponse = {
+        const locationUrl = typeof url === "string" ? url : url.toString()
+        const headers = new Headers()
+        headers.set("location", locationUrl)
+
+        return {
           status: 307,
-          headers: new Map([["location", url.toString()]]),
+          headers,
           cookies: {
             set: vi.fn(),
             delete: vi.fn(),
             getAll: vi.fn(() => []),
           },
         }
-        mockResponse.headers.get = function (key: string) {
-          return this.get(key)
-        }
-        return mockResponse
       }),
     },
   }
@@ -512,16 +512,14 @@ describe("Middleware: updateSession", () => {
     it("should handle unexpected errors in middleware", async () => {
       const request = createMockRequest("/dashboard")
 
-      // The inner try-catch around getSession catches certain errors, but other errors bubble up
       mockSupabaseClient.auth.getSession.mockRejectedValue(new Error("Unexpected error"))
 
       const result = await updateSession(request)
 
-      // So it redirects with 'session' error, not 'server' error
       expect(AuthCookieService.createAuthErrorResponse).toHaveBeenCalledWith(
         expect.any(NextRequest),
-        "session", // Changed from 'server' to 'session' to match actual behavior
-        "Session expired",
+        "auth",
+        "Authentication required",
       )
     })
   })
