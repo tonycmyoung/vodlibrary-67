@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
@@ -130,27 +132,31 @@ export default function CategoryFilter({
                   const isSelected = selectedCategories.includes(item.id)
                   const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
 
+                  let badgeStyle: React.CSSProperties | undefined = undefined
+                  if (hasValidColor) {
+                    if (isSelected) {
+                      badgeStyle = {
+                        backgroundColor: item.color,
+                        borderColor: item.color,
+                        color: getContrastColor(item.color),
+                      }
+                    } else {
+                      badgeStyle = {
+                        borderColor: item.color,
+                      }
+                    }
+                  }
+
                   const badge = (
                     <Badge
+                      key={item.id}
                       variant={isSelected ? "default" : "outline"}
                       className={`cursor-pointer transition-all hover:scale-105 relative ${
                         isSelected
                           ? "text-white border-2 shadow-lg"
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
-                      style={
-                        hasValidColor && isSelected
-                          ? {
-                              backgroundColor: item.color,
-                              borderColor: item.color,
-                              color: getContrastColor(item.color),
-                            }
-                          : hasValidColor && !isSelected
-                            ? {
-                                borderColor: item.color,
-                              }
-                            : undefined
-                      }
+                      style={badgeStyle}
                       onClick={() => onCategoryToggle(item.id)}
                     >
                       {item.name}
@@ -187,6 +193,22 @@ export default function CategoryFilter({
                   }
                   const isSelected = selectedCategories.includes(item.id)
                   const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
+
+                  let badgeStyle: React.CSSProperties | undefined = undefined
+                  if (hasValidColor) {
+                    if (isSelected) {
+                      badgeStyle = {
+                        backgroundColor: item.color,
+                        borderColor: item.color,
+                        color: getContrastColor(item.color),
+                      }
+                    } else {
+                      badgeStyle = {
+                        borderColor: item.color,
+                      }
+                    }
+                  }
+
                   return (
                     <Badge
                       key={item.id}
@@ -196,19 +218,7 @@ export default function CategoryFilter({
                           ? "text-white border-2 shadow-lg"
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
-                      style={
-                        hasValidColor && isSelected
-                          ? {
-                              backgroundColor: item.color,
-                              borderColor: item.color,
-                              color: getContrastColor(item.color),
-                            }
-                          : hasValidColor && !isSelected
-                            ? {
-                                borderColor: item.color,
-                              }
-                            : undefined
-                      }
+                      style={badgeStyle}
                       onClick={() => onCategoryToggle(item.id)}
                     >
                       {item.name}
@@ -232,6 +242,22 @@ export default function CategoryFilter({
                   }
                   const isSelected = selectedCategories.includes(item.id)
                   const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
+
+                  let badgeStyle: React.CSSProperties | undefined = undefined
+                  if (hasValidColor) {
+                    if (isSelected) {
+                      badgeStyle = {
+                        backgroundColor: item.color,
+                        borderColor: item.color,
+                        color: getContrastColor(item.color),
+                      }
+                    } else {
+                      badgeStyle = {
+                        borderColor: item.color,
+                      }
+                    }
+                  }
+
                   return (
                     <Badge
                       key={item.id}
@@ -241,19 +267,7 @@ export default function CategoryFilter({
                           ? "text-white border-2 shadow-lg"
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
-                      style={
-                        hasValidColor && isSelected
-                          ? {
-                              backgroundColor: item.color,
-                              borderColor: item.color,
-                              color: getContrastColor(item.color),
-                            }
-                          : hasValidColor && !isSelected
-                            ? {
-                                borderColor: item.color,
-                              }
-                            : undefined
-                      }
+                      style={badgeStyle}
                       onClick={() => onCategoryToggle(item.id)}
                     >
                       {item.name}

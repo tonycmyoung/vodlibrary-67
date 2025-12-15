@@ -90,7 +90,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
   const [searchQuery, setSearchQuery] = useState(urlState.search)
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(urlState.search)
   const [loading, setLoading] = useState(true)
   const [processingUsers, setProcessingUsers] = useState<Set<string>>(new Set())
 

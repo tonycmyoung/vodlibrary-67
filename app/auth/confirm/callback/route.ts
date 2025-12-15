@@ -34,7 +34,11 @@ export async function GET(request: NextRequest) {
       console.error("[v0] Failed to log confirmation error:", logError)
     }
 
-    const errorParam = error === "access_denied" && errorDescription?.includes("expired") ? "expired" : "invalid"
+    let errorParam = "invalid"
+    if (error === "access_denied" && errorDescription?.includes("expired")) {
+      errorParam = "expired"
+    }
+
     const redirectUrl = new URL(`/auth/confirm?error=${errorParam}`, request.url)
     if (errorDescription) {
       redirectUrl.searchParams.set("error_description", errorDescription)

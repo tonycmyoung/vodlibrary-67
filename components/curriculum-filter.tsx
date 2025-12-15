@@ -52,6 +52,14 @@ export default function CurriculumFilter({
             const isSelected = selectedCurriculums.includes(item.id)
             const hasValidColor = item.color && item.color.startsWith("#") && item.color.length >= 7
 
+            const badgeStyle = {
+              backgroundColor: isSelected ? item.color : undefined,
+              borderColor: isSelected ? item.color : addTransparency(item.color, "90") || item.color,
+              color: isSelected ? getContrastColor(item.color) : undefined,
+              borderLeftColor: !isSelected ? item.color : undefined,
+              borderLeftWidth: !isSelected ? "4px" : undefined,
+            }
+
             const badge = (
               <Badge
                 variant={isSelected ? "default" : "outline"}
@@ -60,21 +68,7 @@ export default function CurriculumFilter({
                     ? "text-white border-2 shadow-lg"
                     : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                 }`}
-                style={
-                  hasValidColor
-                    ? isSelected
-                      ? {
-                          backgroundColor: item.color,
-                          borderColor: item.color,
-                          color: getContrastColor(item.color),
-                        }
-                      : {
-                          borderColor: addTransparency(item.color, "90") || item.color,
-                          borderLeftColor: item.color,
-                          borderLeftWidth: "4px",
-                        }
-                    : undefined
-                }
+                style={badgeStyle}
                 onClick={() => onCurriculumToggle(item.id)}
               >
                 {item.name}

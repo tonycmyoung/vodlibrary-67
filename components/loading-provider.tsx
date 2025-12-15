@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useMemo } from "react"
 import { usePathname } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -41,14 +41,13 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
       const link = target.closest("a[href]") as HTMLAnchorElement
       const navButton = target.closest("[data-navigate]") as HTMLElement
 
-      // Skip if clicking on form inputs, dropdowns, or elements marked to skip loading
       if (target.closest("input, select, textarea, [data-no-loading]")) {
         return
       }
 
       let shouldShowLoading = false
 
-      if (link && link.href) {
+      if (link?.href) {
         // Skip external links, mailto, tel, and hash links
         if (
           link.href.startsWith("mailto:") ||
@@ -113,8 +112,10 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const contextValue = useMemo(() => ({ isLoading, setLoading }), [isLoading])
+
   return (
-    <LoadingContext.Provider value={{ isLoading, setLoading }}>
+    <LoadingContext.Provider value={contextValue}>
       {children}
       {showSpinner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

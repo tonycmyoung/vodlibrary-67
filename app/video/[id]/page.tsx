@@ -54,8 +54,6 @@ interface Video {
 export default function VideoPage({ params }: VideoPageProps) {
   const [user, setUser] = useState<User | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
-  const [userLoading, setUserLoading] = useState(true)
-  const [videoLoading, setVideoLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
@@ -90,7 +88,6 @@ export default function VideoPage({ params }: VideoPageProps) {
         email: authUser.email,
         ...userProfile,
       })
-      setUserLoading(false)
     }
 
     loadUser()
@@ -138,7 +135,6 @@ export default function VideoPage({ params }: VideoPageProps) {
       }
 
       setVideo(videoWithCategories)
-      setVideoLoading(false)
     }
 
     loadVideo()
@@ -146,18 +142,20 @@ export default function VideoPage({ params }: VideoPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
-      {userLoading ? (
+      {user ? (
+        <Header user={user} />
+      ) : (
         <div className="h-16 bg-black/20 border-b border-white/10">
           <div className="container mx-auto px-4 h-full flex items-center justify-between">
             <Skeleton className="h-8 w-32 bg-white/10" />
             <Skeleton className="h-8 w-8 rounded-full bg-white/10" />
           </div>
         </div>
-      ) : user ? (
-        <Header user={user} />
-      ) : null}
+      )}
 
-      {videoLoading ? (
+      {video ? (
+        <VideoPlayer video={video} />
+      ) : (
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="aspect-video bg-black/40 rounded-lg flex items-center justify-center">
@@ -176,9 +174,7 @@ export default function VideoPage({ params }: VideoPageProps) {
             </div>
           </div>
         </div>
-      ) : video ? (
-        <VideoPlayer video={video} />
-      ) : null}
+      )}
     </div>
   )
 }

@@ -19,27 +19,6 @@ export default function SortControl({ sortBy, sortOrder, onSortChange }: SortCon
     onSortChange(sortBy, newSortOrder)
   }
 
-  const getSortLabel = (value: string) => {
-    switch (value) {
-      case "curriculum":
-        return "Curriculum"
-      case "category":
-        return "Category"
-      case "title":
-        return "Name"
-      case "created_at":
-        return "Added Date"
-      case "recorded":
-        return "Recorded"
-      case "views":
-        return "Views"
-      case "last_viewed_at":
-        return "Last View"
-      default:
-        return "Category"
-    }
-  }
-
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-gray-400">Sort by:</span>
