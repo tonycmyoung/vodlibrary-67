@@ -10,7 +10,7 @@ export const formatDate = (dateString: string | null | undefined): string => {
 
     const date = new Date(processedString)
 
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
       return "Invalid date"
     }
 
@@ -39,7 +39,7 @@ export const formatShortDate = (dateString: string | null | undefined): string =
 
     const date = new Date(hasTimezone ? dateString : dateString + "Z")
 
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
       return "Invalid date"
     }
 
@@ -64,7 +64,7 @@ export const formatTimeAgo = (dateString: string | null | undefined): string => 
 
     const date = new Date(hasTimezone ? dateString : dateString + "Z")
 
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
       return "Invalid date"
     }
 

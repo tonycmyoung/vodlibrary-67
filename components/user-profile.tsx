@@ -179,14 +179,20 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
               <div>
                 {isEditing ? (
                   <div className="space-y-3">
+                    <label htmlFor="profile-full-name" className="sr-only">
+                      Full name
+                    </label>
                     <Input
+                      id="profile-full-name"
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       placeholder="Full name"
                       className="bg-gray-800 border-gray-600 text-white"
                     />
                     <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-300">Profile Image</label>
+                      <label htmlFor="profile-image-upload" className="block text-sm font-medium text-gray-300">
+                        Profile Image
+                      </label>
                       <div className="flex items-center space-x-2">
                         <input
                           type="file"
@@ -361,16 +367,20 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <label htmlFor="profile-email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address
+              </label>
+              <div id="profile-email" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <span className="text-white">{user.email}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact admin if needed.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Current Belt</label>
+              <label htmlFor="current-belt-select" className="block text-sm font-medium text-gray-300 mb-2">
+                Current Belt
+              </label>
               <Select value={currentBeltId || "none"} onValueChange={handleBeltChange} disabled={beltLoading}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger id="current-belt-select" className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue>
                     {beltLoading ? (
                       <span className="flex items-center">
@@ -412,22 +422,28 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
               <p className="text-xs text-gray-400 mt-1">Select your current belt level</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Teacher</label>
-              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <label htmlFor="profile-teacher" className="block text-sm font-medium text-gray-300 mb-2">
+                Teacher
+              </label>
+              <div id="profile-teacher" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <span className="text-white">{user.teacher || "Not specified"}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">School/Dojo</label>
-              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <label htmlFor="profile-school" className="block text-sm font-medium text-gray-300 mb-2">
+                School/Dojo
+              </label>
+              <div id="profile-school" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <span className="text-white">{user.school || "Not specified"}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Account Status</label>
-              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <label htmlFor="profile-status" className="block text-sm font-medium text-gray-300 mb-2">
+                Account Status
+              </label>
+              <div id="profile-status" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                 <Badge
                   className={
                     user.isAdmin

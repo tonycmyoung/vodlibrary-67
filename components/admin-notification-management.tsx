@@ -305,9 +305,11 @@ export default function AdminNotificationManagement() {
 
           {messageType === "individual" && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Select Recipient</label>
+              <label htmlFor="recipient-select" className="block text-sm font-medium text-gray-300 mb-2">
+                Select Recipient
+              </label>
               <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                <SelectTrigger id="recipient-select" className="bg-gray-800 border-gray-600 text-white">
                   <SelectValue placeholder="Choose a user..." />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
@@ -335,9 +337,11 @@ export default function AdminNotificationManagement() {
 
           {messageType === "broadcast" && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Select Recipients</label>
+              <label htmlFor="broadcast-role-select" className="block text-sm font-medium text-gray-300 mb-2">
+                Select Recipients
+              </label>
               <Select value={broadcastRole} onValueChange={(value) => setBroadcastRole(value as typeof broadcastRole)}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                <SelectTrigger id="broadcast-role-select" className="bg-gray-800 border-gray-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
@@ -359,8 +363,11 @@ export default function AdminNotificationManagement() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Message</label>
+            <label htmlFor="message-text" className="block text-sm font-medium text-gray-300 mb-2">
+              Message
+            </label>
             <Textarea
+              id="message-text"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               placeholder={
@@ -415,6 +422,7 @@ export default function AdminNotificationManagement() {
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
+                aria-label="Search notifications"
                 placeholder="Search notifications..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

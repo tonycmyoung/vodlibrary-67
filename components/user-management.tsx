@@ -1019,9 +1019,12 @@ export default function UserManagement() {
                                       <span className="font-medium text-white">{user.email}</span>
                                     </p>
                                     <div className="space-y-2">
-                                      <label className="text-sm text-gray-300">New Password</label>
+                                      <label htmlFor="new-password" className="text-sm text-gray-300">
+                                        New Password
+                                      </label>
                                       <div className="relative">
                                         <Input
+                                          id="new-password"
                                           type={showPassword ? "text" : "password"}
                                           value={newPassword}
                                           onChange={(e) => {
@@ -1035,6 +1038,7 @@ export default function UserManagement() {
                                           type="button"
                                           onClick={() => setShowPassword(!showPassword)}
                                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                          aria-label={showPassword ? "Hide password" : "Show password"}
                                         >
                                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>

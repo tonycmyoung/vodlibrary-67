@@ -222,8 +222,11 @@ export default function CurriculumManagement() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                <label htmlFor="curriculum-name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Name
+                </label>
                 <Input
+                  id="curriculum-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="bg-gray-800 border-gray-600 text-white"
@@ -231,8 +234,11 @@ export default function CurriculumManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <label htmlFor="curriculum-description" className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
                 <Textarea
+                  id="curriculum-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="bg-gray-800 border-gray-600 text-white"

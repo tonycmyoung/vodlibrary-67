@@ -7,7 +7,7 @@ export function generateUUID() {
   }
 
   // Fallback UUID v4 generation for older environments
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0
     const v = c == "x" ? Math.trunc(r) : Math.trunc((r & 0x3) | 0x8)
     return v.toString(16)
@@ -16,11 +16,11 @@ export function generateUUID() {
 
 export function sanitizeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#x27;")
 }
 
 export { siteTitle }

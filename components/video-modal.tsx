@@ -184,8 +184,11 @@ export default function VideoModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
+            <label htmlFor="video-title" className="block text-sm font-medium text-gray-300 mb-2">
+              Title *
+            </label>
             <Input
+              id="video-title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="bg-gray-900/50 border-gray-700 text-white"
@@ -194,8 +197,11 @@ export default function VideoModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+            <label htmlFor="video-description" className="block text-sm font-medium text-gray-300 mb-2">
+              Description
+            </label>
             <textarea
+              id="video-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full min-h-[80px] rounded-md border border-gray-700 bg-gray-900/50 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-y"
@@ -206,8 +212,11 @@ export default function VideoModal({
 
           <div className="grid grid-cols-12 gap-2 items-end">
             <div className="col-span-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Video URL *</label>
+              <label htmlFor="video-url" className="block text-sm font-medium text-gray-300 mb-2">
+                Video URL *
+              </label>
               <Input
+                id="video-url"
                 value={formData.video_url}
                 onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
                 className="bg-gray-900/50 border-gray-700 text-white"
@@ -226,8 +235,11 @@ export default function VideoModal({
               </Button>
             </div>
             <div className="col-span-5">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail URL</label>
+              <label htmlFor="video-thumbnail" className="block text-sm font-medium text-gray-300 mb-2">
+                Thumbnail URL
+              </label>
               <Input
+                id="video-thumbnail"
                 value={formData.thumbnail_url}
                 onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
                 className="bg-gray-900/50 border-gray-700 text-white"
@@ -236,8 +248,11 @@ export default function VideoModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Recorded</label>
+            <label htmlFor="video-recorded" className="block text-sm font-medium text-gray-300 mb-2">
+              Recorded
+            </label>
             <Input
+              id="video-recorded"
               value={formData.recorded}
               onChange={(e) => setFormData({ ...formData, recorded: e.target.value })}
               className="bg-gray-900/50 border-gray-700 text-white"

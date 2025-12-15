@@ -190,8 +190,11 @@ export default function CategoryManagement() {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                    <label htmlFor="category-name" className="block text-sm font-medium text-gray-300 mb-2">
+                      Name
+                    </label>
                     <Input
+                      id="category-name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="bg-gray-800 border-gray-600 text-white"
@@ -199,8 +202,11 @@ export default function CategoryManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <label htmlFor="category-description" className="block text-sm font-medium text-gray-300 mb-2">
+                      Description
+                    </label>
                     <Textarea
+                      id="category-description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="bg-gray-800 border-gray-600 text-white"
