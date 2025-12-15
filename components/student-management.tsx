@@ -176,27 +176,30 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     result.sort((a, b) => {
       let comparison = 0
       switch (sortBy) {
-        case "full_name":
+        case "full_name": {
           const aName = a.full_name || a.email
           const bName = b.full_name || b.email
           comparison = aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
           break
+        }
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           break
-        case "last_login":
+        case "last_login": {
           const aLogin = a.last_login ? new Date(a.last_login).getTime() : 0
           const bLogin = b.last_login ? new Date(b.last_login).getTime() : 0
           comparison = aLogin - bLogin
           break
+        }
         case "login_count":
           comparison = a.login_count - b.login_count
           break
-        case "last_view":
+        case "last_view": {
           const aView = a.last_view ? new Date(a.last_view).getTime() : 0
           const bView = b.last_view ? new Date(b.last_view).getTime() : 0
           comparison = aView - bView
           break
+        }
         case "view_count":
           comparison = a.view_count - b.view_count
           break

@@ -541,12 +541,13 @@ export default function VideoLibrary({
         case "recorded":
           comparison = (a.recorded || "").localeCompare(b.recorded || "")
           break
-        case "performers":
+        case "performers": {
           const aPerformers = a.performers.map((p) => p.name).join(", ")
           const bPerformers = b.performers.map((p) => p.name).join(", ")
           comparison = aPerformers.localeCompare(bPerformers)
           break
-        case "category":
+        }
+        case "category": {
           const aCategories = a.categories.map((c) => c.name).join(", ")
           const bCategories = b.categories.map((c) => c.name).join(", ")
 
@@ -558,7 +559,8 @@ export default function VideoLibrary({
 
           comparison = aCategories.localeCompare(bCategories)
           break
-        case "curriculum":
+        }
+        case "curriculum": {
           const aMinOrder =
             a.curriculums.length > 0 ? Math.min(...a.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
           const bMinOrder =
@@ -566,6 +568,7 @@ export default function VideoLibrary({
 
           comparison = aMinOrder - bMinOrder
           break
+        }
         case "views":
           comparison = (a.views || 0) - (b.views || 0)
           break
