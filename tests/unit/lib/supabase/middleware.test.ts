@@ -469,7 +469,7 @@ describe("Middleware: updateSession", () => {
       const request = createMockRequest("/admin")
 
       const mockSession = {
-        user: { id: "user-123", email: "test@example.com" },
+        user: { id: "error-test-user", email: "error-user@example.com" },
         access_token: "token",
       }
 
@@ -478,26 +478,14 @@ describe("Middleware: updateSession", () => {
         error: null,
       })
 
-      let callCount = 0
-      mockSupabaseClient.from.mockImplementation(() => ({
+      mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockImplementation(async () => {
-          callCount++
-          if (callCount === 1) {
-            // Approval check succeeds
-            return {
-              data: { role: "Teacher", is_approved: true },
-              error: null,
-            }
-          }
-          // Admin check fails
-          return {
-            data: null,
-            error: { message: "Database error" },
-          }
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: "Database error" },
         }),
-      }))
+      })
 
       const result = await updateSession(request)
 
