@@ -136,9 +136,9 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     })
 
     return {
-      roles: Array.from(roleSet).sort(),
-      schools: Array.from(schoolSet).sort(),
-      belts: Array.from(beltSet).sort(),
+      roles: Array.from(roleSet).sort((a, b) => a.localeCompare(b)),
+      schools: Array.from(schoolSet).sort((a, b) => a.localeCompare(b)),
+      belts: Array.from(beltSet).sort((a, b) => a.localeCompare(b)),
     }
   }, [users])
 

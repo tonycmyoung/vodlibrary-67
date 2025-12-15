@@ -152,8 +152,8 @@ export default function UserManagement() {
     })
 
     return {
-      roles: Array.from(roleSet).sort(),
-      schools: Array.from(schoolSet).sort(),
+      roles: Array.from(roleSet).sort((a, b) => a.localeCompare(b)),
+      schools: Array.from(schoolSet).sort((a, b) => a.localeCompare(b)),
     }
   }, [users])
 
