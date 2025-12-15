@@ -101,7 +101,7 @@ export default function VideoCardList({
     }
   }
 
-  const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
+  const validCategories = (video.categories || []).filter((category) => category?.id && category?.name)
 
   const videoUrl = `/video/${video.id}`
 

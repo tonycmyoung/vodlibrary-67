@@ -389,16 +389,20 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         Updating...
                       </span>
-                    ) : currentBeltId && user.current_belt ? (
-                      <span className="flex items-center">
-                        <span
-                          className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                          style={{ backgroundColor: user.current_belt.color }}
-                        />
-                        {user.current_belt.name}
-                      </span>
                     ) : (
-                      "Not specified"
+                      <>
+                        {currentBeltId && user.current_belt ? (
+                          <span className="flex items-center">
+                            <span
+                              className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
+                              style={{ backgroundColor: user.current_belt.color }}
+                            />
+                            {user.current_belt.name}
+                          </span>
+                        ) : (
+                          "Not specified"
+                        )}
+                      </>
                     )}
                   </SelectValue>
                 </SelectTrigger>

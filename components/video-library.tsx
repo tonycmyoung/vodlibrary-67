@@ -88,7 +88,7 @@ export default function VideoLibrary({
   const searchParams = useSearchParams()
   const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
 
-  const [urlState, setUrlState] = useState(() => {
+  const [urlState] = useState(() => {
     const filters = searchParams.get("filters")
     const search = searchParams.get("search") || ""
     const mode = (searchParams.get("mode") as "AND" | "OR") || "AND"
@@ -376,21 +376,21 @@ export default function VideoLibrary({
     setRecordedValues(processedData.recordedValues)
 
     if (urlState.filters.length > 0 && processedData.categories.length > 0 && processedData.curriculums.length > 0) {
-      const categoryIds = processedData.categories.map((c) => c.id)
-      const curriculumIds = processedData.curriculums.map((c) => c.id)
+      const categoryIds = new Set(processedData.categories.map((c) => c.id))
+      const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
 
       const separatedCategories: string[] = []
       const separatedCurriculums: string[] = []
 
       urlState.filters.forEach((filterId) => {
         if (
-          categoryIds.includes(filterId) ||
+          categoryIds.has(filterId) ||
           filterId.startsWith("recorded:") ||
           filterId.startsWith("performer:") ||
           filterId.startsWith("views:")
         ) {
           separatedCategories.push(filterId)
-        } else if (curriculumIds.includes(filterId)) {
+        } else if (curriculumIds.has(filterId)) {
           separatedCurriculums.push(filterId)
         }
       })
@@ -454,9 +454,9 @@ export default function VideoLibrary({
 
     if (selectedCategories.length > 0 || selectedCurriculums.length > 0) {
       result = result.filter((video) => {
-        const videoCategories = video.categories.map((cat) => cat.id)
-        const videoCurriculums = video.curriculums.map((curr) => curr.id)
-        const videoPerformers = video.performers.map((perf) => perf.id)
+        const videoCategories = new Set(video.categories.map((cat) => cat.id))
+        const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
+        const videoPerformers = new Set(video.performers.map((perf) => perf.id))
 
         const selectedCategoryIds = selectedCategories.filter(
           (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:"),
@@ -479,17 +479,17 @@ export default function VideoLibrary({
 
         if (selectedCategoryIds.length > 0) {
           if (filterMode === "AND") {
-            categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.includes(selectedId))
+            categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.has(selectedId))
           } else {
-            categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.includes(selectedId))
+            categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.has(selectedId))
           }
         }
 
         if (selectedCurriculums.length > 0) {
           if (filterMode === "AND") {
-            curriculumMatches = selectedCurriculums.every((selectedId) => videoCurriculums.includes(selectedId))
+            curriculumMatches = selectedCurriculums.every((selectedId) => videoCurriculums.has(selectedId))
           } else {
-            curriculumMatches = selectedCurriculums.some((selectedId) => videoCurriculums.includes(selectedId))
+            curriculumMatches = selectedCurriculums.some((selectedId) => videoCurriculums.has(selectedId))
           }
         }
 
@@ -499,9 +499,9 @@ export default function VideoLibrary({
 
         if (selectedPerformerIds.length > 0) {
           if (filterMode === "AND") {
-            performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.includes(selectedId))
+            performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.has(selectedId))
           } else {
-            performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.includes(selectedId))
+            performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.has(selectedId))
           }
         }
 

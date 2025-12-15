@@ -162,76 +162,84 @@ export default function DebugDashboard() {
             <p className="text-gray-400">Loading debug logs...</p>
           </CardContent>
         </Card>
-      ) : logs.length === 0 ? (
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
-            <p className="text-gray-400">No debug logs found</p>
-            <p className="text-sm text-gray-500 mt-2">Logs will appear here when users attempt to sign in or sign up</p>
-          </CardContent>
-        </Card>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Event</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Result</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Email</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Error / Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <>
-                  <tr
-                    key={log.id}
-                    className="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer"
-                    onClick={() => toggleRow(log.id)}
-                  >
-                    <td className="p-3">
-                      <div className="text-sm text-gray-300">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </div>
-                      <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center space-x-2">
-                        {getEventIcon(log.event_type)}
-                        {getEventBadge(log.event_type)}
-                      </div>
-                    </td>
-                    <td className="p-3">{log.success ? getSuccessBadge() : getFailureBadge()}</td>
-                    <td className="p-3">
-                      <div className="text-sm text-gray-300 font-mono">{log.user_email}</div>
-                    </td>
-                    <td className="p-3">
-                      {log.error_message ? (
-                        <div className="text-sm text-red-400">{log.error_message}</div>
-                      ) : (
-                        <div className="text-sm text-gray-500">{getKeyAdditionalData(log.additional_data) || "-"}</div>
-                      )}
-                    </td>
+        <>
+          {logs.length === 0 ? (
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
+                <p className="text-gray-400">No debug logs found</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Logs will appear here when users attempt to sign in or sign up
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Event</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Result</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Email</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Error / Details</th>
                   </tr>
-                  {expandedRows.has(log.id) && log.additional_data && (
-                    <tr key={`${log.id}-expanded`} className="border-b border-gray-800 bg-gray-800/30">
-                      <td colSpan={5} className="p-3">
-                        <div className="bg-gray-700/50 rounded-md p-3">
-                          <p className="text-sm font-medium text-gray-300 mb-2">Additional Data</p>
-                          <pre className="text-xs text-gray-400 font-mono overflow-x-auto">
-                            {JSON.stringify(log.additional_data, null, 2)}
-                          </pre>
-                          <p className="text-xs text-gray-500 mt-2">Log ID: {log.id}</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <>
+                      <tr
+                        key={log.id}
+                        className="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer"
+                        onClick={() => toggleRow(log.id)}
+                      >
+                        <td className="p-3">
+                          <div className="text-sm text-gray-300">
+                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                          </div>
+                          <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center space-x-2">
+                            {getEventIcon(log.event_type)}
+                            {getEventBadge(log.event_type)}
+                          </div>
+                        </td>
+                        <td className="p-3">{log.success ? getSuccessBadge() : getFailureBadge()}</td>
+                        <td className="p-3">
+                          <div className="text-sm text-gray-300 font-mono">{log.user_email}</div>
+                        </td>
+                        <td className="p-3">
+                          {log.error_message ? (
+                            <div className="text-sm text-red-400">{log.error_message}</div>
+                          ) : (
+                            <div className="text-sm text-gray-500">
+                              {getKeyAdditionalData(log.additional_data) || "-"}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                      {expandedRows.has(log.id) && log.additional_data && (
+                        <tr key={`${log.id}-expanded`} className="border-b border-gray-800 bg-gray-800/30">
+                          <td colSpan={5} className="p-3">
+                            <div className="bg-gray-700/50 rounded-md p-3">
+                              <p className="text-sm font-medium text-gray-300 mb-2">Additional Data</p>
+                              <pre className="text-xs text-gray-400 font-mono overflow-x-auto">
+                                {JSON.stringify(log.additional_data, null, 2)}
+                              </pre>
+                              <p className="text-xs text-gray-500 mt-2">Log ID: {log.id}</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

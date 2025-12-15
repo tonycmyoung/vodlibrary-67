@@ -110,9 +110,9 @@ const VideoCard = memo(function VideoCard({
     }
   }
 
-  const validCategories = (video.categories || []).filter((category) => category && category.id && category.name)
+  const validCategories = (video.categories || []).filter((category) => category?.id && category?.name)
   const validCurriculums = (video.curriculums || [])
-    .filter((curriculum) => curriculum && curriculum.id && curriculum.name)
+    .filter((curriculum) => curriculum?.id && curriculum?.name)
     .sort((a, b) => a.display_order - b.display_order)
 
   const handleVideoClick = async (e: React.MouseEvent) => {
