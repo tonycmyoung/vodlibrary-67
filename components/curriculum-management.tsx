@@ -246,8 +246,10 @@ export default function CurriculumManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Color</label>
-                <div className="grid grid-cols-5 gap-2">
+                <label htmlFor="curriculum-color-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                  Color
+                </label>
+                <div id="curriculum-color-picker" className="grid grid-cols-5 gap-2">
                   {PRESET_COLORS.map((color) => (
                     <button
                       key={color}

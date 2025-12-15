@@ -262,13 +262,23 @@ export default function VideoModal({
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Curriculum</label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30">
+              <label htmlFor="video-curriculum-list" className="block text-sm font-medium text-gray-300 mb-2">
+                Curriculum
+              </label>
+              <div
+                id="video-curriculum-list"
+                className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
+              >
                 {curriculums
                   .sort((a, b) => a.display_order - b.display_order)
                   .map((curriculum) => (
-                    <label key={curriculum.id} className="flex items-center space-x-2 cursor-pointer">
+                    <label
+                      key={curriculum.id}
+                      htmlFor={`curriculum-${curriculum.id}`}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
                       <input
+                        id={`curriculum-${curriculum.id}`}
                         type="checkbox"
                         checked={formData.curriculum_ids.includes(curriculum.id)}
                         onChange={(e) => {
@@ -294,11 +304,21 @@ export default function VideoModal({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Categories</label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30">
+              <label htmlFor="video-categories-list" className="block text-sm font-medium text-gray-300 mb-2">
+                Categories
+              </label>
+              <div
+                id="video-categories-list"
+                className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
+              >
                 {categories.map((category) => (
-                  <label key={category.id} className="flex items-center space-x-2 cursor-pointer">
+                  <label
+                    key={category.id}
+                    htmlFor={`category-${category.id}`}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
                     <input
+                      id={`category-${category.id}`}
                       type="checkbox"
                       checked={formData.category_ids.includes(category.id)}
                       onChange={(e) => {
@@ -324,11 +344,21 @@ export default function VideoModal({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Performers</label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30">
+              <label htmlFor="video-performers-list" className="block text-sm font-medium text-gray-300 mb-2">
+                Performers
+              </label>
+              <div
+                id="video-performers-list"
+                className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
+              >
                 {performers.map((performer) => (
-                  <label key={performer.id} className="flex items-center space-x-2 cursor-pointer">
+                  <label
+                    key={performer.id}
+                    htmlFor={`performer-${performer.id}`}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
                     <input
+                      id={`performer-${performer.id}`}
                       type="checkbox"
                       checked={formData.performer_ids.includes(performer.id)}
                       onChange={(e) => {

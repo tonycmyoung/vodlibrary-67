@@ -214,8 +214,10 @@ export default function CategoryManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Color</label>
-                    <div className="grid grid-cols-5 gap-2">
+                    <label htmlFor="category-color-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                      Color
+                    </label>
+                    <div id="category-color-picker" className="grid grid-cols-5 gap-2">
                       {PRESET_COLORS.map((color) => (
                         <button
                           key={color}

@@ -12,7 +12,7 @@ export async function sendEmail(
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
 
-    const htmlBody = body.replace(/\n/g, "<br>")
+    const htmlBody = body.replaceAll("\n", "<br>")
 
     const { error } = await resend.emails.send({
       from: `OKL Admin <${process.env.ADMIN_EMAIL}>`,
