@@ -264,15 +264,21 @@ export default function VideoManagement() {
           break
         }
         default:
-        case "title": {
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
-          break
-        }
       }
 
       if (aValue < bValue) return sortOrder === "asc" ? -1 : 1
       if (aValue > bValue) return sortOrder === "asc" ? 1 : -1
+
+      // Secondary sort by title for all non-title sorts
+      if (sortBy !== "title") {
+        const aTitle = a.title.toLowerCase()
+        const bTitle = b.title.toLowerCase()
+        if (aTitle < bTitle) return -1
+        if (aTitle > bTitle) return 1
+      }
+
       return 0
     })
 
