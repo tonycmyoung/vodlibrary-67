@@ -372,13 +372,21 @@ describe("Middleware: updateSession", () => {
           return NextResponse.redirect(url)
         },
       )
+
+      vi.doMock("@/lib/supabase/middleware", async () => {
+        const actual = await vi.importActual("@/lib/supabase/middleware")
+        return {
+          ...actual,
+          getCachedUserApproval: vi.fn().mockReturnValue(null), // Force cache miss
+        }
+      })
     })
 
     it("should allow admin email through to admin routes", async () => {
       const request = createMockRequest("/admin")
 
       const mockSession = {
-        user: { id: "admin-123", email: "acmyma@gmail.com" },
+        user: { id: "user-123", email: "acmyma@gmail.com" },
         access_token: "token",
       }
 
@@ -405,14 +413,19 @@ describe("Middleware: updateSession", () => {
         error: null,
       })
 
-      mockSupabaseClient.from.mockReturnValue({
+      let callCount = 0
+      mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { role: "Admin", is_approved: true },
-          error: null,
+        single: vi.fn().mockImplementation(async () => {
+          callCount++
+          // Both approval check and admin check return Admin role
+          return {
+            data: { role: "Admin", is_approved: true },
+            error: null,
+          }
         }),
-      })
+      }))
 
       const result = await updateSession(request)
 
@@ -423,7 +436,7 @@ describe("Middleware: updateSession", () => {
       const request = createMockRequest("/admin")
 
       const mockSession = {
-        user: { id: "user-123", email: "test@example.com" },
+        user: { id: "non-admin-user", email: "student@example.com" },
         access_token: "token",
       }
 
@@ -438,14 +451,6 @@ describe("Middleware: updateSession", () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockImplementation(async () => {
           callCount++
-          // First call: user approval check
-          if (callCount === 1) {
-            return {
-              data: { role: "Student", is_approved: true },
-              error: null,
-            }
-          }
-          // Second call: admin check
           return {
             data: { role: "Student", is_approved: true },
             error: null,
@@ -479,14 +484,14 @@ describe("Middleware: updateSession", () => {
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockImplementation(async () => {
           callCount++
-          // First call: user approval check
           if (callCount === 1) {
+            // Approval check succeeds
             return {
               data: { role: "Teacher", is_approved: true },
               error: null,
             }
           }
-          // Second call: admin check with error
+          // Admin check fails
           return {
             data: null,
             error: { message: "Database error" },
