@@ -12,7 +12,6 @@ vi.mock("@/lib/utils/auth")
 
 describe("Middleware: updateSession", () => {
   let mockSupabaseClient: any
-  let mockCookies: any
   let originalEnv: NodeJS.ProcessEnv
 
   beforeEach(() => {
@@ -23,7 +22,6 @@ describe("Middleware: updateSession", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co"
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key"
 
-    // Create mock Supabase client
     mockSupabaseClient = {
       auth: {
         getSession: vi.fn(),
@@ -38,19 +36,8 @@ describe("Middleware: updateSession", () => {
 
     vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient)
 
-    // Mock cookies
-    mockCookies = {
-      getAll: vi.fn(() => []),
-      get: vi.fn(),
-      set: vi.fn(),
-      delete: vi.fn(),
-      has: vi.fn(),
-    }
-
-    // Mock validateReturnTo
     vi.mocked(validateReturnTo).mockImplementation((path: string) => path)
 
-    // Mock AuthCookieService static methods
     vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
       (request: NextRequest, type: string, message: string) => {
         const url = new URL(`/error?type=${type}&message=${encodeURIComponent(message)}`, request.url)
@@ -68,21 +55,19 @@ describe("Middleware: updateSession", () => {
     process.env = originalEnv
   })
 
-  function createMockRequest(path: string, options: { referer?: string } = {}): NextRequest {
+  function createMockRequest(path: string, options: { referer?: string; cookies?: string } = {}): NextRequest {
     const url = `https://example.com${path}`
-    const request = new NextRequest(url)
+    const headers = new Headers()
 
-    // Override cookies property
-    Object.defineProperty(request, "cookies", {
-      value: mockCookies,
-      writable: true,
-    })
-
-    // Add referer if provided
     if (options.referer) {
-      request.headers.set("referer", options.referer)
+      headers.set("referer", options.referer)
     }
 
+    if (options.cookies) {
+      headers.set("cookie", options.cookies)
+    }
+
+    const request = new NextRequest(url, { headers })
     return request
   }
 
@@ -211,7 +196,7 @@ describe("Middleware: updateSession", () => {
       const result = await updateSession(request)
 
       expect(AuthCookieService.createAuthErrorResponse).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.any(NextRequest),
         "session",
         "Session expired",
       )
@@ -510,7 +495,7 @@ describe("Middleware: updateSession", () => {
       const result = await updateSession(request)
 
       expect(AuthCookieService.createAuthErrorResponse).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.any(NextRequest),
         "server",
         "Server error occurred",
       )
