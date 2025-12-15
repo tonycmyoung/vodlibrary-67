@@ -17,12 +17,12 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
   const { error, error_code, error_description, success } = searchParams
 
   const isSuccess = success === "true" && !error && !error_code
-  const hasExpiredError = error_code === "otp_expired" || error_description?.includes("expired")
+  const isExpired = error_code === "otp_expired" || error_description?.includes("expired")
 
   let statusMessage = ""
   if (error_description) {
     statusMessage = error_description
-  } else if (error_code === "otp_expired") {
+  } else if (isExpired) {
     statusMessage = "Your confirmation link has expired"
   } else if (error === "processing_failed") {
     statusMessage = "An error occurred while processing your confirmation"

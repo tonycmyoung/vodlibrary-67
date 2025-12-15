@@ -139,19 +139,17 @@ export default function CategoryFilter({
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
                       style={
-                        hasValidColor
-                          ? isSelected
+                        hasValidColor && isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : hasValidColor && !isSelected
                             ? {
-                                backgroundColor: item.color,
                                 borderColor: item.color,
-                                color: getContrastColor(item.color),
                               }
-                            : {
-                                borderColor: addTransparency(item.color, "90") || item.color,
-                                borderLeftColor: item.color,
-                                borderLeftWidth: "4px",
-                              }
-                          : undefined
+                            : undefined
                       }
                       onClick={() => onCategoryToggle(item.id)}
                     >
@@ -199,19 +197,17 @@ export default function CategoryFilter({
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
                       style={
-                        hasValidColor
-                          ? isSelected
+                        hasValidColor && isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : hasValidColor && !isSelected
                             ? {
-                                backgroundColor: item.color,
                                 borderColor: item.color,
-                                color: getContrastColor(item.color),
                               }
-                            : {
-                                borderColor: addTransparency(item.color, "90") || item.color,
-                                borderLeftColor: item.color,
-                                borderLeftWidth: "4px",
-                              }
-                          : undefined
+                            : undefined
                       }
                       onClick={() => onCategoryToggle(item.id)}
                     >
@@ -246,19 +242,17 @@ export default function CategoryFilter({
                           : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
                       }`}
                       style={
-                        hasValidColor
-                          ? isSelected
+                        hasValidColor && isSelected
+                          ? {
+                              backgroundColor: item.color,
+                              borderColor: item.color,
+                              color: getContrastColor(item.color),
+                            }
+                          : hasValidColor && !isSelected
                             ? {
-                                backgroundColor: item.color,
                                 borderColor: item.color,
-                                color: getContrastColor(item.color),
                               }
-                            : {
-                                borderColor: addTransparency(item.color, "90") || item.color,
-                                borderLeftColor: item.color,
-                                borderLeftWidth: "4px",
-                              }
-                          : undefined
+                            : undefined
                       }
                       onClick={() => onCategoryToggle(item.id)}
                     >

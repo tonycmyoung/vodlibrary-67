@@ -124,64 +124,68 @@ export default function AuditLogDashboard() {
             <p className="text-gray-400">Loading audit logs...</p>
           </CardContent>
         </Card>
-      ) : logs.length === 0 ? (
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
-            <p className="text-gray-400">No audit logs found</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Logs will appear here when users sign up, get approved, or are deleted
-            </p>
-          </CardContent>
-        </Card>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Action</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Actor</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                  <td className="p-3">
-                    <div className="text-sm text-gray-300">
-                      {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                    </div>
-                    <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center space-x-2">
-                      {getActionIcon(log.action)}
-                      {getActionBadge(log.action)}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="text-sm text-gray-300">
-                      {log.additional_data?.actor_name || log.actor_email.split("@")[0]}
-                    </div>
-                    <div className="text-xs text-gray-500 font-mono">{log.actor_email}</div>
-                  </td>
-                  <td className="p-3">
-                    {log.target_email ? (
-                      <div>
+        <div>
+          {logs.length === 0 ? (
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
+                <p className="text-gray-400">No audit logs found</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Logs will appear here when users sign up, get approved, or are deleted
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Action</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Actor</th>
+                    <th className="text-left p-3 text-sm font-medium text-gray-300">Target</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                      <td className="p-3">
                         <div className="text-sm text-gray-300">
-                          {log.additional_data?.target_name || log.target_email.split("@")[0]}
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                         </div>
-                        <div className="text-xs text-gray-500 font-mono">{log.target_email}</div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-500">-</div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        <div className="text-xs text-gray-500">{new Date(log.created_at).toLocaleString()}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
+                          {getActionIcon(log.action)}
+                          {getActionBadge(log.action)}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm text-gray-300">
+                          {log.additional_data?.actor_name || log.actor_email.split("@")[0]}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">{log.actor_email}</div>
+                      </td>
+                      <td className="p-3">
+                        {log.target_email ? (
+                          <div>
+                            <div className="text-sm text-gray-300">
+                              {log.additional_data?.target_name || log.target_email.split("@")[0]}
+                            </div>
+                            <div className="text-xs text-gray-500 font-mono">{log.target_email}</div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">-</div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

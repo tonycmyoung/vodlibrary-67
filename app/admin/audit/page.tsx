@@ -24,7 +24,7 @@ export default async function AdminAuditPage() {
     .eq("id", user.id)
     .single()
 
-  if (!userProfile || !userProfile.is_approved) {
+  if (!userProfile?.is_approved) {
     const { data: updatedProfile } = await supabase
       .from("users")
       .upsert({

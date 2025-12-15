@@ -722,7 +722,7 @@ export default function VideoLibrary({
     return (
       <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
         <div className="flex flex-col flex-row items-start items-center justify-between gap-2 gap-3">
-          <div className="flex items-center gap-2 whitespace-nowrap">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-sm text-gray-400">Show</span>
             <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
               <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
@@ -822,7 +822,7 @@ export default function VideoLibrary({
                     return pages.map((page, index) => {
                       if (page === "ellipsis") {
                         return (
-                          <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                          <span key={`ellipsis-${index}-${currentPage}`} className="px-2 text-gray-400">
                             ...
                           </span>
                         )
@@ -863,18 +863,6 @@ export default function VideoLibrary({
         </div>
       </div>
     )
-  }
-
-  const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
-    setUserFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (isFavorited) {
-        newFavorites.add(videoId)
-      } else {
-        newFavorites.delete(videoId)
-      }
-      return newFavorites
-    })
   }
 
   if (loading || userLoading) {
@@ -926,6 +914,18 @@ export default function VideoLibrary({
       />
     </div>
   )
+
+  const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
+    setUserFavorites((prev) => {
+      const newFavorites = new Set(prev)
+      if (isFavorited) {
+        newFavorites.add(videoId)
+      } else {
+        newFavorites.delete(videoId)
+      }
+      return newFavorites
+    })
+  }
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">

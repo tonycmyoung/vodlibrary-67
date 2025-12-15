@@ -144,8 +144,6 @@ export default function VideoPage({ params }: VideoPageProps) {
     loadVideo()
   }, [user, params.id, router, supabase])
 
-  const loading = userLoading || videoLoading
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       {userLoading ? (

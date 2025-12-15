@@ -440,76 +440,85 @@ export default function AdminNotificationManagement() {
               <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
               <span className="ml-2 text-gray-300">Loading notifications...</span>
             </div>
-          ) : filteredNotifications.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-              <p className="text-gray-400">No notifications found</p>
-            </div>
           ) : (
-            <div className="space-y-4">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 rounded-lg border transition-colors ${
-                    notification.is_read ? "bg-gray-900/30 border-gray-700" : "bg-purple-900/20 border-purple-700/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={notification.sender?.profile_image_url || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getUserInitials(notification.sender?.email || "", notification.sender?.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium text-gray-300">
-                            {notification.sender?.full_name || notification.sender?.email || "Unknown"}
-                          </span>
-                        </div>
-                        <span className="text-gray-500">→</span>
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={notification.recipient?.profile_image_url || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getUserInitials(notification.recipient?.email || "", notification.recipient?.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium text-gray-300">
-                            {notification.recipient?.full_name || notification.recipient?.email || "Unknown"}
-                          </span>
-                        </div>
-                        {notification.is_broadcast && <Badge className="bg-purple-600 text-white">Broadcast</Badge>}
-                        {!notification.is_read && <div className="w-2 h-2 rounded-full bg-purple-500" />}
-                      </div>
-
-                      <p className="text-white mb-2 break-words whitespace-pre-line">{notification.message}</p>
-
-                      <p className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</p>
-                    </div>
-
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleReadStatus(notification.id, notification.is_read)}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        {notification.is_read ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-gray-400 hover:text-red-400"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+            <div>
+              {filteredNotifications.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                  <p className="text-gray-400">No notifications found</p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-4">
+                  {filteredNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-4 rounded-lg border transition-colors ${
+                        notification.is_read
+                          ? "bg-gray-900/30 border-gray-700"
+                          : "bg-purple-900/20 border-purple-700/50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={notification.sender?.profile_image_url || "/placeholder.svg"} />
+                                <AvatarFallback className="bg-gray-600 text-white text-xs">
+                                  {getUserInitials(notification.sender?.email || "", notification.sender?.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium text-gray-300">
+                                {notification.sender?.full_name || notification.sender?.email || "Unknown"}
+                              </span>
+                            </div>
+                            <span className="text-gray-500">→</span>
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={notification.recipient?.profile_image_url || "/placeholder.svg"} />
+                                <AvatarFallback className="bg-gray-600 text-white text-xs">
+                                  {getUserInitials(
+                                    notification.recipient?.email || "",
+                                    notification.recipient?.full_name,
+                                  )}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium text-gray-300">
+                                {notification.recipient?.full_name || notification.recipient?.email || "Unknown"}
+                              </span>
+                            </div>
+                            {notification.is_broadcast && <Badge className="bg-purple-600 text-white">Broadcast</Badge>}
+                            {!notification.is_read && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                          </div>
+
+                          <p className="text-white mb-2 break-words whitespace-pre-line">{notification.message}</p>
+
+                          <p className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</p>
+                        </div>
+
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleReadStatus(notification.id, notification.is_read)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            {notification.is_read ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteNotification(notification.id)}
+                            className="text-gray-400 hover:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
