@@ -314,12 +314,6 @@ export default function VideoManagement() {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
   }
 
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number.parseInt(value, 10))
-    localStorage.setItem("adminVideoManagement_itemsPerPage", value)
-    setCurrentPage(1)
-  }
-
   const handlePageChange = (newPage: number) => {
     setCurrentPage(Math.max(1, Math.min(newPage, totalPages || 1)))
   }

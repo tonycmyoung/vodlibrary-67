@@ -1,9 +1,6 @@
-type RequestKey = string
-type RequestPromise<T> = Promise<T>
+const requestCache = new Map<string, Promise<any>>()
 
-const requestCache = new Map<RequestKey, RequestPromise<any>>()
-
-export function deduplicateRequest<T>(key: RequestKey, requestFn: () => Promise<T>): Promise<T> {
+export function deduplicateRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
   // If request is already in progress, return the existing promise
   if (requestCache.has(key)) {
     return requestCache.get(key) as Promise<T>
@@ -19,7 +16,7 @@ export function deduplicateRequest<T>(key: RequestKey, requestFn: () => Promise<
   return promise
 }
 
-export function clearRequestCache(key?: RequestKey) {
+export function clearRequestCache(key?: string) {
   if (key) {
     requestCache.delete(key)
   } else {

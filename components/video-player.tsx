@@ -11,7 +11,6 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { incrementVideoViews } from "@/lib/actions"
 import { formatShortDate } from "@/lib/utils/date"
-import { useIsMobile } from "@/hooks/use-mobile"
 
 interface VideoPlayerProps {
   video: {
@@ -46,14 +45,11 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [isFavorited, setIsFavorited] = useState(video.isFavorited || false)
   const [isLoading, setIsLoading] = useState(false)
   const [viewCount, setViewCount] = useState(video.views || 0)
-  const isMobile = useIsMobile()
-  const [iframeLoaded, setIframeLoaded] = useState(false)
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const isAdminView = searchParams.get("admin-view") === "student"
-  const [isIOSSafari, setIsIOSSafari] = useState(false)
   const [isCustomFullscreen, setIsCustomFullscreen] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [isIOSSafari, setIsIOSSafari] = useState(false)
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent
@@ -65,11 +61,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
   useEffect(() => {
     const incrementViews = async () => {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       await incrementVideoViews(video.id)
       setViewCount((prev) => prev + 1)
     }
@@ -116,13 +107,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
     }
   }
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return "Unknown duration"
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
   const getEmbeddableVideoUrl = (url: string) => {
     // Handle Google Drive URLs
     if (url.includes("drive.google.com")) {
@@ -148,12 +132,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
     // For direct video URLs or other formats, return as-is
     return url
-  }
-
-  const handleIframeClick = () => {}
-
-  const handleIframeLoad = () => {
-    setIframeLoaded(true)
   }
 
   const handleBackClick = () => {
@@ -270,7 +248,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                     title={video.title}
                     sandbox="allow-scripts allow-same-origin allow-presentation"
                     allowFullScreen
-                    onLoad={handleIframeLoad}
+                    onLoad={() => {}} // Simplified onLoad handler
                   />
                 </>
               ) : (

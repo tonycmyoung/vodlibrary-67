@@ -205,7 +205,7 @@ export async function updateSession(request: NextRequest) {
 
         if (error) {
           console.error("Admin lookup error:", error.message)
-        } else if (user && user.role === "Admin") {
+        } else if (user?.role === "Admin") {
           setCachedUserApproval(session.user.id, user.is_approved, user.role)
           return supabaseResponse
         }

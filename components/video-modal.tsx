@@ -270,7 +270,7 @@ export default function VideoModal({
                 className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
               >
                 {curriculums
-                  .sort((a, b) => a.display_order - b.display_order)
+                  .toSorted((a, b) => a.display_order - b.display_order)
                   .map((curriculum) => (
                     <label
                       key={curriculum.id}

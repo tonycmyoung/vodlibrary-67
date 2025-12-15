@@ -28,7 +28,8 @@ export async function signIn(formData: FormData) {
 
   if (!email || !password) {
     console.log("[v0] Auth Action: Missing email or password")
-    const errorUrl = `/auth/login?error=auth_error${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`
+    const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
+    const errorUrl = `/auth/login?error=auth_error${returnToParam}`
     console.log("[v0] Auth Action: Redirecting to:", errorUrl)
     redirect(errorUrl)
   }
@@ -97,7 +98,8 @@ export async function signIn(formData: FormData) {
       errorCode = "invalid_credentials"
     }
 
-    const errorUrl = `/auth/login?error=${errorCode}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`
+    const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
+    const errorUrl = `/auth/login?error=${errorCode}${returnToParam}`
     console.log("[v0] Auth Action: Redirecting to:", errorUrl)
     redirect(errorUrl)
   }

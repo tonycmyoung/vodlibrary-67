@@ -81,7 +81,7 @@ export async function getTelemetryData() {
 
 export async function clearAuthDebugLogs() {
   const user = await getCurrentUser()
-  if (!user || user.role !== "Admin") {
+  if (user?.role !== "Admin") {
     throw new Error("Unauthorized")
   }
 
@@ -102,7 +102,7 @@ export async function clearAuthDebugLogs() {
 export async function fetchAuthDebugLogs() {
   const user = await getCurrentUser()
 
-  if (!user || user.role !== "Admin") {
+  if (user?.role !== "Admin") {
     throw new Error("Unauthorized")
   }
 

@@ -2,7 +2,7 @@ const siteTitle = "Okinawa Kobudo Library"
 
 export function generateUUID() {
   // Use Web Crypto API if available (modern browsers and Node.js 16+)
-  if (typeof globalThis !== "undefined" && globalThis.crypto && globalThis.crypto.randomUUID) {
+  if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID()
   }
 

@@ -451,7 +451,7 @@ export async function updateProfile(params: {
   fullName: string | null
   profileImageUrl: string | null
 }) {
-  const { userId, email, fullName, profileImageUrl } = params
+  const { userId, fullName, profileImageUrl } = params
 
   if (!fullName) {
     return { error: "Name is required", success: false }
@@ -773,7 +773,7 @@ export async function adminResetUserPassword(userId: string, newPassword: string
       .eq("id", currentUser.user.id)
       .single()
 
-    if (!adminProfile || adminProfile.role !== "Admin") {
+    if (adminProfile?.role !== "Admin") {
       return { error: "Unauthorized - Admin access required" }
     }
 
