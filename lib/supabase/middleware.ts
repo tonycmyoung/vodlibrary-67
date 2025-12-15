@@ -169,7 +169,7 @@ export async function updateSession(request: NextRequest) {
           if ((user?.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
             // Check if we're already coming from admin to prevent loops
             const referer = request.headers.get("referer")
-            if (!referer || !referer.includes("/admin")) {
+            if (!referer?.includes("/admin")) {
               const redirectUrl = new URL("/admin", request.url)
               return NextResponse.redirect(redirectUrl)
             }
