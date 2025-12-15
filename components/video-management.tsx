@@ -71,7 +71,7 @@ export default function VideoManagement() {
   const [selectedCurriculums, setSelectedCurriculums] = useState<string[]>([])
   const [filterMode, setFilterMode] = useState<"AND" | "OR">("OR")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
-  const [itemsPerPage, setItemsPerPage] = useState<number>(() => {
+  const [itemsPerPage] = useState<number>(() => {
     if (typeof window !== "undefined") {
       return Number.parseInt(localStorage.getItem("adminVideoManagement_itemsPerPage") || "10", 10)
     }

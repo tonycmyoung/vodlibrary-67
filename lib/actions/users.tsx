@@ -651,7 +651,7 @@ export async function resendConfirmationEmail(email: string) {
 
     const { data: userProfile } = await supabase.from("users").select("role").eq("id", currentUser.user.id).single()
 
-    if (!userProfile || userProfile.role !== "Admin") {
+    if (!userProfile || userProfile?.role !== "Admin") {
       return { error: "Unauthorized - Admin access required" }
     }
 

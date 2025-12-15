@@ -166,7 +166,7 @@ export async function updateSession(request: NextRequest) {
           }
 
           const isAdminEmail = session.user.email === "acmyma@gmail.com"
-          if ((user.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
+          if ((user?.role === "Admin" || isAdminEmail) && request.nextUrl.pathname === "/") {
             // Check if we're already coming from admin to prevent loops
             const referer = request.headers.get("referer")
             if (!referer || !referer.includes("/admin")) {
@@ -192,7 +192,7 @@ export async function updateSession(request: NextRequest) {
 
       const cachedApproval = getCachedUserApproval(session.user.id)
 
-      if (cachedApproval && cachedApproval.role === "Admin") {
+      if (cachedApproval && cachedApproval?.role === "Admin") {
         return supabaseResponse
       }
 

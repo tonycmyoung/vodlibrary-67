@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Heart, Calendar, User, Maximize, X } from "lucide-react"
-import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { incrementVideoViews } from "@/lib/actions"
 import { formatShortDate } from "@/lib/utils/date"
@@ -47,13 +46,10 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [viewCount, setViewCount] = useState(video.views || 0)
   const [isCustomFullscreen, setIsCustomFullscreen] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
-  const searchParams = useSearchParams()
-  const router = useRouter()
   const [isIOSSafari, setIsIOSSafari] = useState(false)
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent)
     const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent)
     const isIPhone = /iPhone/.test(userAgent)
     setIsIOSSafari(isIPhone && isSafari)
@@ -135,7 +131,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   }
 
   const handleBackClick = () => {
-    router.back()
+    window.history.back()
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
