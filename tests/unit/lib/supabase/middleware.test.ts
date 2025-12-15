@@ -5,10 +5,12 @@ import { createServerClient } from "@supabase/ssr"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { validateReturnTo } from "@/lib/utils/auth"
 
-const { mockNextResponse, mockRedirect } = vi.hoisted(() => {
+vi.mock("next/server", async () => {
+  const actual = await vi.importActual<typeof import("next/server")>("next/server")
   return {
-    mockNextResponse: vi.fn((options) => {
-      const mockResponse = {
+    ...actual,
+    NextResponse: {
+      next: vi.fn((options) => ({
         status: 200,
         headers: new Map(),
         cookies: {
@@ -16,34 +18,25 @@ const { mockNextResponse, mockRedirect } = vi.hoisted(() => {
           delete: vi.fn(),
           getAll: vi.fn(() => []),
         },
-      }
-      return mockResponse
-    }),
-    mockRedirect: vi.fn((url) => {
-      const mockResponse = {
-        status: 307,
-        headers: new Map([["location", url.toString()]]),
-        cookies: {
-          set: vi.fn(),
-          delete: vi.fn(),
-          getAll: vi.fn(() => []),
-        },
-      }
-      mockResponse.headers.get = function (key) {
-        return this.get(key)
-      }
-      return mockResponse
-    }),
+      })),
+      redirect: vi.fn((url) => {
+        const mockResponse = {
+          status: 307,
+          headers: new Map([["location", url.toString()]]),
+          cookies: {
+            set: vi.fn(),
+            delete: vi.fn(),
+            getAll: vi.fn(() => []),
+          },
+        }
+        mockResponse.headers.get = function (key: string) {
+          return this.get(key)
+        }
+        return mockResponse
+      }),
+    },
   }
 })
-
-vi.mock("next/server", () => ({
-  NextResponse: {
-    next: mockNextResponse,
-    redirect: mockRedirect,
-  },
-  NextRequest: NextRequest,
-}))
 
 vi.mock("@supabase/ssr")
 vi.mock("@/lib/auth/cookie-service")
@@ -76,16 +69,18 @@ describe("Middleware: updateSession", () => {
     vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient)
     vi.mocked(validateReturnTo).mockImplementation((path: string) => path)
 
+    const { NextResponse } = require("next/server")
+
     vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
       (request: NextRequest, type: string, message: string) => {
         const url = new URL(`/error?type=${type}&message=${encodeURIComponent(message)}`, request.url)
-        return mockRedirect(url)
+        return NextResponse.redirect(url)
       },
     )
 
     vi.mocked(AuthCookieService.createSignOutResponse).mockImplementation((request: NextRequest, redirectTo = "/") => {
       const url = new URL(redirectTo, request.url)
-      return mockRedirect(url)
+      return NextResponse.redirect(url)
     })
   })
 
