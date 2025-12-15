@@ -1,3 +1,18 @@
+# Corrected package.json for GitHub
+
+Copy this entire content and paste it into your GitHub package.json file to fix the npm install errors.
+
+The problem: GitHub has `@vitest/browser-playwright`, `@vitest/browser-preview`, and `@vitest/browser-webdriverio` in dependencies which require vitest@4.x, but we're using vitest@2.1.8.
+
+## Instructions
+
+1. Go to: https://github.com/tonycmyoung/vodlibrary-67/blob/main/package.json
+2. Click the pencil icon to edit
+3. Select all content and delete it
+4. Copy and paste the JSON below
+5. Commit the changes
+
+\`\`\`json
 {
   "name": "my-v0-project",
   "version": "0.1.0",
@@ -57,9 +72,6 @@
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
     "@vercel/blob": "latest",
-    "@vitest/browser-playwright": "latest",
-    "@vitest/browser-preview": "latest",
-    "@vitest/browser-webdriverio": "latest",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -82,15 +94,13 @@
     "resend": "latest",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "1.0.7",
+    "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "latest",
-    "vaul": "latest",
-    "vite": "latest",
+    "vaul": "^0.9.9",
     "zod": "3.25.67"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
-    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
@@ -105,7 +115,6 @@
     "eslint-config-prettier": "^9.1.0",
     "happy-dom": "^15.11.7",
     "husky": "^9.1.7",
-    "jsdom": "^25.0.1",
     "lint-staged": "^15.3.0",
     "msw": "^2.7.0",
     "postcss": "^8.5",
@@ -117,3 +126,17 @@
     "vitest": "^2.1.8"
   }
 }
+\`\`\`
+
+## What was removed from GitHub's version:
+
+- `"@vitest/browser-playwright": "latest"` (incompatible with vitest@2.1.8)
+- `"@vitest/browser-preview": "latest"` (incompatible with vitest@2.1.8)
+- `"@vitest/browser-webdriverio": "latest"` (incompatible with vitest@2.1.8)
+- `"@testing-library/dom": "latest"` (not needed - included in @testing-library/react)
+- `"jsdom": "latest"` (not needed - using happy-dom)
+- `"vite": "latest"` (not needed - vitest includes vite)
+
+## What this fixes:
+
+The npm install error in GitHub Actions which was failing because `@vitest/browser-playwright@latest` requires `vitest@4.0.15`, but your project uses `vitest@2.1.8`, creating an unresolvable dependency conflict.

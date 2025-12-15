@@ -74,7 +74,9 @@ describe("SortControl", () => {
     const trigger = screen.getByRole("combobox")
     fireEvent.click(trigger)
 
-    expect(screen.getByText("Curriculum")).toBeInTheDocument()
+    const curriculumElements = screen.getAllByText("Curriculum")
+    expect(curriculumElements.length).toBeGreaterThan(0)
+
     expect(screen.getByText("Category")).toBeInTheDocument()
     expect(screen.getByText("Name")).toBeInTheDocument()
     expect(screen.getByText("Added Date")).toBeInTheDocument()

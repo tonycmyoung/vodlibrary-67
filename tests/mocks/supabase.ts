@@ -5,42 +5,50 @@ import { vi } from "vitest"
  * Returns chainable methods that can be configured per test
  */
 export const createMockSupabaseClient = () => {
-  const mockSelect = vi.fn().mockReturnThis()
-  const mockInsert = vi.fn().mockReturnThis()
-  const mockUpdate = vi.fn().mockReturnThis()
-  const mockDelete = vi.fn().mockReturnThis()
-  const mockEq = vi.fn().mockReturnThis()
-  const mockGt = vi.fn().mockReturnThis()
-  const mockLt = vi.fn().mockReturnThis()
-  const mockGte = vi.fn().mockReturnThis()
-  const mockLte = vi.fn().mockReturnThis()
-  const mockIn = vi.fn().mockReturnThis()
-  const mockOrder = vi.fn().mockReturnThis()
-  const mockLimit = vi.fn().mockReturnThis()
-  const mockSingle = vi.fn()
-  const mockMaybeSingle = vi.fn()
-  const mockRange = vi.fn().mockReturnThis()
+  const createChainableMock = (finalResult: any = { data: null, error: null }) => {
+    const chain: any = {
+      select: vi.fn(),
+      insert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      eq: vi.fn(),
+      neq: vi.fn(),
+      gt: vi.fn(),
+      lt: vi.fn(),
+      gte: vi.fn(),
+      lte: vi.fn(),
+      in: vi.fn(),
+      is: vi.fn(),
+      order: vi.fn(),
+      limit: vi.fn(),
+      range: vi.fn(),
+      single: vi.fn().mockResolvedValue(finalResult),
+      maybeSingle: vi.fn().mockResolvedValue(finalResult),
+      // When chain ends without single/maybeSingle, return a promise
+      then: (resolve: any) => Promise.resolve(finalResult).then(resolve),
+    }
+    chain.select.mockReturnValue(chain)
+    chain.insert.mockReturnValue(chain)
+    chain.update.mockReturnValue(chain)
+    chain.delete.mockReturnValue(chain)
+    chain.eq.mockReturnValue(chain)
+    chain.neq.mockReturnValue(chain)
+    chain.gt.mockReturnValue(chain)
+    chain.lt.mockReturnValue(chain)
+    chain.gte.mockReturnValue(chain)
+    chain.lte.mockReturnValue(chain)
+    chain.in.mockReturnValue(chain)
+    chain.is.mockReturnValue(chain)
+    chain.order.mockReturnValue(chain)
+    chain.limit.mockReturnValue(chain)
+    chain.range.mockReturnValue(chain)
+    return chain
+  }
 
-  const mockFrom = vi.fn(() => ({
-    select: mockSelect,
-    insert: mockInsert,
-    update: mockUpdate,
-    delete: mockDelete,
-    eq: mockEq,
-    gt: mockGt,
-    lt: mockLt,
-    gte: mockGte,
-    lte: mockLte,
-    in: mockIn,
-    order: mockOrder,
-    limit: mockLimit,
-    single: mockSingle,
-    maybeSingle: mockMaybeSingle,
-    range: mockRange,
-  }))
+  const mockFrom = vi.fn((table: string) => createChainableMock())
 
   const mockAuth = {
-    getUser: vi.fn(),
+    getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
     signIn: vi.fn(),
     signUp: vi.fn(),
     signOut: vi.fn(),
@@ -50,10 +58,10 @@ export const createMockSupabaseClient = () => {
 
   const mockStorage = {
     from: vi.fn(() => ({
-      upload: vi.fn(),
-      download: vi.fn(),
-      remove: vi.fn(),
-      getPublicUrl: vi.fn(),
+      upload: vi.fn().mockResolvedValue({ data: null, error: null }),
+      download: vi.fn().mockResolvedValue({ data: null, error: null }),
+      remove: vi.fn().mockResolvedValue({ data: null, error: null }),
+      getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: "https://test.com/file.jpg" } }),
     })),
   }
 
@@ -61,25 +69,6 @@ export const createMockSupabaseClient = () => {
     from: mockFrom,
     auth: mockAuth,
     storage: mockStorage,
-    // Expose mocks for assertion/configuration
-    mocks: {
-      select: mockSelect,
-      insert: mockInsert,
-      update: mockUpdate,
-      delete: mockDelete,
-      eq: mockEq,
-      gt: mockGt,
-      lt: mockLt,
-      gte: mockGte,
-      lte: mockLte,
-      in: mockIn,
-      order: mockOrder,
-      limit: mockLimit,
-      single: mockSingle,
-      maybeSingle: mockMaybeSingle,
-      range: mockRange,
-      from: mockFrom,
-    },
   }
 }
 
