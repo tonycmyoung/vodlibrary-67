@@ -87,7 +87,7 @@ export default function AdminStats() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...new Array(3)].map((_, i) => (
-          <Card key={i} className="bg-black/60 border-gray-800">
+          <Card key={`skeleton-card-${i}`} className="bg-black/60 border-gray-800">
             <div className="p-6">
               <div className="animate-pulse">
                 <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
@@ -102,10 +102,13 @@ export default function AdminStats() {
 
   return (
     <div key={refreshKey} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-      {statCards.map((stat, index) => {
+      {statCards.map((stat) => {
         const Icon = stat.icon
         return (
-          <Card key={index} className="bg-black/60 border-gray-800 hover:border-purple-500/50 transition-colors p-0">
+          <Card
+            key={stat.title}
+            className="bg-black/60 border-gray-800 hover:border-purple-500/50 transition-colors p-0"
+          >
             <div className="p-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-300">{stat.title}</h3>

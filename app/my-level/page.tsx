@@ -25,7 +25,7 @@ export default async function MyLevelPage() {
   }
 
   // Check if user is approved and get belt info
-  const { data: userProfile, error } = await supabase
+  const { data: userProfile } = await supabase
     .from("users")
     .select(`
       is_approved, 

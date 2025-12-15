@@ -19,7 +19,7 @@ import {
   Ribbon,
 } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
@@ -46,7 +46,6 @@ interface HeaderProps {
 }
 
 export default function Header({ user }: HeaderProps) {
-  const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const isAdmin = user.email === "acmyma@gmail.com"

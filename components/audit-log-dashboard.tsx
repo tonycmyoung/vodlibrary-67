@@ -168,12 +168,12 @@ export default function AuditLogDashboard() {
                   </td>
                   <td className="p-3">
                     {log.target_email ? (
-                      <>
+                      <div>
                         <div className="text-sm text-gray-300">
                           {log.additional_data?.target_name || log.target_email.split("@")[0]}
                         </div>
                         <div className="text-xs text-gray-500 font-mono">{log.target_email}</div>
-                      </>
+                      </div>
                     ) : (
                       <div className="text-sm text-gray-500">-</div>
                     )}

@@ -54,7 +54,6 @@ interface Video {
 export default function VideoPage({ params }: VideoPageProps) {
   const [user, setUser] = useState<User | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
-  const [loading, setLoading] = useState(true)
   const [userLoading, setUserLoading] = useState(true)
   const [videoLoading, setVideoLoading] = useState(true)
   const router = useRouter()
@@ -145,9 +144,7 @@ export default function VideoPage({ params }: VideoPageProps) {
     loadVideo()
   }, [user, params.id, router, supabase])
 
-  useEffect(() => {
-    setLoading(userLoading || videoLoading)
-  }, [userLoading, videoLoading])
+  const loading = userLoading || videoLoading
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">

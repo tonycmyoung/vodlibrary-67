@@ -239,15 +239,15 @@ export default function AdminNotificationManagement() {
     }
   }
 
-  const getInitials = (name: string | null, email: string | undefined) => {
-    if (name && name.trim()) {
+  const getUserInitials = (email: string, name?: string) => {
+    if (name?.trim()) {
       return name
         .split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
     }
-    if (email && email.trim()) {
+    if (email?.trim()) {
       return email[0].toUpperCase()
     }
     return "?" // Added fallback for when both name and email are unavailable
@@ -322,7 +322,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={user.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-purple-600 text-white text-xs">
-                              {getInitials(user.full_name, user.email)}
+                              {getUserInitials(user.email, user.full_name)}
                             </AvatarFallback>
                           </Avatar>
                           <span>{user.full_name || user.email}</span>
@@ -405,9 +405,12 @@ export default function AdminNotificationManagement() {
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
-                {messageType === "broadcast"
-                  ? `Send to ${broadcastRole === "all" ? "All Users" : `${broadcastRole}s`} (${roleCounts[broadcastRole]})`
-                  : "Send Message"}
+                {messageType === "broadcast" && (
+                  <>
+                    Send to {broadcastRole === "all" ? "All Users" : `${broadcastRole}s`} ({roleCounts[broadcastRole]})
+                  </>
+                )}
+                {messageType === "individual" && "Send Message"}
               </>
             )}
           </Button>
@@ -458,7 +461,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={notification.sender?.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getInitials(notification.sender?.full_name, notification.sender?.email)}
+                              {getUserInitials(notification.sender?.email || "", notification.sender?.full_name)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium text-gray-300">
@@ -470,7 +473,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={notification.recipient?.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-gray-600 text-white text-xs">
-                              {getInitials(notification.recipient?.full_name, notification.recipient?.email)}
+                              {getUserInitials(notification.recipient?.email || "", notification.recipient?.full_name)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium text-gray-300">

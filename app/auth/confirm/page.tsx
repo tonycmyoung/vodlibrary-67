@@ -17,7 +17,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
   const { error, error_code, error_description, success } = searchParams
 
   const isSuccess = success === "true" && !error && !error_code
-  const isExpired = error_code === "otp_expired" || error_description?.includes("expired")
+  const hasExpiredError = error_code === "otp_expired" || error_description?.includes("expired")
 
   let statusMessage = ""
   if (error_description) {

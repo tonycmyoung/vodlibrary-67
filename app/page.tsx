@@ -25,7 +25,7 @@ export default async function Home() {
   }
 
   // Check if user is approved
-  const { data: userProfile, error } = await supabase
+  const { data: userProfile } = await supabase
     .from("users")
     .select(`
       is_approved, 
