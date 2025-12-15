@@ -77,6 +77,7 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tw-animate-css": "latest",
+    "vaul": "latest",
     "zod": "3.25.67",
     "react-toastify": "11.0.5",
     "tailwindcss-animate": "1.0.7"
