@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { updateSession } from "@/lib/supabase/middleware"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { validateReturnTo } from "@/lib/utils/auth"
 
-vi.mock("next/server", () => ({
-  NextResponse: {
-    next: vi.fn((options) => {
+const { mockNextResponse, mockRedirect } = vi.hoisted(() => {
+  return {
+    mockNextResponse: vi.fn((options) => {
       const mockResponse = {
         status: 200,
         headers: new Map(),
@@ -19,9 +19,9 @@ vi.mock("next/server", () => ({
       }
       return mockResponse
     }),
-    redirect: vi.fn((url) => {
+    mockRedirect: vi.fn((url) => {
       const mockResponse = {
-        status: 307, // Changed from 200 to 307 for proper redirect status
+        status: 307,
         headers: new Map([["location", url.toString()]]),
         cookies: {
           set: vi.fn(),
@@ -29,12 +29,18 @@ vi.mock("next/server", () => ({
           getAll: vi.fn(() => []),
         },
       }
-      // Add proper headers.get method
       mockResponse.headers.get = function (key) {
         return this.get(key)
       }
       return mockResponse
     }),
+  }
+})
+
+vi.mock("next/server", () => ({
+  NextResponse: {
+    next: mockNextResponse,
+    redirect: mockRedirect,
   },
   NextRequest: NextRequest,
 }))
@@ -73,13 +79,13 @@ describe("Middleware: updateSession", () => {
     vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
       (request: NextRequest, type: string, message: string) => {
         const url = new URL(`/error?type=${type}&message=${encodeURIComponent(message)}`, request.url)
-        return NextResponse.redirect(url)
+        return mockRedirect(url)
       },
     )
 
     vi.mocked(AuthCookieService.createSignOutResponse).mockImplementation((request: NextRequest, redirectTo = "/") => {
       const url = new URL(redirectTo, request.url)
-      return NextResponse.redirect(url)
+      return mockRedirect(url)
     })
   })
 
