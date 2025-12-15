@@ -28,6 +28,7 @@ import {
   User,
   Key,
   Award,
+  EyeOff,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -197,7 +198,7 @@ export default function UserManagement() {
         case "full_name":
           const aName = a.full_name || a.email
           const bName = b.full_name || b.email
-          comparison = aName.localeCompare(bName)
+          comparison = aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
           break
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -224,7 +225,7 @@ export default function UserManagement() {
       if (comparison === 0 && sortBy !== "full_name") {
         const aName = a.full_name || a.email
         const bName = b.full_name || b.email
-        comparison = aName.localeCompare(bName)
+        comparison = aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
       }
 
       return sortOrder === "asc" ? comparison : -comparison
@@ -1035,7 +1036,7 @@ export default function UserManagement() {
                                           onClick={() => setShowPassword(!showPassword)}
                                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                                         >
-                                          {showPassword ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                       </div>
                                       <p className="text-xs text-gray-400">Minimum 8 characters</p>

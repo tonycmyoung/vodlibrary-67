@@ -138,7 +138,9 @@ export default function VideoManagement() {
 
         const uniqueRecorded = Array.from(
           new Set(videosWithViewData.map((v: any) => v.recorded).filter((r: any) => r)),
-        ).sort() as string[]
+        ).sort((a, b) =>
+          String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" }),
+        ) as string[]
         setRecordedValues(uniqueRecorded)
       }
     } catch (error) {

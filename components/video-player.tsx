@@ -191,7 +191,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
         className="fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-300"
         style={{
           width: "100vw",
-          height: "100vh", // fallback for older browsers
+          minHeight: "100vh", // fallback for older browsers
           // @ts-ignore - dvh is a valid CSS unit but TypeScript doesn't recognize it yet
           height: "100dvh", // dynamic viewport height for modern mobile browsers
         }}
@@ -216,7 +216,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               className="w-full h-full"
               style={{
                 maxWidth: "100vw",
-                maxHeight: "100vh",
                 // @ts-ignore
                 maxHeight: "100dvh",
               }}

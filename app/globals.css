@@ -1,13 +1,11 @@
 @import "tailwindcss";
-/* 
+/*
  * DO NOT ADD EXTERNAL IMPORTS LIKE tw-animate-css OR OTHER THIRD-PARTY CSS LIBRARIES
  * These imports may not resolve correctly in production and will break all styling
  * Removed problematic tw-animate-css import that caused production styling failures
  */
 
 /* Force recompilation to clear CSS parsing errors */
-
-@custom-variant dark (&:is(.dark *));
 
 :root {
   --background: oklch(1 0 0);

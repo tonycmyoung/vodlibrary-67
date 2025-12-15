@@ -179,7 +179,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         case "full_name":
           const aName = a.full_name || a.email
           const bName = b.full_name || b.email
-          comparison = aName.localeCompare(bName)
+          comparison = aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
           break
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -205,7 +205,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       if (comparison === 0 && sortBy !== "full_name") {
         const aName = a.full_name || a.email
         const bName = b.full_name || b.email
-        comparison = aName.localeCompare(bName)
+        comparison = aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
       }
 
       return sortOrder === "asc" ? comparison : -comparison
