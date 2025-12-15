@@ -334,8 +334,44 @@ describe("Middleware: updateSession", () => {
   })
 
   describe("Admin Route Protection", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       vi.resetModules()
+      vi.clearAllMocks()
+
+      // Re-setup mocks after reset
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co"
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key"
+
+      mockSupabaseClient = {
+        auth: {
+          getSession: vi.fn(),
+          getUser: vi.fn(),
+        },
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn(),
+        })),
+      }
+
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient)
+      vi.mocked(validateReturnTo).mockImplementation((path: string) => path)
+
+      const { NextResponse } = require("next/server")
+
+      vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
+        (request: NextRequest, type: string, message: string) => {
+          const url = new URL(`/error?type=${type}&message=${encodeURIComponent(message)}`, request.url)
+          return NextResponse.redirect(url)
+        },
+      )
+
+      vi.mocked(AuthCookieService.createSignOutResponse).mockImplementation(
+        (request: NextRequest, redirectTo = "/") => {
+          const url = new URL(redirectTo, request.url)
+          return NextResponse.redirect(url)
+        },
+      )
     })
 
     it("should allow admin email through to admin routes", async () => {
