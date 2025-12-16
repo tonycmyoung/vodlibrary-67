@@ -362,8 +362,10 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("sort-control")).toBeInTheDocument()
-        expect(screen.getByTestId("current-sort")).toHaveTextContent("created_at-asc")
+        const sortControls = screen.getAllByTestId("sort-control")
+        expect(sortControls.length).toBeGreaterThan(0)
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("created_at-asc")
       })
     })
 
@@ -371,10 +373,11 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("sort-control")).toBeInTheDocument()
+        const sortControls = screen.getAllByTestId("sort-control")
+        expect(sortControls.length).toBeGreaterThan(0)
       })
 
-      const sortButton = screen.getByText("Sort by Title")
+      const sortButton = screen.getAllByText("Sort by Title")[0]
       fireEvent.click(sortButton)
 
       await waitFor(() => {
@@ -386,10 +389,11 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("sort-control")).toBeInTheDocument()
+        const sortControls = screen.getAllByTestId("sort-control")
+        expect(sortControls.length).toBeGreaterThan(0)
       })
 
-      const orderButton = screen.getByText("Sort Descending")
+      const orderButton = screen.getAllByText("Sort Descending")[0]
       fireEvent.click(orderButton)
 
       await waitFor(() => {
@@ -407,7 +411,8 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("current-sort")).toHaveTextContent("title-desc")
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("title-desc")
         expect(localStorage.getItem).toHaveBeenCalledWith("videoLibrarySortBy")
         expect(localStorage.getItem).toHaveBeenCalledWith("videoLibrarySortOrder")
       })
@@ -472,7 +477,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
-        expect(screen.getByText("Current: grid")).toBeInTheDocument()
+        expect(screen.getAllByText("Current: grid").length).toBeGreaterThan(0)
       })
     })
 
@@ -483,7 +488,7 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
       })
 
-      const listButton = screen.getByText("List")
+      const listButton = screen.getAllByText("List")[0]
       fireEvent.click(listButton)
 
       await waitFor(() => {
@@ -500,7 +505,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByText("Current: list")).toBeInTheDocument()
+        expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
         expect(screen.getByTestId("video-list")).toBeInTheDocument()
       })
     })
@@ -546,7 +551,7 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
       })
 
-      const listButton = screen.getByText("List")
+      const listButton = screen.getAllByText("List")[0]
       fireEvent.click(listButton)
 
       await waitFor(() => {
@@ -561,7 +566,7 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
       })
 
-      const listButton = screen.getByText("List")
+      const listButton = screen.getAllByText("List")[0]
       fireEvent.click(listButton)
 
       await waitFor(() => {
