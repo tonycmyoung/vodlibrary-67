@@ -634,7 +634,7 @@ describe("videos actions", () => {
 
       const result = await getBatchVideoViewCounts(["video-1"])
 
-      expect(result).toEqual({})
+      expect(result).toEqual({ "video-1": 0 })
     })
   })
 
@@ -705,7 +705,7 @@ describe("videos actions", () => {
 
       const result = await getBatchVideoLastViewed(["video-1"])
 
-      expect(result).toEqual({})
+      expect(result).toEqual({ "video-1": null })
     })
 
     it("should only return most recent timestamp per video", async () => {
