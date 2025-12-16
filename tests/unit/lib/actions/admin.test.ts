@@ -116,15 +116,18 @@ describe("Admin Actions", () => {
       }
 
       mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+            eq: vi.fn(() => ({
+              select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+            })),
+          }
+        }
         if (table === "user_logins") {
           return mockFromChain
         }
-        return {
-          select: vi.fn().mockResolvedValue({ count: 0, error: null }),
-          eq: vi.fn(() => ({
-            select: vi.fn().mockResolvedValue({ count: 0, error: null }),
-          })),
-        }
+        return {}
       })
 
       vi.mocked(getTotalVideoViews).mockResolvedValue(0)
