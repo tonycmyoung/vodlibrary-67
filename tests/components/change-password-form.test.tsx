@@ -54,8 +54,8 @@ describe("ChangePasswordForm", () => {
   it("should show error when fields are empty", async () => {
     render(<ChangePasswordForm />)
 
-    const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    const form = screen.getByRole("button", { name: /Update Password/i }).closest("form")!
+    fireEvent.submit(form)
 
     await waitFor(() => {
       expect(screen.getByText("All fields are required")).toBeInTheDocument()
