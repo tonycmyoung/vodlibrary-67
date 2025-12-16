@@ -14,10 +14,12 @@ describe("SortControl", () => {
   })
 
   it("should render sort control with current selection", () => {
-    render(<SortControl {...defaultProps} />)
+    render(<SortControl {...defaultProps} sortBy="curriculum" />)
 
     expect(screen.getByText("Sort by:")).toBeInTheDocument()
-    expect(screen.getByRole("combobox")).toBeInTheDocument()
+    const combobox = screen.getByRole("combobox")
+    expect(combobox).toBeInTheDocument()
+    expect(combobox).toHaveTextContent("Curriculum")
   })
 
   it("should show correct sort option label", () => {
@@ -28,10 +30,14 @@ describe("SortControl", () => {
   })
 
   it("should render sort order button", () => {
-    render(<SortControl {...defaultProps} />)
+    render(<SortControl {...defaultProps} sortOrder="asc" />)
 
     const sortOrderButton = screen.getByTitle("Sort descending")
     expect(sortOrderButton).toBeInTheDocument()
+
+    // Verify icon doesn't have rotate class when asc
+    const icon = sortOrderButton.querySelector("svg")
+    expect(icon).not.toHaveClass("rotate-180")
   })
 
   it("should call onSortChange when sort order button is clicked", () => {
