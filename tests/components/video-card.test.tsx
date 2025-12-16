@@ -52,7 +52,7 @@ describe("VideoCard", () => {
     vi.clearAllMocks()
     vi.mocked(useIsMobile).mockReturnValue(false)
 
-    mockEq.mockReturnThis()
+    mockEq.mockResolvedValue({ data: null, error: null })
     mockDelete.mockReturnValue({ eq: mockEq })
     mockInsert.mockResolvedValue({ data: null, error: null })
 
