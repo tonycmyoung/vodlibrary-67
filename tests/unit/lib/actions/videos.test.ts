@@ -698,7 +698,7 @@ describe("videos actions", () => {
     })
 
     it("should handle null data gracefully", async () => {
-      const mockOrder = vi.fn().mockResolvedValue({ data: null, error: null })
+      const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null })
       const mockIn = vi.fn().mockReturnValue({ order: mockOrder })
       const mockSelect = vi.fn().mockReturnValue({ in: mockIn })
       mockFrom.mockReturnValue({ select: mockSelect })
