@@ -186,16 +186,20 @@ describe("Auth Actions", () => {
         error: null,
       })
 
-      let callCount = 0
+      const tableCounts = { invitations: 0, users: 0, user_consents: 0 }
       mockServiceClient.from.mockImplementation((table: string) => {
-        callCount++
-        if (table === "users" && callCount === 2) {
+        tableCounts[table as keyof typeof tableCounts]++
+
+        // Fail on the first users table call (profile creation)
+        if (table === "users" && tableCounts.users === 1) {
           return {
             insert: vi.fn().mockResolvedValue({
               error: { message: "Profile creation failed" },
             }),
           }
         }
+
+        // Success for all other calls
         return {
           insert: vi.fn().mockResolvedValue({ error: null }),
           select: vi.fn().mockReturnThis(),
