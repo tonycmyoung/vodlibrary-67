@@ -52,7 +52,8 @@ describe("VideoCard", () => {
     vi.clearAllMocks()
     vi.mocked(useIsMobile).mockReturnValue(false)
 
-    mockEq.mockResolvedValue({ data: null, error: null })
+    const mockEq2 = vi.fn().mockResolvedValue({ data: null, error: null })
+    mockEq.mockReturnValue({ eq: mockEq2 }) // First .eq() returns object with second .eq()
     mockDelete.mockReturnValue({ eq: mockEq })
     mockInsert.mockResolvedValue({ data: null, error: null })
 
