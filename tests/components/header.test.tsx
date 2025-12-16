@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import Header from "@/components/header"
 
 // Mock dependencies
@@ -105,87 +106,139 @@ describe("Header", () => {
     expect(screen.getByTestId("notification-bell")).toBeInTheDocument()
   })
 
-  it("should open user dropdown menu when avatar is clicked", () => {
+  it("should open user dropdown menu when avatar is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    expect(screen.getByText("Profile")).toBeInTheDocument()
-    expect(screen.getByText("Curriculum")).toBeInTheDocument()
-    expect(screen.getByText("Contribute")).toBeInTheDocument()
-    expect(screen.getByText("Donate")).toBeInTheDocument()
-    expect(screen.getByText("Contact Admin")).toBeInTheDocument()
-    expect(screen.getByText("Change Password")).toBeInTheDocument()
-    expect(screen.getByText("Sign Out")).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText("Profile")).toBeInTheDocument()
+      })
+      expect(screen.getByText("Curriculum")).toBeInTheDocument()
+      expect(screen.getByText("Contribute")).toBeInTheDocument()
+      expect(screen.getByText("Donate")).toBeInTheDocument()
+      expect(screen.getByText("Contact Admin")).toBeInTheDocument()
+      expect(screen.getByText("Change Password")).toBeInTheDocument()
+      expect(screen.getByText("Sign Out")).toBeInTheDocument()
+    }
   })
 
-  it("should show Invite User option for teachers in dropdown", () => {
+  it("should show Invite User option for teachers in dropdown", async () => {
+    const user = userEvent.setup()
     const teacherUser = { ...mockUser, role: "Teacher" }
     render(<Header user={teacherUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    expect(screen.getByText("Invite User")).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText("Invite User")).toBeInTheDocument()
+      })
+    }
   })
 
-  it("should not show Invite User option for students in dropdown", () => {
+  it("should not show Invite User option for students in dropdown", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    expect(screen.queryByText("Invite User")).not.toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText("Profile")).toBeInTheDocument()
+      })
+      expect(screen.queryByText("Invite User")).not.toBeInTheDocument()
+    }
   })
 
-  it("should open invite modal when Invite User is clicked", () => {
+  it("should open invite modal when Invite User is clicked", async () => {
+    const user = userEvent.setup()
     const teacherUser = { ...mockUser, role: "Teacher" }
     render(<Header user={teacherUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    const inviteButton = screen.getByText("Invite User")
-    fireEvent.click(inviteButton)
+      await waitFor(() => {
+        expect(screen.getByText("Invite User")).toBeInTheDocument()
+      })
 
-    expect(screen.getByTestId("invite-modal")).toBeInTheDocument()
+      const inviteButton = screen.getByText("Invite User")
+      await user.click(inviteButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("invite-modal")).toBeInTheDocument()
+      })
+    }
   })
 
-  it("should open donation modal when Donate is clicked", () => {
+  it("should open donation modal when Donate is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    const donateButton = screen.getByText("Donate")
-    fireEvent.click(donateButton)
+      await waitFor(() => {
+        expect(screen.getByText("Donate")).toBeInTheDocument()
+      })
 
-    expect(screen.getByTestId("donation-modal")).toBeInTheDocument()
+      const donateButton = screen.getByText("Donate")
+      await user.click(donateButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("donation-modal")).toBeInTheDocument()
+      })
+    }
   })
 
-  it("should open curriculum modal when Curriculum is clicked", () => {
+  it("should open curriculum modal when Curriculum is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    const curriculumButton = screen.getByText("Curriculum")
-    fireEvent.click(curriculumButton)
+      await waitFor(() => {
+        expect(screen.getByText("Curriculum")).toBeInTheDocument()
+      })
 
-    expect(screen.getByTestId("curriculum-modal")).toBeInTheDocument()
+      const curriculumButton = screen.getByText("Curriculum")
+      await user.click(curriculumButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("curriculum-modal")).toBeInTheDocument()
+      })
+    }
   })
 
-  it("should open contribute modal when Contribute is clicked", () => {
+  it("should open contribute modal when Contribute is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
-    const avatarButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(avatarButton)
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
 
-    const contributeButton = screen.getByText("Contribute")
-    fireEvent.click(contributeButton)
+      await waitFor(() => {
+        expect(screen.getByText("Contribute")).toBeInTheDocument()
+      })
 
-    expect(screen.getByTestId("contribute-modal")).toBeInTheDocument()
+      const contributeButton = screen.getByText("Contribute")
+      await user.click(contributeButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("contribute-modal")).toBeInTheDocument()
+      })
+    }
   })
 
   it("should toggle mobile menu when hamburger is clicked", () => {

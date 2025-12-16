@@ -149,7 +149,7 @@ describe("SignUpForm", () => {
   it("should render EULA and Privacy Policy links", () => {
     render(<SignUpForm />)
 
-    const eulaLink = screen.getByRole("link", { name: /End User License Agreement $$EULA$$/i })
+    const eulaLink = screen.getByRole("link", { name: /End User License Agreement.*EULA/i })
     const privacyLink = screen.getByRole("link", { name: /Privacy Policy/i })
 
     expect(eulaLink).toBeInTheDocument()
