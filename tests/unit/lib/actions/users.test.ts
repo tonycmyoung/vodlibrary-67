@@ -16,60 +16,16 @@ import {
 } from "@/lib/actions/users"
 import { createServerClient } from "@supabase/ssr"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-
-// Mock Next.js modules
-vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => []),
-    set: vi.fn(),
-  })),
-}))
-
-vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
-}))
-
-// Mock Supabase
-vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn(),
-}))
-
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: vi.fn(),
-}))
-
-vi.mock("@/lib/actions/email", () => ({
-  sendEmail: vi.fn(),
-}))
-
-vi.mock("@/lib/actions/audit", () => ({
-  logAuditEvent: vi.fn(),
-}))
+import { createMockSupabaseClient } from "@/tests/mocks/supabase"
 
 describe("User Actions", () => {
-  const mockSupabaseClient = {
-    auth: {
-      getUser: vi.fn(),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
-      maybeSingle: vi.fn(),
-    })),
-  }
-
-  const mockServiceClient = {
-    from: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockResolvedValue({ error: null }),
-      single: vi.fn(),
-    })),
-  }
+  let mockSupabaseClient: ReturnType<typeof createMockSupabaseClient>
+  let mockServiceClient: ReturnType<typeof createMockSupabaseClient>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSupabaseClient = createMockSupabaseClient()
+    mockServiceClient = createMockSupabaseClient()
     vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
     vi.mocked(createSupabaseClient).mockReturnValue(mockServiceClient as any)
   })

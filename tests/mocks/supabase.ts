@@ -54,6 +54,12 @@ export const createMockSupabaseClient = () => {
     signOut: vi.fn(),
     signInWithPassword: vi.fn(),
     updateUser: vi.fn(),
+    resend: vi.fn().mockResolvedValue({ data: null, error: null }),
+    admin: {
+      deleteUser: vi.fn().mockResolvedValue({ error: null }),
+      updateUserById: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      listUsers: vi.fn().mockResolvedValue({ data: { users: [] }, error: null }),
+    },
   }
 
   const mockStorage = {
