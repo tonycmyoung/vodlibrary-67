@@ -14,7 +14,6 @@ describe("ChangePasswordForm", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
 
     const mockSupabaseClient = {
       auth: {
@@ -25,10 +24,6 @@ describe("ChangePasswordForm", () => {
     }
 
     vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it("should render the form with all fields", () => {

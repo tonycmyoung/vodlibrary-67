@@ -108,11 +108,16 @@ describe("VideoCard", () => {
     expect(screen.getByText("61:05")).toBeInTheDocument()
   })
 
-  it("should show Unknown when duration is null", () => {
+  it("should not show duration badge when duration is null", () => {
     const videoWithoutDuration = { ...mockVideo, duration_seconds: null }
     render(<VideoCard video={videoWithoutDuration} />)
 
-    expect(screen.getByText("Unknown")).toBeInTheDocument()
+    // Badge should not be present when duration is null
+    expect(screen.queryByText("Unknown")).not.toBeInTheDocument()
+    // The Clock icon should also not be present
+    const card = screen.getByText("Test Video").closest(".group")
+    const clockIcon = card?.querySelector('[class*="lucide-clock"]')
+    expect(clockIcon).not.toBeInTheDocument()
   })
 
   it("should render placeholder when no thumbnail", () => {
