@@ -18,6 +18,22 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { createMockSupabaseClient } from "@/tests/mocks/supabase"
 
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: vi.fn(),
+}))
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(),
+}))
+
+vi.mock("@/lib/actions/email", () => ({
+  sendEmail: vi.fn(),
+}))
+
+vi.mock("@/lib/actions/audit", () => ({
+  logAuditEvent: vi.fn(),
+}))
+
 describe("User Actions", () => {
   let mockSupabaseClient: ReturnType<typeof createMockSupabaseClient>
   let mockServiceClient: ReturnType<typeof createMockSupabaseClient>
