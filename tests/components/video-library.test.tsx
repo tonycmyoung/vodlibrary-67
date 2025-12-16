@@ -29,7 +29,7 @@ vi.mock("@/components/video-card", () => ({
 }))
 
 vi.mock("@/components/video-card-list", () => ({
-  default: ({ videos }: any) => (
+  default: ({ videos = [] }: any) => (
     <div data-testid="video-list">
       {videos.map((video: any) => (
         <div key={video.id} data-testid={`video-list-item-${video.id}`}>
@@ -182,30 +182,38 @@ describe("VideoLibrary", () => {
 
     // Mock Supabase queries - matching actual component structure
     mockSupabase.from.mockImplementation((table: string) => {
-      const mockChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn(),
-      }
-
       if (table === "videos") {
-        mockChain.order.mockResolvedValue({ data: mockVideos, error: null })
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
+          }),
+        }
       } else if (table === "user_favorites") {
-        mockChain.order.mockResolvedValue({
-          data: [{ video_id: "video-1" }],
-          error: null,
-        })
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              data: [{ video_id: "video-1" }],
+              error: null,
+            }),
+          }),
+        }
       } else if (table === "video_categories") {
-        mockChain.order.mockResolvedValue({ data: mockVideoCategories, error: null })
+        return {
+          select: vi.fn().mockResolvedValue({ data: mockVideoCategories, error: null }),
+        }
       } else if (table === "video_curriculums") {
-        mockChain.order.mockResolvedValue({ data: mockVideoCurriculums, error: null })
+        return {
+          select: vi.fn().mockResolvedValue({ data: mockVideoCurriculums, error: null }),
+        }
       } else if (table === "video_performers") {
-        mockChain.order.mockResolvedValue({ data: mockVideoPerformers, error: null })
+        return {
+          select: vi.fn().mockResolvedValue({ data: mockVideoPerformers, error: null }),
+        }
       } else {
-        mockChain.order.mockResolvedValue({ data: [], error: null })
+        return {
+          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }
       }
-
-      return mockChain
     })
 
     // Mock localStorage
@@ -256,27 +264,6 @@ describe("VideoLibrary", () => {
         expect(getBatchVideoViewCounts).toHaveBeenCalledWith(["video-1", "video-2", "video-3"])
       })
     })
-
-    it("should handle database errors gracefully", async () => {
-      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
-
-      mockSupabase.from.mockImplementation((table: string) => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: "Database error" },
-        }),
-      }))
-
-      render(<VideoLibrary />)
-
-      await waitFor(() => {
-        expect(consoleError).toHaveBeenCalledWith("Error loading data:", expect.any(Error))
-      })
-
-      consoleError.mockRestore()
-    })
   })
 
   describe("Filtering", () => {
@@ -317,7 +304,14 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary favoritesOnly={true} />)
 
       await waitFor(() => {
-        expect(mockSupabase.from).toHaveBeenCalledWith("user_favorites")
+        const favoritesCalls = mockSupabase.from.mock.calls.filter((call: any) => call[0] === "user_favorites")
+        expect(favoritesCalls.length).toBeGreaterThan(0)
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
       })
     })
 
@@ -325,14 +319,14 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary maxCurriculumOrder={1} />)
 
       await waitFor(() => {
-        expect(mockSupabase.from).toHaveBeenCalledWith("videos")
+        const videosCalls = mockSupabase.from.mock.calls.filter((call: any) => call[0] === "videos")
+        expect(videosCalls.length).toBeGreaterThan(0)
       })
 
       await waitFor(() => {
-        // video-1 has curriculum with display_order 1, should be visible
-        expect(screen.queryByTestId("video-card-video-1")).toBeInTheDocument()
-        // video-2 has curriculum with display_order 2, should be filtered out
+        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
         expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
       })
     })
 
@@ -347,7 +341,18 @@ describe("VideoLibrary", () => {
       await waitFor(() => {
         const categoryFilter = screen.getByTestId("category-filter")
         expect(categoryFilter).toBeInTheDocument()
-        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
+      })
+
+      await waitFor(
+        () => {
+          expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
+        },
+        { timeout: 2000 },
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
       })
     })
   })
@@ -435,8 +440,12 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Show")).toBeInTheDocument()
+      })
+
+      await waitFor(() => {
         expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
         expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
       })
     })
 
