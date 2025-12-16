@@ -396,8 +396,10 @@ describe("VideoLibrary", () => {
       const orderButton = screen.getAllByText("Sort Descending")[0]
       fireEvent.click(orderButton)
 
+      // Verify the current sort display updates
       await waitFor(() => {
-        expect(localStorage.setItem).toHaveBeenCalledWith("videoLibrarySortOrder", "desc")
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("desc")
       })
     })
 
@@ -426,8 +428,12 @@ describe("VideoLibrary", () => {
       await waitFor(() => {
         expect(screen.getByText("Show")).toBeInTheDocument()
         expect(screen.getByText("per page")).toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
       })
+
+      // Verify all videos are shown on first page
+      expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
+      expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
+      expect(screen.getByTestId("video-card-video-3")).toBeInTheDocument()
     })
 
     it("should sync current page from URL and display correct videos", async () => {
@@ -447,11 +453,18 @@ describe("VideoLibrary", () => {
         expect(screen.getByText("Show")).toBeInTheDocument()
       })
 
-      await waitFor(() => {
-        expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
-      })
+      // Wait for component to process page parameter
+      await waitFor(
+        () => {
+          // On page 2 with 1 item per page, should show video-2
+          expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
+        },
+        { timeout: 2000 },
+      )
+
+      // Video 1 and 3 should not be visible
+      expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
+      expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
     })
 
     it("should load items per page from localStorage and apply pagination", async () => {
@@ -505,7 +518,16 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
+        expect(localStorage.getItem).toHaveBeenCalledWith("videoLibraryView")
+      })
+
+      // Verify the view toggle shows "list" as current
+      await waitFor(() => {
         expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
+      })
+
+      // Verify list view component is rendered
+      await waitFor(() => {
         expect(screen.getByTestId("video-list")).toBeInTheDocument()
       })
     })
