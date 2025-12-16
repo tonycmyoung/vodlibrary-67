@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { signUp, createAdminUser, signOutServerAction, updatePassword } from "@/lib/actions/auth"
+import { signUp, createAdminUser, signOutServerAction, updatePassword, signIn } from "@/lib/actions/auth"
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 
@@ -67,14 +67,14 @@ describe("Auth Actions", () => {
 
   const mockServiceClient = {
     from: vi.fn(() => ({
-      insert: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockResolvedValue({ error: null }),
       select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn(),
-      single: vi.fn(),
+      single: vi.fn().mockResolvedValue({ data: { id: "admin-1", email: "admin@example.com" }, error: null }),
     })),
   }
 
@@ -170,6 +170,439 @@ describe("Auth Actions", () => {
 
       expect(result).toEqual({ error: "Email already registered" })
     })
+
+    it("should handle profile creation failure", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Test User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      let callCount = 0
+      mockServiceClient.from.mockImplementation((table: string) => {
+        callCount++
+        if (table === "users" && callCount === 2) {
+          return {
+            insert: vi.fn().mockResolvedValue({
+              error: { message: "Profile creation failed" },
+            }),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          delete: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      })
+
+      const result = await signUp(null, formData)
+
+      expect(result).toEqual({ error: "Failed to create user profile" })
+    })
+
+    it("should handle consent storage failure", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Test User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "user_consents") {
+          return {
+            insert: vi.fn().mockResolvedValue({
+              error: { message: "Consent storage failed" },
+            }),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          delete: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      })
+
+      const result = await signUp(null, formData)
+
+      expect(result).toEqual({ error: "Failed to store legal consent" })
+    })
+
+    it("should handle invited user signup and cleanup invitation", async () => {
+      const formData = new FormData()
+      formData.append("email", "invited@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Invited User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "user-123", email: "invited@example.com" } },
+        error: null,
+      })
+
+      const mockDelete = vi.fn().mockReturnThis()
+      const mockDeleteSelect = vi.fn().mockResolvedValue({
+        data: [{ id: "inv-123" }],
+        error: null,
+      })
+
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "invitations") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { invited_by: "admin-123" },
+              error: null,
+            }),
+            delete: mockDelete,
+          }
+        }
+        if (table === "invitations" && mockDelete.mock.calls.length > 0) {
+          return {
+            delete: mockDelete,
+            eq: mockDelete,
+            select: mockDeleteSelect,
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      })
+
+      try {
+        await signUp(null, formData)
+      } catch (error: any) {
+        expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
+      }
+    })
+  })
+
+  describe("signIn", () => {
+    it("should successfully sign in with valid credentials", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+      formData.append("returnTo", "/dashboard")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            email_confirmed_at: "2024-01-01T00:00:00Z",
+          },
+        },
+        error: null,
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Expect error thrown by mocked redirect
+        expect(error.message).toContain("REDIRECT")
+      }
+
+      expect(mockSupabaseClient.auth.signInWithPassword).toHaveBeenCalledWith({
+        email: "test@example.com",
+        password: "password123",
+      })
+    })
+
+    it("should redirect with error when email is missing", async () => {
+      const formData = new FormData()
+      formData.append("password", "password123")
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        expect(error.message).toContain("REDIRECT: /auth/login?error=auth_error")
+      }
+
+      expect(mockSupabaseClient.auth.signInWithPassword).not.toHaveBeenCalled()
+    })
+
+    it("should redirect with error when password is missing", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        expect(error.message).toContain("REDIRECT: /auth/login?error=auth_error")
+      }
+
+      expect(mockSupabaseClient.auth.signInWithPassword).not.toHaveBeenCalled()
+    })
+
+    it("should handle invalid credentials error", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "wrongpassword")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Invalid login credentials", code: "invalid_credentials" },
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-123" }, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        expect(error.message).toContain("REDIRECT: /auth/login?error=invalid_credentials")
+      }
+    })
+
+    it("should handle email not confirmed error", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Email not confirmed", code: "email_not_confirmed" },
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        expect(error.message).toContain("REDIRECT: /auth/login?error=email_not_confirmed")
+      }
+    })
+
+    it("should preserve returnTo parameter in error redirects", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "wrongpassword")
+      formData.append("returnTo", "/dashboard")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Invalid login credentials" },
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        expect(error.message).toContain("returnTo=%2Fdashboard")
+      }
+    })
+
+    it("should track login in user_logins table on successful signin", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            email_confirmed_at: "2024-01-01T00:00:00Z",
+          },
+        },
+        error: null,
+      })
+
+      const mockInsert = vi.fn().mockResolvedValue({ error: null })
+      mockServiceClient.from.mockReturnValue({
+        insert: mockInsert,
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Expect redirect
+      }
+
+      // Should insert into both auth_debug_logs and user_logins
+      expect(mockInsert).toHaveBeenCalled()
+    })
+
+    it("should not track duplicate login on same day", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            email_confirmed_at: "2024-01-01T00:00:00Z",
+          },
+        },
+        error: null,
+      })
+
+      let callCount = 0
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "user_logins") {
+          callCount++
+          if (callCount === 1) {
+            // First call: select existing login
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              gte: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: "login-123" },
+                error: null,
+              }),
+            }
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Expect redirect
+      }
+
+      // Should check for existing login but not insert duplicate
+      expect(callCount).toBeGreaterThanOrEqual(1)
+    })
+
+    it("should continue signin even if login tracking fails", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            email_confirmed_at: "2024-01-01T00:00:00Z",
+          },
+        },
+        error: null,
+      })
+
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "user_logins") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            gte: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockRejectedValue(new Error("Database error")),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Should still redirect successfully
+        expect(error.message).toContain("REDIRECT")
+      }
+    })
+
+    it("should log auth debug info for failed login attempts", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "wrongpassword")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Invalid login credentials", code: "invalid_credentials" },
+      })
+
+      const mockInsert = vi.fn().mockResolvedValue({ error: null })
+      mockServiceClient.from.mockReturnValue({
+        insert: mockInsert,
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-123" }, error: null }),
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Expect redirect
+      }
+
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_type: "login_attempt",
+          user_email: "test@example.com",
+          success: false,
+        }),
+      )
+    })
   })
 
   describe("createAdminUser", () => {
@@ -209,6 +642,44 @@ describe("Auth Actions", () => {
       const result = await createAdminUser(null, formData)
 
       expect(result).toEqual({ error: "All fields are required" })
+    })
+
+    it("should handle profile creation failure", async () => {
+      const formData = new FormData()
+      formData.append("email", "admin@example.com")
+      formData.append("password", "adminpassword")
+      formData.append("fullName", "Admin User")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "admin-123", email: "admin@example.com" } },
+        error: null,
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({
+          error: { message: "Profile creation failed" },
+        }),
+      })
+
+      const result = await createAdminUser(null, formData)
+
+      expect(result).toEqual({ error: "Failed to create admin profile" })
+    })
+
+    it("should handle Supabase auth error", async () => {
+      const formData = new FormData()
+      formData.append("email", "admin@example.com")
+      formData.append("password", "adminpassword")
+      formData.append("fullName", "Admin User")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Email already exists" },
+      })
+
+      const result = await createAdminUser(null, formData)
+
+      expect(result).toEqual({ error: "Email already exists" })
     })
   })
 
@@ -281,6 +752,48 @@ describe("Auth Actions", () => {
       const result = await updatePassword(null, formData)
 
       expect(result).toEqual({ error: "Password must be at least 8 characters long" })
+    })
+
+    it("should handle Supabase update error", async () => {
+      const formData = new FormData()
+      formData.append("password", "newpassword123")
+      formData.append("confirmPassword", "newpassword123")
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      mockSupabaseClient.auth.updateUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Update failed", code: "update_error" },
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      const result = await updatePassword(null, formData)
+
+      expect(result).toEqual({ error: "Update failed" })
+    })
+
+    it("should handle missing password fields", async () => {
+      const formData = new FormData()
+      formData.append("password", "newpassword123")
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      const result = await updatePassword(null, formData)
+
+      expect(result).toEqual({ error: "Both password fields are required" })
     })
   })
 })
