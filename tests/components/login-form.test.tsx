@@ -156,7 +156,10 @@ describe("LoginForm", () => {
     fireEvent.click(resetLink)
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    fireEvent.click(sendButton)
+    const form = sendButton.closest("form")
+    if (form) {
+      fireEvent.submit(form)
+    }
 
     await waitFor(() => {
       expect(screen.getByText(/Please enter your email address/i)).toBeInTheDocument()
