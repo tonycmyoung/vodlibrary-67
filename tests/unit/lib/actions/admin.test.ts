@@ -48,9 +48,13 @@ describe("Admin Actions", () => {
         if (table === "users") {
           return {
             ...mockFromChain,
-            select: vi.fn().mockResolvedValue({ count: 150, error: null }),
+            select: vi.fn(() => {
+              return Promise.resolve({ count: 150, error: null })
+            }),
             eq: vi.fn(() => ({
-              select: vi.fn().mockResolvedValue({ count: 12, error: null }),
+              select: vi.fn(() => {
+                return Promise.resolve({ count: 12, error: null })
+              }),
             })),
           }
         }
@@ -86,7 +90,11 @@ describe("Admin Actions", () => {
 
     it("should handle database errors gracefully", async () => {
       mockServiceClient.from.mockImplementation(() => ({
-        select: vi.fn().mockResolvedValue({ count: null, error: { message: "Database error" } }),
+        select: vi
+          .fn(() => ({
+            eq: vi.fn().mockResolvedValue({ count: null, error: { message: "Database error" } }),
+          }))
+          .mockResolvedValue({ count: null, error: { message: "Database error" } }),
       }))
 
       vi.mocked(getTotalVideoViews).mockRejectedValue(new Error("Video views error"))
@@ -107,46 +115,60 @@ describe("Admin Actions", () => {
     })
 
     it("should calculate week boundaries correctly", async () => {
-      const mockFromChain = {
-        select: vi.fn(() => ({
-          gte: vi.fn(() => ({
-            lte: vi.fn().mockResolvedValue({ data: [], error: null }),
-          })),
-        })),
-      }
+      const mockFromSpy = vi.fn()
 
-      mockServiceClient.from.mockImplementation((table: string) => {
+      mockServiceClient.from = mockFromSpy.mockImplementation((table: string) => {
         if (table === "users") {
+          let selectCallCount = 0
           return {
-            select: vi.fn().mockResolvedValue({ count: 0, error: null }),
-            eq: vi.fn(() => ({
-              select: vi.fn().mockResolvedValue({ count: 0, error: null }),
-            })),
+            select: vi.fn(() => {
+              selectCallCount++
+              if (selectCallCount === 1) {
+                return Promise.resolve({ count: 100, error: null })
+              }
+              return {
+                eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
+              }
+            }),
           }
         }
         if (table === "user_logins") {
-          return mockFromChain
+          return {
+            select: vi.fn(() => ({
+              gte: vi.fn(() => ({
+                lte: vi.fn().mockResolvedValue({ data: [], error: null }),
+              })),
+            })),
+          }
         }
-        return {}
+        return {
+          select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
       })
 
-      vi.mocked(getTotalVideoViews).mockResolvedValue(0)
-      vi.mocked(getVideoViewsInDateRange).mockResolvedValue(0)
+      vi.mocked(getTotalVideoViews).mockResolvedValue(1000)
+      vi.mocked(getVideoViewsInDateRange).mockResolvedValue(50)
 
       await getTelemetryData()
 
-      // Verify user_logins was called with date filters
-      expect(mockServiceClient.from).toHaveBeenCalledWith("user_logins")
+      expect(mockFromSpy).toHaveBeenCalledWith("users")
+      expect(mockFromSpy).toHaveBeenCalledWith("user_logins")
     })
 
     it("should handle null counts from database", async () => {
       mockServiceClient.from.mockImplementation((table: string) => {
         if (table === "users") {
+          let selectCallCount = 0
           return {
-            select: vi.fn().mockResolvedValue({ count: null, error: null }),
-            eq: vi.fn(() => ({
-              select: vi.fn().mockResolvedValue({ count: null, error: null }),
-            })),
+            select: vi.fn(() => {
+              selectCallCount++
+              if (selectCallCount === 1) {
+                return Promise.resolve({ count: null, error: null })
+              }
+              return {
+                eq: vi.fn().mockResolvedValue({ count: null, error: null }),
+              }
+            }),
           }
         }
         if (table === "user_logins") {
@@ -158,7 +180,9 @@ describe("Admin Actions", () => {
             })),
           }
         }
-        return {}
+        return {
+          select: vi.fn().mockResolvedValue({ count: null, error: null }),
+        }
       })
 
       vi.mocked(getTotalVideoViews).mockResolvedValue(0)
@@ -167,9 +191,15 @@ describe("Admin Actions", () => {
       const result = await getTelemetryData()
 
       expect(result.success).toBe(true)
-      expect(result.data.totalUsers).toBe(0)
-      expect(result.data.pendingUsers).toBe(0)
-      expect(result.data.thisWeekUserLogins).toBe(0)
+      expect(result.data).toEqual({
+        totalUsers: 0,
+        pendingUsers: 0,
+        totalViews: 0,
+        thisWeekViews: 0,
+        lastWeekViews: 0,
+        thisWeekUserLogins: 0,
+        lastWeekUserLogins: 0,
+      })
     })
   })
 
