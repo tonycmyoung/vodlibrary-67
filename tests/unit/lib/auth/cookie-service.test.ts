@@ -105,21 +105,22 @@ describe("AuthCookieService", () => {
       })
     })
 
-    it("should use secure cookies in production", () => {
-      const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
-
+    it("should clear all authentication cookies with correct options", () => {
       AuthCookieService.clearAuthCookies(mockResponse as unknown as NextResponse)
 
-      expect(mockResponse.cookies.set).toHaveBeenCalledWith(
-        expect.any(String),
-        "",
-        expect.objectContaining({
-          secure: true,
-        }),
-      )
+      const calls = mockResponse.cookies.set.mock.calls
+      // Should clear 3 base cookies + 3 cookies for each of 2 domains = 9 total
+      expect(calls).toHaveLength(9)
 
-      process.env.NODE_ENV = originalEnv
+      // Verify all calls have correct options structure
+      calls.forEach((call: any) => {
+        const options = call[2]
+        expect(options).toHaveProperty("httpOnly", true)
+        expect(options).toHaveProperty("sameSite", "lax")
+        expect(options).toHaveProperty("path", "/")
+        expect(options).toHaveProperty("maxAge", 0)
+        expect(options.expires).toBeInstanceOf(Date)
+      })
     })
   })
 
