@@ -494,22 +494,11 @@ describe("User Actions", () => {
       vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
     })
 
-    it("should successfully delete user", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-      })
-
+    it("should successfully delete user by calling both auth and users table", async () => {
       mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com", full_name: "Test User" },
-              error: null,
-            }),
-          }),
-        }),
-        delete: mockDelete,
-      })
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      } as any)
 
       mockServiceClient.auth = {
         admin: {
@@ -517,113 +506,44 @@ describe("User Actions", () => {
         },
       } as any
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-        error: null,
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
-      })
-
       const result = await deleteUserCompletely("user-123")
 
       expect(result).toEqual({ success: "User deleted successfully" })
-      expect(mockDelete).toHaveBeenCalled()
+      expect(mockServiceClient.auth.admin.deleteUser).toHaveBeenCalledWith("user-123")
     })
 
-    it("should return error when user profile deletion fails", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: "Delete failed" },
-        }),
-      })
-
+    it("should return error when users table deletion fails", async () => {
       mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com" },
-              error: null,
-            }),
-          }),
-        }),
-        delete: mockDelete,
-      })
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-        error: null,
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
-      })
-
-      const result = await deleteUserCompletely("user-123")
-
-      expect(result).toEqual({ error: "Failed to delete user profile" })
-    })
-
-    it("should return error when auth deletion fails", async () => {
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com" },
-              error: null,
-            }),
-          }),
-        }),
-        delete: mockDelete,
-      })
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+      } as any)
 
       mockServiceClient.auth = {
         admin: {
-          deleteUser: vi.fn().mockResolvedValue({
-            error: { message: "Auth delete failed" },
-          }),
+          deleteUser: vi.fn().mockResolvedValue({ error: null }),
         },
       } as any
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-        error: null,
-      })
+      const result = await deleteUserCompletely("user-123")
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
-      })
+      expect(result).toEqual({ error: "Failed to delete user from users table" })
+    })
+
+    it("should return error when auth users deletion fails", async () => {
+      mockServiceClient.from.mockReturnValue({
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      } as any)
+
+      mockServiceClient.auth = {
+        admin: {
+          deleteUser: vi.fn().mockResolvedValue({ error: { message: "Auth delete failed" } }),
+        },
+      } as any
 
       const result = await deleteUserCompletely("user-123")
 
-      expect(result).toEqual({ error: "Failed to delete user from auth" })
+      expect(result).toEqual({ error: "Failed to delete user from auth system" })
     })
   })
 
