@@ -495,10 +495,27 @@ describe("User Actions", () => {
     })
 
     it("should successfully delete user by calling both auth and users table", async () => {
-      mockServiceClient.from.mockReturnValue({
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      } as any)
+      mockServiceClient.from
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { email: "test@example.com", full_name: "Test User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { full_name: "Actor User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        } as any)
 
       mockServiceClient.auth = {
         admin: {
@@ -513,10 +530,27 @@ describe("User Actions", () => {
     })
 
     it("should return error when users table deletion fails", async () => {
-      mockServiceClient.from.mockReturnValue({
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
-      } as any)
+      mockServiceClient.from
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { email: "test@example.com", full_name: "Test User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { full_name: "Actor User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+        } as any)
 
       mockServiceClient.auth = {
         admin: {
@@ -526,14 +560,31 @@ describe("User Actions", () => {
 
       const result = await deleteUserCompletely("user-123")
 
-      expect(result).toEqual({ error: "Failed to delete user from users table" })
+      expect(result).toEqual({ error: "Failed to delete user profile" })
     })
 
     it("should return error when auth users deletion fails", async () => {
-      mockServiceClient.from.mockReturnValue({
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      } as any)
+      mockServiceClient.from
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { email: "test@example.com", full_name: "Test User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { full_name: "Actor User" },
+            error: null,
+          }),
+        } as any)
+        .mockReturnValueOnce({
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        } as any)
 
       mockServiceClient.auth = {
         admin: {
