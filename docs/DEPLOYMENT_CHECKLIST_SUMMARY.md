@@ -58,11 +58,11 @@ Added scripts for testing, linting, formatting, and type checking.
 **Answer:** **You don't need to** - Husky is for local development only.
 
 When someone clones your repository to work on it locally:
-\`\`\`bash
+```bash
 git clone [your-repo]
 cd [project]
 npm install  # Auto-runs prepare script which sets up Husky
-\`\`\`
+```
 
 **For Vercel deployments:** Husky is not involved - Vercel just builds and deploys.
 
@@ -77,7 +77,7 @@ Your app should deploy normally. The testing files won't interfere with the buil
 
 Create this file in your repository: `.github/workflows/sonarqube.yml`
 
-\`\`\`yaml
+```yaml
 name: SonarQube Analysis
 
 on:
@@ -109,7 +109,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-\`\`\`
+```
 
 **Note:** I removed the test coverage step since the test files are removed. SonarQube will still analyze your code quality, just without coverage metrics initially.
 

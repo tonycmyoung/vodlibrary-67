@@ -47,15 +47,15 @@ Your app is already deployed to Vercel and connected to GitHub. Any push to your
 ### Prerequisites
 You'll need to clone the repository to your local machine to run tests:
 
-\`\`\`bash
+```bash
 git clone <your-repo-url>
 cd ty-kobudo-library
 npm install
-\`\`\`
+```
 
 ### Available Test Commands
 
-\`\`\`bash
+```bash
 # Run all tests once
 npm test
 
@@ -73,15 +73,15 @@ npm run format:check
 
 # Auto-fix formatting issues
 npm run format
-\`\`\`
+```
 
 ### Setting Up Git Hooks (Optional - Local Only)
 
 If you want pre-commit checks when developing locally:
 
-\`\`\`bash
+```bash
 npm run prepare
-\`\`\`
+```
 
 This initializes Husky to run linting and formatting checks before each commit.
 
@@ -109,7 +109,7 @@ Since you already have your repository connected to GitHub and SonarQube:
 
 2. **Create GitHub Actions Workflow**: Create `.github/workflows/sonarqube.yml`:
 
-\`\`\`yaml
+```yaml
 name: SonarQube Analysis
 
 on:
@@ -144,7 +144,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-\`\`\`
+```
 
 3. **Push to trigger**: Next push to main will run SonarQube analysis
 
@@ -152,7 +152,7 @@ jobs:
 
 Install SonarQube scanner locally:
 
-\`\`\`bash
+```bash
 npm install -g sonarqube-scanner
 
 # Run tests to generate coverage
@@ -165,7 +165,7 @@ sonar-scanner \
   -Dsonar.sources=. \
   -Dsonar.host.url=https://sonarcloud.io \
   -Dsonar.login=YOUR_SONAR_TOKEN
-\`\`\`
+```
 
 ---
 
@@ -200,7 +200,7 @@ Based on the implementation:
 
 ### Tests Fail Locally
 
-\`\`\`bash
+```bash
 # Clear node_modules and reinstall
 rm -rf node_modules package-lock.json
 npm install
@@ -208,7 +208,7 @@ npm install
 # Verify environment
 node --version  # Should be v18 or v20
 npm --version   # Should be v9 or v10
-\`\`\`
+```
 
 ### SonarQube Analysis Fails
 

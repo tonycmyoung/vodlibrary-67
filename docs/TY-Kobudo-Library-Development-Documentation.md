@@ -26,7 +26,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 ## High-Level Architecture
 
-\`\`\`
+```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Client Side   │    │   Server Side   │    │   External      │
 │                 │    │                 │    │   Services      │
@@ -36,7 +36,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 │ Client State    │    │ Middleware      │    │ Resend Email    │
 │ UI Components   │    │ Session Mgmt    │    │ Vercel Blob     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-\`\`\`
+```
 
 ### Architecture Layers
 
@@ -73,7 +73,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ### Core Tables
 
 #### users
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - email: text (unique)
 - full_name: text
@@ -86,10 +86,10 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - approved_at: timestamp
 - created_at: timestamp
 - updated_at: timestamp
-\`\`\`
+```
 
 #### videos
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - title: text
 - description: text
@@ -103,27 +103,27 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - created_by: uuid (foreign key to users.id)
 - created_at: timestamp
 - updated_at: timestamp
-\`\`\`
+```
 
 #### categories
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - name: text
 - description: text
 - color: text
 - created_by: uuid (foreign key to users.id)
 - created_at: timestamp
-\`\`\`
+```
 
 #### performers
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - name: character varying
 - created_at: timestamp
-\`\`\`
+```
 
 #### notifications
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - sender_id: uuid (foreign key to users.id)
 - recipient_id: uuid (foreign key to users.id)
@@ -132,12 +132,12 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - is_broadcast: boolean
 - created_at: timestamp
 - updated_at: timestamp
-\`\`\`
+```
 
 ### Additional Tables
 
 #### auth_debug_logs
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - user_id: uuid (foreign key to users.id)
 - user_email: text
@@ -149,10 +149,10 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - user_agent: text
 - additional_data: jsonb
 - created_at: timestamp with time zone
-\`\`\`
+```
 
 #### invitations
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - email: text
 - token: text
@@ -161,52 +161,52 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - invited_at: timestamp with time zone
 - expires_at: timestamp with time zone
 - created_at: timestamp with time zone
-\`\`\`
+```
 
 #### user_consents
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - user_id: uuid (foreign key to users.id)
 - eula_accepted_at: timestamp
 - privacy_accepted_at: timestamp
 - created_at: timestamp
 - updated_at: timestamp
-\`\`\`
+```
 
 #### user_logins
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - user_id: uuid (foreign key to users.id)
 - login_time: timestamp with time zone
 - ip_address: text
 - user_agent: text
-\`\`\`
+```
 
 ### Junction Tables
 
 #### video_categories
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - video_id: uuid (foreign key to videos.id)
 - category_id: uuid (foreign key to categories.id)
 - created_at: timestamp
-\`\`\`
+```
 
 #### video_performers
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - video_id: uuid (foreign key to videos.id)
 - performer_id: uuid (foreign key to performers.id)
 - created_at: timestamp with time zone
-\`\`\`
+```
 
 #### user_favorites
-\`\`\`sql
+```sql
 - id: uuid (primary key)
 - user_id: uuid (foreign key to users.id)
 - video_id: uuid (foreign key to videos.id)
 - created_at: timestamp
-\`\`\`
+```
 
 ### Database Relationships
 - Users can create multiple videos (one-to-many)
@@ -239,7 +239,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ## Component Architecture
 
 ### Layout Components
-\`\`\`
+```
 app/
 ├── layout.tsx (Root layout with fonts and metadata)
 ├── page.tsx (Home page with video library)
@@ -273,10 +273,10 @@ app/
 └── api/
     ├── upload-profile-image/route.ts (Profile image upload)
     └── robots.txt/route.ts (SEO robots.txt)
-\`\`\`
+```
 
 ### Component Hierarchy
-\`\`\`
+```
 Header/AdminHeader
 ├── NotificationBell
 ├── InviteUserModal
@@ -303,7 +303,7 @@ Legal & Utility Components
 ├── LoadingProvider
 ├── LegalFooter
 └── ConsentTracking
-\`\`\`
+```
 
 ### Key Components
 
@@ -339,27 +339,27 @@ Legal & Utility Components
 ## API & Server Actions
 
 ### Authentication Actions
-\`\`\`typescript
+```typescript
 signIn(email, password) → Authenticates user and creates session
 signUp(userData) → Creates pending user account
 signOut() → Destroys session and redirects
 changePassword(currentPassword, newPassword) → Updates user password
-\`\`\`
+```
 
 ### User Management Actions
-\`\`\`typescript
+```typescript
 approveUser(userId) → Approves pending user registration
 rejectUser(userId) → Rejects and deletes user application
 deleteUserCompletely(userId) → Complete user deletion
 updateProfile(profileData) → Updates user profile information
 inviteUser(email) → Sends user invitation via email
-\`\`\`
+```
 
 ### Notification Actions
-\`\`\`typescript
+```typescript
 sendNotificationWithEmail(recipientId, message, isBroadcast) → Sends notification with email
 fetchNotificationsWithSenders(userId) → Retrieves user notifications with sender info
-\`\`\`
+```
 
 ### Data Fetching Patterns
 - Server-side data fetching in page components
@@ -381,7 +381,7 @@ fetchNotificationsWithSenders(userId) → Retrieves user notifications with send
 - **Email Service**: Resend for transactional emails
 
 ### Environment Configuration
-\`\`\`
+```
 # Supabase Configuration
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
@@ -410,7 +410,7 @@ BLOB_READ_WRITE_TOKEN=
 NEXT_PUBLIC_FULL_SITE_URL=
 NEXT_PUBLIC_SITE_URL=
 NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
-\`\`\`
+```
 
 ### Performance Optimizations
 - Server-side rendering for SEO and performance
@@ -478,7 +478,7 @@ NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 - Resend account (for emails)
 
 ### Local Development
-\`\`\`bash
+```bash
 # Clone repository
 git clone <repository-url>
 cd ty-kobudo-library
@@ -492,7 +492,7 @@ cp .env.example .env.local
 
 # Run development server
 npm run dev
-\`\`\`
+```
 
 ### Database Setup
 1. Create Supabase project

@@ -12,7 +12,7 @@ The problem: GitHub has `@vitest/browser-playwright`, `@vitest/browser-preview`,
 4. Copy and paste the JSON below
 5. Commit the changes
 
-\`\`\`json
+```json
 {
   "name": "my-v0-project",
   "version": "0.1.0",
@@ -126,7 +126,7 @@ The problem: GitHub has `@vitest/browser-playwright`, `@vitest/browser-preview`,
     "vitest": "^2.1.8"
   }
 }
-\`\`\`
+```
 
 ## What was removed from GitHub's version:
 

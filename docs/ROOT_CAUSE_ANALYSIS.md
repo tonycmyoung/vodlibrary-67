@@ -14,9 +14,9 @@ GitHub Actions workflow was failing on `npm install` with peer dependency errors
 
 ## Solution
 Updated `.github/workflows/sonarqube.yml` to use:
-\`\`\`bash
+```bash
 npm install --legacy-peer-deps
-\`\`\`
+```
 
 This matches Vercel's behavior and allows the workflow to install dependencies successfully.
 
