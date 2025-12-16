@@ -127,7 +127,11 @@ describe("LoginForm", () => {
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Password reset email sent!/i)).toBeInTheDocument()
+      expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("test@example.com", {
+        redirectTo: expect.stringContaining("/auth/reset-password"),
+      })
+      // After successful reset, the form should be hidden
+      expect(screen.queryByPlaceholderText("Enter email for reset")).not.toBeInTheDocument()
     })
   })
 
