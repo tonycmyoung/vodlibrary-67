@@ -684,8 +684,8 @@ describe("User Actions", () => {
   describe("fetchPendingUsers", () => {
     it("should successfully fetch pending users", async () => {
       const mockPendingUsers = [
-        { id: "user-1", email: "user1@example.com", is_approved: false },
-        { id: "user-2", email: "user2@example.com", is_approved: false },
+        { id: "user-1", email: "user1@example.com", is_approved: false, inviter: { full_name: "Admin" } },
+        { id: "user-2", email: "user2@example.com", is_approved: false, inviter: { full_name: "Admin" } },
       ]
 
       mockServiceClient.from.mockReturnValue({
@@ -696,19 +696,38 @@ describe("User Actions", () => {
 
       const result = await fetchPendingUsers()
 
-      expect(result).toEqual({ data: mockPendingUsers, error: null })
+      expect(result).toEqual({
+        data: expect.arrayContaining([
+          expect.objectContaining({ id: "user-1", is_approved: false }),
+          expect.objectContaining({ id: "user-2", is_approved: false }),
+        ]),
+        error: null,
+      })
+      expect(mockServiceClient.from).toHaveBeenCalledWith("users")
     })
 
-    it("should return empty array on database error", async () => {
+    it("should handle database errors", async () => {
       mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+        order: vi.fn().mockResolvedValue({ data: null, error: { message: "Database error" } }),
       })
 
       const result = await fetchPendingUsers()
 
       expect(result).toEqual({ error: "Failed to fetch pending users", data: [] })
+    })
+
+    it("should return empty array when no pending users", async () => {
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+      })
+
+      const result = await fetchPendingUsers()
+
+      expect(result).toEqual({ data: [], error: null })
     })
   })
 
@@ -794,7 +813,9 @@ describe("User Actions", () => {
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: "Admin" } }),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Admin" },
+        }),
       })
 
       mockServiceClient.auth = {
@@ -831,54 +852,73 @@ describe("User Actions", () => {
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: "Student" } }),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Student" },
+        }),
       })
 
       const result = await resendConfirmationEmail("user@example.com")
 
       expect(result).toEqual({ error: "Unauthorized - Admin access required" })
     })
+
+    it("should handle resend errors", async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "admin-123" } },
+      })
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Admin" },
+        }),
+      })
+
+      mockServiceClient.auth = {
+        resend: vi.fn().mockResolvedValue({ error: { message: "Resend failed" } }),
+      } as any
+
+      const result = await resendConfirmationEmail("user@example.com")
+
+      expect(result).toEqual({ error: "Failed to resend confirmation email" })
+    })
   })
 
   describe("fetchStudentsForHeadTeacher", () => {
-    it("should successfully fetch students with stats", async () => {
-      const mockUsers = [
-        { id: "user-1", full_name: "Student One", school: "School A" },
-        { id: "user-2", full_name: "Student Two", school: "School A" },
-      ]
-
-      const mockLoginStats = [
-        { user_id: "user-1", login_time: "2024-01-15" },
-        { user_id: "user-1", login_time: "2024-01-14" },
-      ]
-
-      const mockViewStats = [
-        { user_id: "user-1", viewed_at: "2024-01-15" },
-        { user_id: "user-2", viewed_at: "2024-01-14" },
-      ]
-
-      let callCount = 0
+    it("should fetch students for head teacher successfully", async () => {
       mockServiceClient.from.mockImplementation((table: string) => {
-        callCount++
         if (table === "users") {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             ilike: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
+            order: vi.fn().mockResolvedValue({
+              data: [
+                { id: "student-1", full_name: "Student One", school: "School A", role: "Student" },
+                { id: "student-2", full_name: "Student Two", school: "School A", role: "Student" },
+              ],
+              error: null,
+            }),
           }
         }
         if (table === "user_logins") {
           return {
             select: vi.fn().mockReturnThis(),
-            order: vi.fn().mockResolvedValue({ data: mockLoginStats, error: null }),
+            order: vi.fn().mockResolvedValue({
+              data: [{ user_id: "student-1", login_time: "2024-01-15T10:00:00Z" }],
+              error: null,
+            }),
           }
         }
         if (table === "user_video_views") {
           return {
             select: vi.fn().mockReturnThis(),
-            order: vi.fn().mockResolvedValue({ data: mockViewStats, error: null }),
+            order: vi.fn().mockResolvedValue({
+              data: [{ user_id: "student-1", viewed_at: "2024-01-15T11:00:00Z" }],
+              error: null,
+            }),
           }
         }
         return {}
@@ -887,23 +927,66 @@ describe("User Actions", () => {
       const result = await fetchStudentsForHeadTeacher("School A", "head-123")
 
       expect(result.data).toHaveLength(2)
-      expect(result.data?.[0]).toHaveProperty("last_login")
-      expect(result.data?.[0]).toHaveProperty("login_count")
+      expect(result.data[0]).toHaveProperty("last_login")
+      expect(result.data[0]).toHaveProperty("login_count")
+      expect(result.data[0]).toHaveProperty("view_count")
       expect(result.error).toBeNull()
     })
 
-    it("should return error on database failure", async () => {
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        ilike: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+    it("should handle database errors gracefully", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "Database error" },
+            }),
+          }
+        }
+        return {}
       })
 
       const result = await fetchStudentsForHeadTeacher("School A", "head-123")
 
       expect(result).toEqual({ error: "Failed to fetch students", data: [] })
+    })
+
+    it("should return empty array when no students found", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }
+        }
+        if (table === "user_logins") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }
+        }
+        if (table === "user_video_views") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }
+        }
+        return {}
+      })
+
+      const result = await fetchStudentsForHeadTeacher("School A", "head-123")
+
+      expect(result).toEqual({ data: [], error: null })
     })
   })
 
@@ -924,18 +1007,17 @@ describe("User Actions", () => {
         data: { user: { id: "admin-123", email: "admin@example.com" } },
       })
 
+      let callCount = 0
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn(((...args) => {
-          // Return different data based on which query is being made
-          if (args.length === 0) {
-            // First call is for admin profile
+        single: vi.fn(() => {
+          callCount++
+          if (callCount === 1) {
             return Promise.resolve({ data: { role: "Admin", full_name: "Admin User" } })
           }
-          // Second call is for target user
           return Promise.resolve({ data: { email: "user@example.com", full_name: "Test User" } })
-        }) as any),
+        }),
       })
 
       mockServiceClient.auth = {
@@ -970,7 +1052,9 @@ describe("User Actions", () => {
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: "Student" } }),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Student", full_name: "Student User" },
+        }),
       })
 
       const result = await adminResetUserPassword("user-123", "newpassword123")
@@ -978,7 +1062,7 @@ describe("User Actions", () => {
       expect(result).toEqual({ error: "Unauthorized - Admin access required" })
     })
 
-    it("should return error when password is too short", async () => {
+    it("should validate password length", async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "admin-123" } },
       })
@@ -986,7 +1070,9 @@ describe("User Actions", () => {
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: "Admin" } }),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Admin", full_name: "Admin User" },
+        }),
       })
 
       const result = await adminResetUserPassword("user-123", "short")
@@ -1006,7 +1092,7 @@ describe("User Actions", () => {
         single: vi.fn(() => {
           callCount++
           if (callCount === 1) {
-            return Promise.resolve({ data: { role: "Admin", full_name: "Admin" } })
+            return Promise.resolve({ data: { role: "Admin", full_name: "Admin User" } })
           }
           return Promise.resolve({ data: null })
         }),
@@ -1015,6 +1101,35 @@ describe("User Actions", () => {
       const result = await adminResetUserPassword("user-123", "newpassword123")
 
       expect(result).toEqual({ error: "User not found" })
+    })
+
+    it("should handle password update errors", async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "admin-123", email: "admin@example.com" } },
+      })
+
+      let callCount = 0
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn(() => {
+          callCount++
+          if (callCount === 1) {
+            return Promise.resolve({ data: { role: "Admin", full_name: "Admin User" } })
+          }
+          return Promise.resolve({ data: { email: "user@example.com", full_name: "Test User" } })
+        }),
+      })
+
+      mockServiceClient.auth = {
+        admin: {
+          updateUserById: vi.fn().mockResolvedValue({ error: { message: "Update failed" } }),
+        },
+      } as any
+
+      const result = await adminResetUserPassword("user-123", "newpassword123")
+
+      expect(result).toEqual({ error: "Failed to update password" })
     })
   })
 })
