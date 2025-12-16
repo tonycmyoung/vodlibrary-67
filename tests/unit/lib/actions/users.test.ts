@@ -18,6 +18,13 @@ import { createServerClient } from "@supabase/ssr"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { createMockSupabaseClient } from "@/tests/mocks/supabase"
 
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(() => ({
+    getAll: vi.fn(() => []),
+    set: vi.fn(),
+  })),
+}))
+
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(),
 }))
