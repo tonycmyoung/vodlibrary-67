@@ -25,6 +25,10 @@ vi.mock("next/headers", () => ({
   })),
 }))
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}))
+
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(),
 }))
@@ -39,6 +43,12 @@ vi.mock("@/lib/actions/email", () => ({
 
 vi.mock("@/lib/actions/audit", () => ({
   logAuditEvent: vi.fn(),
+}))
+
+vi.mock("@/lib/utils/helpers", () => ({
+  sanitizeHtml: vi.fn((str: string) => str),
+  siteTitle: "Test Site",
+  generateUUID: vi.fn(() => "test-uuid"),
 }))
 
 describe("User Actions", () => {
