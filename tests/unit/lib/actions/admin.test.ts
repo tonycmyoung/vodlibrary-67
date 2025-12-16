@@ -36,31 +36,28 @@ describe("Admin Actions", () => {
 
   describe("getTelemetryData", () => {
     it("should successfully fetch all telemetry data", async () => {
-      const mockFromChain = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        gte: vi.fn().mockReturnThis(),
-        lte: vi.fn().mockReturnThis(),
-      }
+      let usersSelectCallCount = 0
 
-      // Mock Promise.all results for user counts and login data
       mockServiceClient.from.mockImplementation((table: string) => {
         if (table === "users") {
           return {
-            ...mockFromChain,
             select: vi.fn(() => {
-              return Promise.resolve({ count: 150, error: null })
+              usersSelectCallCount++
+
+              // First call: direct Promise for total users
+              if (usersSelectCallCount === 1) {
+                return Promise.resolve({ count: 150, error: null })
+              }
+
+              // Second call: return object with .eq() for pending users
+              return {
+                eq: vi.fn(() => Promise.resolve({ count: 12, error: null })),
+              }
             }),
-            eq: vi.fn(() => ({
-              select: vi.fn(() => {
-                return Promise.resolve({ count: 12, error: null })
-              }),
-            })),
           }
         }
         if (table === "user_logins") {
           return {
-            ...mockFromChain,
             select: vi.fn(() => ({
               gte: vi.fn(() => ({
                 lte: vi.fn().mockResolvedValue({ data: new Array(25).fill({ user_id: "test" }), error: null }),
@@ -68,7 +65,9 @@ describe("Admin Actions", () => {
             })),
           }
         }
-        return mockFromChain
+        return {
+          select: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
       })
 
       vi.mocked(getTotalVideoViews).mockResolvedValue(5000)
@@ -89,13 +88,15 @@ describe("Admin Actions", () => {
     })
 
     it("should handle database errors gracefully", async () => {
-      mockServiceClient.from.mockImplementation(() => ({
-        select: vi
-          .fn(() => ({
-            eq: vi.fn().mockResolvedValue({ count: null, error: { message: "Database error" } }),
-          }))
-          .mockResolvedValue({ count: null, error: { message: "Database error" } }),
-      }))
+      mockServiceClient.from.mockImplementation(() => {
+        const errorResult = { count: null, error: { message: "Database error" } }
+        const selectResult: any = Promise.resolve(errorResult)
+        selectResult.eq = vi.fn(() => Promise.resolve(errorResult))
+
+        return {
+          select: vi.fn(() => selectResult),
+        }
+      })
 
       vi.mocked(getTotalVideoViews).mockRejectedValue(new Error("Video views error"))
       vi.mocked(getVideoViewsInDateRange).mockRejectedValue(new Error("Date range error"))
@@ -119,16 +120,12 @@ describe("Admin Actions", () => {
 
       mockServiceClient.from = mockFromSpy.mockImplementation((table: string) => {
         if (table === "users") {
-          let selectCallCount = 0
           return {
             select: vi.fn(() => {
-              selectCallCount++
-              if (selectCallCount === 1) {
-                return Promise.resolve({ count: 100, error: null })
-              }
-              return {
-                eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
-              }
+              const baseResult = { count: 100, error: null }
+              const selectResult: any = Promise.resolve(baseResult)
+              selectResult.eq = vi.fn().mockResolvedValue({ count: 5, error: null })
+              return selectResult
             }),
           }
         }
@@ -158,16 +155,12 @@ describe("Admin Actions", () => {
     it("should handle null counts from database", async () => {
       mockServiceClient.from.mockImplementation((table: string) => {
         if (table === "users") {
-          let selectCallCount = 0
           return {
             select: vi.fn(() => {
-              selectCallCount++
-              if (selectCallCount === 1) {
-                return Promise.resolve({ count: null, error: null })
-              }
-              return {
-                eq: vi.fn().mockResolvedValue({ count: null, error: null }),
-              }
+              const baseResult = { count: null, error: null }
+              const selectResult: any = Promise.resolve(baseResult)
+              selectResult.eq = vi.fn().mockResolvedValue({ count: null, error: null })
+              return selectResult
             }),
           }
         }
