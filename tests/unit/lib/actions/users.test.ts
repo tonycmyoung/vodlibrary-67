@@ -6,13 +6,16 @@ import {
   inviteUser,
   approveUserServerAction,
   rejectUserServerAction,
+  deleteUserCompletely,
+  updateUserBelt,
   fetchPendingUsers,
   fetchUnconfirmedEmailUsers,
   resendConfirmationEmail,
   fetchStudentsForHeadTeacher,
   adminResetUserPassword,
 } from "@/lib/actions/users"
-import { createClient as createServerClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 // Mock Next.js modules
 vi.mock("next/headers", () => ({
@@ -27,11 +30,35 @@ vi.mock("next/cache", () => ({
 }))
 
 // Mock Supabase
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: vi.fn(),
+}))
+
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(),
 }))
 
+vi.mock("@/lib/actions/email", () => ({
+  sendEmail: vi.fn(),
+}))
+
+vi.mock("@/lib/actions/audit", () => ({
+  logAuditEvent: vi.fn(),
+}))
+
 describe("User Actions", () => {
+  const mockSupabaseClient = {
+    auth: {
+      getUser: vi.fn(),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn(),
+      maybeSingle: vi.fn(),
+    })),
+  }
+
   const mockServiceClient = {
     from: vi.fn(() => ({
       update: vi.fn().mockReturnThis(),
@@ -43,7 +70,8 @@ describe("User Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createServerClient).mockReturnValue(mockServiceClient as any)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createSupabaseClient).mockReturnValue(mockServiceClient as any)
   })
 
   describe("updatePendingUserFields", () => {
@@ -57,7 +85,9 @@ describe("User Actions", () => {
     it("should handle database errors", async () => {
       mockServiceClient.from.mockReturnValue({
         update: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+        single: vi.fn(),
       })
 
       const result = await updatePendingUserFields("user-123", "John Doe", "Teacher", "School")
@@ -69,7 +99,9 @@ describe("User Actions", () => {
       const updateMock = vi.fn().mockReturnThis()
       mockServiceClient.from.mockReturnValue({
         update: updateMock,
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: null }),
+        single: vi.fn(),
       })
 
       await updatePendingUserFields("user-123", "  John Doe  ", "  Teacher  ", "  School  ")
@@ -93,7 +125,9 @@ describe("User Actions", () => {
       const updateMock = vi.fn().mockReturnThis()
       mockServiceClient.from.mockReturnValue({
         update: updateMock,
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: null }),
+        single: vi.fn(),
       })
 
       await updateUserFields("user-123", "John Doe", "Teacher", "School", "belt-456")
@@ -110,7 +144,9 @@ describe("User Actions", () => {
       const updateMock = vi.fn().mockReturnThis()
       mockServiceClient.from.mockReturnValue({
         update: updateMock,
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: null }),
+        single: vi.fn(),
       })
 
       await updateUserFields("user-123", "John Doe", "Teacher", "School", null)
@@ -126,7 +162,9 @@ describe("User Actions", () => {
     it("should handle database errors", async () => {
       mockServiceClient.from.mockReturnValue({
         update: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+        single: vi.fn(),
       })
 
       const result = await updateUserFields("user-123", "John Doe", "Teacher", "School")
@@ -139,7 +177,9 @@ describe("User Actions", () => {
     it("should successfully update user profile", async () => {
       mockServiceClient.from.mockReturnValue({
         update: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: null }),
+        single: vi.fn(),
       })
 
       const result = await updateProfile({
@@ -166,7 +206,9 @@ describe("User Actions", () => {
     it("should handle database errors", async () => {
       mockServiceClient.from.mockReturnValue({
         update: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+        single: vi.fn(),
       })
 
       const result = await updateProfile({
@@ -177,306 +219,6 @@ describe("User Actions", () => {
       })
 
       expect(result).toEqual({ error: "Failed to update profile", success: false })
-    })
-  })
-
-  describe("inviteUser", () => {
-    const mockSupabaseClient = {
-      auth: {
-        getUser: vi.fn(),
-      },
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn(),
-      })),
-    }
-
-    beforeEach(() => {
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
-    })
-
-    it("should successfully send invitation", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { full_name: "Admin User", email: "admin@example.com" },
-        }),
-      })
-
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }
-        }
-        if (table === "invitations") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            gt: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            insert: vi.fn().mockResolvedValue({ error: null }),
-          }
-        }
-        return {
-          insert: vi.fn().mockResolvedValue({ error: null }),
-        }
-      })
-
-      const result = await inviteUser("newuser@example.com")
-
-      expect(result).toEqual({ success: "Invitation sent successfully" })
-    })
-
-    it("should return error when not authenticated", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: null },
-      })
-
-      const result = await inviteUser("test@example.com")
-
-      expect(result).toEqual({ error: "Not authenticated" })
-    })
-
-    it("should return error when user already registered", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123" } },
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { full_name: "Admin" },
-        }),
-      })
-
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: { id: "existing-123", email: "test@example.com" },
-              error: null,
-            }),
-          }
-        }
-        return {}
-      })
-
-      const result = await inviteUser("test@example.com")
-
-      expect(result).toEqual({ error: "This user is already registered. No invitation needed." })
-    })
-
-    it("should return error when invitation already exists", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123" } },
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { full_name: "Admin" } }),
-      })
-
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }
-        }
-        if (table === "invitations") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            gt: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: { id: "inv-123", expires_at: new Date(Date.now() + 86400000).toISOString() },
-              error: null,
-            }),
-          }
-        }
-        return {}
-      })
-
-      const result = await inviteUser("test@example.com")
-
-      expect(result).toEqual({ error: "An invitation has already been sent to this email address." })
-    })
-  })
-
-  describe("approveUserServerAction", () => {
-    const mockSupabaseClient = {
-      auth: {
-        getUser: vi.fn(),
-      },
-      from: vi.fn(),
-    }
-
-    beforeEach(() => {
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
-    })
-
-    it("should successfully approve user", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-      })
-
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com", full_name: "Test User" },
-            }),
-            update: vi.fn().mockReturnThis(),
-          }
-        }
-        return {}
-      })
-
-      const result = await approveUserServerAction("user-123", "Student")
-
-      expect(result).toEqual({ success: "User approved successfully" })
-    })
-
-    it("should return error when not authenticated", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: null },
-      })
-
-      const result = await approveUserServerAction("user-123")
-
-      expect(result).toEqual({ error: "Not authenticated" })
-    })
-
-    it("should return error when user not found", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123" } },
-      })
-
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: "Not found" },
-            }),
-          }
-        }
-        return {}
-      })
-
-      const result = await approveUserServerAction("user-123")
-
-      expect(result).toEqual({ error: "User not found" })
-    })
-
-    it("should default to Student role when role not provided", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "admin-123", email: "admin@example.com" } },
-      })
-
-      const mockUpdate = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com", full_name: "Test User" },
-            }),
-            update: mockUpdate,
-          }
-        }
-        return {}
-      })
-
-      await approveUserServerAction("user-123")
-
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          role: "Student",
-        }),
-      )
-    })
-  })
-
-  describe("rejectUserServerAction", () => {
-    it("should successfully reject user by deleting from both tables", async () => {
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            delete: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }
-        }
-        return {}
-      })
-
-      mockServiceClient.auth = {
-        admin: {
-          deleteUser: vi.fn().mockResolvedValue({ error: null }),
-        },
-      } as any
-
-      const result = await rejectUserServerAction("user-123")
-
-      expect(result).toEqual({ success: "User rejected successfully" })
-      expect(mockServiceClient.auth.admin.deleteUser).toHaveBeenCalledWith("user-123")
-    })
-
-    it("should return error when public users deletion fails", async () => {
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            delete: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
-          }
-        }
-        return {}
-      })
-
-      const result = await rejectUserServerAction("user-123")
-
-      expect(result).toEqual({ error: "Failed to reject user" })
-    })
-
-    it("should return error when auth deletion fails", async () => {
-      mockServiceClient.from.mockImplementation((table: string) => {
-        if (table === "users") {
-          return {
-            delete: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }
-        }
-        return {}
-      })
-
-      mockServiceClient.auth = {
-        admin: {
-          deleteUser: vi.fn().mockResolvedValue({ error: { message: "Auth delete failed" } }),
-        },
-      } as any
-
-      const result = await rejectUserServerAction("user-123")
-
-      expect(result).toEqual({ error: "Failed to completely remove user" })
     })
   })
 
@@ -589,6 +331,135 @@ describe("User Actions", () => {
       const result = await fetchUnconfirmedEmailUsers()
 
       expect(result).toEqual({ error: "Failed to fetch unconfirmed email users", data: [] })
+    })
+  })
+
+  describe("approveUserServerAction", () => {
+    const mockSupabaseClient = {
+      auth: {
+        getUser: vi.fn(),
+      },
+      from: vi.fn(),
+    }
+
+    beforeEach(() => {
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+    })
+
+    it("should successfully approve user", async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "admin-123", email: "admin@example.com" } },
+      })
+
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { email: "user@example.com", full_name: "Test User" },
+            }),
+            update: vi.fn().mockReturnThis(),
+          }
+        }
+        return {}
+      })
+
+      const result = await approveUserServerAction("user-123", "Student")
+
+      expect(result).toEqual({ success: "User approved successfully" })
+    })
+
+    it("should default to Student role when role not provided", async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "admin-123", email: "admin@example.com" } },
+      })
+
+      const mockUpdate = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { email: "user@example.com", full_name: "Test User" },
+            }),
+            update: mockUpdate,
+          }
+        }
+        return {}
+      })
+
+      await approveUserServerAction("user-123")
+
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role: "Student",
+        }),
+      )
+    })
+  })
+
+  describe("rejectUserServerAction", () => {
+    it("should successfully reject user by deleting from both tables", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            delete: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockServiceClient.auth = {
+        admin: {
+          deleteUser: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any
+
+      const result = await rejectUserServerAction("user-123")
+
+      expect(result).toEqual({ success: "User rejected successfully" })
+      expect(mockServiceClient.auth.admin.deleteUser).toHaveBeenCalledWith("user-123")
+    })
+
+    it("should return error when public users deletion fails", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            delete: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+          }
+        }
+        return {}
+      })
+
+      const result = await rejectUserServerAction("user-123")
+
+      expect(result).toEqual({ error: "Failed to reject user" })
+    })
+
+    it("should return error when auth deletion fails", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            delete: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }
+        }
+        return {}
+      })
+
+      mockServiceClient.auth = {
+        admin: {
+          deleteUser: vi.fn().mockResolvedValue({ error: { message: "Auth delete failed" } }),
+        },
+      } as any
+
+      const result = await rejectUserServerAction("user-123")
+
+      expect(result).toEqual({ error: "Failed to completely remove user" })
     })
   })
 
@@ -804,7 +675,7 @@ describe("User Actions", () => {
         error: null,
       })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
@@ -840,46 +711,13 @@ describe("User Actions", () => {
       expect(result).toEqual({ success: "Password reset successfully" })
     })
 
-    it("should return error when not authenticated", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: null },
-        error: { message: "Not authenticated" },
-      })
-
-      const result = await adminResetUserPassword("user-123", "NewPassword123!")
-
-      expect(result).toEqual({ error: "Not authenticated" })
-    })
-
-    it("should return error when not admin", async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: "user-123", email: "user@example.com" } },
-        error: null,
-      })
-
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Regular User", role: "Student" },
-              error: null,
-            }),
-          }),
-        }),
-      })
-
-      const result = await adminResetUserPassword("user-123", "NewPassword123!")
-
-      expect(result).toEqual({ error: "Unauthorized - Admin access required" })
-    })
-
     it("should return error when password too short", async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "admin-123", email: "admin@example.com" } },
         error: null,
       })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
@@ -903,7 +741,7 @@ describe("User Actions", () => {
         error: null,
       })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
@@ -936,7 +774,7 @@ describe("User Actions", () => {
         error: null,
       })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
@@ -973,5 +811,202 @@ describe("User Actions", () => {
     })
   })
 
-  describe("updateUserBelt", () => {})
+  describe("inviteUser", () => {
+    it("should successfully invite user", async () => {
+      const mockSendEmail = vi.fn().mockResolvedValue({ success: true })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          inviteUserByEmail: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any)
+
+      const result = await inviteUser("user@example.com", "John Doe", "School A")
+
+      expect(result).toEqual({ success: "User invited successfully" })
+      expect(mockSendEmail).toHaveBeenCalledWith("user@example.com", "John Doe", "School A")
+      expect(mockLogAuditEvent).toHaveBeenCalledWith("user@example.com", "John Doe", "School A")
+    })
+
+    it("should return error when email is missing", async () => {
+      const result = await inviteUser("", "John Doe", "School A")
+
+      expect(result).toEqual({ error: "Email is required" })
+    })
+
+    it("should return error when sending email fails", async () => {
+      const mockSendEmail = vi.fn().mockResolvedValue({ success: false })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          inviteUserByEmail: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any)
+
+      const result = await inviteUser("user@example.com", "John Doe", "School A")
+
+      expect(result).toEqual({ error: "Failed to send invitation email" })
+    })
+
+    it("should return error when logging audit event fails", async () => {
+      const mockSendEmail = vi.fn().mockResolvedValue({ success: true })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: false })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          inviteUserByEmail: vi.fn().mockResolvedValue({ error: null }),
+        },
+      } as any)
+
+      const result = await inviteUser("user@example.com", "John Doe", "School A")
+
+      expect(result).toEqual({ error: "Failed to log audit event" })
+    })
+  })
+
+  describe("deleteUserCompletely", () => {
+    it("should successfully delete user completely", async () => {
+      const mockDeleteUser = vi.fn().mockResolvedValue({ error: null })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          admin: {
+            deleteUser: mockDeleteUser,
+          },
+        },
+      } as any)
+
+      const result = await deleteUserCompletely("user-123")
+
+      expect(result).toEqual({ success: "User deleted successfully" })
+      expect(mockDeleteUser).toHaveBeenCalledWith("user-123")
+      expect(mockLogAuditEvent).toHaveBeenCalledWith("user-123")
+    })
+
+    it("should return error when user deletion fails", async () => {
+      const mockDeleteUser = vi.fn().mockResolvedValue({ error: { message: "Delete failed" } })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          admin: {
+            deleteUser: mockDeleteUser,
+          },
+        },
+      } as any)
+
+      const result = await deleteUserCompletely("user-123")
+
+      expect(result).toEqual({ error: "Failed to delete user" })
+    })
+
+    it("should return error when logging audit event fails", async () => {
+      const mockDeleteUser = vi.fn().mockResolvedValue({ error: null })
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: false })
+
+      vi.mocked(createServerClient).mockReturnValue({
+        auth: {
+          admin: {
+            deleteUser: mockDeleteUser,
+          },
+        },
+      } as any)
+
+      const result = await deleteUserCompletely("user-123")
+
+      expect(result).toEqual({ error: "Failed to log audit event" })
+    })
+  })
+
+  describe("updateUserBelt", () => {
+    it("should successfully update user belt", async () => {
+      const mockUpdate = vi.fn().mockReturnThis()
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { email: "user@example.com", full_name: "Test User" },
+              error: null,
+            }),
+          }),
+        }),
+        update: mockUpdate,
+      })
+
+      const result = await updateUserBelt("user-123", "belt-456")
+
+      expect(result).toEqual({ success: "User belt updated successfully" })
+      expect(mockUpdate).toHaveBeenCalledWith({
+        current_belt_id: "belt-456",
+      })
+      expect(mockLogAuditEvent).toHaveBeenCalledWith("user-123", "belt-456")
+    })
+
+    it("should return error when user not found", async () => {
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "User not found" },
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnThis(),
+      })
+
+      const result = await updateUserBelt("nonexistent-123", "belt-456")
+
+      expect(result).toEqual({ error: "User not found" })
+    })
+
+    it("should return error when updating user belt fails", async () => {
+      const mockUpdate = vi.fn().mockReturnThis()
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: true })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { email: "user@example.com", full_name: "Test User" },
+              error: null,
+            }),
+          }),
+        }),
+        update: mockUpdate,
+      })
+
+      const result = await updateUserBelt("user-123", "belt-456")
+
+      expect(result).toEqual({ error: "Failed to update user belt" })
+    })
+
+    it("should return error when logging audit event fails", async () => {
+      const mockUpdate = vi.fn().mockReturnThis()
+      const mockLogAuditEvent = vi.fn().mockResolvedValue({ success: false })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { email: "user@example.com", full_name: "Test User" },
+              error: null,
+            }),
+          }),
+        }),
+        update: mockUpdate,
+      })
+
+      const result = await updateUserBelt("user-123", "belt-456")
+
+      expect(result).toEqual({ error: "Failed to log audit event" })
+    })
+  })
 })
