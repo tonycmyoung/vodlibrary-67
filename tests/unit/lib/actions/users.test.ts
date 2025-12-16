@@ -659,20 +659,39 @@ describe("User Actions", () => {
     })
 
     it("should successfully reset user password", async () => {
+      let fromCallCount = 0
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        fromCallCount++
+        if (fromCallCount === 1) {
+          // First call: admin profile check
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { full_name: "Admin User", role: "Admin" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        } else {
+          // Second call: target user details
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { email: "user@example.com", full_name: "Test User" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        }
+      })
+
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "admin-123", email: "admin@example.com" } },
         error: null,
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
       })
 
       mockServiceClient.auth = {
@@ -683,17 +702,6 @@ describe("User Actions", () => {
           }),
         },
       } as any
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com" },
-              error: null,
-            }),
-          }),
-        }),
-      })
 
       const result = await adminResetUserPassword("user-123", "NewPassword123!")
 
@@ -706,7 +714,7 @@ describe("User Actions", () => {
         error: null,
       })
 
-      mockServiceClient.from.mockReturnValue({
+      mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
@@ -725,31 +733,39 @@ describe("User Actions", () => {
     })
 
     it("should return error when user not found", async () => {
+      let fromCallCount = 0
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        fromCallCount++
+        if (fromCallCount === 1) {
+          // First call: admin profile check
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { full_name: "Admin User", role: "Admin" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        } else {
+          // Second call: target user details (not found)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        }
+      })
+
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "admin-123", email: "admin@example.com" } },
         error: null,
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: "User not found" },
-            }),
-          }),
-        }),
       })
 
       const result = await adminResetUserPassword("nonexistent-123", "NewPassword123!")
@@ -758,31 +774,37 @@ describe("User Actions", () => {
     })
 
     it("should return error when password update fails", async () => {
+      let fromCallCount = 0
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        fromCallCount++
+        if (fromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { full_name: "Admin User", role: "Admin" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { email: "user@example.com", full_name: "Test User" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        }
+      })
+
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: { id: "admin-123", email: "admin@example.com" } },
         error: null,
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { full_name: "Admin User", role: "Admin" },
-              error: null,
-            }),
-          }),
-        }),
-      })
-
-      mockServiceClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { email: "user@example.com" },
-              error: null,
-            }),
-          }),
-        }),
       })
 
       mockServiceClient.auth = {
@@ -944,7 +966,7 @@ describe("User Actions", () => {
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: null,
-              error: { message: "User not found" },
+              error: null,
             }),
           }),
         }),
