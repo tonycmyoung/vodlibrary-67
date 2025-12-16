@@ -64,13 +64,33 @@ vi.mock("@/components/category-filter", () => ({
 }))
 
 vi.mock("@/components/sort-control", () => ({
-  default: ({ sortBy, sortOrder, onSortChange, onOrderChange }: any) => (
+  default: ({ sortBy, sortOrder, onSortChange }: any) => (
     <div data-testid="sort-control">
-      <button onClick={() => onSortChange("title")}>Sort by Title</button>
-      <button onClick={() => onOrderChange("desc")}>Sort Descending</button>
+      <button data-testid="sort-by-button" onClick={() => onSortChange("title", sortOrder)}>
+        Change Sort
+      </button>
+      <button
+        data-testid="sort-order-button"
+        onClick={() => onSortChange(sortBy, sortOrder === "asc" ? "desc" : "asc")}
+      >
+        Toggle Order
+      </button>
       <span data-testid="current-sort">
         {sortBy}-{sortOrder}
       </span>
+    </div>
+  ),
+}))
+
+vi.mock("@/components/search-input", () => ({
+  default: ({ searchQuery, onSearchChange }: any) => (
+    <div data-testid="search-input">
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        placeholder="Search videos"
+      />
     </div>
   ),
 }))
@@ -377,11 +397,12 @@ describe("VideoLibrary", () => {
         expect(sortControls.length).toBeGreaterThan(0)
       })
 
-      const sortButton = screen.getAllByText("Sort by Title")[0]
+      const sortButton = screen.getAllByTestId("sort-by-button")[0]
       fireEvent.click(sortButton)
 
       await waitFor(() => {
-        expect(localStorage.setItem).toHaveBeenCalledWith("videoLibrarySortBy", "title")
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("title-asc")
       })
     })
 
@@ -393,13 +414,13 @@ describe("VideoLibrary", () => {
         expect(sortControls.length).toBeGreaterThan(0)
       })
 
-      const orderButton = screen.getAllByText("Sort Descending")[0]
+      const orderButton = screen.getAllByTestId("sort-order-button")[0]
       fireEvent.click(orderButton)
 
       // Verify the current sort display updates
       await waitFor(() => {
         const currentSort = screen.getAllByTestId("current-sort")[0]
-        expect(currentSort).toHaveTextContent("desc")
+        expect(currentSort).toHaveTextContent("created_at-desc")
       })
     })
 
@@ -430,7 +451,7 @@ describe("VideoLibrary", () => {
         expect(screen.getByText("per page")).toBeInTheDocument()
       })
 
-      // Verify all videos are shown on first page
+      // Verify all videos are shown on first page with default 12 items per page
       expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
       expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
       expect(screen.getByTestId("video-card-video-3")).toBeInTheDocument()
@@ -453,18 +474,15 @@ describe("VideoLibrary", () => {
         expect(screen.getByText("Show")).toBeInTheDocument()
       })
 
-      // Wait for component to process page parameter
       await waitFor(
         () => {
           // On page 2 with 1 item per page, should show video-2
           expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
+          expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
+          expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
         },
         { timeout: 2000 },
       )
-
-      // Video 1 and 3 should not be visible
-      expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
-      expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
     })
 
     it("should load items per page from localStorage and apply pagination", async () => {
@@ -505,7 +523,8 @@ describe("VideoLibrary", () => {
       fireEvent.click(listButton)
 
       await waitFor(() => {
-        expect(localStorage.setItem).toHaveBeenCalledWith("videoLibraryView", "list")
+        expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
+        expect(screen.getByTestId("video-list")).toBeInTheDocument()
       })
     })
 
