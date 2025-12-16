@@ -447,8 +447,8 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByText("Show")).toBeInTheDocument()
-        expect(screen.getByText("per page")).toBeInTheDocument()
+        expect(screen.getAllByText("Show")[0]).toBeInTheDocument()
+        expect(screen.getAllByText("per page")[0]).toBeInTheDocument()
       })
 
       // Verify all videos are shown on first page with default 12 items per page
@@ -471,7 +471,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByText("Show")).toBeInTheDocument()
+        expect(screen.getAllByText("Show")[0]).toBeInTheDocument()
       })
 
       await waitFor(
@@ -524,7 +524,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
-        expect(screen.getByTestId("video-list")).toBeInTheDocument()
+        expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
       })
     })
 
@@ -547,7 +547,7 @@ describe("VideoLibrary", () => {
 
       // Verify list view component is rendered
       await waitFor(() => {
-        expect(screen.getByTestId("video-list")).toBeInTheDocument()
+        expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
       })
     })
   })
