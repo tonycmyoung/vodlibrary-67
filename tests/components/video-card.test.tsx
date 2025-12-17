@@ -53,14 +53,14 @@ describe("VideoCard", () => {
     vi.mocked(useIsMobile).mockReturnValue(false)
 
     const mockEq2 = vi.fn().mockResolvedValue({ data: null, error: null })
-    mockEq.mockReturnValue({ eq: mockEq2 }) // First .eq() returns object with second .eq()
+    mockEq.mockReturnValue({ eq: mockEq2 })
     mockDelete.mockReturnValue({ eq: mockEq })
     mockInsert.mockResolvedValue({ data: null, error: null })
 
-    mockFrom.mockReturnValue({
+    mockFrom.mockImplementation((table: string) => ({
       delete: mockDelete,
       insert: mockInsert,
-    })
+    }))
 
     const mockSupabaseClient = {
       auth: {
