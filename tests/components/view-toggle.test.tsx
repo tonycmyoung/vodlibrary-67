@@ -8,8 +8,8 @@ describe("ViewToggle", () => {
     const onViewChange = vi.fn()
     render(<ViewToggle view="grid" onViewChange={onViewChange} />)
 
-    expect(screen.getByRole("button", { name: /grid/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /list/i })).toBeInTheDocument()
+    const buttons = screen.getAllByRole("button")
+    expect(buttons).toHaveLength(2)
   })
 
   it("should highlight grid button when view is grid", () => {

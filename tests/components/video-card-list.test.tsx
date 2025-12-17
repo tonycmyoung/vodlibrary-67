@@ -59,7 +59,7 @@ describe("VideoCardList", () => {
   it("should render thumbnail image", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    const img = screen.getByAlt("Test Video")
+    const img = screen.getByAltText("Test Video")
     expect(img).toHaveAttribute("src", "https://example.com/thumb.jpg")
   })
 

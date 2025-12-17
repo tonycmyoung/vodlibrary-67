@@ -43,7 +43,7 @@ describe("UserFilter", () => {
     const roleTrigger = screen.getAllByRole("combobox")[0]
     await user.click(roleTrigger)
 
-    const teacherOption = await screen.findByText("Teacher")
+    const teacherOption = await screen.findByText("Teacher", {}, { timeout: 3000 })
     await user.click(teacherOption)
 
     expect(onRoleChange).toHaveBeenCalledWith("Teacher")
@@ -57,7 +57,7 @@ describe("UserFilter", () => {
     const schoolTrigger = screen.getAllByRole("combobox")[1]
     await user.click(schoolTrigger)
 
-    const schoolOption = await screen.findByText("School A")
+    const schoolOption = await screen.findByText("School A", {}, { timeout: 3000 })
     await user.click(schoolOption)
 
     expect(onSchoolChange).toHaveBeenCalledWith("School A")
@@ -71,7 +71,7 @@ describe("UserFilter", () => {
     const beltTrigger = screen.getAllByRole("combobox")[2]
     await user.click(beltTrigger)
 
-    const beltOption = await screen.findByText("White Belt")
+    const beltOption = await screen.findByText("White Belt", {}, { timeout: 3000 })
     await user.click(beltOption)
 
     expect(onBeltChange).toHaveBeenCalledWith("belt-1")

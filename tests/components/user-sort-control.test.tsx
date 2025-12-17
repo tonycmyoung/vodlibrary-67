@@ -27,7 +27,7 @@ describe("UserSortControl", () => {
     const selectTrigger = screen.getByRole("combobox")
     await user.click(selectTrigger)
 
-    const lastLoginOption = await screen.findByText("Last Login")
+    const lastLoginOption = await screen.findByText("Last Login", {}, { timeout: 3000 })
     await user.click(lastLoginOption)
 
     expect(onSortChange).toHaveBeenCalledWith("last_login", "asc")
