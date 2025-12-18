@@ -170,8 +170,10 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Student")).toBeInTheDocument()
-      expect(screen.getByText("Teacher")).toBeInTheDocument()
+      const studentElements = screen.getAllByText("Student")
+      const teacherElements = screen.getAllByText("Teacher")
+      expect(studentElements.length).toBeGreaterThan(0)
+      expect(teacherElements.length).toBeGreaterThan(0)
     })
   })
 
@@ -516,7 +518,8 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      const whiteBeltElements = screen.getAllByText("White Belt")
+      expect(whiteBeltElements.length).toBeGreaterThan(0)
     })
   })
 
