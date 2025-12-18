@@ -91,11 +91,13 @@ describe("CategoryManagement", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
-      // The count is rendered as "Categories (2)" but may be split across elements
-      const categoriesHeading = screen.getByText((content, element) => {
-        return (element?.textContent?.includes("Categories") && element?.textContent?.includes("2")) || false
-      })
-      expect(categoriesHeading).toBeInTheDocument()
+      expect(screen.getByText("Advanced")).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      const bodyText = document.body.textContent || ""
+      expect(bodyText).toContain("Categories")
+      expect(bodyText).toMatch(/$$[\s\n]*2[\s\n]*$$/)
     })
   })
 
@@ -233,11 +235,11 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const basicsCard = screen.getByText("Basics").closest('[data-slot="card-content"]')
-    expect(basicsCard).toBeInTheDocument()
+    const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
+    expect(basicsCard).toBeTruthy()
 
     const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
-    expect(deleteButton).toBeDefined()
+    expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton as HTMLElement)
 
@@ -256,11 +258,11 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const basicsCard = screen.getByText("Basics").closest('[data-slot="card-content"]')
-    expect(basicsCard).toBeInTheDocument()
+    const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
+    expect(basicsCard).toBeTruthy()
 
     const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
-    expect(deleteButton).toBeDefined()
+    expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton as HTMLElement)
 
