@@ -90,11 +90,12 @@ describe("CategoryManagement", () => {
     render(<CategoryManagement />)
 
     await waitFor(() => {
-      expect(
-        screen.getByText((content, element) => {
-          return element?.textContent?.match(/Categories\s*$$\s*\d+\s*$$/) !== null
-        }),
-      ).toBeInTheDocument()
+      expect(screen.getByText("Basics")).toBeInTheDocument()
+      // The count is rendered as "Categories (2)" but may be split across elements
+      const categoriesHeading = screen.getByText((content, element) => {
+        return (element?.textContent?.includes("Categories") && element?.textContent?.includes("2")) || false
+      })
+      expect(categoriesHeading).toBeInTheDocument()
     })
   })
 
@@ -232,19 +233,18 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByRole("button")
-    const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
+    const basicsCard = screen.getByText("Basics").closest('[data-slot="card-content"]')
+    expect(basicsCard).toBeInTheDocument()
 
+    const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
     expect(deleteButton).toBeDefined()
 
-    if (deleteButton) {
-      await user.click(deleteButton)
+    await user.click(deleteButton as HTMLElement)
 
-      await waitFor(() => {
-        expect(window.confirm).toHaveBeenCalled()
-        expect(mockDelete).toHaveBeenCalled()
-      })
-    }
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+      expect(mockDelete).toHaveBeenCalled()
+    })
   })
 
   it("should not delete category if user cancels confirmation", async () => {
@@ -256,20 +256,19 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByRole("button")
-    const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
+    const basicsCard = screen.getByText("Basics").closest('[data-slot="card-content"]')
+    expect(basicsCard).toBeInTheDocument()
 
+    const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
     expect(deleteButton).toBeDefined()
 
-    if (deleteButton) {
-      await user.click(deleteButton)
+    await user.click(deleteButton as HTMLElement)
 
-      await waitFor(() => {
-        expect(window.confirm).toHaveBeenCalled()
-      })
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+    })
 
-      expect(mockDelete).not.toHaveBeenCalled()
-    }
+    expect(mockDelete).not.toHaveBeenCalled()
   })
 
   it("should allow color selection in form", async () => {
