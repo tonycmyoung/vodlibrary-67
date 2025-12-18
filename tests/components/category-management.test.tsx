@@ -90,7 +90,11 @@ describe("CategoryManagement", () => {
     render(<CategoryManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Categories $$\d+$$/)).toBeInTheDocument()
+      expect(
+        screen.getByText((content, element) => {
+          return element?.textContent?.match(/Categories\s*$$\s*\d+\s*$$/) !== null
+        }),
+      ).toBeInTheDocument()
     })
   })
 
@@ -232,12 +236,15 @@ describe("CategoryManagement", () => {
     const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
 
     expect(deleteButton).toBeDefined()
-    await user.click(deleteButton!)
 
-    await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
-      expect(mockDelete).toHaveBeenCalled()
-    })
+    if (deleteButton) {
+      await user.click(deleteButton)
+
+      await waitFor(() => {
+        expect(window.confirm).toHaveBeenCalled()
+        expect(mockDelete).toHaveBeenCalled()
+      })
+    }
   })
 
   it("should not delete category if user cancels confirmation", async () => {
@@ -253,12 +260,16 @@ describe("CategoryManagement", () => {
     const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
 
     expect(deleteButton).toBeDefined()
-    await user.click(deleteButton!)
 
-    await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
-    })
-    expect(mockDelete).not.toHaveBeenCalled()
+    if (deleteButton) {
+      await user.click(deleteButton)
+
+      await waitFor(() => {
+        expect(window.confirm).toHaveBeenCalled()
+      })
+
+      expect(mockDelete).not.toHaveBeenCalled()
+    }
   })
 
   it("should allow color selection in form", async () => {
