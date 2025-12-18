@@ -228,8 +228,10 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByRole("button", { name: "" })
+    const deleteButtons = screen.getAllByRole("button")
     const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
+
+    expect(deleteButton).toBeDefined()
     await user.click(deleteButton!)
 
     await waitFor(() => {
@@ -247,8 +249,10 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByRole("button", { name: "" })
+    const deleteButtons = screen.getAllByRole("button")
     const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
+
+    expect(deleteButton).toBeDefined()
     await user.click(deleteButton!)
 
     await waitFor(() => {
