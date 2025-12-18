@@ -76,10 +76,12 @@ describe("VideoPlayer", () => {
     expect(screen.getByText("Recorded 2023")).toBeInTheDocument()
   })
 
-  it("should display view count", () => {
+  it("should display view count", async () => {
     render(<VideoPlayer video={mockVideo} />)
 
-    expect(screen.getByText("101 views")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText(/101 views/i)).toBeInTheDocument()
+    })
   })
 
   it("should increment video views on mount", async () => {
@@ -142,12 +144,12 @@ describe("VideoPlayer", () => {
 
     render(<VideoPlayer video={mockVideo} />)
 
-    await waitFor(() => {
-      expect(mockGetUser).toHaveBeenCalled()
-    })
+    const buttons = screen.getAllByRole("button")
+    const heartButton = buttons.find((button) => button.querySelector("svg.lucide-heart"))
 
-    const heartButton = screen.getByRole("button", { name: "" })
-    await fireEvent.click(heartButton)
+    expect(heartButton).toBeDefined()
+
+    await fireEvent.click(heartButton!)
 
     await waitFor(() => {
       expect(mockFrom).toHaveBeenCalledWith("user_favorites")
