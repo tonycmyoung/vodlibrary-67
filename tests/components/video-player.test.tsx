@@ -73,13 +73,12 @@ describe("VideoPlayer", () => {
     expect(screen.getByText("White Belt")).toBeInTheDocument()
     expect(screen.getByText("Bo")).toBeInTheDocument()
     expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getByText("2023")).toBeInTheDocument()
+    expect(screen.getByText("Recorded 2023")).toBeInTheDocument()
   })
 
   it("should display view count", () => {
     render(<VideoPlayer video={mockVideo} />)
 
-    // Initial view count should be incremented by 1 due to useEffect
     expect(screen.getByText("101 views")).toBeInTheDocument()
   })
 
@@ -120,7 +119,6 @@ describe("VideoPlayer", () => {
     const fullscreenButton = screen.getByText("Fullscreen View")
     fireEvent.click(fullscreenButton)
 
-    // Should show exit fullscreen button
     expect(screen.getByLabelText("Exit fullscreen")).toBeInTheDocument()
   })
 
@@ -133,7 +131,6 @@ describe("VideoPlayer", () => {
     const exitButton = screen.getByLabelText("Exit fullscreen")
     fireEvent.click(exitButton)
 
-    // Should return to normal view
     expect(screen.getByText("Fullscreen View")).toBeInTheDocument()
   })
 
@@ -150,7 +147,7 @@ describe("VideoPlayer", () => {
     })
 
     const heartButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(heartButton)
+    await fireEvent.click(heartButton)
 
     await waitFor(() => {
       expect(mockFrom).toHaveBeenCalledWith("user_favorites")

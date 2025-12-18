@@ -61,7 +61,7 @@ describe("UserProfile", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
     expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getByText("test@example.com")).toBeInTheDocument()
+    expect(screen.getAllByText("test@example.com")[0]).toBeInTheDocument()
     expect(screen.getByText("Sensei Bob")).toBeInTheDocument()
     expect(screen.getByText("Test Dojo")).toBeInTheDocument()
   })
