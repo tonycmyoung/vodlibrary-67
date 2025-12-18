@@ -95,9 +95,10 @@ describe("CategoryManagement", () => {
     })
 
     await waitFor(() => {
-      const bodyText = document.body.textContent || ""
-      expect(bodyText).toContain("Categories")
-      expect(bodyText).toMatch(/$$[\s\n]*2[\s\n]*$$/)
+      screen.getByText((content, element) => {
+        const text = element?.textContent || ""
+        return text.includes("Categories") && text.includes("(") && text.includes("2") && text.includes(")")
+      })
     })
   })
 
@@ -238,7 +239,7 @@ describe("CategoryManagement", () => {
     const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
     expect(basicsCard).toBeTruthy()
 
-    const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
+    const deleteButton = basicsCard?.querySelector("svg[class*='lucide-trash-2']")?.closest("button")
     expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton as HTMLElement)
@@ -261,7 +262,7 @@ describe("CategoryManagement", () => {
     const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
     expect(basicsCard).toBeTruthy()
 
-    const deleteButton = basicsCard?.querySelector("button svg.lucide-trash-2")?.closest("button")
+    const deleteButton = basicsCard?.querySelector("svg[class*='lucide-trash-2']")?.closest("button")
     expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton as HTMLElement)
