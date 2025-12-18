@@ -57,10 +57,11 @@ describe("VideoCard", () => {
     mockDelete.mockReturnValue({ eq: mockEq })
     mockInsert.mockResolvedValue({ data: null, error: null })
 
-    mockFrom.mockImplementation((table: string) => ({
+    // Return the same mock object structure for all table queries
+    mockFrom.mockReturnValue({
       delete: mockDelete,
       insert: mockInsert,
-    }))
+    })
 
     const mockSupabaseClient = {
       auth: {
@@ -168,6 +169,8 @@ describe("VideoCard", () => {
     await waitFor(() => {
       expect(mockGetUser).toHaveBeenCalled()
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     const heartButton = screen.getByRole("button")
     fireEvent.click(heartButton)
