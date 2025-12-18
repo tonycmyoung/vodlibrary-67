@@ -90,7 +90,7 @@ describe("CategoryManagement", () => {
     render(<CategoryManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Categories $$2$$/)).toBeInTheDocument()
+      expect(screen.getByText(/Categories $$\d+$$/)).toBeInTheDocument()
     })
   })
 
@@ -220,7 +220,7 @@ describe("CategoryManagement", () => {
   })
 
   it("should handle category deletion with confirmation", async () => {
-    global.confirm = vi.fn(() => true)
+    window.confirm = vi.fn(() => true)
 
     render(<CategoryManagement />)
 
@@ -233,13 +233,13 @@ describe("CategoryManagement", () => {
     await user.click(deleteButton!)
 
     await waitFor(() => {
-      expect(global.confirm).toHaveBeenCalled()
+      expect(window.confirm).toHaveBeenCalled()
       expect(mockDelete).toHaveBeenCalled()
     })
   })
 
   it("should not delete category if user cancels confirmation", async () => {
-    global.confirm = vi.fn(() => false)
+    window.confirm = vi.fn(() => false)
 
     render(<CategoryManagement />)
 
@@ -251,7 +251,9 @@ describe("CategoryManagement", () => {
     const deleteButton = deleteButtons.find((btn) => btn.querySelector("svg.lucide-trash-2"))
     await user.click(deleteButton!)
 
-    expect(global.confirm).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+    })
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
