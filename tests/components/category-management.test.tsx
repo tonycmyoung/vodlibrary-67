@@ -1,21 +1,21 @@
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import CategoryManagement from "@/components/category-management"
 import { createClient } from "@/lib/supabase/client"
-import jest from "jest" // Import jest to declare the variable
 
-jest.mock("@/lib/supabase/client")
-jest.mock("@/lib/utils/date", () => ({
+vi.mock("@/lib/supabase/client")
+vi.mock("@/lib/utils/date", () => ({
   formatShortDate: (date: string) => new Date(date).toLocaleDateString(),
 }))
 
-const mockFrom = jest.fn()
-const mockSelect = jest.fn()
-const mockInsert = jest.fn()
-const mockUpdate = jest.fn()
-const mockDelete = jest.fn()
-const mockEq = jest.fn()
-const mockOrder = jest.fn()
+const mockFrom = vi.fn()
+const mockSelect = vi.fn()
+const mockInsert = vi.fn()
+const mockUpdate = vi.fn()
+const mockDelete = vi.fn()
+const mockEq = vi.fn()
+const mockOrder = vi.fn()
 
 const mockCategories = [
   {
@@ -38,7 +38,7 @@ describe("CategoryManagement", () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockEq.mockReturnValue({ count: 5 })
     mockOrder.mockResolvedValue({ data: mockCategories, error: null })
@@ -59,16 +59,17 @@ describe("CategoryManagement", () => {
       }
       if (table === "video_categories") {
         return {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ count: 5 }),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ count: 5 }),
           }),
         }
       }
       return { select: mockSelect }
     })
-    ;(createClient as jest.Mock).mockReturnValue({
+
+    vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
-    })
+    } as any)
   })
 
   it("should render loading state initially", () => {
@@ -219,7 +220,7 @@ describe("CategoryManagement", () => {
   })
 
   it("should handle category deletion with confirmation", async () => {
-    global.confirm = jest.fn(() => true)
+    global.confirm = vi.fn(() => true)
 
     render(<CategoryManagement />)
 
@@ -238,7 +239,7 @@ describe("CategoryManagement", () => {
   })
 
   it("should not delete category if user cancels confirmation", async () => {
-    global.confirm = jest.fn(() => false)
+    global.confirm = vi.fn(() => false)
 
     render(<CategoryManagement />)
 

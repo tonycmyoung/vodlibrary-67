@@ -1,25 +1,25 @@
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import NotificationBell from "@/components/notification-bell"
 import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { useRouter } from "next/navigation"
-import jest from "jest" // Declare the jest variable
 
-jest.mock("@/lib/supabase/client")
-jest.mock("@/lib/actions")
-jest.mock("next/navigation")
-jest.mock("@/lib/utils/date", () => ({
+vi.mock("@/lib/supabase/client")
+vi.mock("@/lib/actions")
+vi.mock("next/navigation")
+vi.mock("@/lib/utils/date", () => ({
   formatTimeAgo: (date: string) => "2 hours ago",
 }))
 
-const mockPush = jest.fn()
-const mockFrom = jest.fn()
-const mockUpdate = jest.fn()
-const mockDelete = jest.fn()
-const mockEq = jest.fn()
-const mockIn = jest.fn()
-const mockSelect = jest.fn()
+const mockPush = vi.fn()
+const mockFrom = vi.fn()
+const mockUpdate = vi.fn()
+const mockDelete = vi.fn()
+const mockEq = vi.fn()
+const mockIn = vi.fn()
+const mockSelect = vi.fn()
 
 const mockNotifications = [
   {
@@ -52,9 +52,9 @@ describe("NotificationBell", () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    ;(useRouter as jest.Mock).mockReturnValue({ push: mockPush })
-    ;(fetchNotificationsWithSenders as jest.Mock).mockResolvedValue({
+    vi.clearAllMocks()
+    vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
+    vi.mocked(fetchNotificationsWithSenders).mockResolvedValue({
       data: mockNotifications,
       error: null,
     })
@@ -69,9 +69,10 @@ describe("NotificationBell", () => {
       update: mockUpdate,
       delete: mockDelete,
     })
-    ;(createClient as jest.Mock).mockReturnValue({
+
+    vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
-    })
+    } as any)
   })
 
   it("should render notification bell button", () => {
@@ -88,7 +89,7 @@ describe("NotificationBell", () => {
   })
 
   it("should not display badge when no unread notifications", async () => {
-    ;(fetchNotificationsWithSenders as jest.Mock).mockResolvedValue({
+    vi.mocked(fetchNotificationsWithSenders).mockResolvedValue({
       data: mockNotifications.map((n) => ({ ...n, is_read: true })),
       error: null,
     })
@@ -204,7 +205,7 @@ describe("NotificationBell", () => {
   })
 
   it("should show empty state when no notifications", async () => {
-    ;(fetchNotificationsWithSenders as jest.Mock).mockResolvedValue({
+    vi.mocked(fetchNotificationsWithSenders).mockResolvedValue({
       data: [],
       error: null,
     })
@@ -261,7 +262,7 @@ describe("NotificationBell", () => {
   })
 
   it("should not fetch notifications with invalid userId", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation()
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
     render(<NotificationBell userId="" />)
 
