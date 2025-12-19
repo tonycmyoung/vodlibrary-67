@@ -172,7 +172,7 @@ describe("UnconfirmedEmailUsers", () => {
   it("should display loading spinner while resending", async () => {
     const user = userEvent.setup()
     vi.mocked(actions.resendConfirmationEmail).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 100)),
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 200)),
     )
 
     render(<UnconfirmedEmailUsers />)
@@ -184,9 +184,12 @@ describe("UnconfirmedEmailUsers", () => {
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
     await user.click(resendButtons[0])
 
-    await waitFor(() => {
-      expect(screen.getByText("Sending...")).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText("Sending...")).toBeInTheDocument()
+      },
+      { timeout: 500 },
+    )
   })
 
   it("should display last sent timestamp", async () => {

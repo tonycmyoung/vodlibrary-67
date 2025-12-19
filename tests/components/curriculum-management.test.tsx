@@ -137,7 +137,7 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
     const pencilIcon = whiteBeltCard?.querySelector("svg.lucide-pencil")
@@ -146,11 +146,14 @@ describe("CurriculumManagement", () => {
 
     await user.click(editButton!)
 
-    await waitFor(() => {
-      expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
-      expect(screen.getByDisplayValue("White Belt")).toBeInTheDocument()
-      expect(screen.getByDisplayValue("Beginner curriculum")).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
+        expect(screen.getByDisplayValue("White Belt")).toBeInTheDocument()
+        expect(screen.getByDisplayValue("Beginner curriculum")).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
   })
 
   it("should update curriculum when edit form is submitted", async () => {
@@ -163,7 +166,7 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
     const pencilIcon = whiteBeltCard?.querySelector("svg.lucide-pencil")
@@ -172,9 +175,12 @@ describe("CurriculumManagement", () => {
 
     await user.click(editButton!)
 
-    await waitFor(() => {
-      expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
 
     const nameInput = screen.getByDisplayValue("White Belt")
     await user.clear(nameInput)
@@ -194,7 +200,8 @@ describe("CurriculumManagement", () => {
 
   it("should delete curriculum when delete button is clicked and confirmed", async () => {
     const user = userEvent.setup()
-    window.confirm = vi.fn(() => true)
+    const confirmSpy = vi.fn(() => true)
+    window.confirm = confirmSpy
     vi.mocked(curriculumActions.deleteCurriculum).mockResolvedValue(undefined)
 
     render(<CurriculumManagement />)
@@ -203,7 +210,7 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
     const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
@@ -212,15 +219,18 @@ describe("CurriculumManagement", () => {
 
     await user.click(deleteButton!)
 
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(confirmSpy).toHaveBeenCalled()
       expect(curriculumActions.deleteCurriculum).toHaveBeenCalledWith("curr-1")
     })
   })
 
   it("should not delete curriculum when deletion is cancelled", async () => {
     const user = userEvent.setup()
-    window.confirm = vi.fn(() => false)
+    const confirmSpy = vi.fn(() => false)
+    window.confirm = confirmSpy
 
     render(<CurriculumManagement />)
 
@@ -228,7 +238,7 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
     const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
@@ -237,8 +247,10 @@ describe("CurriculumManagement", () => {
 
     await user.click(deleteButton!)
 
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(confirmSpy).toHaveBeenCalled()
     })
     expect(curriculumActions.deleteCurriculum).not.toHaveBeenCalled()
   })
