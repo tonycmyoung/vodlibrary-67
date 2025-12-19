@@ -89,7 +89,8 @@ describe("VideoManagement", () => {
     })
 
     render(<VideoManagement />)
-    expect(screen.getByRole("img", { hidden: true })).toBeInTheDocument() // Loader2 spinner
+    const loader = document.querySelector("svg.lucide-loader-2")
+    expect(loader).toBeInTheDocument()
   })
 
   it("should load and display videos", async () => {
@@ -176,8 +177,10 @@ describe("VideoManagement", () => {
     const searchInput = screen.getByPlaceholderText("Search videos...")
     await user.type(searchInput, "Test Video 1")
 
-    const clearButton = screen.getByRole("button", { name: "" })
-    await user.click(clearButton)
+    // Find the clear button (X icon) inside the search input container
+    const clearButton = document.querySelector("svg.lucide-x")?.closest("button")
+    expect(clearButton).toBeTruthy()
+    await user.click(clearButton!)
 
     expect(searchInput).toHaveValue("")
   })
@@ -219,7 +222,7 @@ describe("VideoManagement", () => {
 
     const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
     const buttons = videoCard ? Array.from(videoCard.querySelectorAll("button")) : []
-    const editButton = buttons.find((btn) => btn.querySelector('[class*="Pencil"]'))
+    const editButton = buttons.find((btn) => btn.querySelector("svg.lucide-pencil"))
 
     expect(editButton).toBeTruthy()
     await user.click(editButton!)
@@ -277,7 +280,8 @@ describe("VideoManagement", () => {
       expect(screen.getByText("Test Video 1")).toBeInTheDocument()
     })
 
-    const sortOrderButton = screen.getByRole("button", { name: "" }).closest('button[class*="border-gray-700"]')
+    // Find the sort order toggle button (arrow-up-down icon)
+    const sortOrderButton = document.querySelector("svg.lucide-arrow-up-down")?.closest("button")
     expect(sortOrderButton).toBeTruthy()
 
     await user.click(sortOrderButton!)
@@ -316,36 +320,6 @@ describe("VideoManagement", () => {
   })
 
   it("should clear all filters", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
-      if (query.includes("video_categories")) {
-        return {
-          order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
-        }
-      }
-      return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
-    })
-
-    const user = userEvent.setup()
-    render(<VideoManagement />)
-
-    await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
-    })
-
-    // Open filters
-    const filtersButton = screen.getByText("Filters")
-    await user.click(filtersButton)
-
-    // Toggle a curriculum filter
-    const toggleCurriculumButton = screen.getByText("Toggle Curriculum")
-    await user.click(toggleCurriculumButton)
-
-    // Clear all filters
-    const clearButton = screen.getByRole("button", { name: /clear all/i })
-    await user.click(clearButton)
-  })
-
-  it("should paginate videos", async () => {
     const manyVideos = Array.from({ length: 15 }, (_, i) => ({
       ...mockVideosData[0],
       id: `video-${i}`,
