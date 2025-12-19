@@ -95,10 +95,8 @@ describe("CategoryManagement", () => {
     })
 
     await waitFor(() => {
-      screen.getByText((content, element) => {
-        const text = element?.textContent || ""
-        return text.includes("Categories") && text.includes("(") && text.includes("2") && text.includes(")")
-      })
+      const title = screen.getByText(/Categories/)
+      expect(title.textContent).toContain("(2)")
     })
   })
 
@@ -236,12 +234,15 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
-    expect(basicsCard).toBeTruthy()
+    const allButtons = screen.getAllByRole("button")
+    const basicsText = screen.getByText("Basics")
+    const basicsCard = basicsText.closest(".space-y-6, .grid > *") // Find the parent card element
 
-    const deleteButton = basicsCard?.querySelector("svg[class*='lucide-trash-2']")?.closest("button")
+    // Get all buttons within this card and find the delete button (red border button)
+    const buttonsInCard = basicsCard ? Array.from(basicsCard.querySelectorAll("button")) : []
+    const deleteButton = buttonsInCard.find((btn) => btn.className.includes("border-red-600"))
+
     expect(deleteButton).toBeTruthy()
-
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
@@ -259,12 +260,15 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeInTheDocument()
     })
 
-    const basicsCard = screen.getByText("Basics").closest('[data-slot="card"]')
-    expect(basicsCard).toBeTruthy()
+    const allButtons = screen.getAllByRole("button")
+    const basicsText = screen.getByText("Basics")
+    const basicsCard = basicsText.closest(".space-y-6, .grid > *") // Find the parent card element
 
-    const deleteButton = basicsCard?.querySelector("svg[class*='lucide-trash-2']")?.closest("button")
+    // Get all buttons within this card and find the delete button (red border button)
+    const buttonsInCard = basicsCard ? Array.from(basicsCard.querySelectorAll("button")) : []
+    const deleteButton = buttonsInCard.find((btn) => btn.className.includes("border-red-600"))
+
     expect(deleteButton).toBeTruthy()
-
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
