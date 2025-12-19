@@ -213,7 +213,7 @@ describe("CurriculumManagement", () => {
     const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
+    const trashIcon = whiteBeltCard?.querySelector("svg[class*='lucide-trash-2']")
     const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
 
@@ -241,7 +241,7 @@ describe("CurriculumManagement", () => {
     const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
+    const trashIcon = whiteBeltCard?.querySelector("svg[class*='lucide-trash-2']")
     const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
 
@@ -265,10 +265,10 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("Yellow Belt")).toBeInTheDocument()
     })
 
-    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='bg-black']")
+    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='rounded']")
     expect(yellowBeltCard).toBeTruthy()
 
-    const moreIcon = yellowBeltCard?.querySelector("svg.lucide-more-vertical")
+    const moreIcon = yellowBeltCard?.querySelector("svg[class*='lucide-more-vertical']")
     const moreButton = moreIcon?.closest("button")
     expect(moreButton).toBeTruthy()
 

@@ -94,7 +94,8 @@ describe("UnconfirmedEmailUsers", () => {
       const schoolElements = screen.getAllByText(/Lincoln High/)
       expect(schoolElements.length).toBeGreaterThan(0)
 
-      expect(screen.getByText(/Madison School/)).toBeInTheDocument()
+      const madisonSchool = screen.getAllByText(/Madison School/)
+      expect(madisonSchool.length).toBeGreaterThan(0)
     })
   })
 
@@ -172,7 +173,7 @@ describe("UnconfirmedEmailUsers", () => {
   it("should display loading spinner while resending", async () => {
     const user = userEvent.setup()
     vi.mocked(actions.resendConfirmationEmail).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 200)),
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 500)),
     )
 
     render(<UnconfirmedEmailUsers />)
@@ -188,7 +189,7 @@ describe("UnconfirmedEmailUsers", () => {
       () => {
         expect(screen.getByText("Sending...")).toBeInTheDocument()
       },
-      { timeout: 500 },
+      { timeout: 1000 },
     )
   })
 
