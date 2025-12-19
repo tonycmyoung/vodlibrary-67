@@ -59,10 +59,10 @@ const mockVideosData = [
 ]
 
 describe("VideoManagement", () => {
-  let mockSupabase: any
+  let mockSupabaseClient: any
 
   beforeEach(() => {
-    mockSupabase = {
+    mockSupabaseClient = {
       from: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
@@ -71,7 +71,7 @@ describe("VideoManagement", () => {
         eq: vi.fn().mockResolvedValue({ error: null }),
       }),
     }
-    ;(createClient as any).mockReturnValue(mockSupabase)
+    ;(createClient as any).mockReturnValue(mockSupabaseClient)
     ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-1": 100, "video-2": 50 })
     ;(getBatchVideoLastViewed as any).mockResolvedValue({ "video-1": "2024-01-15T00:00:00Z", "video-2": null })
 
@@ -84,21 +84,22 @@ describe("VideoManagement", () => {
   })
 
   it("should render loading state initially", () => {
-    mockSupabase.select.mockReturnValue({
-      order: vi.fn().mockReturnValue({
-        then: vi.fn(() => new Promise(() => {})), // Never resolve
+    mockSupabaseClient.from.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          then: vi.fn(() => new Promise(() => {})), // Never resolve
+        }),
       }),
     })
 
     render(<VideoManagement />)
-    // Check for the loading container with the spinner inside
-    const loadingContainer = document.querySelector(".flex.flex-col.items-center.justify-center")
+    const loadingContainer = document.querySelector(".flex.items-center.justify-center.min-h-screen")
     expect(loadingContainer).toBeTruthy()
     expect(loadingContainer).toBeInTheDocument()
   })
 
   it("should load and display videos", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
@@ -116,7 +117,7 @@ describe("VideoManagement", () => {
   })
 
   it("should display video metadata correctly", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: [mockVideosData[0]], error: null }),
@@ -136,7 +137,7 @@ describe("VideoManagement", () => {
   })
 
   it("should search videos by title", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
@@ -162,7 +163,7 @@ describe("VideoManagement", () => {
   })
 
   it("should clear search query", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
@@ -190,7 +191,7 @@ describe("VideoManagement", () => {
   })
 
   it("should open add video modal", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -208,7 +209,7 @@ describe("VideoManagement", () => {
   })
 
   it("should open edit video modal", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: [mockVideosData[0]], error: null }),
@@ -235,7 +236,7 @@ describe("VideoManagement", () => {
   })
 
   it("should delete video with confirmation", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: [mockVideosData[0]], error: null }),
@@ -261,14 +262,14 @@ describe("VideoManagement", () => {
 
     expect(confirmSpy).toHaveBeenCalled()
     await waitFor(() => {
-      expect(mockSupabase.delete).toHaveBeenCalled()
+      expect(mockSupabaseClient.delete).toHaveBeenCalled()
     })
 
     confirmSpy.mockRestore()
   })
 
   it("should change sort order", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
@@ -294,7 +295,7 @@ describe("VideoManagement", () => {
   })
 
   it("should display empty state when no videos", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -306,7 +307,7 @@ describe("VideoManagement", () => {
   })
 
   it("should toggle filters open/closed", async () => {
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -330,7 +331,7 @@ describe("VideoManagement", () => {
       title: `Test Video ${i}`,
     }))
 
-    mockSupabase.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((query: string) => {
       if (query.includes("video_categories")) {
         return {
           order: vi.fn().mockResolvedValue({ data: manyVideos, error: null }),
