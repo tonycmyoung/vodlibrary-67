@@ -65,8 +65,8 @@ describe("PendingUsers", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
     expect(screen.getByText("john@example.com")).toBeInTheDocument()
-    expect(screen.getByText(/Mr. Smith/)).toBeInTheDocument()
-    expect(screen.getByText(/Test School/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Mr. Smith/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Test School/).length).toBeGreaterThan(0)
   })
 
   it("should display inviter information when user was invited", async () => {
