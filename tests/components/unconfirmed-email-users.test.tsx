@@ -186,12 +186,15 @@ describe("UnconfirmedEmailUsers", () => {
     })
 
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
-    await user.click(resendButtons[0])
 
+    const clickPromise = user.click(resendButtons[0])
+
+    // Check for loading state immediately after click, before state updates complete
     await waitFor(() => {
       expect(screen.getByText("Sending...")).toBeInTheDocument()
     })
 
+    await clickPromise
     resolvePromise!({ success: true, error: null })
   })
 

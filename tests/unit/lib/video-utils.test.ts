@@ -79,6 +79,7 @@ describe("video-utils", () => {
       global.document = {
         createElement: vi.fn((tag: string) => {
           if (tag === "video") {
+            const listeners: { [key: string]: Function[] } = {}
             const video = {
               crossOrigin: "",
               preload: "",
@@ -87,13 +88,24 @@ describe("video-utils", () => {
               duration: 120,
               videoWidth: 640,
               videoHeight: 480,
-              addEventListener: vi.fn((event: string, callback: Function) => {
+              addEventListener: vi.fn((event: string, callback: Function, options?: any) => {
+                if (!listeners[event]) listeners[event] = []
+                listeners[event].push(callback)
+
+                // Trigger loadedmetadata immediately
                 if (event === "loadedmetadata") {
-                  // Trigger the callback asynchronously to simulate video loading
                   setTimeout(() => callback(), 0)
                 }
+                // Trigger seeked event after loadedmetadata
+                if (event === "seeked") {
+                  setTimeout(() => callback(), 10)
+                }
               }),
-              removeEventListener: vi.fn(),
+              removeEventListener: vi.fn((event: string, callback: Function) => {
+                if (listeners[event]) {
+                  listeners[event] = listeners[event].filter((cb) => cb !== callback)
+                }
+              }),
               load: vi.fn(),
             }
             return video
@@ -134,9 +146,9 @@ describe("video-utils", () => {
     it("should attempt to extract metadata from direct video URLs", async () => {
       const metadata = await extractVideoMetadata("https://example.com/video.mp4")
 
-      // Since we're mocking, we can't fully test the video loading,
-      // but we verify the function completes
+      // Verify the function completes and returns metadata
       expect(metadata).toBeDefined()
+      expect(metadata.duration).toBe(120)
     })
   })
 })
