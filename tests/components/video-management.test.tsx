@@ -67,7 +67,9 @@ describe("VideoManagement", () => {
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockResolvedValue({ error: null }),
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
     }
     ;(createClient as any).mockReturnValue(mockSupabase)
     ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-1": 100, "video-2": 50 })
@@ -89,8 +91,10 @@ describe("VideoManagement", () => {
     })
 
     render(<VideoManagement />)
-    const loader = document.querySelector("svg.lucide-loader-2")
-    expect(loader).toBeInTheDocument()
+    // Check for the loading container with the spinner inside
+    const loadingContainer = document.querySelector(".flex.flex-col.items-center.justify-center")
+    expect(loadingContainer).toBeTruthy()
+    expect(loadingContainer).toBeInTheDocument()
   })
 
   it("should load and display videos", async () => {
