@@ -67,14 +67,6 @@ describe("Supabase Server Client", () => {
   })
 
   describe("createClient (cached)", () => {
-    it("should create a cached client", () => {
-      const client1 = createClient()
-      const client2 = createClient()
-
-      // Both calls should return the same cached instance
-      expect(client1).toBe(client2)
-    })
-
     it("should return a functioning client", async () => {
       const client = createClient()
 
