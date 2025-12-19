@@ -88,8 +88,12 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Mr\. Smith/)).toBeInTheDocument()
-      expect(screen.getByText(/Lincoln High/)).toBeInTheDocument()
+      const teacherElements = screen.getAllByText(/Mr\. Smith/)
+      expect(teacherElements.length).toBeGreaterThan(0)
+
+      const schoolElements = screen.getAllByText(/Lincoln High/)
+      expect(schoolElements.length).toBeGreaterThan(0)
+
       expect(screen.getByText(/Madison School/)).toBeInTheDocument()
     })
   })
@@ -180,7 +184,9 @@ describe("UnconfirmedEmailUsers", () => {
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
     await user.click(resendButtons[0])
 
-    expect(screen.getByText("Sending...")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText("Sending...")).toBeInTheDocument()
+    })
   })
 
   it("should display last sent timestamp", async () => {

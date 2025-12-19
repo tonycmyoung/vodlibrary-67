@@ -137,10 +137,11 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const editButton = whiteBeltCard?.querySelector("button")
+    const pencilIcon = whiteBeltCard?.querySelector("svg.lucide-pencil")
+    const editButton = pencilIcon?.closest("button")
     expect(editButton).toBeTruthy()
 
     await user.click(editButton!)
@@ -162,10 +163,11 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const editButton = whiteBeltCard?.querySelector("button")
+    const pencilIcon = whiteBeltCard?.querySelector("svg.lucide-pencil")
+    const editButton = pencilIcon?.closest("button")
     expect(editButton).toBeTruthy()
 
     await user.click(editButton!)
@@ -201,11 +203,11 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const buttons = whiteBeltCard?.querySelectorAll("button")
-    const deleteButton = buttons?.[1] // Second button is delete
+    const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
+    const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton!)
@@ -226,16 +228,18 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='bg-black']")
     expect(whiteBeltCard).toBeTruthy()
 
-    const buttons = whiteBeltCard?.querySelectorAll("button")
-    const deleteButton = buttons?.[1] // Second button is delete
+    const trashIcon = whiteBeltCard?.querySelector("svg.lucide-trash-2")
+    const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
 
     await user.click(deleteButton!)
 
-    expect(window.confirm).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled()
+    })
     expect(curriculumActions.deleteCurriculum).not.toHaveBeenCalled()
   })
 
@@ -249,11 +253,11 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("Yellow Belt")).toBeInTheDocument()
     })
 
-    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='rounded']")
+    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='bg-black']")
     expect(yellowBeltCard).toBeTruthy()
 
-    const buttons = yellowBeltCard?.querySelectorAll("button")
-    const moreButton = buttons?.[2] // Third button is more options
+    const moreIcon = yellowBeltCard?.querySelector("svg.lucide-more-vertical")
+    const moreButton = moreIcon?.closest("button")
     expect(moreButton).toBeTruthy()
 
     await user.click(moreButton!)
@@ -296,12 +300,15 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("Add New Curriculum")).toBeInTheDocument()
     })
 
-    const colorPicker = screen.getByLabelText(/color/i).closest("#curriculum-color-picker")
-    const colorButtons = colorPicker?.querySelectorAll("button")
+    const colorPicker = document.querySelector("#curriculum-color-picker")
+    expect(colorPicker).toBeTruthy()
 
-    if (colorButtons && colorButtons.length > 1) {
-      await user.click(colorButtons[1])
-      // Color selection is reflected in state, tested through form submission
-    }
+    const colorButtons = colorPicker?.querySelectorAll("button")
+    expect(colorButtons).toBeTruthy()
+    expect(colorButtons!.length).toBeGreaterThan(1)
+
+    // Click the second color button
+    await user.click(colorButtons![1])
+    // Color selection is reflected in state, tested through form submission
   })
 })
