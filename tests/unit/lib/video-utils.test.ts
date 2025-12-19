@@ -87,7 +87,12 @@ describe("video-utils", () => {
               duration: 120,
               videoWidth: 640,
               videoHeight: 480,
-              addEventListener: vi.fn(),
+              addEventListener: vi.fn((event: string, callback: Function) => {
+                if (event === "loadedmetadata") {
+                  // Trigger the callback asynchronously to simulate video loading
+                  setTimeout(() => callback(), 0)
+                }
+              }),
               removeEventListener: vi.fn(),
               load: vi.fn(),
             }
