@@ -210,16 +210,13 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
-    expect(whiteBeltCard).toBeTruthy()
+    const whiteBeltText = screen.getByText("White Belt")
+    const whiteBeltCard = whiteBeltText.closest(".space-y-2 > *")
+    const buttonsInCard = whiteBeltCard ? Array.from(whiteBeltCard.querySelectorAll("button")) : []
+    const deleteButton = buttonsInCard.find((btn) => btn.className.includes("text-red-400"))
 
-    const trashIcon = whiteBeltCard?.querySelector("svg[class*='lucide-trash-2']")
-    const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
-
     await user.click(deleteButton!)
-
-    await new Promise((resolve) => setTimeout(resolve, 50))
 
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalled()
@@ -238,16 +235,13 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
 
-    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
-    expect(whiteBeltCard).toBeTruthy()
+    const whiteBeltText = screen.getByText("White Belt")
+    const whiteBeltCard = whiteBeltText.closest(".space-y-2 > *")
+    const buttonsInCard = whiteBeltCard ? Array.from(whiteBeltCard.querySelectorAll("button")) : []
+    const deleteButton = buttonsInCard.find((btn) => btn.className.includes("text-red-400"))
 
-    const trashIcon = whiteBeltCard?.querySelector("svg[class*='lucide-trash-2']")
-    const deleteButton = trashIcon?.closest("button")
     expect(deleteButton).toBeTruthy()
-
     await user.click(deleteButton!)
-
-    await new Promise((resolve) => setTimeout(resolve, 50))
 
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalled()
@@ -265,13 +259,12 @@ describe("CurriculumManagement", () => {
       expect(screen.getByText("Yellow Belt")).toBeInTheDocument()
     })
 
-    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='rounded']")
-    expect(yellowBeltCard).toBeTruthy()
+    const yellowBeltText = screen.getByText("Yellow Belt")
+    const yellowBeltCard = yellowBeltText.closest(".space-y-2 > *")
+    const buttonsInCard = yellowBeltCard ? Array.from(yellowBeltCard.querySelectorAll("button")) : []
+    const moreButton = buttonsInCard[0] // First button in card is the MoreVertical dropdown
 
-    const moreIcon = yellowBeltCard?.querySelector("svg[class*='lucide-more-vertical']")
-    const moreButton = moreIcon?.closest("button")
     expect(moreButton).toBeTruthy()
-
     await user.click(moreButton!)
 
     await waitFor(() => {

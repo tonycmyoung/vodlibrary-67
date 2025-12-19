@@ -173,7 +173,7 @@ describe("UnconfirmedEmailUsers", () => {
   it("should display loading spinner while resending", async () => {
     const user = userEvent.setup()
     vi.mocked(actions.resendConfirmationEmail).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 500)),
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, error: null }), 100)),
     )
 
     render(<UnconfirmedEmailUsers />)
@@ -189,7 +189,7 @@ describe("UnconfirmedEmailUsers", () => {
       () => {
         expect(screen.getByText("Sending...")).toBeInTheDocument()
       },
-      { timeout: 1000 },
+      { timeout: 200 },
     )
   })
 
