@@ -156,8 +156,33 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("Student")).toBeInTheDocument()
-      expect(screen.getByText("Teacher")).toBeInTheDocument()
+      const johnDoeText = screen.getByText("John Doe")
+      const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
+      expect(johnDoeCard).toBeTruthy()
+
+      // Verify John Doe (student-1) has "Student" role badge in their card
+      const johnRoleBadge = within(johnDoeCard).getByText((content, element) => {
+        return (
+          element?.tagName.toLowerCase() === "span" &&
+          element?.textContent === "Student" &&
+          element?.getAttribute("data-slot") === "badge"
+        )
+      })
+      expect(johnRoleBadge).toBeInTheDocument()
+
+      const janeSmithText = screen.getByText("Jane Smith")
+      const janeSmithCard = janeSmithText.closest(".flex.flex-col") as HTMLElement
+      expect(janeSmithCard).toBeTruthy()
+
+      // Verify Jane Smith (student-2) has "Teacher" role badge in their card
+      const janeRoleBadge = within(janeSmithCard).getByText((content, element) => {
+        return (
+          element?.tagName.toLowerCase() === "span" &&
+          element?.textContent === "Teacher" &&
+          element?.getAttribute("data-slot") === "badge"
+        )
+      })
+      expect(janeRoleBadge).toBeInTheDocument()
     })
   })
 
