@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import DebugDashboard from "@/components/debug-dashboard"
 import * as actions from "@/lib/actions"
@@ -196,14 +196,12 @@ describe("DebugDashboard", () => {
     await waitFor(() => {
       const user1Row = screen.getByText("user1@example.com").closest("tr")
       expect(user1Row).toBeTruthy()
-      const successBadgeInRow = user1Row?.querySelector('[data-slot="badge"]')
-      expect(successBadgeInRow?.textContent).toBe("Success")
+      expect(within(user1Row!).getByText("Success")).toBeInTheDocument()
     })
 
     const user2Row = screen.getByText("user2@example.com").closest("tr")
     expect(user2Row).toBeTruthy()
-    const errorBadgeInRow = user2Row?.querySelector('[data-slot="badge"]')
-    expect(errorBadgeInRow?.textContent).toBe("Error")
+    expect(within(user2Row!).getByText("Error")).toBeInTheDocument()
   })
 
   it("should handle clear logs errors gracefully", async () => {
