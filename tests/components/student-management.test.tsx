@@ -3,16 +3,20 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import StudentManagement from "@/components/student-management"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
-import { fetchStudentsForHeadTeacher, updateUserFields, deleteUserCompletely } from "@/lib/actions"
+import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
+import { deleteUserCompletely } from "@/lib/actions"
 import { useRouter, useSearchParams } from "next/navigation"
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
 }))
 
-vi.mock("@/lib/actions", () => ({
+vi.mock("@/lib/actions/users", () => ({
   fetchStudentsForHeadTeacher: vi.fn(),
   updateUserFields: vi.fn(),
+}))
+
+vi.mock("@/lib/actions", () => ({
   deleteUserCompletely: vi.fn(),
 }))
 
