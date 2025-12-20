@@ -13,6 +13,7 @@ import {
   fetchUnconfirmedEmailUsers,
   resendConfirmationEmail,
   adminResetUserPassword,
+  fetchStudentsForHeadTeacher,
 } from "./users"
 import { incrementVideoViews, saveVideo } from "./videos"
 import { addPerformer, updatePerformer, deletePerformer } from "./performers"
@@ -37,6 +38,7 @@ export {
   fetchUnconfirmedEmailUsers,
   resendConfirmationEmail,
   adminResetUserPassword,
+  fetchStudentsForHeadTeacher,
   incrementVideoViews,
   saveVideo,
   addPerformer,
