@@ -24,7 +24,7 @@ jobs:
         run: npm install --legacy-peer-deps
       
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:coverage | tee test-output.txt
         continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
