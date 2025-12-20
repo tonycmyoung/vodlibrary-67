@@ -224,10 +224,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const roleSelects = screen.getAllByRole("combobox")
-    const roleSelect = roleSelects.find((select: HTMLElement) =>
-      select.querySelector('option[value="Student"]'),
-    ) as HTMLSelectElement
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const roleSelect = johnDoeCard
+      ?.querySelector('select option[value="Student"]')
+      ?.closest("select") as HTMLSelectElement
 
     await user.selectOptions(roleSelect, "Teacher")
 
@@ -245,10 +246,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const beltSelects = screen.getAllByRole("combobox")
-    const beltSelect = beltSelects.find((select: HTMLElement) =>
-      select.querySelector('option[value="belt-1"]'),
-    ) as HTMLSelectElement
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const beltSelect = johnDoeCard
+      ?.querySelector('select option[value="belt-1"]')
+      ?.closest("select") as HTMLSelectElement
 
     await user.selectOptions(beltSelect, "belt-2")
 
@@ -265,8 +267,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const editButtons = screen.getAllByLabelText("Edit user")
-    await user.click(editButtons[0])
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
 
     await waitFor(() => {
       expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
@@ -284,8 +289,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const editButtons = screen.getAllByLabelText("Edit user")
-    await user.click(editButtons[0])
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
 
     await waitFor(() => {
       expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
@@ -311,8 +319,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const editButtons = screen.getAllByLabelText("Edit user")
-    await user.click(editButtons[0])
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
 
     await waitFor(() => {
       expect(screen.getByLabelText("Cancel editing")).toBeInTheDocument()
@@ -336,8 +347,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByLabelText("Delete user")
-    await user.click(deleteButtons[0])
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const deleteButton = johnDoeCard?.querySelector('button[aria-label="Delete user"]') as HTMLButtonElement
+
+    await user.click(deleteButton)
 
     expect(global.confirm).toHaveBeenCalledWith(expect.stringContaining('delete the user "john@example.com"'))
     expect(deleteUserCompletely).not.toHaveBeenCalled()
@@ -354,8 +368,11 @@ describe("StudentManagement", () => {
       expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
 
-    const deleteButtons = screen.getAllByLabelText("Delete user")
-    await user.click(deleteButtons[0])
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const deleteButton = johnDoeCard?.querySelector('button[aria-label="Delete user"]') as HTMLButtonElement
+
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(deleteUserCompletely).toHaveBeenCalledWith("student-1", "john@example.com")
