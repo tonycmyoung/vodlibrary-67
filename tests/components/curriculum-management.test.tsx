@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { vi, describe, it, expect, beforeEach } from "vitest"
 import CurriculumManagement from "@/components/curriculum-management"
 import * as curriculumActions from "@/lib/actions/curriculums"
+import { within } from "@testing-library/react"
 
 vi.mock("@/lib/actions/curriculums", () => ({
   getCurriculums: vi.fn(),
@@ -65,9 +66,17 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("5 videos")).toBeInTheDocument()
-      expect(screen.getByText("8 videos")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeInTheDocument()
     })
+
+    const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
+    const yellowBeltCard = screen.getByText("Yellow Belt").closest("div[class*='rounded']")
+
+    expect(whiteBeltCard).toBeTruthy()
+    expect(yellowBeltCard).toBeTruthy()
+
+    expect(within(whiteBeltCard!).getByText("5 videos")).toBeInTheDocument()
+    expect(within(yellowBeltCard!).getByText("8 videos")).toBeInTheDocument()
   })
 
   it("should open add curriculum dialog when Add button is clicked", async () => {

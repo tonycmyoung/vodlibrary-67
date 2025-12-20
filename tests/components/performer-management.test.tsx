@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event"
 import PerformerManagement from "@/components/performer-management"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { addPerformer, updatePerformer, deletePerformer } from "@/lib/actions"
+import { within } from "@testing-library/dom"
 
 vi.mock("@/lib/supabase/client")
 vi.mock("@/lib/actions", () => ({
@@ -89,9 +90,17 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("5 videos")).toBeInTheDocument()
-      expect(screen.getByText("3 videos")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeInTheDocument()
     })
+
+    const johnDoeCard = screen.getByText("John Doe").closest("div.p-3")
+    const janeSmithCard = screen.getByText("Jane Smith").closest("div.p-3")
+
+    expect(johnDoeCard).toBeTruthy()
+    expect(janeSmithCard).toBeTruthy()
+
+    expect(within(johnDoeCard!).getByText("5 videos")).toBeInTheDocument()
+    expect(within(janeSmithCard!).getByText("3 videos")).toBeInTheDocument()
   })
 
   it("should add new performer when Add button is clicked", async () => {

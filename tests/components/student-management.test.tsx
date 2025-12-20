@@ -6,6 +6,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client"
 import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
 import { deleteUserCompletely } from "@/lib/actions"
 import { useRouter, useSearchParams } from "next/navigation"
+import { within } from "@testing-library/react"
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -173,8 +174,12 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("Sensei Bob")).toBeInTheDocument()
-      expect(screen.getByText("Test Dojo")).toBeInTheDocument()
+      const johnDoeText = screen.getByText("John Doe")
+      const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
+      expect(johnDoeCard).toBeTruthy()
+
+      expect(within(johnDoeCard).getByText("Sensei Bob")).toBeInTheDocument()
+      expect(within(johnDoeCard).getByText(/Test Dojo/)).toBeInTheDocument()
     })
   })
 
@@ -182,7 +187,11 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("Inv: Admin User")).toBeInTheDocument()
+      const johnDoeText = screen.getByText("John Doe")
+      const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
+      expect(johnDoeCard).toBeTruthy()
+
+      expect(within(johnDoeCard).getByText("Inv: Admin User")).toBeInTheDocument()
     })
   })
 
