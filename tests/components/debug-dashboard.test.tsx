@@ -183,7 +183,8 @@ describe("DebugDashboard", () => {
     })
 
     expect(screen.getByText("Signup")).toBeInTheDocument()
-    expect(screen.getByText("Email")).toBeInTheDocument()
+    const emailBadges = screen.getAllByText("Email")
+    expect(emailBadges.some((badge) => badge.getAttribute("data-slot") === "badge")).toBe(true)
     expect(screen.getByText("Approval")).toBeInTheDocument()
   })
 
@@ -193,10 +194,16 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getAllByText("Success").length).toBeGreaterThan(0)
+      const user1Row = screen.getByText("user1@example.com").closest("tr")
+      expect(user1Row).toBeTruthy()
+      const successBadgeInRow = user1Row?.querySelector('[data-slot="badge"]')
+      expect(successBadgeInRow?.textContent).toBe("Success")
     })
 
-    expect(screen.getAllByText("Error").length).toBeGreaterThan(0)
+    const user2Row = screen.getByText("user2@example.com").closest("tr")
+    expect(user2Row).toBeTruthy()
+    const errorBadgeInRow = user2Row?.querySelector('[data-slot="badge"]')
+    expect(errorBadgeInRow?.textContent).toBe("Error")
   })
 
   it("should handle clear logs errors gracefully", async () => {

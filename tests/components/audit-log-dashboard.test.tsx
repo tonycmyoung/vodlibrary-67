@@ -225,8 +225,12 @@ describe("AuditLogDashboard", () => {
       expect(screen.getByText("admin@example.com")).toBeInTheDocument()
     })
 
-    const targetCells = screen.getAllByRole("cell").filter((cell) => cell.textContent === "-")
-    expect(targetCells.length).toBeGreaterThan(0)
+    const actorRow = screen.getByText("admin@example.com").closest("tr")
+    expect(actorRow).toBeTruthy()
+
+    const cells = actorRow?.querySelectorAll("td")
+    const hasEmptyTarget = Array.from(cells || []).some((cell) => cell.textContent?.trim() === "-")
+    expect(hasEmptyTarget).toBe(true)
   })
 
   it("should handle clear logs errors gracefully", async () => {
