@@ -39,17 +39,17 @@ describe("AdminStats", () => {
     render(<AdminStats />)
 
     await waitFor(() => {
-      expect(screen.getByText("Total Users")).toBeInTheDocument()
+      expect(screen.getByText("Total Users")).toBeTruthy()
     })
 
-    expect(screen.getByText("150")).toBeInTheDocument()
-    expect(screen.getByText("Videos Viewed This Week")).toBeInTheDocument()
-    expect(screen.getByText("300")).toBeInTheDocument()
-    expect(screen.getByText("Last week: 250")).toBeInTheDocument()
-    expect(screen.getByText("Total Views: 5,000")).toBeInTheDocument()
-    expect(screen.getByText("Logons This Week")).toBeInTheDocument()
-    expect(screen.getByText("75")).toBeInTheDocument()
-    expect(screen.getByText("Last week: 60")).toBeInTheDocument()
+    expect(screen.getByText("150")).toBeTruthy()
+    expect(screen.getByText("Videos Viewed This Week")).toBeTruthy()
+    expect(screen.getByText("300")).toBeTruthy()
+    expect(screen.getByText("Last week: 250")).toBeTruthy()
+    expect(screen.getByText("Total Views: 5,000")).toBeTruthy()
+    expect(screen.getByText("Logons This Week")).toBeTruthy()
+    expect(screen.getByText("75")).toBeTruthy()
+    expect(screen.getByText("Last week: 60")).toBeTruthy()
   })
 
   it("should handle fetch errors gracefully", async () => {
@@ -82,7 +82,7 @@ describe("AdminStats", () => {
     render(<AdminStats />)
 
     await waitFor(() => {
-      expect(screen.getByText("Total Users")).toBeInTheDocument()
+      expect(screen.getByText("Total Users")).toBeTruthy()
     })
 
     // Icons are rendered as SVG elements with lucide classes
@@ -118,14 +118,14 @@ describe("AdminStats", () => {
     render(<AdminStats />)
 
     await waitFor(() => {
-      expect(screen.getByText("100")).toBeInTheDocument()
+      expect(screen.getByText("100")).toBeTruthy()
     })
 
     // Dispatch refresh event
     window.dispatchEvent(new Event("admin-refresh-stats"))
 
     await waitFor(() => {
-      expect(screen.getByText("120")).toBeInTheDocument()
+      expect(screen.getByText("120")).toBeTruthy()
     })
 
     expect(actions.getTelemetryData).toHaveBeenCalledTimes(2)
@@ -164,7 +164,7 @@ describe("AdminStats", () => {
     const { unmount } = render(<AdminStats />)
 
     await waitFor(() => {
-      expect(screen.getByText("Total Users")).toBeInTheDocument()
+      expect(screen.getByText("Total Users")).toBeTruthy()
     })
 
     unmount()

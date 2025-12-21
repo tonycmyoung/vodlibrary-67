@@ -27,7 +27,7 @@ describe("PendingUsers", () => {
 
     render(<PendingUsers />)
 
-    expect(screen.getByText("Loading pending users...")).toBeInTheDocument()
+    expect(screen.getByText("Loading pending users...")).toBeTruthy()
   })
 
   it("should display empty state when no pending users", async () => {
@@ -39,7 +39,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("No pending user approvals")).toBeInTheDocument()
+      expect(screen.getByText("No pending user approvals")).toBeTruthy()
     })
   })
 
@@ -62,9 +62,9 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
-    expect(screen.getByText("john@example.com")).toBeInTheDocument()
+    expect(screen.getByText("john@example.com")).toBeTruthy()
     expect(screen.getAllByText(/Mr. Smith/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/Test School/).length).toBeGreaterThan(0)
   })
@@ -88,7 +88,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Invited by: Admin User/)).toBeInTheDocument()
+      expect(screen.getByText(/Invited by: Admin User/)).toBeTruthy()
     })
   })
 
@@ -111,7 +111,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("Direct signup")).toBeInTheDocument()
+      expect(screen.getByText("Direct signup")).toBeTruthy()
     })
   })
 
@@ -139,7 +139,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Find the approve button (green button with Check icon)
@@ -155,7 +155,7 @@ describe("PendingUsers", () => {
 
     // User should be removed from the list
     await waitFor(() => {
-      expect(screen.queryByText("John Doe")).not.toBeInTheDocument()
+      expect(screen.queryByText("John Doe")).toBeNull()
     })
   })
 
@@ -183,7 +183,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Find the reject button (red button with X icon)
@@ -199,7 +199,7 @@ describe("PendingUsers", () => {
 
     // User should be removed from the list
     await waitFor(() => {
-      expect(screen.queryByText("John Doe")).not.toBeInTheDocument()
+      expect(screen.queryByText("John Doe")).toBeNull()
     })
   })
 
@@ -227,7 +227,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Find and change the role select
@@ -264,7 +264,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Find the edit button (blue button with Edit2 icon)
@@ -305,7 +305,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Click edit button
@@ -353,7 +353,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     // Click edit button
@@ -411,7 +411,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("2 pending")).toBeInTheDocument()
+      expect(screen.getByText("2 pending")).toBeTruthy()
     })
   })
 
@@ -425,7 +425,7 @@ describe("PendingUsers", () => {
     render(<PendingUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("No pending user approvals")).toBeInTheDocument()
+      expect(screen.getByText("No pending user approvals")).toBeTruthy()
     })
 
     expect(consoleError).toHaveBeenCalledWith("Error fetching pending users:", "Failed to fetch users")

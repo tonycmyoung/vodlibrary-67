@@ -32,25 +32,25 @@ describe("DonationModal", () => {
 
   it("should not render when isOpen is false", () => {
     render(<DonationModal isOpen={false} onClose={mockOnClose} />)
-    expect(screen.queryByText(/Support the Okinawa Kobudo Library/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Support the Okinawa Kobudo Library/i)).toBeNull()
   })
 
   it("should render when isOpen is true", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    expect(screen.getByText(/Support the Okinawa Kobudo Library/i)).toBeInTheDocument()
+    expect(screen.getByText(/Support the Okinawa Kobudo Library/i)).toBeTruthy()
   })
 
   it("should display donation message content", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    expect(screen.getByText(/Thanks for considering to donate!/i)).toBeInTheDocument()
-    expect(screen.getByText(/yearly costs for domains, maintenance and hosting/i)).toBeInTheDocument()
-    expect(screen.getByText(/Thanks - Tony/i)).toBeInTheDocument()
+    expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    expect(screen.getByText(/yearly costs for domains, maintenance and hosting/i)).toBeTruthy()
+    expect(screen.getByText(/Thanks - Tony/i)).toBeTruthy()
   })
 
   it("should have PayPal donate button", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const paypalButton = screen.getByRole("button", { name: /donate via paypal/i })
-    expect(paypalButton).toBeInTheDocument()
+    expect(paypalButton).toBeTruthy()
   })
 
   it("should open PayPal link in new tab when donate button is clicked", () => {
@@ -65,7 +65,7 @@ describe("DonationModal", () => {
   it("should display PayID email address", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const emailElement = screen.getByText("acmyma@gmail.com")
-    expect(emailElement).toBeInTheDocument()
+    expect(emailElement).toBeTruthy()
     // Verify it has the font-mono class
     expect(emailElement.className).toContain("font-mono")
   })
@@ -88,7 +88,7 @@ describe("DonationModal", () => {
     fireEvent.click(copyButton)
 
     await waitFor(() => {
-      expect(screen.getByTitle("Copied!")).toBeInTheDocument()
+      expect(screen.getByTitle("Copied!")).toBeTruthy()
     })
   })
 

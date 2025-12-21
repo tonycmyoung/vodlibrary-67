@@ -11,7 +11,7 @@ describe("AdminRefreshButton", () => {
   it("should render button with correct initial text", () => {
     render(<AdminRefreshButton />)
 
-    expect(screen.getByRole("button", { name: /refresh all/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /refresh all/i })).toBeTruthy()
   })
 
   it("should dispatch three custom events when clicked", async () => {
@@ -45,7 +45,7 @@ describe("AdminRefreshButton", () => {
     await user.click(button)
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refreshing/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /refreshing/i })).toBeTruthy()
     })
 
     const refreshingButton = screen.getByRole("button", { name: /refreshing/i })
@@ -81,7 +81,7 @@ describe("AdminRefreshButton", () => {
     await waitFor(
       () => {
         expect(button).not.toBeDisabled()
-        expect(screen.getByRole("button", { name: /refresh all/i })).toBeInTheDocument()
+        expect(screen.getByRole("button", { name: /refresh all/i })).toBeTruthy()
       },
       { timeout: 2000 },
     )

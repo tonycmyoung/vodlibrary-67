@@ -22,15 +22,15 @@ describe("CurriculumFilter", () => {
   it("should render all curriculums sorted by display_order", () => {
     render(<CurriculumFilter {...defaultProps} />)
 
-    expect(screen.getByText("10.Kyu")).toBeInTheDocument()
-    expect(screen.getByText("9.Kyu")).toBeInTheDocument()
-    expect(screen.getByText("8.Kyu")).toBeInTheDocument()
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("9.Kyu")).toBeTruthy()
+    expect(screen.getByText("8.Kyu")).toBeTruthy()
   })
 
   it("should render CURRICULUM label", () => {
     render(<CurriculumFilter {...defaultProps} />)
 
-    expect(screen.getByText("CURRICULUM")).toBeInTheDocument()
+    expect(screen.getByText("CURRICULUM")).toBeTruthy()
   })
 
   it("should call onCurriculumToggle when curriculum is clicked", () => {
@@ -60,14 +60,14 @@ describe("CurriculumFilter", () => {
     render(<CurriculumFilter {...defaultProps} />)
 
     // Tooltips are rendered but descriptions are in TooltipContent which needs hover to show
-    expect(screen.getByText("10.Kyu")).toBeInTheDocument()
-    expect(screen.getByText("9.Kyu")).toBeInTheDocument()
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("9.Kyu")).toBeTruthy()
   })
 
   it("should handle curriculums without descriptions", () => {
     render(<CurriculumFilter {...defaultProps} />)
 
-    expect(screen.getByText("8.Kyu")).toBeInTheDocument()
+    expect(screen.getByText("8.Kyu")).toBeTruthy()
   })
 
   it("should apply correct colors to badges", () => {

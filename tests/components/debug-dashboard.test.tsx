@@ -40,7 +40,7 @@ describe("DebugDashboard", () => {
 
     render(<DebugDashboard />)
 
-    expect(screen.getByText("Loading debug logs...")).toBeInTheDocument()
+    expect(screen.getByText("Loading debug logs...")).toBeTruthy()
     const spinner = document.querySelector(".animate-spin")
     expect(spinner).toBeTruthy()
   })
@@ -51,12 +51,12 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument()
+      expect(screen.getByText("user1@example.com")).toBeTruthy()
     })
 
-    expect(screen.getByText("user2@example.com")).toBeInTheDocument()
-    expect(screen.getByText("Email already exists")).toBeInTheDocument()
-    expect(screen.getByText("2 logs total")).toBeInTheDocument()
+    expect(screen.getByText("user2@example.com")).toBeTruthy()
+    expect(screen.getByText("Email already exists")).toBeTruthy()
+    expect(screen.getByText("2 logs total")).toBeTruthy()
   })
 
   it("should display empty state when no logs exist", async () => {
@@ -65,10 +65,10 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("No debug logs found")).toBeInTheDocument()
+      expect(screen.getByText("No debug logs found")).toBeTruthy()
     })
 
-    expect(screen.getByText("Logs will appear here when users attempt to sign in or sign up")).toBeInTheDocument()
+    expect(screen.getByText("Logs will appear here when users attempt to sign in or sign up")).toBeTruthy()
   })
 
   it("should handle fetch errors gracefully", async () => {
@@ -92,7 +92,7 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument()
+      expect(screen.getByText("user1@example.com")).toBeTruthy()
     })
 
     const refreshButton = screen.getByRole("button", { name: /refresh/i })
@@ -109,14 +109,14 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument()
+      expect(screen.getByText("user1@example.com")).toBeTruthy()
     })
 
     const clearButton = screen.getByRole("button", { name: /clear all logs/i })
     await user.click(clearButton)
 
     await waitFor(() => {
-      expect(screen.getByText("No debug logs found")).toBeInTheDocument()
+      expect(screen.getByText("No debug logs found")).toBeTruthy()
     })
 
     expect(actions.clearAuthDebugLogs).toHaveBeenCalledTimes(1)
@@ -128,7 +128,7 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("No debug logs found")).toBeInTheDocument()
+      expect(screen.getByText("No debug logs found")).toBeTruthy()
     })
 
     const clearButton = screen.getByRole("button", { name: /clear all logs/i })
@@ -142,7 +142,7 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument()
+      expect(screen.getByText("user1@example.com")).toBeTruthy()
     })
 
     const logRow = screen.getByText("user1@example.com").closest("tr")
@@ -151,13 +151,13 @@ describe("DebugDashboard", () => {
     await user.click(logRow!)
 
     await waitFor(() => {
-      expect(screen.getByText("Additional Data")).toBeInTheDocument()
+      expect(screen.getByText("Additional Data")).toBeTruthy()
     })
 
     await user.click(logRow!)
 
     await waitFor(() => {
-      expect(screen.queryByText("Additional Data")).not.toBeInTheDocument()
+      expect(screen.queryByText("Additional Data")).toBeNull()
     })
   })
 
@@ -179,13 +179,13 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Login")).toBeInTheDocument()
+      expect(screen.getByText("Login")).toBeTruthy()
     })
 
-    expect(screen.getByText("Signup")).toBeInTheDocument()
+    expect(screen.getByText("Signup")).toBeTruthy()
     const emailBadges = screen.getAllByText("Email")
     expect(emailBadges.some((badge) => badge.getAttribute("data-slot") === "badge")).toBe(true)
-    expect(screen.getByText("Approval")).toBeInTheDocument()
+    expect(screen.getByText("Approval")).toBeTruthy()
   })
 
   it("should display success and error indicators correctly", async () => {
@@ -196,12 +196,12 @@ describe("DebugDashboard", () => {
     await waitFor(() => {
       const user1Row = screen.getByText("user1@example.com").closest("tr")
       expect(user1Row).toBeTruthy()
-      expect(within(user1Row!).getByText("Success")).toBeInTheDocument()
+      expect(within(user1Row!).getByText("Success")).toBeTruthy()
     })
 
     const user2Row = screen.getByText("user2@example.com").closest("tr")
     expect(user2Row).toBeTruthy()
-    expect(within(user2Row!).getByText("Error")).toBeInTheDocument()
+    expect(within(user2Row!).getByText("Error")).toBeTruthy()
   })
 
   it("should handle clear logs errors gracefully", async () => {
@@ -214,7 +214,7 @@ describe("DebugDashboard", () => {
     render(<DebugDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("user1@example.com")).toBeInTheDocument()
+      expect(screen.getByText("user1@example.com")).toBeTruthy()
     })
 
     const clearButton = screen.getByRole("button", { name: /clear all logs/i })

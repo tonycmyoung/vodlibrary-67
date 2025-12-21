@@ -32,20 +32,20 @@ describe("SignUpForm", () => {
   it("should render sign up form with all fields", () => {
     render(<SignUpForm />)
 
-    expect(screen.getByText(/Join Okinawa Kobudo Library/)).toBeInTheDocument()
-    expect(screen.getByLabelText("Full Name")).toBeInTheDocument()
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByLabelText("Teacher")).toBeInTheDocument()
-    expect(screen.getByLabelText("School")).toBeInTheDocument()
-    expect(screen.getByLabelText("Password")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Create Account/i })).toBeInTheDocument()
+    expect(screen.getByText(/Join Okinawa Kobudo Library/)).toBeTruthy()
+    expect(screen.getByLabelText("Full Name")).toBeTruthy()
+    expect(screen.getByLabelText("Email")).toBeTruthy()
+    expect(screen.getByLabelText("Teacher")).toBeTruthy()
+    expect(screen.getByLabelText("School")).toBeTruthy()
+    expect(screen.getByLabelText("Password")).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Create Account/i })).toBeTruthy()
   })
 
   it("should render legal agreement checkboxes", () => {
     render(<SignUpForm />)
 
-    expect(screen.getByLabelText(/End User License Agreement/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Privacy Policy/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/End User License Agreement/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Privacy Policy/i)).toBeTruthy()
   })
 
   it("should disable submit button when legal agreements are not checked", () => {
@@ -71,7 +71,7 @@ describe("SignUpForm", () => {
   it("should show warning when legal agreements are not accepted", () => {
     render(<SignUpForm />)
 
-    expect(screen.getByText(/You must accept both the EULA and Privacy Policy/i)).toBeInTheDocument()
+    expect(screen.getByText(/You must accept both the EULA and Privacy Policy/i)).toBeTruthy()
   })
 
   it("should hide warning when legal agreements are accepted", () => {
@@ -83,7 +83,7 @@ describe("SignUpForm", () => {
     fireEvent.click(eulaCheckbox)
     fireEvent.click(privacyCheckbox)
 
-    expect(screen.queryByText(/You must accept both the EULA and Privacy Policy/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/You must accept both the EULA and Privacy Policy/i)).toBeNull()
   })
 
   it("should toggle password visibility", () => {
@@ -129,20 +129,20 @@ describe("SignUpForm", () => {
   it("should display password requirements text", () => {
     render(<SignUpForm />)
 
-    expect(screen.getByText(/min 6 characters with uppercase, lowercase, number, and symbol/i)).toBeInTheDocument()
+    expect(screen.getByText(/min 6 characters with uppercase, lowercase, number, and symbol/i)).toBeTruthy()
   })
 
   it("should display admin approval notice", () => {
     render(<SignUpForm />)
 
-    expect(screen.getByText(/Your account will require admin approval/i)).toBeInTheDocument()
+    expect(screen.getByText(/Your account will require admin approval/i)).toBeTruthy()
   })
 
   it("should render sign in link", () => {
     render(<SignUpForm />)
 
     const signInLink = screen.getByRole("link", { name: /Sign in/i })
-    expect(signInLink).toBeInTheDocument()
+    expect(signInLink).toBeTruthy()
     expect(signInLink).toHaveAttribute("href", "/auth/login")
   })
 
@@ -152,9 +152,9 @@ describe("SignUpForm", () => {
     const eulaLink = screen.getByRole("link", { name: /End User License Agreement.*EULA/i })
     const privacyLink = screen.getByRole("link", { name: /Privacy Policy/i })
 
-    expect(eulaLink).toBeInTheDocument()
+    expect(eulaLink).toBeTruthy()
     expect(eulaLink).toHaveAttribute("href", "/eula")
-    expect(privacyLink).toBeInTheDocument()
+    expect(privacyLink).toBeTruthy()
     expect(privacyLink).toHaveAttribute("href", "/privacy-policy")
   })
 })

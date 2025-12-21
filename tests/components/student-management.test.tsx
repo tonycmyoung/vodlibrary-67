@@ -132,15 +132,15 @@ describe("StudentManagement", () => {
   it("should render loading state initially", () => {
     vi.mocked(fetchStudentsForHeadTeacher).mockReturnValue(new Promise(() => {}))
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
-    expect(screen.getByText("Loading students...")).toBeInTheDocument()
+    expect(screen.getByText("Loading students...")).toBeTruthy()
   })
 
   it("should render student list after loading", async () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
+      expect(screen.getByText("Jane Smith")).toBeTruthy()
     })
   })
 
@@ -148,7 +148,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("Students (2)")).toBeInTheDocument()
+      expect(screen.getByText("Students (2)")).toBeTruthy()
     })
   })
 
@@ -160,7 +160,6 @@ describe("StudentManagement", () => {
       const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
       expect(johnDoeCard).toBeTruthy()
 
-      // Verify John Doe (student-1) has "Student" role badge in their card
       const johnRoleBadge = within(johnDoeCard).getByText((content, element) => {
         return (
           element?.tagName.toLowerCase() === "span" &&
@@ -168,13 +167,12 @@ describe("StudentManagement", () => {
           element?.getAttribute("data-slot") === "badge"
         )
       })
-      expect(johnRoleBadge).toBeInTheDocument()
+      expect(johnRoleBadge).toBeTruthy()
 
       const janeSmithText = screen.getByText("Jane Smith")
       const janeSmithCard = janeSmithText.closest(".flex.flex-col") as HTMLElement
       expect(janeSmithCard).toBeTruthy()
 
-      // Verify Jane Smith (student-2) has "Teacher" role badge in their card
       const janeRoleBadge = within(janeSmithCard).getByText((content, element) => {
         return (
           element?.tagName.toLowerCase() === "span" &&
@@ -182,7 +180,7 @@ describe("StudentManagement", () => {
           element?.getAttribute("data-slot") === "badge"
         )
       })
-      expect(janeRoleBadge).toBeInTheDocument()
+      expect(janeRoleBadge).toBeTruthy()
     })
   })
 
@@ -190,8 +188,8 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("5 logins")).toBeInTheDocument()
-      expect(screen.getByText("10 views")).toBeInTheDocument()
+      expect(screen.getByText("5 logins")).toBeTruthy()
+      expect(screen.getByText("10 views")).toBeTruthy()
     })
   })
 
@@ -203,8 +201,8 @@ describe("StudentManagement", () => {
       const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
       expect(johnDoeCard).toBeTruthy()
 
-      expect(within(johnDoeCard).getByText("Sensei Bob")).toBeInTheDocument()
-      expect(within(johnDoeCard).getByText(/Test Dojo/)).toBeInTheDocument()
+      expect(within(johnDoeCard).getByText("Sensei Bob")).toBeTruthy()
+      expect(within(johnDoeCard).getByText(/Test Dojo/)).toBeTruthy()
     })
   })
 
@@ -216,7 +214,7 @@ describe("StudentManagement", () => {
       const johnDoeCard = johnDoeText.closest(".flex.flex-col") as HTMLElement
       expect(johnDoeCard).toBeTruthy()
 
-      expect(within(johnDoeCard).getByText("Inv: Admin User")).toBeInTheDocument()
+      expect(within(johnDoeCard).getByText("Inv: Admin User")).toBeTruthy()
     })
   })
 
@@ -224,7 +222,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Search students...")).toBeInTheDocument()
+      expect(screen.getByPlaceholderText("Search students...")).toBeTruthy()
     })
   })
 
@@ -233,7 +231,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search students...")
@@ -241,8 +239,8 @@ describe("StudentManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.queryByText("John Doe")).not.toBeInTheDocument()
-        expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+        expect(screen.queryByText("John Doe")).toBeNull()
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
       },
       { timeout: 500 },
     )
@@ -255,7 +253,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -277,7 +275,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -298,7 +296,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -308,8 +306,8 @@ describe("StudentManagement", () => {
     await user.click(editButton)
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
-      expect(screen.getByLabelText("Cancel editing")).toBeInTheDocument()
+      expect(screen.getByLabelText("Save changes")).toBeTruthy()
+      expect(screen.getByLabelText("Cancel editing")).toBeTruthy()
     })
   })
 
@@ -320,7 +318,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -330,7 +328,7 @@ describe("StudentManagement", () => {
     await user.click(editButton)
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
+      expect(screen.getByLabelText("Save changes")).toBeTruthy()
     })
 
     const nameInput = screen.getByPlaceholderText("Full name")
@@ -350,7 +348,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -360,14 +358,14 @@ describe("StudentManagement", () => {
     await user.click(editButton)
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Cancel editing")).toBeInTheDocument()
+      expect(screen.getByLabelText("Cancel editing")).toBeTruthy()
     })
 
     const cancelButton = screen.getByLabelText("Cancel editing")
     await user.click(cancelButton)
 
     await waitFor(() => {
-      expect(screen.queryByLabelText("Save changes")).not.toBeInTheDocument()
+      expect(screen.queryByLabelText("Save changes")).toBeNull()
     })
   })
 
@@ -378,7 +376,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -399,7 +397,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -427,7 +425,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search students...")
@@ -435,7 +433,7 @@ describe("StudentManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText("No students found matching your criteria.")).toBeInTheDocument()
+        expect(screen.getByText("No students found matching your criteria.")).toBeTruthy()
       },
       { timeout: 500 },
     )
@@ -446,7 +444,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("No students found for your school.")).toBeInTheDocument()
+      expect(screen.getByText("No students found for your school.")).toBeTruthy()
     })
   })
 
@@ -455,7 +453,7 @@ describe("StudentManagement", () => {
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
     await waitFor(() => {
-      expect(screen.getByText("No students found for your school.")).toBeInTheDocument()
+      expect(screen.getByText("No students found for your school.")).toBeTruthy()
     })
   })
 })

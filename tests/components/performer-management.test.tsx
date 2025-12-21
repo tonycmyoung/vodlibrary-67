@@ -61,15 +61,15 @@ describe("PerformerManagement", () => {
 
   it("should render loading state initially", () => {
     render(<PerformerManagement />)
-    expect(screen.getByText("Loading performers...")).toBeInTheDocument()
+    expect(screen.getByText("Loading performers...")).toBeTruthy()
   })
 
   it("should render performers after loading", async () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
+      expect(screen.getByText("Jane Smith")).toBeTruthy()
     })
   })
 
@@ -77,7 +77,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     await waitFor(() => {
@@ -90,7 +90,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeCard = screen.getByText("John Doe").closest("div.p-3")
@@ -99,15 +99,15 @@ describe("PerformerManagement", () => {
     expect(johnDoeCard).toBeTruthy()
     expect(janeSmithCard).toBeTruthy()
 
-    expect(within(johnDoeCard!).getByText("5 videos")).toBeInTheDocument()
-    expect(within(janeSmithCard!).getByText("3 videos")).toBeInTheDocument()
+    expect(within(johnDoeCard!).getByText("5 videos")).toBeTruthy()
+    expect(within(janeSmithCard!).getByText("3 videos")).toBeTruthy()
   })
 
   it("should add new performer when Add button is clicked", async () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const input = screen.getByPlaceholderText("Performer name")
@@ -125,7 +125,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const addButton = screen.getByRole("button", { name: /add/i })
@@ -138,7 +138,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const allButtons = screen.getAllByRole("button")
@@ -152,8 +152,8 @@ describe("PerformerManagement", () => {
     await user.click(editButton as HTMLElement)
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /save/i })).toBeTruthy()
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeTruthy()
     })
   })
 
@@ -161,7 +161,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -172,7 +172,7 @@ describe("PerformerManagement", () => {
     await user.click(editButton as HTMLElement)
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /save/i })).toBeTruthy()
     })
 
     const input = screen.getByDisplayValue("John Doe")
@@ -191,7 +191,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -202,14 +202,14 @@ describe("PerformerManagement", () => {
     await user.click(editButton as HTMLElement)
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeTruthy()
     })
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i })
     await user.click(cancelButton)
 
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /save/i })).toBeNull()
     })
   })
 
@@ -219,7 +219,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -242,7 +242,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const johnDoeText = screen.getByText("John Doe")
@@ -265,7 +265,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/No performers found/i)).toBeInTheDocument()
+      expect(screen.getByText(/No performers found/i)).toBeTruthy()
     })
   })
 
@@ -273,7 +273,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const input = screen.getByPlaceholderText("Performer name")
@@ -283,7 +283,7 @@ describe("PerformerManagement", () => {
     await user.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Performer added successfully")).toBeInTheDocument()
+      expect(screen.getByText("Performer added successfully")).toBeTruthy()
     })
   })
 
@@ -293,7 +293,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const input = screen.getByPlaceholderText("Performer name")
@@ -303,7 +303,7 @@ describe("PerformerManagement", () => {
     await user.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Error adding performer/i)).toBeInTheDocument()
+      expect(screen.getByText(/Error adding performer/i)).toBeTruthy()
     })
   })
 
@@ -313,7 +313,7 @@ describe("PerformerManagement", () => {
     render(<PerformerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Failed to load performers")).toBeInTheDocument()
+      expect(screen.getByText("Failed to load performers")).toBeTruthy()
     })
   })
 })

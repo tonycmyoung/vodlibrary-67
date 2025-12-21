@@ -37,25 +37,25 @@ describe("CategoryFilter", () => {
   it("should render all category sections", () => {
     render(<CategoryFilter {...defaultProps} />)
 
-    expect(screen.getByText("Filter by")).toBeInTheDocument()
-    expect(screen.getByText("CATEGORY")).toBeInTheDocument()
-    expect(screen.getByText("PERFORMERS")).toBeInTheDocument()
-    expect(screen.getByText("RECORDED")).toBeInTheDocument()
+    expect(screen.getByText("Filter by")).toBeTruthy()
+    expect(screen.getByText("CATEGORY")).toBeTruthy()
+    expect(screen.getByText("PERFORMERS")).toBeTruthy()
+    expect(screen.getByText("RECORDED")).toBeTruthy()
   })
 
   it("should render all categories", () => {
     render(<CategoryFilter {...defaultProps} />)
 
-    expect(screen.getByText("Bo")).toBeInTheDocument()
-    expect(screen.getByText("Sai")).toBeInTheDocument()
-    expect(screen.getByText("Nunchaku")).toBeInTheDocument()
+    expect(screen.getByText("Bo")).toBeTruthy()
+    expect(screen.getByText("Sai")).toBeTruthy()
+    expect(screen.getByText("Nunchaku")).toBeTruthy()
   })
 
   it("should render all performers", () => {
     render(<CategoryFilter {...defaultProps} />)
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+    expect(screen.getByText("John Doe")).toBeTruthy()
+    expect(screen.getByText("Jane Smith")).toBeTruthy()
   })
 
   it("should render recorded years in chronological order", () => {
@@ -109,25 +109,25 @@ describe("CategoryFilter", () => {
   it("should display correct video count", () => {
     render(<CategoryFilter {...defaultProps} videoCount={5} />)
 
-    expect(screen.getByText(/Showing 5 videos/)).toBeInTheDocument()
+    expect(screen.getByText(/Showing 5 videos/)).toBeTruthy()
   })
 
   it("should display filter count when filters are selected", () => {
     render(<CategoryFilter {...defaultProps} selectedCategories={["cat-1", "cat-2"]} videoCount={3} />)
 
-    expect(screen.getByText(/Showing 3 videos matching: 2 filters/)).toBeInTheDocument()
+    expect(screen.getByText(/Showing 3 videos matching: 2 filters/)).toBeTruthy()
   })
 
   it("should show Clear All button when filters are selected", () => {
     render(<CategoryFilter {...defaultProps} selectedCategories={["cat-1"]} />)
 
-    expect(screen.getByText("Clear All")).toBeInTheDocument()
+    expect(screen.getByText("Clear All")).toBeTruthy()
   })
 
   it("should not show Clear All button when no filters are selected", () => {
     render(<CategoryFilter {...defaultProps} selectedCategories={[]} />)
 
-    expect(screen.queryByText("Clear All")).not.toBeInTheDocument()
+    expect(screen.queryByText("Clear All")).toBeNull()
   })
 
   it("should clear all filters when Clear All is clicked", () => {
@@ -162,14 +162,14 @@ describe("CategoryFilter", () => {
       />,
     )
 
-    expect(screen.getByText("CURRICULUM")).toBeInTheDocument()
+    expect(screen.getByText("CURRICULUM")).toBeTruthy()
   })
 
   it("should filter out 'Unset' from recorded values", () => {
     render(<CategoryFilter {...defaultProps} recordedValues={["2023", "Unset", "DVD"]} />)
 
-    expect(screen.queryByText("Unset")).not.toBeInTheDocument()
-    expect(screen.getByText("2023")).toBeInTheDocument()
-    expect(screen.getByText("DVD")).toBeInTheDocument()
+    expect(screen.queryByText("Unset")).toBeNull()
+    expect(screen.getByText("2023")).toBeTruthy()
+    expect(screen.getByText("DVD")).toBeTruthy()
   })
 })

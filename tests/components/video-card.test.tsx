@@ -76,38 +76,38 @@ describe("VideoCard", () => {
   it("should render video card with all information", () => {
     render(<VideoCard video={mockVideo} />)
 
-    expect(screen.getByText("Test Video")).toBeInTheDocument()
-    expect(screen.getByText("Test description")).toBeInTheDocument()
-    expect(screen.getByText("2:05")).toBeInTheDocument() // 125 seconds
-    expect(screen.getByText("100 views")).toBeInTheDocument()
+    expect(screen.getByText("Test Video")).toBeTruthy()
+    expect(screen.getByText("Test description")).toBeTruthy()
+    expect(screen.getByText("2:05")).toBeTruthy() // 125 seconds
+    expect(screen.getByText("100 views")).toBeTruthy()
   })
 
   it("should render categories and curriculums", () => {
     render(<VideoCard video={mockVideo} />)
 
-    expect(screen.getByText("Bo")).toBeInTheDocument()
-    expect(screen.getByText("Sai")).toBeInTheDocument()
-    expect(screen.getByText("10.Kyu")).toBeInTheDocument()
-    expect(screen.getByText("9.Kyu")).toBeInTheDocument()
+    expect(screen.getByText("Bo")).toBeTruthy()
+    expect(screen.getByText("Sai")).toBeTruthy()
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("9.Kyu")).toBeTruthy()
   })
 
   it("should render performer badge", () => {
     render(<VideoCard video={mockVideo} />)
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
+    expect(screen.getByText("John Doe")).toBeTruthy()
   })
 
   it("should render recorded year", () => {
     render(<VideoCard video={mockVideo} />)
 
-    expect(screen.getByText("2023")).toBeInTheDocument()
+    expect(screen.getByText("2023")).toBeTruthy()
   })
 
   it("should format duration correctly", () => {
     const videoWithDuration = { ...mockVideo, duration_seconds: 3665 } // 1 hour, 1 minute, 5 seconds
     render(<VideoCard video={videoWithDuration} />)
 
-    expect(screen.getByText("61:05")).toBeInTheDocument()
+    expect(screen.getByText("61:05")).toBeTruthy()
   })
 
   it("should not show duration badge when duration is null", () => {
@@ -115,11 +115,11 @@ describe("VideoCard", () => {
     render(<VideoCard video={videoWithoutDuration} />)
 
     // Badge should not be present when duration is null
-    expect(screen.queryByText("Unknown")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unknown")).toBeNull()
     // The Clock icon should also not be present
     const card = screen.getByText("Test Video").closest(".group")
     const clockIcon = card?.querySelector('[class*="lucide-clock"]')
-    expect(clockIcon).not.toBeInTheDocument()
+    expect(clockIcon).toBeNull()
   })
 
   it("should render placeholder when no thumbnail", () => {
@@ -128,7 +128,7 @@ describe("VideoCard", () => {
 
     // Should render gradient background with Play icon
     const card = screen.getByText("Test Video").closest(".group")
-    expect(card).toBeInTheDocument()
+    expect(card).toBeTruthy()
   })
 
   it("should toggle favorite when heart button is clicked", async () => {
@@ -218,8 +218,8 @@ describe("VideoCard", () => {
     }
     render(<VideoCard video={videoWithInvalidCategories as any} />)
 
-    expect(screen.getByText("Bo")).toBeInTheDocument()
-    expect(screen.queryByText("null")).not.toBeInTheDocument()
+    expect(screen.getByText("Bo")).toBeTruthy()
+    expect(screen.queryByText("null")).toBeNull()
   })
 
   it("should sort curriculums by display_order", () => {
@@ -241,6 +241,6 @@ describe("VideoCard", () => {
     const videoWithUnsetRecorded = { ...mockVideo, recorded: "Unset" }
     render(<VideoCard video={videoWithUnsetRecorded} />)
 
-    expect(screen.queryByText("Unset")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unset")).toBeNull()
   })
 })

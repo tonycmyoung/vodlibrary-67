@@ -23,46 +23,46 @@ describe("UserFilter", () => {
   it("should render filter controls", () => {
     render(<UserFilter {...defaultProps} />)
 
-    expect(screen.getByText("Filter by")).toBeInTheDocument()
-    expect(screen.getByText("Role:")).toBeInTheDocument()
-    expect(screen.getByText("School:")).toBeInTheDocument()
-    expect(screen.getByText("Belt:")).toBeInTheDocument()
+    expect(screen.getByText("Filter by")).toBeTruthy()
+    expect(screen.getByText("Role:")).toBeTruthy()
+    expect(screen.getByText("School:")).toBeTruthy()
+    expect(screen.getByText("Belt:")).toBeTruthy()
   })
 
   it("should display user count", () => {
     render(<UserFilter {...defaultProps} />)
 
-    expect(screen.getByText(/Showing 25 users/)).toBeInTheDocument()
+    expect(screen.getByText(/Showing 25 users/)).toBeTruthy()
   })
 
   it("should render role select with correct placeholder", () => {
     render(<UserFilter {...defaultProps} />)
 
     const selects = screen.getAllByRole("combobox")
-    expect(selects[0]).toBeInTheDocument()
-    expect(screen.getByText("All Roles")).toBeInTheDocument()
+    expect(selects[0]).toBeTruthy()
+    expect(screen.getByText("All Roles")).toBeTruthy()
   })
 
   it("should render school select with correct placeholder", () => {
     render(<UserFilter {...defaultProps} />)
 
     const selects = screen.getAllByRole("combobox")
-    expect(selects[1]).toBeInTheDocument()
-    expect(screen.getByText("All Schools")).toBeInTheDocument()
+    expect(selects[1]).toBeTruthy()
+    expect(screen.getByText("All Schools")).toBeTruthy()
   })
 
   it("should render belt select with correct placeholder", () => {
     render(<UserFilter {...defaultProps} />)
 
     const selects = screen.getAllByRole("combobox")
-    expect(selects[2]).toBeInTheDocument()
-    expect(screen.getByText("All Belts")).toBeInTheDocument()
+    expect(selects[2]).toBeTruthy()
+    expect(screen.getByText("All Belts")).toBeTruthy()
   })
 
   it("should show Clear All button when filters are active", () => {
     render(<UserFilter {...defaultProps} selectedRole="Teacher" />)
 
-    expect(screen.getByRole("button", { name: /Clear All/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Clear All/i })).toBeTruthy()
   })
 
   it("should call clear functions when Clear All is clicked", async () => {
@@ -92,8 +92,8 @@ describe("UserFilter", () => {
   it("should display active filter badges", () => {
     render(<UserFilter {...defaultProps} selectedRole="Teacher" selectedSchool="School A" />)
 
-    expect(screen.getByText(/Role: Teacher/)).toBeInTheDocument()
-    expect(screen.getByText(/School: School A/)).toBeInTheDocument()
+    expect(screen.getByText(/Role: Teacher/)).toBeTruthy()
+    expect(screen.getByText(/School: School A/)).toBeTruthy()
   })
 
   it("should remove individual filter when badge is clicked", async () => {
@@ -110,6 +110,6 @@ describe("UserFilter", () => {
   it("should show filter count in description when filters are active", () => {
     render(<UserFilter {...defaultProps} selectedRole="Teacher" selectedSchool="School A" />)
 
-    expect(screen.getByText(/Showing 25 users matching: 2 filters/)).toBeInTheDocument()
+    expect(screen.getByText(/Showing 25 users matching: 2 filters/)).toBeTruthy()
   })
 })

@@ -52,8 +52,8 @@ describe("VideoCardList", () => {
   it("should render video title and description", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    expect(screen.getByText("Test Video")).toBeInTheDocument()
-    expect(screen.getByText("Test Description")).toBeInTheDocument()
+    expect(screen.getByText("Test Video")).toBeTruthy()
+    expect(screen.getByText("Test Description")).toBeTruthy()
   })
 
   it("should render thumbnail image", () => {
@@ -66,20 +66,20 @@ describe("VideoCardList", () => {
   it("should render duration badge", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    expect(screen.getByText("5:00")).toBeInTheDocument()
+    expect(screen.getByText("5:00")).toBeTruthy()
   })
 
   it("should render categories and performers", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    expect(screen.getByText("Category 1")).toBeInTheDocument()
-    expect(screen.getByText("Performer 1")).toBeInTheDocument()
+    expect(screen.getByText("Category 1")).toBeTruthy()
+    expect(screen.getByText("Performer 1")).toBeTruthy()
   })
 
   it("should render recorded date when not Unset", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    expect(screen.getByText("2024-01-01")).toBeInTheDocument()
+    expect(screen.getByText("2024-01-01")).toBeTruthy()
   })
 
   it("should not render recorded badge when Unset", () => {
@@ -93,20 +93,20 @@ describe("VideoCardList", () => {
   it("should display view count", () => {
     render(<VideoCardList video={mockVideo} viewCount={150} />)
 
-    expect(screen.getByText("150 views")).toBeInTheDocument()
+    expect(screen.getByText("150 views")).toBeTruthy()
   })
 
   it("should use video.views when viewCount not provided", () => {
     render(<VideoCardList video={mockVideo} />)
 
-    expect(screen.getByText("100 views")).toBeInTheDocument()
+    expect(screen.getByText("100 views")).toBeTruthy()
   })
 
   it("should render favorite button", () => {
     render(<VideoCardList video={mockVideo} />)
 
     const favoriteButton = screen.getByRole("button")
-    expect(favoriteButton).toBeInTheDocument()
+    expect(favoriteButton).toBeTruthy()
   })
 
   it("should show filled heart when favorited", () => {
@@ -132,7 +132,7 @@ describe("VideoCardList", () => {
     render(<VideoCardList video={videoWithoutDuration} />)
 
     // Duration badge should not render when duration is null
-    expect(screen.queryByText("Unknown")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unknown")).toBeNull()
   })
 
   it("should render link to video page", () => {

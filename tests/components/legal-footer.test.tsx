@@ -9,8 +9,8 @@ describe("LegalFooter", () => {
     const currentYear = new Date().getFullYear()
     const footer = screen.getByRole("contentinfo")
 
-    expect(footer).toBeInTheDocument()
-    expect(screen.getByText(`© ${currentYear} Tony Young. All rights reserved.`)).toBeInTheDocument()
+    expect(footer).toBeTruthy()
+    expect(screen.getByText(`© ${currentYear} Tony Young. All rights reserved.`)).toBeTruthy()
   })
 
   it("should render EULA link with correct attributes", () => {
@@ -36,14 +36,14 @@ describe("LegalFooter", () => {
   it("should render both legal links", () => {
     render(<LegalFooter />)
 
-    expect(screen.getByRole("link", { name: /end user license agreement/i })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /privacy policy/i })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /end user license agreement/i })).toBeTruthy()
+    expect(screen.getByRole("link", { name: /privacy policy/i })).toBeTruthy()
   })
 
   it("should display current year in copyright text", () => {
     const currentYear = new Date().getFullYear()
     render(<LegalFooter />)
 
-    expect(screen.getByText(`© ${currentYear} Tony Young. All rights reserved.`)).toBeInTheDocument()
+    expect(screen.getByText(`© ${currentYear} Tony Young. All rights reserved.`)).toBeTruthy()
   })
 })

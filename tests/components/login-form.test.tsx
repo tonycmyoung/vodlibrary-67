@@ -35,24 +35,24 @@ describe("LoginForm", () => {
   it("should render login form with all fields", () => {
     render(<LoginForm />)
 
-    expect(screen.getByText(/Welcome to the/)).toBeInTheDocument()
-    expect(screen.getByText(/Okinawa Kobudo Library/)).toBeInTheDocument()
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByLabelText("Password")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Sign In/i })).toBeInTheDocument()
+    expect(screen.getByText(/Welcome to the/)).toBeTruthy()
+    expect(screen.getByText(/Okinawa Kobudo Library/)).toBeTruthy()
+    expect(screen.getByLabelText("Email")).toBeTruthy()
+    expect(screen.getByLabelText("Password")).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Sign In/i })).toBeTruthy()
   })
 
   it("should display error message when error prop is provided", () => {
     render(<LoginForm error="Invalid credentials" />)
 
-    expect(screen.getByText("Invalid credentials")).toBeInTheDocument()
+    expect(screen.getByText("Invalid credentials")).toBeTruthy()
   })
 
   it("should render password reset link", () => {
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    expect(resetLink).toBeInTheDocument()
+    expect(resetLink).toBeTruthy()
   })
 
   it("should show password reset input when forgot password is clicked", () => {
@@ -61,9 +61,9 @@ describe("LoginForm", () => {
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
     fireEvent.click(resetLink)
 
-    expect(screen.getByPlaceholderText("Enter email for reset")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Send Reset/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Cancel/i })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Enter email for reset")).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Send Reset/i })).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Cancel/i })).toBeTruthy()
   })
 
   it("should hide password reset input when cancel is clicked", () => {
@@ -75,7 +75,7 @@ describe("LoginForm", () => {
     const cancelButton = screen.getByRole("button", { name: /Cancel/i })
     fireEvent.click(cancelButton)
 
-    expect(screen.queryByPlaceholderText("Enter email for reset")).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText("Enter email for reset")).toBeNull()
   })
 
   it("should toggle password visibility", () => {
@@ -130,8 +130,7 @@ describe("LoginForm", () => {
       expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("test@example.com", {
         redirectTo: expect.stringContaining("/auth/reset-password"),
       })
-      // After successful reset, the form should be hidden
-      expect(screen.queryByPlaceholderText("Enter email for reset")).not.toBeInTheDocument()
+      expect(screen.queryByPlaceholderText("Enter email for reset")).toBeNull()
     })
   })
 
@@ -149,7 +148,7 @@ describe("LoginForm", () => {
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to send reset email/i)).toBeInTheDocument()
+      expect(screen.getByText(/Failed to send reset email/i)).toBeTruthy()
     })
   })
 
@@ -166,7 +165,7 @@ describe("LoginForm", () => {
     }
 
     await waitFor(() => {
-      expect(screen.getByText(/Please enter your email address/i)).toBeInTheDocument()
+      expect(screen.getByText(/Please enter your email address/i)).toBeTruthy()
     })
   })
 
@@ -174,7 +173,7 @@ describe("LoginForm", () => {
     render(<LoginForm />)
 
     const signUpLink = screen.getByRole("link", { name: /Request one/i })
-    expect(signUpLink).toBeInTheDocument()
+    expect(signUpLink).toBeTruthy()
     expect(signUpLink).toHaveAttribute("href", "/auth/sign-up")
   })
 
@@ -182,14 +181,14 @@ describe("LoginForm", () => {
     render(<LoginForm returnTo="/dashboard" />)
 
     const returnToInput = document.querySelector('input[name="returnTo"]')
-    expect(returnToInput).toBeInTheDocument()
+    expect(returnToInput).toBeTruthy()
     expect(returnToInput).toHaveAttribute("value", "/dashboard")
   })
 
   it("should render EULA text", () => {
     render(<LoginForm />)
 
-    expect(screen.getByText(/End User License Agreement/i)).toBeInTheDocument()
-    expect(screen.getByText(/Tony Young/i)).toBeInTheDocument()
+    expect(screen.getByText(/End User License Agreement/i)).toBeTruthy()
+    expect(screen.getByText(/Tony Young/i)).toBeTruthy()
   })
 })

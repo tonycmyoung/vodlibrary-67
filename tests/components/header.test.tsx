@@ -54,56 +54,56 @@ describe("Header", () => {
   it("should render header with site branding", () => {
     render(<Header user={mockUser} />)
 
-    expect(screen.getByText("Okinawa Kobudo")).toBeInTheDocument()
-    expect(screen.getByText("Training Video Library")).toBeInTheDocument()
+    expect(screen.getByText("Okinawa Kobudo")).toBeTruthy()
+    expect(screen.getByText("Training Video Library")).toBeTruthy()
   })
 
   it("should render navigation links for student", () => {
     render(<Header user={mockUser} />)
 
-    expect(screen.getByText("Library")).toBeInTheDocument()
-    expect(screen.getByText("My Level")).toBeInTheDocument()
-    expect(screen.getByText("Favorites")).toBeInTheDocument()
+    expect(screen.getByText("Library")).toBeTruthy()
+    expect(screen.getByText("My Level")).toBeTruthy()
+    expect(screen.getByText("Favorites")).toBeTruthy()
   })
 
   it("should not render My Level link when user has no belt", () => {
     const userWithoutBelt = { ...mockUser, current_belt: null }
     render(<Header user={userWithoutBelt} />)
 
-    expect(screen.queryByText("My Level")).not.toBeInTheDocument()
+    expect(screen.queryByText("My Level")).toBeNull()
   })
 
   it("should render Students link for teachers", () => {
     const teacherUser = { ...mockUser, role: "Teacher" }
     render(<Header user={teacherUser} />)
 
-    expect(screen.getByText("Students")).toBeInTheDocument()
+    expect(screen.getByText("Students")).toBeTruthy()
   })
 
   it("should render Students link for head teachers", () => {
     const headTeacherUser = { ...mockUser, role: "Head Teacher" }
     render(<Header user={headTeacherUser} />)
 
-    expect(screen.getByText("Students")).toBeInTheDocument()
+    expect(screen.getByText("Students")).toBeTruthy()
   })
 
   it("should not render Students link for regular students", () => {
     render(<Header user={mockUser} />)
 
-    expect(screen.queryByText("Students")).not.toBeInTheDocument()
+    expect(screen.queryByText("Students")).toBeNull()
   })
 
   it("should render user avatar with initials", () => {
     render(<Header user={mockUser} />)
 
     const avatar = screen.getByText("JD")
-    expect(avatar).toBeInTheDocument()
+    expect(avatar).toBeTruthy()
   })
 
   it("should render notification bell", () => {
     render(<Header user={mockUser} />)
 
-    expect(screen.getByTestId("notification-bell")).toBeInTheDocument()
+    expect(screen.getByTestId("notification-bell")).toBeTruthy()
   })
 
   it("should open user dropdown menu when avatar is clicked", async () => {
@@ -115,14 +115,14 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Profile")).toBeInTheDocument()
+        expect(screen.getByText("Profile")).toBeTruthy()
       })
-      expect(screen.getByText("Curriculum")).toBeInTheDocument()
-      expect(screen.getByText("Contribute")).toBeInTheDocument()
-      expect(screen.getByText("Donate")).toBeInTheDocument()
-      expect(screen.getByText("Contact Admin")).toBeInTheDocument()
-      expect(screen.getByText("Change Password")).toBeInTheDocument()
-      expect(screen.getByText("Sign Out")).toBeInTheDocument()
+      expect(screen.getByText("Curriculum")).toBeTruthy()
+      expect(screen.getByText("Contribute")).toBeTruthy()
+      expect(screen.getByText("Donate")).toBeTruthy()
+      expect(screen.getByText("Contact Admin")).toBeTruthy()
+      expect(screen.getByText("Change Password")).toBeTruthy()
+      expect(screen.getByText("Sign Out")).toBeTruthy()
     }
   })
 
@@ -136,7 +136,7 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Invite User")).toBeInTheDocument()
+        expect(screen.getByText("Invite User")).toBeTruthy()
       })
     }
   })
@@ -150,9 +150,9 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Profile")).toBeInTheDocument()
+        expect(screen.getByText("Profile")).toBeTruthy()
       })
-      expect(screen.queryByText("Invite User")).not.toBeInTheDocument()
+      expect(screen.queryByText("Invite User")).toBeNull()
     }
   })
 
@@ -166,14 +166,14 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Invite User")).toBeInTheDocument()
+        expect(screen.getByText("Invite User")).toBeTruthy()
       })
 
       const inviteButton = screen.getByText("Invite User")
       await user.click(inviteButton)
 
       await waitFor(() => {
-        expect(screen.getByTestId("invite-modal")).toBeInTheDocument()
+        expect(screen.getByTestId("invite-modal")).toBeTruthy()
       })
     }
   })
@@ -187,14 +187,14 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Donate")).toBeInTheDocument()
+        expect(screen.getByText("Donate")).toBeTruthy()
       })
 
       const donateButton = screen.getByText("Donate")
       await user.click(donateButton)
 
       await waitFor(() => {
-        expect(screen.getByTestId("donation-modal")).toBeInTheDocument()
+        expect(screen.getByTestId("donation-modal")).toBeTruthy()
       })
     }
   })
@@ -208,14 +208,14 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Curriculum")).toBeInTheDocument()
+        expect(screen.getByText("Curriculum")).toBeTruthy()
       })
 
       const curriculumButton = screen.getByText("Curriculum")
       await user.click(curriculumButton)
 
       await waitFor(() => {
-        expect(screen.getByTestId("curriculum-modal")).toBeInTheDocument()
+        expect(screen.getByTestId("curriculum-modal")).toBeTruthy()
       })
     }
   })
@@ -229,14 +229,14 @@ describe("Header", () => {
       await user.click(avatarButton)
 
       await waitFor(() => {
-        expect(screen.getByText("Contribute")).toBeInTheDocument()
+        expect(screen.getByText("Contribute")).toBeTruthy()
       })
 
       const contributeButton = screen.getByText("Contribute")
       await user.click(contributeButton)
 
       await waitFor(() => {
-        expect(screen.getByTestId("contribute-modal")).toBeInTheDocument()
+        expect(screen.getByTestId("contribute-modal")).toBeTruthy()
       })
     }
   })

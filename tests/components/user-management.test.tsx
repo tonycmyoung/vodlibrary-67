@@ -137,15 +137,15 @@ describe("UserManagement", () => {
 
   it("should render loading state initially", () => {
     render(<UserManagement />)
-    expect(screen.getByText("Loading users...")).toBeInTheDocument()
+    expect(screen.getByText("Loading users...")).toBeTruthy()
   })
 
   it("should render user list after loading", async () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
+      expect(screen.getByText("Jane Smith")).toBeTruthy()
     })
   })
 
@@ -153,7 +153,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("All Users (2)")).toBeInTheDocument()
+      expect(screen.getByText("All Users (2)")).toBeTruthy()
     })
   })
 
@@ -161,8 +161,8 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Approved")).toBeInTheDocument()
-      expect(screen.getByText("Pending")).toBeInTheDocument()
+      expect(screen.getByText("Approved")).toBeTruthy()
+      expect(screen.getByText("Pending")).toBeTruthy()
     })
   })
 
@@ -181,7 +181,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Search users...")).toBeInTheDocument()
+      expect(screen.getByPlaceholderText("Search users...")).toBeTruthy()
     })
   })
 
@@ -190,7 +190,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search users...")
@@ -198,8 +198,8 @@ describe("UserManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.queryByText("John Doe")).not.toBeInTheDocument()
-        expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+        expect(screen.queryByText("John Doe")).toBeNull()
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
       },
       { timeout: 500 },
     )
@@ -210,10 +210,9 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+      expect(screen.getByText("Jane Smith")).toBeTruthy()
     })
 
-    // Find the approve button for Jane (pending user)
     const approveButtons = screen.getAllByLabelText("Approve user")
     await user.click(approveButtons[0])
 
@@ -228,7 +227,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const roleSelects = screen.getAllByRole("combobox")
@@ -248,15 +247,15 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const editButtons = screen.getAllByLabelText("Edit user")
     await user.click(editButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
-      expect(screen.getByLabelText("Cancel editing")).toBeInTheDocument()
+      expect(screen.getByLabelText("Save changes")).toBeTruthy()
+      expect(screen.getByLabelText("Cancel editing")).toBeTruthy()
     })
   })
 
@@ -267,14 +266,14 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const editButtons = screen.getAllByLabelText("Edit user")
     await user.click(editButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Save changes")).toBeInTheDocument()
+      expect(screen.getByLabelText("Save changes")).toBeTruthy()
     })
 
     const nameInput = screen.getByPlaceholderText("Full name")
@@ -294,21 +293,21 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const editButtons = screen.getAllByLabelText("Edit user")
     await user.click(editButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Cancel editing")).toBeInTheDocument()
+      expect(screen.getByLabelText("Cancel editing")).toBeTruthy()
     })
 
     const cancelButton = screen.getByLabelText("Cancel editing")
     await user.click(cancelButton)
 
     await waitFor(() => {
-      expect(screen.queryByLabelText("Save changes")).not.toBeInTheDocument()
+      expect(screen.queryByLabelText("Save changes")).toBeNull()
     })
   })
 
@@ -317,15 +316,15 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resetButtons = screen.getAllByLabelText("Reset password")
     await user.click(resetButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByText(/Reset Password for/i)).toBeInTheDocument()
-      expect(screen.getByPlaceholderText("Enter new password")).toBeInTheDocument()
+      expect(screen.getByText(/Reset Password for/i)).toBeTruthy()
+      expect(screen.getByPlaceholderText("Enter new password")).toBeTruthy()
     })
   })
 
@@ -334,14 +333,14 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resetButtons = screen.getAllByLabelText("Reset password")
     await user.click(resetButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByText("Generate Random Password")).toBeInTheDocument()
+      expect(screen.getByText("Generate Random Password")).toBeTruthy()
     })
 
     const generateButton = screen.getByText("Generate Random Password")
@@ -356,14 +355,14 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resetButtons = screen.getAllByLabelText("Reset password")
     await user.click(resetButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Enter new password")).toBeInTheDocument()
+      expect(screen.getByPlaceholderText("Enter new password")).toBeTruthy()
     })
 
     const passwordInput = screen.getByPlaceholderText("Enter new password")
@@ -373,7 +372,7 @@ describe("UserManagement", () => {
     await user.click(resetButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Password must be at least 8 characters long")).toBeInTheDocument()
+      expect(screen.getByText("Password must be at least 8 characters long")).toBeTruthy()
     })
   })
 
@@ -384,14 +383,14 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resetButtons = screen.getAllByLabelText("Reset password")
     await user.click(resetButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText("Enter new password")).toBeInTheDocument()
+      expect(screen.getByPlaceholderText("Enter new password")).toBeTruthy()
     })
 
     const passwordInput = screen.getByPlaceholderText("Enter new password")
@@ -415,7 +414,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const deleteButtons = screen.getAllByLabelText("Delete user")
@@ -433,7 +432,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const deleteButtons = screen.getAllByLabelText("Delete user")
@@ -448,8 +447,8 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("2 logins")).toBeInTheDocument()
-      expect(screen.getByText("2 views")).toBeInTheDocument()
+      expect(screen.getByText("2 logins")).toBeTruthy()
+      expect(screen.getByText("2 views")).toBeTruthy()
     })
   })
 
@@ -491,7 +490,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Administrator")).toBeInTheDocument()
+      expect(screen.getByText("Administrator")).toBeTruthy()
     })
   })
 
@@ -500,7 +499,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search users...")
@@ -508,7 +507,7 @@ describe("UserManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText("No users found matching your criteria.")).toBeInTheDocument()
+        expect(screen.getByText("No users found matching your criteria.")).toBeTruthy()
       },
       { timeout: 500 },
     )
@@ -527,8 +526,7 @@ describe("UserManagement", () => {
     render(<UserManagement />)
 
     await waitFor(() => {
-      // These components should be present
-      expect(screen.getByText("All Users (2)")).toBeInTheDocument()
+      expect(screen.getByText("All Users (2)")).toBeTruthy()
     })
   })
 })

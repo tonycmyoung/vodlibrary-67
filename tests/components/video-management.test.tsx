@@ -95,7 +95,6 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
     const loadingContainer = document.querySelector(".flex.items-center.justify-center.min-h-screen")
     expect(loadingContainer).toBeTruthy()
-    expect(loadingContainer).toBeInTheDocument()
   })
 
   it("should load and display videos", async () => {
@@ -111,8 +110,8 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
-      expect(screen.getByText("Test Video 2")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
+      expect(screen.getByText("Test Video 2")).toBeTruthy()
     })
   })
 
@@ -129,10 +128,10 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
-      expect(screen.getByText("Description 1")).toBeInTheDocument()
-      expect(screen.getByText("Published")).toBeInTheDocument()
-      expect(screen.getByText("100 views")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
+      expect(screen.getByText("Description 1")).toBeTruthy()
+      expect(screen.getByText("Published")).toBeTruthy()
+      expect(screen.getByText("100 views")).toBeTruthy()
     })
   })
 
@@ -150,15 +149,15 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search videos...")
     await user.type(searchInput, "Test Video 1")
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
-      expect(screen.queryByText("Test Video 2")).not.toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
+      expect(screen.queryByText("Test Video 2")).toBeNull()
     })
   })
 
@@ -176,7 +175,7 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText("Search videos...")
@@ -199,13 +198,13 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Video Management")).toBeInTheDocument()
+      expect(screen.getByText("Video Management")).toBeTruthy()
     })
 
     const addButton = screen.getByRole("button", { name: /add video/i })
     await user.click(addButton)
 
-    expect(screen.getByTestId("video-modal")).toBeInTheDocument()
+    expect(screen.getByTestId("video-modal")).toBeTruthy()
   })
 
   it("should open edit video modal", async () => {
@@ -222,7 +221,7 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
     })
 
     const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
@@ -232,7 +231,7 @@ describe("VideoManagement", () => {
     expect(editButton).toBeTruthy()
     await user.click(editButton!)
 
-    expect(screen.getByTestId("video-modal")).toBeInTheDocument()
+    expect(screen.getByTestId("video-modal")).toBeTruthy()
   })
 
   it("should delete video with confirmation", async () => {
@@ -250,7 +249,7 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
     })
 
     const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
@@ -282,7 +281,7 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 1")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 1")).toBeTruthy()
     })
 
     // Find the sort order toggle button (arrow-up-down icon)
@@ -302,7 +301,7 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/no videos found matching your criteria/i)).toBeInTheDocument()
+      expect(screen.getByText(/no videos found matching your criteria/i)).toBeTruthy()
     })
   })
 
@@ -315,13 +314,13 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Filters")).toBeInTheDocument()
+      expect(screen.getByText("Filters")).toBeTruthy()
     })
 
     const filtersButton = screen.getByText("Filters")
     await user.click(filtersButton)
 
-    expect(screen.getByTestId("category-filter")).toBeInTheDocument()
+    expect(screen.getByTestId("category-filter")).toBeTruthy()
   })
 
   it("should clear all filters", async () => {
@@ -344,17 +343,17 @@ describe("VideoManagement", () => {
     render(<VideoManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test Video 0")).toBeInTheDocument()
+      expect(screen.getByText("Test Video 0")).toBeTruthy()
     })
 
     // Should show pagination controls
-    expect(screen.getByText(/page 1 of/i)).toBeInTheDocument()
+    expect(screen.getByText(/page 1 of/i)).toBeTruthy()
 
     const nextButton = screen.getByRole("button", { name: /next/i })
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/page 2 of/i)).toBeInTheDocument()
+      expect(screen.getByText(/page 2 of/i)).toBeTruthy()
     })
   })
 })

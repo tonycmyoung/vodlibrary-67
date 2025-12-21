@@ -52,7 +52,7 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByText("Add New Video")).toBeInTheDocument()
+    expect(screen.getByText("Add New Video")).toBeTruthy()
   })
 
   it("should render modal with title for editing video", () => {
@@ -82,7 +82,7 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByText("Edit Video: Test Video")).toBeInTheDocument()
+    expect(screen.getByText("Edit Video: Test Video")).toBeTruthy()
   })
 
   it("should render all form fields", () => {
@@ -98,11 +98,11 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByLabelText("Title *")).toBeInTheDocument()
-    expect(screen.getByLabelText("Description")).toBeInTheDocument()
-    expect(screen.getByLabelText("Video URL *")).toBeInTheDocument()
-    expect(screen.getByLabelText("Thumbnail URL")).toBeInTheDocument()
-    expect(screen.getByLabelText("Recorded")).toBeInTheDocument()
+    expect(screen.getByLabelText("Title *")).toBeTruthy()
+    expect(screen.getByLabelText("Description")).toBeTruthy()
+    expect(screen.getByLabelText("Video URL *")).toBeTruthy()
+    expect(screen.getByLabelText("Thumbnail URL")).toBeTruthy()
+    expect(screen.getByLabelText("Recorded")).toBeTruthy()
   })
 
   it("should render curriculum checkboxes", () => {
@@ -118,8 +118,8 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByText("10.Kyu")).toBeInTheDocument()
-    expect(screen.getByText("9.Kyu")).toBeInTheDocument()
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("9.Kyu")).toBeTruthy()
   })
 
   it("should render category checkboxes", () => {
@@ -135,8 +135,8 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByText("Bo")).toBeInTheDocument()
-    expect(screen.getByText("Sai")).toBeInTheDocument()
+    expect(screen.getByText("Bo")).toBeTruthy()
+    expect(screen.getByText("Sai")).toBeTruthy()
   })
 
   it("should render performer checkboxes", () => {
@@ -152,8 +152,8 @@ describe("VideoModal", () => {
       />,
     )
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+    expect(screen.getByText("John Doe")).toBeTruthy()
+    expect(screen.getByText("Jane Smith")).toBeTruthy()
   })
 
   it("should update form data when inputs change", () => {
@@ -261,7 +261,7 @@ describe("VideoModal", () => {
     fireEvent.click(autoFillButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Could not extract video metadata. Please fill in manually.")).toBeInTheDocument()
+      expect(screen.getByText("Could not extract video metadata. Please fill in manually.")).toBeTruthy()
     })
   })
 

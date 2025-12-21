@@ -60,25 +60,25 @@ describe("UserProfile", () => {
   it("should render user profile information", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getAllByText("test@example.com")[0]).toBeInTheDocument()
-    expect(screen.getByText("Sensei Bob")).toBeInTheDocument()
-    expect(screen.getByText("Test Dojo")).toBeInTheDocument()
+    expect(screen.getByText("John Doe")).toBeTruthy()
+    expect(screen.getAllByText("test@example.com")[0]).toBeTruthy()
+    expect(screen.getByText("Sensei Bob")).toBeTruthy()
+    expect(screen.getByText("Test Dojo")).toBeTruthy()
   })
 
   it("should display favorite count and member since date", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("5")).toBeInTheDocument()
-    expect(screen.getByText(/Member Since/i)).toBeInTheDocument()
+    expect(screen.getByText("5")).toBeTruthy()
+    expect(screen.getByText(/Member Since/i)).toBeTruthy()
   })
 
   it("should render quick action buttons", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("View My Favorites")).toBeInTheDocument()
-    expect(screen.getByText("Change Password")).toBeInTheDocument()
-    expect(screen.getByText("Browse Video Library")).toBeInTheDocument()
+    expect(screen.getByText("View My Favorites")).toBeTruthy()
+    expect(screen.getByText("Change Password")).toBeTruthy()
+    expect(screen.getByText("Browse Video Library")).toBeTruthy()
   })
 
   it("should enter edit mode when Edit Profile button is clicked", async () => {
@@ -89,8 +89,8 @@ describe("UserProfile", () => {
     await user.click(editButton)
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeTruthy()
+      expect(screen.getByRole("button", { name: /save/i })).toBeTruthy()
     })
   })
 
@@ -144,8 +144,8 @@ describe("UserProfile", () => {
     await user.click(cancelButton)
 
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /edit profile/i })).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /save/i })).toBeNull()
+      expect(screen.getByRole("button", { name: /edit profile/i })).toBeTruthy()
     })
   })
 
@@ -170,7 +170,7 @@ describe("UserProfile", () => {
     const adminUser = { ...mockUser, isAdmin: true }
     render(<UserProfile user={adminUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("Administrator")).toBeInTheDocument()
+    expect(screen.getByText("Administrator")).toBeTruthy()
   })
 
   it("should display teacher badge for teacher role", () => {
@@ -184,14 +184,13 @@ describe("UserProfile", () => {
   it("should show current belt with color indicator", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("White Belt")).toBeInTheDocument()
+    expect(screen.getByText("White Belt")).toBeTruthy()
   })
 
   it("should show belt select dropdown with all curriculum options", () => {
     render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
 
-    // The Select component should render with current belt
-    expect(screen.getByText("White Belt")).toBeInTheDocument()
+    expect(screen.getByText("White Belt")).toBeTruthy()
   })
 
   it("should show placeholder text when user data is missing", () => {
@@ -205,7 +204,7 @@ describe("UserProfile", () => {
     }
     render(<UserProfile user={incompleteUser} curriculums={mockCurriculums} />)
 
-    expect(screen.getByText("No name set")).toBeInTheDocument()
+    expect(screen.getByText("No name set")).toBeTruthy()
     expect(screen.getAllByText("Not specified").length).toBeGreaterThan(0)
   })
 })

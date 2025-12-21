@@ -250,9 +250,9 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-3")).toBeInTheDocument()
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+        expect(screen.getByTestId("video-card-video-3")).toBeTruthy()
       })
     })
 
@@ -292,7 +292,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         const categoryFilter = screen.getByTestId("category-filter")
-        expect(categoryFilter).toBeInTheDocument()
+        expect(categoryFilter).toBeTruthy()
         expect(screen.getByTestId("video-count")).toHaveTextContent("Videos: 3")
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 0")
       })
@@ -302,7 +302,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("category-filter")).toBeInTheDocument()
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
       })
 
       const toggleButton = screen.getByText("Toggle Category")
@@ -329,9 +329,9 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+        expect(screen.queryByTestId("video-card-video-3")).toBeNull()
       })
     })
 
@@ -344,9 +344,9 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+        expect(screen.queryByTestId("video-card-video-3")).toBeNull()
       })
     })
 
@@ -360,7 +360,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         const categoryFilter = screen.getByTestId("category-filter")
-        expect(categoryFilter).toBeInTheDocument()
+        expect(categoryFilter).toBeTruthy()
       })
 
       await waitFor(
@@ -371,8 +371,8 @@ describe("VideoLibrary", () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-2")).not.toBeInTheDocument()
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
       })
     })
   })
@@ -447,14 +447,14 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getAllByText("Show")[0]).toBeInTheDocument()
-        expect(screen.getAllByText("per page")[0]).toBeInTheDocument()
+        expect(screen.getAllByText("Show")[0]).toBeTruthy()
+        expect(screen.getAllByText("per page")[0]).toBeTruthy()
       })
 
       // Verify all videos are shown on first page with default 12 items per page
-      expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-      expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-      expect(screen.getByTestId("video-card-video-3")).toBeInTheDocument()
+      expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+      expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+      expect(screen.getByTestId("video-card-video-3")).toBeTruthy()
     })
 
     it("should sync current page from URL and display correct videos", async () => {
@@ -471,15 +471,15 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getAllByText("Show")[0]).toBeInTheDocument()
+        expect(screen.getAllByText("Show")[0]).toBeTruthy()
       })
 
       await waitFor(
         () => {
           // On page 2 with 1 item per page, should show video-2
-          expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-          expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
-          expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
+          expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+          expect(screen.queryByTestId("video-card-video-1")).toBeNull()
+          expect(screen.queryByTestId("video-card-video-3")).toBeNull()
         },
         { timeout: 2000 },
       )
@@ -495,9 +495,9 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(localStorage.getItem).toHaveBeenCalledWith("videoLibraryItemsPerPage")
-        expect(screen.getByTestId("video-card-video-1")).toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-3")).toBeNull()
       })
     })
   })
@@ -507,7 +507,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
+        expect(screen.getByTestId("view-toggle")).toBeTruthy()
         expect(screen.getAllByText("Current: grid").length).toBeGreaterThan(0)
       })
     })
@@ -516,7 +516,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
+        expect(screen.getByTestId("view-toggle")).toBeTruthy()
       })
 
       const listButton = screen.getAllByText("List")[0]
@@ -558,7 +558,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         const searchInput = screen.getByPlaceholderText(/Search videos/i) as HTMLInputElement
-        expect(searchInput).toBeInTheDocument()
+        expect(searchInput).toBeTruthy()
         expect(searchInput.value).toBe("")
       })
     })
@@ -577,9 +577,9 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(screen.queryByTestId("video-card-video-1")).not.toBeInTheDocument()
-        expect(screen.getByTestId("video-card-video-2")).toBeInTheDocument()
-        expect(screen.queryByTestId("video-card-video-3")).not.toBeInTheDocument()
+        expect(screen.queryByTestId("video-card-video-1")).toBeNull()
+        expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-3")).toBeNull()
       })
     })
   })
@@ -589,7 +589,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary storagePrefix="customLibrary" />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
+        expect(screen.getByTestId("view-toggle")).toBeTruthy()
       })
 
       const listButton = screen.getAllByText("List")[0]
@@ -604,7 +604,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary favoritesOnly={true} />)
 
       await waitFor(() => {
-        expect(screen.getByTestId("view-toggle")).toBeInTheDocument()
+        expect(screen.getByTestId("view-toggle")).toBeTruthy()
       })
 
       const listButton = screen.getAllByText("List")[0]

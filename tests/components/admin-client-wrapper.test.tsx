@@ -33,34 +33,34 @@ describe("AdminClientWrapper", () => {
   it("should render dashboard title", () => {
     render(<AdminClientWrapper />)
 
-    expect(screen.getByText("Admin Dashboard")).toBeInTheDocument()
+    expect(screen.getByText("Admin Dashboard")).toBeTruthy()
   })
 
   it("should render all child components", () => {
     render(<AdminClientWrapper />)
 
-    expect(screen.getByTestId("admin-stats")).toBeInTheDocument()
-    expect(screen.getByTestId("pending-users")).toBeInTheDocument()
-    expect(screen.getByTestId("unconfirmed-email-users")).toBeInTheDocument()
+    expect(screen.getByTestId("admin-stats")).toBeTruthy()
+    expect(screen.getByTestId("pending-users")).toBeTruthy()
+    expect(screen.getByTestId("unconfirmed-email-users")).toBeTruthy()
   })
 
   it("should render refresh button", () => {
     render(<AdminClientWrapper />)
 
-    expect(screen.getByTestId("refresh-button")).toBeInTheDocument()
+    expect(screen.getByTestId("refresh-button")).toBeTruthy()
   })
 
   it("should apply proper grid layout classes", () => {
     const { container } = render(<AdminClientWrapper />)
 
     const gridContainer = container.querySelector(".grid.grid-cols-1.lg\\:grid-cols-2")
-    expect(gridContainer).toBeInTheDocument()
+    expect(gridContainer).toBeTruthy()
   })
 
   it("should apply background gradient classes", () => {
     const { container } = render(<AdminClientWrapper />)
 
     const mainContainer = container.querySelector(".bg-gradient-to-br.from-gray-900")
-    expect(mainContainer).toBeInTheDocument()
+    expect(mainContainer).toBeTruthy()
   })
 })

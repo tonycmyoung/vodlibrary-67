@@ -24,23 +24,23 @@ describe("AdminDashboardClient", () => {
   it("should render dashboard title and description", () => {
     render(<AdminDashboardClient />)
 
-    expect(screen.getByText("Admin Dashboard")).toBeInTheDocument()
-    expect(screen.getByText("Manage users, videos, and categories")).toBeInTheDocument()
+    expect(screen.getByText("Admin Dashboard")).toBeTruthy()
+    expect(screen.getByText("Manage users, videos, and categories")).toBeTruthy()
   })
 
   it("should render all child components", () => {
     render(<AdminDashboardClient />)
 
-    expect(screen.getByTestId("admin-stats")).toBeInTheDocument()
-    expect(screen.getByTestId("pending-users")).toBeInTheDocument()
-    expect(screen.getByTestId("unconfirmed-email-users")).toBeInTheDocument()
+    expect(screen.getByTestId("admin-stats")).toBeTruthy()
+    expect(screen.getByTestId("pending-users")).toBeTruthy()
+    expect(screen.getByTestId("unconfirmed-email-users")).toBeTruthy()
   })
 
   it("should render refresh button", () => {
     render(<AdminDashboardClient />)
 
     const refreshButton = screen.getByRole("button", { name: /refresh all/i })
-    expect(refreshButton).toBeInTheDocument()
+    expect(refreshButton).toBeTruthy()
   })
 
   it("should dispatch custom events when refresh button is clicked", async () => {
@@ -68,12 +68,12 @@ describe("AdminDashboardClient", () => {
     await user.click(refreshButton)
 
     // Button should show "Refreshing..." immediately
-    expect(screen.getByText("Refreshing...")).toBeInTheDocument()
+    expect(screen.getByText("Refreshing...")).toBeTruthy()
     expect(refreshButton).toBeDisabled()
 
     // Wait for refresh to complete
     await waitFor(() => {
-      expect(screen.getByText("Refresh All")).toBeInTheDocument()
+      expect(screen.getByText("Refresh All")).toBeTruthy()
     })
   })
 
@@ -89,7 +89,7 @@ describe("AdminDashboardClient", () => {
     await user.click(refreshButton)
 
     const spinningIcon = refreshButton.querySelector("svg.animate-spin")
-    expect(spinningIcon).toBeInTheDocument()
+    expect(spinningIcon).toBeTruthy()
   })
 
   it("should handle refresh errors gracefully", async () => {
@@ -111,7 +111,7 @@ describe("AdminDashboardClient", () => {
 
     // Button should still reset to normal state
     await waitFor(() => {
-      expect(screen.getByText("Refresh All")).toBeInTheDocument()
+      expect(screen.getByText("Refresh All")).toBeTruthy()
       expect(refreshButton).not.toBeDisabled()
     })
 

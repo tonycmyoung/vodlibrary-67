@@ -95,20 +95,20 @@ describe("AdminNotificationManagement", () => {
     await waitFor(() => {
       const cardTitle = document.querySelector('[data-slot="card-title"]')
       expect(cardTitle).toHaveTextContent("Send Message")
-      expect(screen.getByText("Individual")).toBeInTheDocument()
+      expect(screen.getByText("Individual")).toBeTruthy()
     })
 
     const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
-    expect(broadcastButton).toBeInTheDocument()
+    expect(broadcastButton).toBeTruthy()
   })
 
   it("should render All Notifications list", async () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/All Notifications/)).toBeInTheDocument()
-      expect(screen.getByText("Test notification message")).toBeInTheDocument()
-      expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
+      expect(screen.getByText(/All Notifications/)).toBeTruthy()
+      expect(screen.getByText("Test notification message")).toBeTruthy()
+      expect(screen.getByText("Broadcast message to all")).toBeTruthy()
     })
   })
 
@@ -116,14 +116,14 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Individual")).toBeInTheDocument()
+      expect(screen.getByText("Individual")).toBeTruthy()
     })
 
     const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
     await user.click(broadcastButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Select Recipients")).toBeInTheDocument()
+      expect(screen.getByText("Select Recipients")).toBeTruthy()
     })
   })
 
@@ -131,14 +131,14 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Individual")).toBeInTheDocument()
+      expect(screen.getByText("Individual")).toBeTruthy()
     })
 
     const messageInput = screen.getByPlaceholderText(/type your message here/i)
     await user.type(messageInput, "Personal message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    expect(sendButton).toBeInTheDocument()
+    expect(sendButton).toBeTruthy()
   })
 
   it("should send broadcast message", async () => {
@@ -146,7 +146,7 @@ describe("AdminNotificationManagement", () => {
 
     await waitFor(() => {
       const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
-      expect(broadcastButton).toBeInTheDocument()
+      expect(broadcastButton).toBeTruthy()
     })
 
     const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
@@ -175,7 +175,7 @@ describe("AdminNotificationManagement", () => {
 
     await waitFor(() => {
       const messageInput = screen.getByPlaceholderText(/type your message here/i)
-      expect(messageInput).toBeInTheDocument()
+      expect(messageInput).toBeTruthy()
     })
 
     const messageInput = screen.getByPlaceholderText(/type your message here/i)
@@ -192,7 +192,7 @@ describe("AdminNotificationManagement", () => {
 
     await waitFor(() => {
       const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
-      expect(broadcastButton).toBeInTheDocument()
+      expect(broadcastButton).toBeTruthy()
     })
 
     const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
@@ -205,7 +205,7 @@ describe("AdminNotificationManagement", () => {
     await user.click(sendButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to send message/i)).toBeInTheDocument()
+      expect(screen.getByText(/failed to send message/i)).toBeTruthy()
     })
   })
 
@@ -213,13 +213,13 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification message")).toBeInTheDocument()
+      expect(screen.getByText("Test notification message")).toBeTruthy()
     })
 
     const notificationText = screen.getByText("Test notification message")
     const notificationContainer = notificationText.closest("div[class*='p-4']")
 
-    expect(notificationContainer).toBeInTheDocument()
+    expect(notificationContainer).toBeTruthy()
 
     // Verify John Doe appears as the recipient within this specific notification
     const johnDoeInNotification = notificationContainer?.textContent?.includes("John Doe")
@@ -230,7 +230,7 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
+      expect(screen.getByText("Broadcast message to all")).toBeTruthy()
     })
 
     const broadcastNotification = screen.getByText("Broadcast message to all")
@@ -245,34 +245,34 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification message")).toBeInTheDocument()
-      expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
+      expect(screen.getByText("Test notification message")).toBeTruthy()
+      expect(screen.getByText("Broadcast message to all")).toBeTruthy()
     })
 
     const searchInput = screen.getByPlaceholderText(/search notifications/i)
     await user.type(searchInput, "Broadcast")
 
-    expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
+    expect(screen.getByText("Broadcast message to all")).toBeTruthy()
   })
 
   it("should show loading state initially", () => {
     render(<AdminNotificationManagement />)
 
-    expect(screen.getByText("Loading notifications...")).toBeInTheDocument()
+    expect(screen.getByText("Loading notifications...")).toBeTruthy()
   })
 
   it("should show character count for message input", async () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("0/500 characters")).toBeInTheDocument()
+      expect(screen.getByText("0/500 characters")).toBeTruthy()
     })
 
     const messageInput = screen.getByPlaceholderText(/type your message here/i)
     await user.type(messageInput, "Test message")
 
     await waitFor(() => {
-      expect(screen.getByText("12/500 characters")).toBeInTheDocument()
+      expect(screen.getByText("12/500 characters")).toBeTruthy()
     })
   })
 })

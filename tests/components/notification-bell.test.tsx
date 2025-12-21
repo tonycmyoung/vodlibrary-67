@@ -77,14 +77,14 @@ describe("NotificationBell", () => {
 
   it("should render notification bell button", () => {
     render(<NotificationBell userId="user-123" />)
-    expect(screen.getByRole("button")).toBeInTheDocument()
+    expect(screen.getByRole("button")).toBeTruthy()
   })
 
   it("should display unread count badge", async () => {
     render(<NotificationBell userId="user-123" />)
 
     await waitFor(() => {
-      expect(screen.getByText("1")).toBeInTheDocument()
+      expect(screen.getByText("1")).toBeTruthy()
     })
   })
 
@@ -100,7 +100,7 @@ describe("NotificationBell", () => {
       expect(fetchNotificationsWithSenders).toHaveBeenCalled()
     })
 
-    expect(screen.queryByText("1")).not.toBeInTheDocument()
+    expect(screen.queryByText("1")).toBeNull()
   })
 
   it("should open dropdown when bell is clicked", async () => {
@@ -109,7 +109,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Notifications")).toBeInTheDocument()
+      expect(screen.getByText("Notifications")).toBeTruthy()
     })
   })
 
@@ -119,8 +119,8 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
-      expect(screen.getByText("Test notification 2")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
+      expect(screen.getByText("Test notification 2")).toBeTruthy()
     })
   })
 
@@ -130,8 +130,8 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
+      expect(screen.getByText("Jane Smith")).toBeTruthy()
     })
   })
 
@@ -141,7 +141,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
     })
 
     const checkButtons = screen.getAllByTitle("Mark as read")
@@ -159,7 +159,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
     })
 
     const deleteButtons = screen.getAllByTitle("Delete notification")
@@ -176,7 +176,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText(/1 unread/)).toBeInTheDocument()
+      expect(screen.getByText(/1 unread/)).toBeTruthy()
     })
 
     await user.click(screen.getByText(/all read/i))
@@ -193,7 +193,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
     })
 
     await user.click(screen.getByText(/clear all/i))
@@ -215,7 +215,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("No notifications yet")).toBeInTheDocument()
+      expect(screen.getByText("No notifications yet")).toBeTruthy()
     })
   })
 
@@ -225,7 +225,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
     })
 
     const replyButtons = screen.getAllByTitle("Reply")
@@ -240,7 +240,7 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button"))
 
     await waitFor(() => {
-      expect(screen.getByText("Test notification 1")).toBeInTheDocument()
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
     })
 
     const replyButtons = screen.getAllByTitle("Reply")

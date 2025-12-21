@@ -29,11 +29,11 @@ describe("ChangePasswordForm", () => {
   it("should render the form with all fields", () => {
     render(<ChangePasswordForm />)
 
-    expect(screen.getByText("Change Password")).toBeInTheDocument()
-    expect(screen.getByLabelText("Current Password")).toBeInTheDocument()
-    expect(screen.getByLabelText("New Password")).toBeInTheDocument()
-    expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Update Password/i })).toBeInTheDocument()
+    expect(screen.getByText("Change Password")).toBeTruthy()
+    expect(screen.getByLabelText("Current Password")).toBeTruthy()
+    expect(screen.getByLabelText("New Password")).toBeTruthy()
+    expect(screen.getByLabelText("Confirm New Password")).toBeTruthy()
+    expect(screen.getByRole("button", { name: /Update Password/i })).toBeTruthy()
   })
 
   it("should toggle current password visibility", () => {
@@ -58,7 +58,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.submit(form)
 
     await waitFor(() => {
-      expect(screen.getByText("All fields are required")).toBeInTheDocument()
+      expect(screen.getByText("All fields are required")).toBeTruthy()
     })
   })
 
@@ -77,7 +77,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText("New passwords do not match")).toBeInTheDocument()
+      expect(screen.getByText("New passwords do not match")).toBeTruthy()
     })
   })
 
@@ -96,7 +96,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Password must be at least 6 characters long")).toBeInTheDocument()
+      expect(screen.getByText("Password must be at least 6 characters long")).toBeTruthy()
     })
   })
 
@@ -125,7 +125,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Current password is incorrect")).toBeInTheDocument()
+      expect(screen.getByText("Current password is incorrect")).toBeTruthy()
     })
   })
 
@@ -159,7 +159,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Password changed successfully! Redirecting...")).toBeInTheDocument()
+      expect(screen.getByText("Password changed successfully! Redirecting...")).toBeTruthy()
     })
 
     expect(mockGetUser).toHaveBeenCalled()
@@ -201,7 +201,7 @@ describe("ChangePasswordForm", () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Updating password...")).toBeInTheDocument()
+      expect(screen.getByText("Updating password...")).toBeTruthy()
     })
   })
 })

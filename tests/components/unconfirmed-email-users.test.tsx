@@ -41,16 +41,16 @@ describe("UnconfirmedEmailUsers", () => {
 
   it("should render loading state initially", () => {
     render(<UnconfirmedEmailUsers />)
-    expect(screen.getByText("Loading unconfirmed users...")).toBeInTheDocument()
+    expect(screen.getByText("Loading unconfirmed users...")).toBeTruthy()
   })
 
   it("should render unconfirmed users list after loading", async () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
-      expect(screen.getByText("john@example.com")).toBeInTheDocument()
-      expect(screen.getByText("jane@example.com")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
+      expect(screen.getByText("john@example.com")).toBeTruthy()
+      expect(screen.getByText("jane@example.com")).toBeTruthy()
     })
   })
 
@@ -58,7 +58,7 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("2 unconfirmed")).toBeInTheDocument()
+      expect(screen.getByText("2 unconfirmed")).toBeTruthy()
     })
   })
 
@@ -71,7 +71,7 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("No users with unconfirmed emails")).toBeInTheDocument()
+      expect(screen.getByText("No users with unconfirmed emails")).toBeTruthy()
     })
   })
 
@@ -103,7 +103,7 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Not specified/)).toBeInTheDocument()
+      expect(screen.getByText(/Not specified/)).toBeTruthy()
     })
   })
 
@@ -138,14 +138,14 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
     await user.click(resendButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByText("Confirmation email sent!")).toBeInTheDocument()
+      expect(screen.getByText("Confirmation email sent!")).toBeTruthy()
     })
   })
 
@@ -159,14 +159,14 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
     await user.click(resendButtons[0])
 
     await waitFor(() => {
-      expect(screen.getByText("Failed to send email")).toBeInTheDocument()
+      expect(screen.getByText("Failed to send email")).toBeTruthy()
     })
   })
 
@@ -189,7 +189,7 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("No users with unconfirmed emails")).toBeInTheDocument()
+      expect(screen.getByText("No users with unconfirmed emails")).toBeTruthy()
     })
 
     consoleSpy.mockRestore()

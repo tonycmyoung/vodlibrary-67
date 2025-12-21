@@ -16,13 +16,13 @@ describe("CurriculumModal", () => {
   it("should not render when isOpen is false", () => {
     render(<CurriculumModal isOpen={false} onClose={mockOnClose} />)
 
-    expect(screen.queryByText(/curriculum resources/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/curriculum resources/i)).toBeNull()
   })
 
   it("should render when isOpen is true", () => {
     render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
 
-    expect(screen.getByText(/curriculum resources/i)).toBeInTheDocument()
+    expect(screen.getByText(/curriculum resources/i)).toBeTruthy()
   })
 
   it("should display title with Award icon", () => {
@@ -31,27 +31,27 @@ describe("CurriculumModal", () => {
     const title = screen.getByText(/curriculum resources/i)
     const titleContainer = title.parentElement
 
-    expect(titleContainer?.querySelector("svg")).toBeInTheDocument()
+    expect(titleContainer?.querySelector("svg")).toBeTruthy()
   })
 
   it("should display descriptive text", () => {
     render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
 
-    expect(screen.getByText(/Access important curriculum documents/i)).toBeInTheDocument()
+    expect(screen.getByText(/Access important curriculum documents/i)).toBeTruthy()
   })
 
   it("should render Belt Requirements button", () => {
     render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
 
-    expect(screen.getByRole("button", { name: /belt requirements/i })).toBeInTheDocument()
-    expect(screen.getByText(/training progression guidelines/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /belt requirements/i })).toBeTruthy()
+    expect(screen.getByText(/training progression guidelines/i)).toBeTruthy()
   })
 
   it("should render Kobudo Manual button", () => {
     render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
 
-    expect(screen.getByRole("button", { name: /kobudo manual/i })).toBeInTheDocument()
-    expect(screen.getByText(/complete training manual/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /kobudo manual/i })).toBeTruthy()
+    expect(screen.getByText(/complete training manual/i)).toBeTruthy()
   })
 
   it("should open Belt Requirements URL in new tab when clicked", async () => {
@@ -105,7 +105,7 @@ describe("CurriculumModal", () => {
 
     expect(contentButtons).toHaveLength(2)
     contentButtons.forEach((button) => {
-      expect(button.querySelector("svg")).toBeInTheDocument()
+      expect(button.querySelector("svg")).toBeTruthy()
     })
   })
 })

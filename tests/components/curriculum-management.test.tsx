@@ -42,15 +42,15 @@ describe("CurriculumManagement", () => {
 
   it("should render loading state initially", () => {
     render(<CurriculumManagement />)
-    expect(screen.getByText("Loading curriculums...")).toBeInTheDocument()
+    expect(screen.getByText("Loading curriculums...")).toBeTruthy()
   })
 
   it("should render curriculum list after loading", async () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
-      expect(screen.getByText("Yellow Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
+      expect(screen.getByText("Yellow Belt")).toBeTruthy()
     })
   })
 
@@ -58,7 +58,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/2 items/)).toBeInTheDocument()
+      expect(screen.getByText(/2 items/)).toBeTruthy()
     })
   })
 
@@ -66,7 +66,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
@@ -75,8 +75,8 @@ describe("CurriculumManagement", () => {
     expect(whiteBeltCard).toBeTruthy()
     expect(yellowBeltCard).toBeTruthy()
 
-    expect(within(whiteBeltCard!).getByText("5 videos")).toBeInTheDocument()
-    expect(within(yellowBeltCard!).getByText("8 videos")).toBeInTheDocument()
+    expect(within(whiteBeltCard!).getByText("5 videos")).toBeTruthy()
+    expect(within(yellowBeltCard!).getByText("8 videos")).toBeTruthy()
   })
 
   it("should open add curriculum dialog when Add button is clicked", async () => {
@@ -84,14 +84,14 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const addButton = screen.getByRole("button", { name: /add curriculum/i })
     await user.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Add New Curriculum")).toBeInTheDocument()
+      expect(screen.getByText("Add New Curriculum")).toBeTruthy()
     })
   })
 
@@ -109,14 +109,14 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const addButton = screen.getByRole("button", { name: /add curriculum/i })
     await user.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Add New Curriculum")).toBeInTheDocument()
+      expect(screen.getByText("Add New Curriculum")).toBeTruthy()
     })
 
     const nameInput = screen.getByLabelText(/name/i)
@@ -143,7 +143,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
@@ -157,9 +157,9 @@ describe("CurriculumManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
-        expect(screen.getByDisplayValue("White Belt")).toBeInTheDocument()
-        expect(screen.getByDisplayValue("Beginner curriculum")).toBeInTheDocument()
+        expect(screen.getByText("Edit Curriculum")).toBeTruthy()
+        expect(screen.getByDisplayValue("White Belt")).toBeTruthy()
+        expect(screen.getByDisplayValue("Beginner curriculum")).toBeTruthy()
       },
       { timeout: 2000 },
     )
@@ -172,7 +172,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const whiteBeltCard = screen.getByText("White Belt").closest("div[class*='rounded']")
@@ -186,7 +186,7 @@ describe("CurriculumManagement", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText("Edit Curriculum")).toBeInTheDocument()
+        expect(screen.getByText("Edit Curriculum")).toBeTruthy()
       },
       { timeout: 2000 },
     )
@@ -216,7 +216,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const whiteBeltText = screen.getByText("White Belt")
@@ -241,7 +241,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const whiteBeltText = screen.getByText("White Belt")
@@ -265,7 +265,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Yellow Belt")).toBeInTheDocument()
+      expect(screen.getByText("Yellow Belt")).toBeTruthy()
     })
 
     const yellowBeltText = screen.getByText("Yellow Belt")
@@ -278,7 +278,7 @@ describe("CurriculumManagement", () => {
 
     await waitFor(() => {
       const moveUpOption = screen.getByText("Move Up")
-      expect(moveUpOption).toBeInTheDocument()
+      expect(moveUpOption).toBeTruthy()
     })
 
     const moveUpOption = screen.getByText("Move Up")
@@ -295,7 +295,7 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText(/no curriculums found/i)).toBeInTheDocument()
+      expect(screen.getByText(/no curriculums found/i)).toBeTruthy()
     })
   })
 
@@ -304,14 +304,14 @@ describe("CurriculumManagement", () => {
     render(<CurriculumManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeInTheDocument()
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
     const addButton = screen.getByRole("button", { name: /add curriculum/i })
     await user.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText("Add New Curriculum")).toBeInTheDocument()
+      expect(screen.getByText("Add New Curriculum")).toBeTruthy()
     })
 
     const colorPicker = document.querySelector("#curriculum-color-picker")

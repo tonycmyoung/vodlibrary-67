@@ -44,38 +44,38 @@ describe("AdminHeader", () => {
   it("should render admin header with user information", () => {
     render(<AdminHeader user={mockUser} />)
 
-    expect(screen.getByText("Admin")).toBeInTheDocument()
-    expect(screen.getByText("OKL")).toBeInTheDocument()
-    expect(screen.getByText("JD")).toBeInTheDocument()
+    expect(screen.getByText("Admin")).toBeTruthy()
+    expect(screen.getByText("OKL")).toBeTruthy()
+    expect(screen.getByText("JD")).toBeTruthy()
   })
 
   it("should render navigation links for desktop", () => {
     render(<AdminHeader user={mockUser} />)
 
-    expect(screen.getByText("Users")).toBeInTheDocument()
-    expect(screen.getByText("Videos")).toBeInTheDocument()
-    expect(screen.getAllByText("Metadata")[0]).toBeInTheDocument()
-    expect(screen.getByText("Notifications")).toBeInTheDocument()
+    expect(screen.getByText("Users")).toBeTruthy()
+    expect(screen.getByText("Videos")).toBeTruthy()
+    expect(screen.getAllByText("Metadata")[0]).toBeTruthy()
+    expect(screen.getByText("Notifications")).toBeTruthy()
   })
 
   it("should render notification bell", () => {
     render(<AdminHeader user={mockUser} />)
 
-    expect(screen.getByTestId("notification-bell")).toBeInTheDocument()
+    expect(screen.getByTestId("notification-bell")).toBeTruthy()
   })
 
   it("should show user avatar with initials fallback", () => {
     render(<AdminHeader user={mockUser} />)
 
     const fallback = screen.getByText("JD")
-    expect(fallback).toBeInTheDocument()
+    expect(fallback).toBeTruthy()
   })
 
   it("should generate initials from full name", () => {
     render(<AdminHeader user={mockUser} />)
 
     const fallback = screen.getByText("JD")
-    expect(fallback).toBeInTheDocument()
+    expect(fallback).toBeTruthy()
   })
 
   it("should use default initials when name is missing", () => {
@@ -83,7 +83,7 @@ describe("AdminHeader", () => {
     render(<AdminHeader user={userWithoutName} />)
 
     const fallback = screen.getByText("A")
-    expect(fallback).toBeInTheDocument()
+    expect(fallback).toBeTruthy()
   })
 
   it("should open invite modal when invite menu item is clicked", async () => {
@@ -144,7 +144,7 @@ describe("AdminHeader", () => {
     expect(menuButton).toBeTruthy()
     await user.click(menuButton!)
 
-    expect(screen.getByText("Student View")).toBeInTheDocument()
+    expect(screen.getByText("Student View")).toBeTruthy()
   })
 
   it("should close mobile menu when a link is clicked", async () => {
@@ -171,12 +171,12 @@ describe("AdminHeader", () => {
     if (avatarButton) {
       await user.click(avatarButton)
 
-      expect(screen.getByText("Library")).toBeInTheDocument()
-      expect(screen.getAllByText("Metadata")[0]).toBeInTheDocument()
-      expect(screen.getByText("Performers")).toBeInTheDocument()
-      expect(screen.getByText("Debug")).toBeInTheDocument()
-      expect(screen.getByText("Audit")).toBeInTheDocument()
-      expect(screen.getByText("Profile")).toBeInTheDocument()
+      expect(screen.getByText("Library")).toBeTruthy()
+      expect(screen.getAllByText("Metadata")[0]).toBeTruthy()
+      expect(screen.getByText("Performers")).toBeTruthy()
+      expect(screen.getByText("Debug")).toBeTruthy()
+      expect(screen.getByText("Audit")).toBeTruthy()
+      expect(screen.getByText("Profile")).toBeTruthy()
     }
   })
 })
