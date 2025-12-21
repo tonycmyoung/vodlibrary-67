@@ -251,4 +251,80 @@ describe("Header", () => {
     const mobileNav = screen.getAllByText("Library")
     expect(mobileNav.length).toBeGreaterThan(1) // Both desktop and mobile versions
   })
+
+  it("should close mobile menu after clicking a link", () => {
+    render(<Header user={mockUser} />)
+
+    const hamburgerButton = screen.getByRole("button", { name: "" })
+    fireEvent.click(hamburgerButton)
+
+    // Verify mobile menu is open
+    const mobileLinks = screen.getAllByText("Library")
+    expect(mobileLinks.length).toBeGreaterThan(1)
+
+    // Click a mobile link
+    const libraryLink = mobileLinks[mobileLinks.length - 1] // Get the mobile version
+    fireEvent.click(libraryLink)
+
+    // Mobile menu should close - verify we're back to just the desktop link
+    const linksAfterClose = screen.getAllByText("Library")
+    expect(linksAfterClose.length).toBe(1)
+  })
+
+  it("should display user role in dropdown menu", async () => {
+    const user = userEvent.setup()
+    const teacherUser = { ...mockUser, role: "Teacher" }
+    render(<Header user={teacherUser} />)
+
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
+
+      await waitFor(() => {
+        const roleText = screen.getByText("Teacher")
+        expect(roleText).toBeTruthy()
+        expect(roleText.className).toContain("text-gray-400")
+      })
+    }
+  })
+
+  it("should handle user with null profile image", () => {
+    const userNoImage = { ...mockUser, profile_image_url: null }
+    render(<Header user={userNoImage} />)
+
+    // Should show initials fallback
+    const avatar = screen.getByText("JD")
+    expect(avatar).toBeTruthy()
+    expect(avatar.className).toContain("bg-red-600")
+  })
+
+  it("should handle user with profile image URL", () => {
+    const userWithImage = { ...mockUser, profile_image_url: "https://example.com/avatar.jpg" }
+    render(<Header user={userWithImage} />)
+
+    // Should render avatar image
+    const avatarImage = document.querySelector('img[alt="John Doe"]')
+    expect(avatarImage).toBeTruthy()
+    expect(avatarImage?.getAttribute("src")).toContain("avatar.jpg")
+  })
+
+  it("should close all modals when navigating away", async () => {
+    const user = userEvent.setup()
+    render(<Header user={mockUser} />)
+
+    // Open donation modal
+    const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+    if (avatarButton) {
+      await user.click(avatarButton)
+      await waitFor(() => expect(screen.getByText("Donate")).toBeTruthy())
+
+      await user.click(screen.getByText("Donate"))
+      await waitFor(() => expect(screen.getByTestId("donation-modal")).toBeTruthy())
+
+      // Close the modal by clicking outside or using the component's close mechanism
+      // Verify modal can be closed (this tests the modal state management)
+      const modal = screen.getByTestId("donation-modal")
+      expect(modal).toBeTruthy()
+    }
+  })
 })

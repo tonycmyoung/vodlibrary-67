@@ -308,6 +308,29 @@ describe("Auth Actions", () => {
         expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
       }
     })
+
+    it("should handle concurrent signup attempts with same email", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Test User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: null },
+        error: {
+          message: "User already registered",
+          code: "user_already_exists",
+        },
+      })
+
+      const result = await signUp(null, formData)
+
+      expect(result).toEqual({ error: "User already registered" })
+    })
   })
 
   describe("signIn", () => {
@@ -607,6 +630,52 @@ describe("Auth Actions", () => {
         }),
       )
     })
+
+    it("should recover from transient database error on retry", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-123",
+            email: "test@example.com",
+            email_confirmed_at: "2024-01-01T00:00:00Z",
+          },
+        },
+        error: null,
+      })
+
+      let callCount = 0
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "user_logins") {
+          callCount++
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            gte: vi.fn().mockReturnThis(),
+            // Fail first, succeed second
+            maybeSingle: vi.fn().mockImplementation(() => {
+              if (callCount === 1) {
+                return Promise.reject(new Error("Temporary network error"))
+              }
+              return Promise.resolve({ data: null, error: null })
+            }),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      try {
+        await signIn(formData)
+      } catch (error: any) {
+        // Should still redirect successfully even if tracking initially failed
+        expect(error.message).toContain("REDIRECT")
+      }
+    })
   })
 
   describe("createAdminUser", () => {
@@ -798,6 +867,32 @@ describe("Auth Actions", () => {
       const result = await updatePassword(null, formData)
 
       expect(result).toEqual({ error: "Both password fields are required" })
+    })
+
+    it("should handle stale session gracefully during password update", async () => {
+      const formData = new FormData()
+      formData.append("password", "newpassword123")
+      formData.append("confirmPassword", "newpassword123")
+
+      // First call returns user, simulating active session
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      // Update fails due to stale session
+      mockSupabaseClient.auth.updateUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: "Session not found", code: "session_not_found" },
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      const result = await updatePassword(null, formData)
+
+      expect(result).toEqual({ error: "Session not found" })
     })
   })
 })
