@@ -122,16 +122,12 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
 
       if (notificationIds.length === 0) return
 
-      console.log("[v0] Attempting to delete notifications:", notificationIds)
-
       const { error, data } = await supabase.from("notifications").delete().in("id", notificationIds).select()
 
       if (error) {
         console.error("[v0] Error deleting all notifications:", error)
         return
       }
-
-      console.log("[v0] Successfully deleted notifications:", data)
 
       // Update local state
       setNotifications([])

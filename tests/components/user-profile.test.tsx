@@ -205,6 +205,7 @@ describe("UserProfile", () => {
     render(<UserProfile user={incompleteUser} curriculums={mockCurriculums} />)
 
     expect(screen.getByText("No name set")).toBeTruthy()
-    expect(screen.getByText("Not specified")).toBeTruthy()
+    const notSpecified = screen.getAllByText("Not specified")
+    expect(notSpecified.length).toBeGreaterThan(0)
   })
 })

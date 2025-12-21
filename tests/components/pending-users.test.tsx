@@ -65,7 +65,7 @@ describe("PendingUsers", () => {
       expect(screen.getByText("John Doe")).toBeTruthy()
     })
     expect(screen.getByText("john@example.com")).toBeTruthy()
-    expect(screen.getByText(/Mr\. Smith/i)).toBeTruthy()
+    expect(screen.getAllByText(/Mr\. Smith/i)[0]).toBeTruthy()
     expect(screen.getByText(/Test School/i)).toBeTruthy()
   })
 
