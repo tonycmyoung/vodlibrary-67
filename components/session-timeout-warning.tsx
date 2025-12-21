@@ -44,7 +44,7 @@ export default function SessionTimeoutWarning({ userId }: SessionTimeoutWarningP
         setTimeLeft(timeUntilExpiry)
         setShowWarning(true)
       } else if (timeUntilExpiry <= 0) {
-        console.log("[v0] Session has expired")
+        // Session has expired - component will show warning
       }
     } catch (error) {
       console.error("[v0] Session check error:", error)
