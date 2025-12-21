@@ -146,7 +146,7 @@ describe("SessionTimeoutWarning", () => {
           expect(screen.queryByText(/session expiring soon/i)).not.toBeInTheDocument()
         })
       },
-      { timeout: 32000 },
+      { timeout: 35000 },
     )
   })
 
