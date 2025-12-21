@@ -8,8 +8,8 @@ describe("UserSortControl", () => {
     const onSortChange = vi.fn()
     render(<UserSortControl sortBy="full_name" sortOrder="asc" onSortChange={onSortChange} />)
 
-    expect(screen.getByText("Sort by:")).toBeInTheDocument()
-    expect(screen.getByRole("combobox")).toBeInTheDocument()
+    expect(screen.getByText("Sort by:")).toBeTruthy()
+    expect(screen.getByRole("combobox")).toBeTruthy()
   })
 
   it("should display current sort option", () => {
@@ -36,9 +36,9 @@ describe("UserSortControl", () => {
     const onSortChange = vi.fn()
     const { rerender } = render(<UserSortControl sortBy="full_name" sortOrder="asc" onSortChange={onSortChange} />)
 
-    expect(screen.getByTitle("Sort descending")).toBeInTheDocument()
+    expect(screen.getByTitle("Sort descending")).toBeTruthy()
 
     rerender(<UserSortControl sortBy="full_name" sortOrder="desc" onSortChange={onSortChange} />)
-    expect(screen.getByTitle("Sort ascending")).toBeInTheDocument()
+    expect(screen.getByTitle("Sort ascending")).toBeTruthy()
   })
 })

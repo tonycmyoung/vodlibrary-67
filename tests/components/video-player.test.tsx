@@ -63,24 +63,24 @@ describe("VideoPlayer", () => {
   it("should render video title and description", () => {
     render(<VideoPlayer video={mockVideo} />)
 
-    expect(screen.getByText("Test Video")).toBeInTheDocument()
-    expect(screen.getByText("Test description for video")).toBeInTheDocument()
+    expect(screen.getByText("Test Video")).toBeTruthy()
+    expect(screen.getByText("Test description for video")).toBeTruthy()
   })
 
   it("should render video information badges", () => {
     render(<VideoPlayer video={mockVideo} />)
 
-    expect(screen.getByText("White Belt")).toBeInTheDocument()
-    expect(screen.getByText("Bo")).toBeInTheDocument()
-    expect(screen.getByText("John Doe")).toBeInTheDocument()
-    expect(screen.getByText("Recorded 2023")).toBeInTheDocument()
+    expect(screen.getByText("White Belt")).toBeTruthy()
+    expect(screen.getByText("Bo")).toBeTruthy()
+    expect(screen.getByText("John Doe")).toBeTruthy()
+    expect(screen.getByText("Recorded 2023")).toBeTruthy()
   })
 
   it("should display view count", async () => {
     render(<VideoPlayer video={mockVideo} />)
 
     await waitFor(() => {
-      expect(screen.getByText(/101 views/i)).toBeInTheDocument()
+      expect(screen.getByText(/101 views/i)).toBeTruthy()
     })
   })
 
@@ -103,7 +103,7 @@ describe("VideoPlayer", () => {
     render(<VideoPlayer video={mockVideo} />)
 
     const backButton = screen.getByText("Back to Library")
-    expect(backButton).toBeInTheDocument()
+    expect(backButton).toBeTruthy()
   })
 
   it("should call window.history.back when Back button is clicked", () => {
@@ -121,7 +121,7 @@ describe("VideoPlayer", () => {
     const fullscreenButton = screen.getByText("Fullscreen View")
     fireEvent.click(fullscreenButton)
 
-    expect(screen.getByLabelText("Exit fullscreen")).toBeInTheDocument()
+    expect(screen.getByLabelText("Exit fullscreen")).toBeTruthy()
   })
 
   it("should exit fullscreen mode when close button is clicked", () => {
@@ -133,7 +133,7 @@ describe("VideoPlayer", () => {
     const exitButton = screen.getByLabelText("Exit fullscreen")
     fireEvent.click(exitButton)
 
-    expect(screen.getByText("Fullscreen View")).toBeInTheDocument()
+    expect(screen.getByText("Fullscreen View")).toBeTruthy()
   })
 
   it("should toggle favorite when heart button is clicked", async () => {
@@ -164,26 +164,26 @@ describe("VideoPlayer", () => {
     const videoWithoutUrl = { ...mockVideo, video_url: "" }
     render(<VideoPlayer video={videoWithoutUrl} />)
 
-    expect(screen.getByText("No Video Available")).toBeInTheDocument()
+    expect(screen.getByText("No Video Available")).toBeTruthy()
   })
 
   it("should render legal notice", () => {
     render(<VideoPlayer video={mockVideo} />)
 
-    expect(screen.getByText(/Videos are for personal study only/i)).toBeInTheDocument()
+    expect(screen.getByText(/Videos are for personal study only/i)).toBeTruthy()
   })
 
   it("should not render recorded year when it's null", () => {
     const videoWithoutRecorded = { ...mockVideo, recorded: null }
     render(<VideoPlayer video={videoWithoutRecorded} />)
 
-    expect(screen.queryByText("2023")).not.toBeInTheDocument()
+    expect(screen.queryByText("2023")).toBeNull()
   })
 
   it("should not render recorded year when it's Unset", () => {
     const videoWithUnsetRecorded = { ...mockVideo, recorded: "Unset" }
     render(<VideoPlayer video={videoWithUnsetRecorded} />)
 
-    expect(screen.queryByText("Unset")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unset")).toBeNull()
   })
 })

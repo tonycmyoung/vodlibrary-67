@@ -44,7 +44,7 @@ describe("ResetPasswordForm", () => {
 
     render(<ResetPasswordForm />)
 
-    expect(screen.getByText(/verifying password reset link/i)).toBeInTheDocument()
+    expect(screen.getByText(/verifying password reset link/i)).toBeTruthy()
   })
 
   it("should show form when session exists", async () => {
@@ -74,8 +74,8 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText(/auth session missing/i)).toBeInTheDocument()
-        expect(screen.getByText(/unable to verify password reset link/i)).toBeInTheDocument()
+        expect(screen.getByText(/auth session missing/i)).toBeTruthy()
+        expect(screen.getByText(/unable to verify password reset link/i)).toBeTruthy()
       },
       { timeout: 7000 },
     )
@@ -146,7 +146,7 @@ describe("ResetPasswordForm", () => {
     await waitFor(
       () => {
         const returnButton = screen.getByRole("button", { name: /return to login/i })
-        expect(returnButton).toBeInTheDocument()
+        expect(returnButton).toBeTruthy()
       },
       { timeout: 7000 },
     )

@@ -42,7 +42,7 @@ describe("SessionTimeoutWarning", () => {
     render(<SessionTimeoutWarning userId="user-123" />)
 
     await waitFor(() => {
-      expect(screen.queryByText(/session expiring soon/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/session expiring soon/i)).toBeNull()
     })
   })
 
@@ -57,7 +57,7 @@ describe("SessionTimeoutWarning", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText(/session expiring soon/i)).toBeInTheDocument()
+        expect(screen.getByText(/session expiring soon/i)).toBeTruthy()
       },
       { timeout: 32000 },
     ) // Component checks every 30 seconds
@@ -75,7 +75,7 @@ describe("SessionTimeoutWarning", () => {
     await waitFor(
       () => {
         // Should show time in m:ss format (3:20)
-        expect(screen.getByText(/3:20/)).toBeInTheDocument()
+        expect(screen.getByText(/3:20/)).toBeTruthy()
       },
       { timeout: 32000 },
     )
@@ -92,7 +92,7 @@ describe("SessionTimeoutWarning", () => {
 
     await waitFor(
       () => {
-        expect(screen.getByRole("button", { name: /extend session/i })).toBeInTheDocument()
+        expect(screen.getByRole("button", { name: /extend session/i })).toBeTruthy()
       },
       { timeout: 32000 },
     )
@@ -156,6 +156,6 @@ describe("SessionTimeoutWarning", () => {
   it("should not render when userId is undefined", () => {
     render(<SessionTimeoutWarning userId="undefined" />)
 
-    expect(screen.queryByTestId("dialog")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("dialog")).toBeNull()
   })
 })

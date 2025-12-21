@@ -33,12 +33,9 @@ function setCachedUserApproval(userId: string, isApproved: boolean, role: string
 }
 
 export async function updateSession(request: NextRequest) {
-  console.log("[v0] Middleware: Processing request for path:", request.nextUrl.pathname)
-
   const hasEnvVars = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!hasEnvVars) {
-    console.log("[v0] Middleware: Env vars not available, skipping middleware auth (page-level auth will handle)")
     return NextResponse.next({ request })
   }
 
@@ -76,7 +73,6 @@ export async function updateSession(request: NextRequest) {
       } = await supabase.auth.getSession()
 
       session = sessionData
-      console.log("[v0] Middleware: Session check result - authenticated:", !!session)
     } catch (error) {
       console.error("[v0] Middleware: Session error occurred:", error?.message)
 
@@ -86,7 +82,6 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname === "/auth/callback"
 
       if (isAuthRoute) {
-        console.log("[v0] Middleware: Error on auth route, allowing through")
         return supabaseResponse
       }
 
@@ -104,7 +99,6 @@ export async function updateSession(request: NextRequest) {
       return AuthCookieService.createAuthErrorResponse(request, "auth", "Authentication required")
     }
 
-    // Protected routes - redirect to login if not authenticated
     const isAuthRoute =
       request.nextUrl.pathname.startsWith("/auth/login") ||
       request.nextUrl.pathname.startsWith("/auth/sign-up") ||
@@ -120,7 +114,6 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/auth/reset-password"
 
     if (isAuthRoute || isPublicRoute) {
-      console.log("[v0] Middleware: Auth or public route, allowing through")
       return supabaseResponse
     }
 
@@ -131,9 +124,6 @@ export async function updateSession(request: NextRequest) {
       const redirectUrl = new URL("/auth/login", request.url)
       if (validReturnTo) {
         redirectUrl.searchParams.set("returnTo", validReturnTo)
-        console.log("[v0] Middleware: Redirecting to login with returnTo:", validReturnTo)
-      } else {
-        console.log("[v0] Middleware: Redirecting to login without returnTo (path excluded or invalid)")
       }
 
       return NextResponse.redirect(redirectUrl)

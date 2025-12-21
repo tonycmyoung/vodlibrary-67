@@ -16,9 +16,9 @@ describe("SortControl", () => {
   it("should render sort control with current selection", () => {
     render(<SortControl {...defaultProps} sortBy="curriculum" />)
 
-    expect(screen.getByText("Sort by:")).toBeInTheDocument()
+    expect(screen.getByText("Sort by:")).toBeTruthy()
     const combobox = screen.getByRole("combobox")
-    expect(combobox).toBeInTheDocument()
+    expect(combobox).toBeTruthy()
     expect(combobox).toHaveTextContent("Curriculum")
   })
 
@@ -33,9 +33,8 @@ describe("SortControl", () => {
     render(<SortControl {...defaultProps} sortOrder="asc" />)
 
     const sortOrderButton = screen.getByTitle("Sort descending")
-    expect(sortOrderButton).toBeInTheDocument()
+    expect(sortOrderButton).toBeTruthy()
 
-    // Verify icon doesn't have rotate class when asc
     const icon = sortOrderButton.querySelector("svg")
     expect(icon).not.toHaveClass("rotate-180")
   })
@@ -83,11 +82,11 @@ describe("SortControl", () => {
     const curriculumElements = screen.getAllByText("Curriculum")
     expect(curriculumElements.length).toBeGreaterThan(0)
 
-    expect(screen.getByText("Category")).toBeInTheDocument()
-    expect(screen.getByText("Name")).toBeInTheDocument()
-    expect(screen.getByText("Added Date")).toBeInTheDocument()
-    expect(screen.getByText("Recorded")).toBeInTheDocument()
-    expect(screen.getByText("Views")).toBeInTheDocument()
-    expect(screen.getByText("Last View")).toBeInTheDocument()
+    expect(screen.getByText("Category")).toBeTruthy()
+    expect(screen.getByText("Name")).toBeTruthy()
+    expect(screen.getByText("Added Date")).toBeTruthy()
+    expect(screen.getByText("Recorded")).toBeTruthy()
+    expect(screen.getByText("Views")).toBeTruthy()
+    expect(screen.getByText("Last View")).toBeTruthy()
   })
 })

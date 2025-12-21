@@ -17,20 +17,13 @@ type SignInResult = {
 }
 
 export async function signIn(formData: FormData) {
-  console.log("[v0] Auth Action: signIn called")
-
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const returnTo = formData.get("returnTo") as string | null
 
-  console.log("[v0] Auth Action: Email:", email)
-  console.log("[v0] Auth Action: returnTo from form:", returnTo)
-
   if (!email || !password) {
-    console.log("[v0] Auth Action: Missing email or password")
     const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
     const errorUrl = `/auth/login?error=auth_error${returnToParam}`
-    console.log("[v0] Auth Action: Redirecting to:", errorUrl)
     redirect(errorUrl)
   }
 
@@ -85,12 +78,10 @@ export async function signIn(formData: FormData) {
       additional_data: additionalData,
     })
   } catch (logError) {
-    console.error("[v0] Auth Action: Failed to log auth attempt:", logError)
+    console.error("Failed to log auth attempt:", logError)
   }
 
   if (error) {
-    console.log("[v0] Auth Action: Authentication failed:", error.message)
-
     let errorCode = "auth_error"
     if (error.message.includes("Email not confirmed")) {
       errorCode = "email_not_confirmed"
@@ -100,11 +91,8 @@ export async function signIn(formData: FormData) {
 
     const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
     const errorUrl = `/auth/login?error=${errorCode}${returnToParam}`
-    console.log("[v0] Auth Action: Redirecting to:", errorUrl)
     redirect(errorUrl)
   }
-
-  console.log("[v0] Auth Action: Authentication successful for user:", data.user?.id)
 
   if (data.user?.id) {
     try {
@@ -130,22 +118,15 @@ export async function signIn(formData: FormData) {
         if (insertError) {
           throw insertError
         }
-
-        console.log("[v0] Auth Action: Login tracking successful")
-      } else {
-        console.log("[v0] Auth Action: Login already tracked for today")
       }
     } catch (trackingError) {
-      console.log("[v0] Auth Action: Login tracking failed:", trackingError)
       // Don't fail signin if tracking fails
     }
   }
 
   const validatedReturnTo = validateReturnTo(returnTo)
-  console.log("[v0] Auth Action: Validated returnTo:", validatedReturnTo)
 
   const finalRedirect = validatedReturnTo || "/"
-  console.log("[v0] Auth Action: Setting redirect cookie to:", finalRedirect)
 
   cookieStore.set("auth_redirect", finalRedirect, {
     httpOnly: true,
@@ -156,8 +137,6 @@ export async function signIn(formData: FormData) {
   })
 
   revalidatePath("/auth/login")
-
-  console.log("[v0] Auth Action: Cookie set and path revalidated")
 }
 
 export async function signUp(prevState: any, formData: FormData) {
@@ -224,7 +203,7 @@ export async function signUp(prevState: any, formData: FormData) {
       },
     })
   } catch (logError) {
-    console.error("[v0] Failed to log signup attempt:", logError)
+    console.error("Failed to log signup attempt:", logError)
   }
 
   if (error) {
@@ -234,7 +213,6 @@ export async function signUp(prevState: any, formData: FormData) {
   if (data.user) {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    console.log("[v0] Checking for invitation for email:", email.toLowerCase())
     const { data: invitationData, error: invitationError } = await serviceSupabase
       .from("invitations")
       .select("invited_by")
@@ -242,11 +220,10 @@ export async function signUp(prevState: any, formData: FormData) {
       .maybeSingle()
 
     if (invitationError && invitationError.code !== "PGRST116") {
-      console.error("[v0] Error fetching invitation:", invitationError)
+      console.error("Error fetching invitation:", invitationError)
     }
 
     const invitedBy = invitationData?.invited_by || null
-    console.log("[v0] Invitation found, invited_by:", invitedBy)
 
     const { error: profileError } = await serviceSupabase.from("users").insert({
       id: data.user.id,
@@ -275,8 +252,6 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: "Failed to store legal consent" }
     }
 
-    console.log("[v0] Attempting to clean up invitation for email:", email.toLowerCase())
-
     const { data: deletedInvitations, error: deleteError } = await serviceSupabase
       .from("invitations")
       .delete()
@@ -284,14 +259,7 @@ export async function signUp(prevState: any, formData: FormData) {
       .select()
 
     if (deleteError) {
-      console.error("[v0] Error deleting invitation record:", deleteError)
-    } else {
-      console.log("[v0] Invitation cleanup result:", deletedInvitations)
-      if (deletedInvitations && deletedInvitations.length > 0) {
-        console.log("[v0] Successfully deleted", deletedInvitations.length, "invitation record(s)")
-      } else {
-        console.log("[v0] No invitation records found to delete for email:", email.toLowerCase())
-      }
+      console.error("Error deleting invitation record:", deleteError)
     }
 
     try {
@@ -475,7 +443,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
         },
       })
     } catch (logError) {
-      console.error("[v0] Failed to log password reset validation error:", logError)
+      console.error("Failed to log password reset validation error:", logError)
     }
     return { error: "Both password fields are required" }
   }
@@ -494,7 +462,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
         },
       })
     } catch (logError) {
-      console.error("[v0] Failed to log password reset mismatch error:", logError)
+      console.error("Failed to log password reset mismatch error:", logError)
     }
     return { error: "Passwords do not match" }
   }
@@ -514,7 +482,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
         },
       })
     } catch (logError) {
-      console.error("[v0] Failed to log password reset length error:", logError)
+      console.error("Failed to log password reset length error:", logError)
     }
     return { error: "Password must be at least 8 characters long" }
   }
@@ -537,7 +505,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
       },
     })
   } catch (logError) {
-    console.error("[v0] Failed to log password reset attempt:", logError)
+    console.error("Failed to log password reset attempt:", logError)
   }
 
   if (error) {

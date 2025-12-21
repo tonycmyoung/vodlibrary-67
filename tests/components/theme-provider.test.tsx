@@ -15,7 +15,7 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     )
 
-    expect(screen.getByText("Test Child")).toBeInTheDocument()
+    expect(screen.getByText("Test Child")).toBeTruthy()
   })
 
   it("should pass through props to NextThemesProvider", () => {
@@ -25,12 +25,12 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     )
 
-    expect(screen.getByTestId("theme-provider")).toBeInTheDocument()
+    expect(screen.getByTestId("theme-provider")).toBeTruthy()
   })
 
   it("should render without errors when no children provided", () => {
     const { container } = render(<ThemeProvider />)
 
-    expect(container.querySelector('[data-testid="theme-provider"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-testid="theme-provider"]')).toBeTruthy()
   })
 })

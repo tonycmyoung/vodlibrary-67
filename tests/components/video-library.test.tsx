@@ -508,7 +508,7 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("view-toggle")).toBeTruthy()
-        expect(screen.getAllByText("Current: grid").length).toBeGreaterThan(0)
+        expect(screen.getByText("Current: grid")).toBeTruthy()
       })
     })
 
@@ -523,8 +523,8 @@ describe("VideoLibrary", () => {
       fireEvent.click(listButton)
 
       await waitFor(() => {
-        expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
-        expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
+        expect(screen.getByText("Current: list")).toBeTruthy()
+        expect(screen.getByTestId("video-list")).toBeTruthy()
       })
     })
 
@@ -540,14 +540,12 @@ describe("VideoLibrary", () => {
         expect(localStorage.getItem).toHaveBeenCalledWith("videoLibraryView")
       })
 
-      // Verify the view toggle shows "list" as current
       await waitFor(() => {
-        expect(screen.getAllByText("Current: list").length).toBeGreaterThan(0)
+        expect(screen.getByText("Current: list")).toBeTruthy()
       })
 
-      // Verify list view component is rendered
       await waitFor(() => {
-        expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
+        expect(screen.getByTestId("video-list")).toBeTruthy()
       })
     })
   })

@@ -205,7 +205,7 @@ describe("VideoCard", () => {
   it("should display custom view count", () => {
     render(<VideoCard video={mockVideo} viewCount={250} />)
 
-    expect(screen.getByText("250 views")).toBeInTheDocument()
+    expect(screen.getByText("250 views")).toBeTruthy()
   })
 
   it("should filter out invalid categories", () => {

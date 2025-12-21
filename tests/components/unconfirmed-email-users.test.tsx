@@ -117,7 +117,7 @@ describe("UnconfirmedEmailUsers", () => {
     render(<UnconfirmedEmailUsers />)
 
     await waitFor(() => {
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
     const resendButtons = screen.getAllByRole("button", { name: /resend/i })
