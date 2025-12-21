@@ -66,7 +66,7 @@ describe("PendingUsers", () => {
     })
     expect(screen.getByText("john@example.com")).toBeTruthy()
     expect(screen.getAllByText(/Mr\. Smith/i)[0]).toBeTruthy()
-    expect(screen.getByText(/Test School/i)).toBeTruthy()
+    expect(screen.getAllByText(/Test School/i)[0]).toBeTruthy()
   })
 
   it("should display inviter information when user was invited", async () => {

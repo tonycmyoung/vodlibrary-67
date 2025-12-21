@@ -43,40 +43,28 @@ export default function ResetPasswordForm() {
   const passwordsMatch = password === confirmPassword && password.length > 0
 
   useEffect(() => {
-    console.log("[v0] Reset password form mounted - preview state reset")
     const supabase = createClient()
 
     // Check for existing session first
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log("[v0] Reset password page - checking session", { hasSession: !!session, error })
-
       if (session) {
-        console.log("[v0] Session found, user can reset password")
         setHasSession(true)
         setIsLoading(false)
         return
       }
-
-      // If no session, listen for PASSWORD_RECOVERY event
-      console.log("[v0] No session found, listening for auth state changes")
     })
 
     // Listen for auth state changes (handles password recovery flow)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[v0] Auth state change:", event, { hasSession: !!session })
-
       if (event === "PASSWORD_RECOVERY") {
-        console.log("[v0] Password recovery event detected, session established")
         setHasSession(true)
         setIsLoading(false)
       } else if (event === "SIGNED_IN" && session) {
-        console.log("[v0] User signed in, session established")
         setHasSession(true)
         setIsLoading(false)
       } else if (event === "SIGNED_OUT") {
-        console.log("[v0] User signed out")
         setHasSession(false)
         setSessionError("Your password reset link has expired. Please request a new one.")
         setIsLoading(false)
@@ -86,7 +74,6 @@ export default function ResetPasswordForm() {
     // Set timeout to show error if no session after 5 seconds
     const timeout = setTimeout(() => {
       if (!hasSession) {
-        console.log("[v0] Timeout: No session established after 5 seconds")
         setSessionError("Unable to verify password reset link. Please request a new one.")
         setIsLoading(false)
       }
