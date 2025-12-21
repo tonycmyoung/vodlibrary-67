@@ -74,8 +74,10 @@ describe("InviteUserModal", () => {
   it("should show error when submitting empty email", async () => {
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
-    const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    const form = screen.getByRole("button", { name: /send invitation/i }).closest("form")
+    if (form) {
+      fireEvent.submit(form)
+    }
 
     await waitFor(() => {
       const errorMessage = screen.getByText(/please enter an email address/i)
