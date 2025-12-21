@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import SendMessageForm from "@/components/send-message-form"
 
-// Mock the server action
-const mockSendNotificationWithEmail = vi.fn()
-
 vi.mock("@/lib/actions", () => ({
-  sendNotificationWithEmail: mockSendNotificationWithEmail,
+  sendNotificationWithEmail: vi.fn(),
 }))
+
+// Import the mocked function after the mock is defined
+import { sendNotificationWithEmail } from "@/lib/actions"
 
 describe("SendMessageForm", () => {
   beforeEach(() => {
@@ -17,27 +17,34 @@ describe("SendMessageForm", () => {
   it("should render form with user information", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    expect(screen.getByText(/send message to admin/i)).toBeInTheDocument()
-    expect(screen.getByText(/from: john doe/i)).toBeInTheDocument()
+    // Verify card title exists
+    const title = screen.getByRole("heading", { name: /send message to admin/i })
+    expect(title).toBeTruthy()
+    // Verify user name appears in the from label
+    const fromLabel = screen.getByText(/from:/i).closest("p")
+    expect(fromLabel?.textContent).toContain("John Doe")
   })
 
   it("should display Unknown User when userName is null", () => {
     render(<SendMessageForm userId="user-123" userName={null} />)
 
-    expect(screen.getByText(/from: unknown user/i)).toBeInTheDocument()
+    const fromLabel = screen.getByText(/from:/i).closest("p")
+    expect(fromLabel?.textContent).toContain("Unknown User")
   })
 
   it("should have textarea with correct placeholder", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    const textarea = screen.getByPlaceholderText(/type your message here/i)
-    expect(textarea).toBeInTheDocument()
+    const textarea = screen.getByPlaceholderText(/type your message here/i) as HTMLTextAreaElement
+    expect(textarea.tagName).toBe("TEXTAREA")
+    expect(textarea.maxLength).toBe(500)
   })
 
   it("should show character counter", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    expect(screen.getByText(/0\/500 characters/i)).toBeInTheDocument()
+    const counter = screen.getByText(/0\/500 characters/i)
+    expect(counter.className).toContain("text-xs")
   })
 
   it("should update character counter when typing", () => {
@@ -46,14 +53,15 @@ describe("SendMessageForm", () => {
     const textarea = screen.getByPlaceholderText(/type your message here/i)
     fireEvent.change(textarea, { target: { value: "Hello!" } })
 
-    expect(screen.getByText(/6\/500 characters/i)).toBeInTheDocument()
+    const counter = screen.getByText(/6\/500 characters/i)
+    expect(counter).toBeTruthy()
   })
 
   it("should disable send button when message is empty", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    expect(sendButton).toBeDisabled()
+    expect(sendButton.hasAttribute("disabled")).toBe(true)
   })
 
   it("should enable send button when message has content", () => {
@@ -63,7 +71,7 @@ describe("SendMessageForm", () => {
     fireEvent.change(textarea, { target: { value: "Test message" } })
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    expect(sendButton).not.toBeDisabled()
+    expect(sendButton.hasAttribute("disabled")).toBe(false)
   })
 
   it("should show error when trying to send empty message", () => {
@@ -74,11 +82,13 @@ describe("SendMessageForm", () => {
       fireEvent.submit(form)
     }
 
-    expect(screen.getByText(/please enter a message/i)).toBeInTheDocument()
+    const errorMessage = screen.getByText(/please enter a message/i)
+    // Verify it's in an error styled container
+    expect(errorMessage.closest("div")?.className).toContain("red-500")
   })
 
   it("should call sendNotificationWithEmail on submit", async () => {
-    mockSendNotificationWithEmail.mockResolvedValue({ success: true })
+    vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
@@ -89,7 +99,7 @@ describe("SendMessageForm", () => {
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(mockSendNotificationWithEmail).toHaveBeenCalledWith({
+      expect(sendNotificationWithEmail).toHaveBeenCalledWith({
         recipientId: "admin",
         message: "Test message",
         isBroadcast: false,
@@ -98,7 +108,7 @@ describe("SendMessageForm", () => {
   })
 
   it("should show success message after sending", async () => {
-    mockSendNotificationWithEmail.mockResolvedValue({ success: true })
+    vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
@@ -109,28 +119,30 @@ describe("SendMessageForm", () => {
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/message sent successfully/i)).toBeInTheDocument()
+      const successMessage = screen.getByText(/message sent successfully/i)
+      // Verify it's in a success styled container
+      expect(successMessage.closest("div")?.className).toContain("green-500")
     })
   })
 
   it("should clear form after successful send", async () => {
-    mockSendNotificationWithEmail.mockResolvedValue({ success: true })
+    vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    const textarea = screen.getByPlaceholderText(/type your message here/i)
+    const textarea = screen.getByPlaceholderText(/type your message here/i) as HTMLTextAreaElement
     fireEvent.change(textarea, { target: { value: "Test message" } })
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(textarea).toHaveValue("")
+      expect(textarea.value).toBe("")
     })
   })
 
   it("should show error message on failure", async () => {
-    mockSendNotificationWithEmail.mockResolvedValue({ error: "Failed to send" })
+    vi.mocked(sendNotificationWithEmail).mockResolvedValue({ error: "Failed to send" })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
@@ -141,7 +153,9 @@ describe("SendMessageForm", () => {
     fireEvent.click(sendButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to send message/i)).toBeInTheDocument()
+      const errorMessage = screen.getByText(/failed to send message/i)
+      // Verify it's in an error styled container
+      expect(errorMessage.closest("div")?.className).toContain("red-500")
     })
   })
 })
