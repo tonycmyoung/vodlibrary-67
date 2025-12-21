@@ -93,7 +93,7 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      const cardTitle = screen.getByRole("heading", { level: 3 })
+      const cardTitle = document.querySelector('[data-slot="card-title"]')
       expect(cardTitle).toHaveTextContent("Send Message")
       expect(screen.getByText("Individual")).toBeInTheDocument()
     })
