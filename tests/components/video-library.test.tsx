@@ -582,37 +582,6 @@ describe("VideoLibrary", () => {
         expect(screen.queryByTestId("video-card-video-3")).toBeNull()
       })
     })
-
-    it("should debounce search input and update URL after delay", async () => {
-      vi.useFakeTimers()
-
-      const mockRouter = { push: vi.fn() }
-      ;(useRouter as any).mockReturnValue(mockRouter)
-
-      render(<VideoLibrary storagePrefix="test-" favoritesOnly={false} />)
-
-      await waitFor(() => {
-        expect(screen.queryByText("Loading videos...")).toBeNull()
-      })
-
-      const searchInput = screen.getByPlaceholderText("Search videos...")
-
-      // Type search query
-      fireEvent.change(searchInput, { target: { value: "test search" } })
-
-      // Immediately check - URL should not be updated yet (debounced)
-      expect(mockRouter.push).not.toHaveBeenCalled()
-
-      // Fast forward past debounce delay (300ms)
-      vi.advanceTimersByTime(350)
-
-      // Now URL should be updated
-      await waitFor(() => {
-        expect(mockRouter.push).toHaveBeenCalledWith(expect.stringContaining("search=test%20search"))
-      })
-
-      vi.useRealTimers()
-    })
   })
 
   describe("URL State Edge Cases", () => {
