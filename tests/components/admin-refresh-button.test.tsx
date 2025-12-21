@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import AdminRefreshButton from "@/components/admin-refresh-button"
@@ -6,12 +6,6 @@ import AdminRefreshButton from "@/components/admin-refresh-button"
 describe("AdminRefreshButton", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.runOnlyPendingTimers()
-    vi.useRealTimers()
   })
 
   it("should render button with correct initial text", () => {
@@ -21,7 +15,7 @@ describe("AdminRefreshButton", () => {
   })
 
   it("should dispatch three custom events when clicked", async () => {
-    const user = userEvent.setup({ delay: null })
+    const user = userEvent.setup()
     const eventSpy = vi.fn()
 
     window.addEventListener("admin-refresh-pending-users", eventSpy)
@@ -43,7 +37,7 @@ describe("AdminRefreshButton", () => {
   })
 
   it("should show refreshing state with spinning icon", async () => {
-    const user = userEvent.setup({ delay: null })
+    const user = userEvent.setup()
 
     render(<AdminRefreshButton />)
 
@@ -60,7 +54,7 @@ describe("AdminRefreshButton", () => {
   })
 
   it("should disable button while refreshing", async () => {
-    const user = userEvent.setup({ delay: null })
+    const user = userEvent.setup()
 
     render(<AdminRefreshButton />)
 
@@ -73,7 +67,7 @@ describe("AdminRefreshButton", () => {
   })
 
   it("should re-enable button after refresh completes", async () => {
-    const user = userEvent.setup({ delay: null })
+    const user = userEvent.setup()
 
     render(<AdminRefreshButton />)
 
@@ -84,16 +78,17 @@ describe("AdminRefreshButton", () => {
       expect(button).toBeDisabled()
     })
 
-    await vi.advanceTimersByTimeAsync(1000)
-
-    await waitFor(() => {
-      expect(button).not.toBeDisabled()
-      expect(screen.getByRole("button", { name: /refresh all/i })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(button).not.toBeDisabled()
+        expect(screen.getByRole("button", { name: /refresh all/i })).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
   })
 
   it("should handle errors gracefully and still re-enable button", async () => {
-    const user = userEvent.setup({ delay: null })
+    const user = userEvent.setup()
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
     let callCount = 0
@@ -115,9 +110,12 @@ describe("AdminRefreshButton", () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith("Error refreshing admin data:", expect.any(Error))
     })
 
-    await waitFor(() => {
-      expect(button).not.toBeDisabled()
-    })
+    await waitFor(
+      () => {
+        expect(button).not.toBeDisabled()
+      },
+      { timeout: 2000 },
+    )
 
     consoleErrorSpy.mockRestore()
   })
