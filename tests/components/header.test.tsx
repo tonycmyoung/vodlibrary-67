@@ -310,6 +310,25 @@ describe("Header", () => {
     expect(avatarButton).toBeTruthy()
   })
 
+  it("should close mobile menu when clicking mobile menu links", () => {
+    render(<Header user={mockUser} />)
+
+    // Open mobile menu
+    const hamburgerButton = screen.getByRole("button", { name: "" })
+    fireEvent.click(hamburgerButton)
+
+    // Verify mobile menu is visible
+    const libraryLinks = screen.getAllByText("Library")
+    expect(libraryLinks.length).toBeGreaterThan(1)
+
+    // Click a mobile link (the last one is the mobile version)
+    fireEvent.click(libraryLinks[libraryLinks.length - 1])
+
+    // Mobile menu should close
+    const linksAfterClose = screen.getAllByText("Library")
+    expect(linksAfterClose.length).toBe(1)
+  })
+
   it("should close all modals when navigating away", async () => {
     const user = userEvent.setup()
     render(<Header user={mockUser} />)

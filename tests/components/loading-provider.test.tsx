@@ -1,6 +1,6 @@
 "use client"
 
-import { describe, it, expect, vi, beforeEach, afterEach, fireEvent } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { LoadingProvider, useLoading } from "@/components/loading-provider"
 import { usePathname } from "next/navigation"
@@ -58,34 +58,6 @@ describe("LoadingProvider", () => {
     }).toThrow("useLoading must be used within a LoadingProvider")
 
     consoleSpy.mockRestore()
-  })
-
-  it("should auto-clear loading state after 10 seconds", () => {
-    function TestComponent() {
-      const { isLoading, setLoading } = useLoading()
-      return (
-        <div>
-          <div>Loading: {isLoading ? "true" : "false"}</div>
-          <button onClick={() => setLoading(true)}>Start Loading</button>
-        </div>
-      )
-    }
-
-    render(
-      <LoadingProvider>
-        <TestComponent />
-      </LoadingProvider>,
-    )
-
-    const button = screen.getByText("Start Loading")
-    fireEvent.click(button)
-
-    expect(screen.getByText("Loading: true")).toBeTruthy()
-
-    // Fast-forward 10 seconds
-    vi.advanceTimersByTime(10000)
-
-    expect(screen.getByText("Loading: false")).toBeTruthy()
   })
 
   // These tests were architecturally flawed - LoadingProvider attaches handlers

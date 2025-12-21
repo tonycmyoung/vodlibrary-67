@@ -331,6 +331,46 @@ describe("Auth Actions", () => {
 
       expect(result).toEqual({ error: "User already registered" })
     })
+
+    it("should handle transient database errors during profile creation with retry logic", async () => {
+      const formData = new FormData()
+      formData.append("email", "test@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Test User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      })
+
+      // Simulate a transient database timeout error
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            insert: vi.fn().mockResolvedValue({
+              error: { message: "Database timeout", code: "57014" },
+            }),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          delete: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      })
+
+      const result = await signUp(null, formData)
+
+      // Should fail gracefully with a clear error message
+      expect(result).toEqual({ error: "Failed to create user profile" })
+    })
   })
 
   describe("signIn", () => {
