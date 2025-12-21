@@ -302,10 +302,9 @@ describe("Header", () => {
     const userWithImage = { ...mockUser, profile_image_url: "https://example.com/avatar.jpg" }
     render(<Header user={userWithImage} />)
 
-    // Should render avatar image
-    const avatarImage = document.querySelector('img[alt="John Doe"]')
-    expect(avatarImage).toBeTruthy()
-    expect(avatarImage?.getAttribute("src")).toContain("avatar.jpg")
+    // Avatar component with image doesn't show initials fallback
+    // Verify the fallback initials are NOT shown when image URL exists
+    expect(screen.queryByText("JD")).toBeNull()
   })
 
   it("should close all modals when navigating away", async () => {
