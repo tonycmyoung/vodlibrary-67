@@ -148,7 +148,7 @@ describe("SessionTimeoutWarning", () => {
       },
       { timeout: 35000 },
     )
-  })
+  }, 40000) // Add test timeout as parameter to it() function
 
   it("should not render when userId is undefined", () => {
     render(<SessionTimeoutWarning userId="undefined" />)

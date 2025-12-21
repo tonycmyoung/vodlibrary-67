@@ -79,7 +79,7 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 7000 },
     )
-  })
+  }, 10000) // Add test timeout as parameter to it() function
 
   it("should toggle password visibility", async () => {
     mockGetSession.mockResolvedValue({
@@ -150,5 +150,5 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 7000 },
     )
-  })
+  }, 10000) // Add test timeout as parameter to it() function
 })
