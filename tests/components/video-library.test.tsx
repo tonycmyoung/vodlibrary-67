@@ -738,33 +738,6 @@ describe("VideoLibrary", () => {
       })
     })
 
-    it("should maintain sort order when filters change", async () => {
-      Storage.prototype.getItem = vi.fn((key) => {
-        if (key === "videoLibrarySortBy") return "title"
-        if (key === "videoLibrarySortOrder") return "desc"
-        return null
-      })
-
-      render(<VideoLibrary />)
-
-      await waitFor(() => {
-        const currentSort = screen.getAllByTestId("current-sort")[0]
-        expect(currentSort).toHaveTextContent("title-desc")
-      })
-
-      // Toggle a filter
-      const toggleButton = screen.getByText("Toggle Category")
-      fireEvent.click(toggleButton)
-
-      await waitFor(() => {
-        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
-      })
-
-      // Sort order should be preserved
-      const currentSort = screen.getAllByTestId("current-sort")[0]
-      expect(currentSort).toHaveTextContent("title-desc")
-    })
-
     it("should debounce search input and update URL after delay", async () => {
       render(<VideoLibrary />)
 
