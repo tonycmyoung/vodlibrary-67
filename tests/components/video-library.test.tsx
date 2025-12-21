@@ -723,4 +723,21 @@ describe("VideoLibrary", () => {
       })
     })
   })
+
+  describe("View Change Handling", () => {
+    it("should handle view change to list view", async () => {
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.queryByText("Loading videos...")).toBeNull()
+      })
+
+      const listButton = screen.getAllByText("List")[0]
+      fireEvent.click(listButton)
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
+      })
+    })
+  })
 })
