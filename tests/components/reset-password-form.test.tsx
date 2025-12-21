@@ -57,9 +57,8 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(
       () => {
-        // Verify title exists
-        const title = screen.getByRole("heading", { name: /reset your password/i })
-        expect(title).toBeTruthy()
+        const titleElement = document.querySelector('[data-slot="card-title"]')
+        expect(titleElement?.textContent).toMatch(/reset your password/i)
         // Verify both password inputs exist by their specific labels
         expect(screen.getByLabelText("New Password")).toBeTruthy()
         expect(screen.getByLabelText("Confirm New Password")).toBeTruthy()

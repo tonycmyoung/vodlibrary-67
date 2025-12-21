@@ -67,9 +67,9 @@ describe("DonationModal", () => {
     // Find the PayID section by the CreditCard icon and PayID label
     const payidSection = screen.getByText("PayID").closest("div")
     expect(payidSection).toBeTruthy()
-    // Verify email appears within the PayID section
-    const emailInSection = payidSection?.querySelector(".font-mono")
-    expect(emailInSection?.textContent).toBe("acmyma@gmail.com")
+    // Find the email within the PayID section using more specific selector
+    const emailElement = payidSection?.querySelector("span.font-mono")
+    expect(emailElement?.textContent).toBe("acmyma@gmail.com")
   })
 
   it("should copy PayID to clipboard when copy button is clicked", async () => {

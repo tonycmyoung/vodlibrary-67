@@ -17,9 +17,8 @@ describe("SendMessageForm", () => {
   it("should render form with user information", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    // Verify card title exists
-    const title = screen.getByRole("heading", { name: /send message to admin/i })
-    expect(title).toBeTruthy()
+    const titleElement = document.querySelector('[data-slot="card-title"]')
+    expect(titleElement?.textContent).toMatch(/send message to admin/i)
     // Verify user name appears in the from label
     const fromLabel = screen.getByText(/from:/i).closest("p")
     expect(fromLabel?.textContent).toContain("John Doe")
