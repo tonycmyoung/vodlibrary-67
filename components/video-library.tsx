@@ -584,13 +584,6 @@ export default function VideoLibrary({
         }
       })
 
-      console.log(
-        "[v0] Separated filters on load - categories:",
-        separatedCategories,
-        "curriculums:",
-        separatedCurriculums,
-      )
-
       setSelectedCategories(separatedCategories)
       setSelectedCurriculums(separatedCurriculums)
     }
@@ -853,16 +846,8 @@ export default function VideoLibrary({
   }
 
   const handleFilterModeChange = (newMode: "AND" | "OR") => {
-    console.log("[v0] handleFilterModeChange called")
-    console.log("[v0] newMode:", newMode)
-    console.log("[v0] selectedCategories:", selectedCategories)
-    console.log("[v0] selectedCurriculums:", selectedCurriculums)
-
     setFilterMode(newMode)
     const allFilters = [...selectedCategories, ...selectedCurriculums]
-
-    console.log("[v0] allFilters combined:", allFilters)
-    console.log("[v0] searchQuery:", searchQuery)
 
     reconstructURL(allFilters, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
   }

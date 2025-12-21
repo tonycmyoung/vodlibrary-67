@@ -524,7 +524,8 @@ describe("VideoLibrary", () => {
 
       await waitFor(() => {
         expect(screen.getByText("Current: list")).toBeTruthy()
-        expect(screen.getByTestId("video-list")).toBeTruthy()
+        const videoLists = screen.getAllByTestId("video-list")
+        expect(videoLists.length).toBeGreaterThan(0)
       })
     })
 
@@ -545,7 +546,8 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByTestId("video-list")).toBeTruthy()
+        const videoLists = screen.getAllByTestId("video-list")
+        expect(videoLists.length).toBeGreaterThan(0)
       })
     })
   })
