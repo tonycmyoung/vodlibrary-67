@@ -93,13 +93,13 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Send Message")).toBeInTheDocument()
+      const cardTitle = screen.getByRole("heading", { level: 3 })
+      expect(cardTitle).toHaveTextContent("Send Message")
       expect(screen.getByText("Individual")).toBeInTheDocument()
     })
 
-    // Check for Broadcast button (using getAllByText since it appears in button AND badges)
-    const broadcastElements = screen.getAllByText("Broadcast")
-    expect(broadcastElements.length).toBeGreaterThan(0)
+    const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+    expect(broadcastButton).toBeInTheDocument()
   })
 
   it("should render All Notifications list", async () => {
@@ -119,13 +119,10 @@ describe("AdminNotificationManagement", () => {
       expect(screen.getByText("Individual")).toBeInTheDocument()
     })
 
-    // Click Broadcast button
-    const broadcastButtons = screen.getAllByText("Broadcast")
-    const broadcastButton = broadcastButtons.find((el) => el.closest("button"))
-    await user.click(broadcastButton!.closest("button")!)
+    const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+    await user.click(broadcastButton)
 
     await waitFor(() => {
-      // Broadcast mode shows role selection
       expect(screen.getByText("Select Recipients")).toBeInTheDocument()
     })
   })
@@ -137,12 +134,9 @@ describe("AdminNotificationManagement", () => {
       expect(screen.getByText("Individual")).toBeInTheDocument()
     })
 
-    // Enter message (correct placeholder: "Type your message here...")
     const messageInput = screen.getByPlaceholderText(/type your message here/i)
     await user.type(messageInput, "Personal message")
 
-    // Note: Selecting from dropdown would require more complex interaction
-    // For now, just verify the send button exists
     const sendButton = screen.getByRole("button", { name: /send message/i })
     expect(sendButton).toBeInTheDocument()
   })
@@ -151,20 +145,16 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      const broadcastButtons = screen.getAllByText("Broadcast")
-      expect(broadcastButtons.length).toBeGreaterThan(0)
+      const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+      expect(broadcastButton).toBeInTheDocument()
     })
 
-    // Click Broadcast button
-    const broadcastButtons = screen.getAllByText("Broadcast")
-    const broadcastButton = broadcastButtons.find((el) => el.closest("button"))
-    await user.click(broadcastButton!.closest("button")!)
+    const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+    await user.click(broadcastButton)
 
-    // Enter message (broadcast placeholder)
     const messageInput = screen.getByPlaceholderText(/type your broadcast message here/i)
     await user.type(messageInput, "Test broadcast")
 
-    // Click send button (find by Send icon or text pattern)
     const sendButton = screen.getByRole("button", { name: /send to all users/i })
     await user.click(sendButton)
 
@@ -192,7 +182,6 @@ describe("AdminNotificationManagement", () => {
     await user.type(messageInput, "Test")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    // Button disabled without recipient selected, so we won't actually click it
     expect(sendButton).toBeDisabled()
   })
 
@@ -202,13 +191,12 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      const broadcastButtons = screen.getAllByText("Broadcast")
-      expect(broadcastButtons.length).toBeGreaterThan(0)
+      const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+      expect(broadcastButton).toBeInTheDocument()
     })
 
-    const broadcastButtons = screen.getAllByText("Broadcast")
-    const broadcastButton = broadcastButtons.find((el) => el.closest("button"))
-    await user.click(broadcastButton!.closest("button")!)
+    const broadcastButton = screen.getByRole("button", { name: /broadcast/i })
+    await user.click(broadcastButton)
 
     const messageInput = screen.getByPlaceholderText(/type your broadcast message here/i)
     await user.type(messageInput, "Test")
@@ -225,20 +213,32 @@ describe("AdminNotificationManagement", () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      expect(screen.getByText("Admin User")).toBeInTheDocument()
-      expect(screen.getByText("John Doe")).toBeInTheDocument()
+      expect(screen.getByText("Test notification message")).toBeInTheDocument()
     })
+
+    const notificationText = screen.getByText("Test notification message")
+    const notificationContainer = notificationText.closest("div[class*='p-4']")
+
+    expect(notificationContainer).toBeInTheDocument()
+
+    // Verify John Doe appears as the recipient within this specific notification
+    const johnDoeInNotification = notificationContainer?.textContent?.includes("John Doe")
+    expect(johnDoeInNotification).toBe(true)
   })
 
   it("should show broadcast badge for broadcast notifications", async () => {
     render(<AdminNotificationManagement />)
 
     await waitFor(() => {
-      // Find broadcast badges in notification list (will have multiple "Broadcast" text)
-      const broadcastElements = screen.getAllByText("Broadcast")
-      // Should have at least 2: one in button, one in notification badge
-      expect(broadcastElements.length).toBeGreaterThanOrEqual(2)
+      expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
     })
+
+    const broadcastNotification = screen.getByText("Broadcast message to all")
+    const notificationContainer = broadcastNotification.closest("div[class*='p-4']")
+
+    // Verify the Broadcast badge appears within this notification
+    const badgeInNotification = notificationContainer?.querySelector('[data-slot="badge"]')
+    expect(badgeInNotification?.textContent).toBe("Broadcast")
   })
 
   it("should filter notifications by search query", async () => {
@@ -252,8 +252,6 @@ describe("AdminNotificationManagement", () => {
     const searchInput = screen.getByPlaceholderText(/search notifications/i)
     await user.type(searchInput, "Broadcast")
 
-    // Note: Filtering happens client-side, so both messages still in DOM
-    // but one would be filtered out visually
     expect(screen.getByText("Broadcast message to all")).toBeInTheDocument()
   })
 
