@@ -584,12 +584,15 @@ describe("VideoLibrary", () => {
     })
 
     it("should debounce search input and update URL after delay", async () => {
-      mockSearchParams.get.mockReturnValue(null)
+      vi.useFakeTimers()
 
-      render(<VideoLibrary />)
+      const mockRouter = { push: vi.fn() }
+      ;(useRouter as any).mockReturnValue(mockRouter)
+
+      render(<VideoLibrary storagePrefix="test-" favoritesOnly={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText("Basic Bo Kata")).toBeTruthy()
+        expect(screen.queryByText("Loading videos...")).toBeNull()
       })
 
       const searchInput = screen.getByPlaceholderText("Search videos...")
@@ -607,6 +610,8 @@ describe("VideoLibrary", () => {
       await waitFor(() => {
         expect(mockRouter.push).toHaveBeenCalledWith(expect.stringContaining("search=test%20search"))
       })
+
+      vi.useRealTimers()
     })
   })
 
