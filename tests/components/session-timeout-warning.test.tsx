@@ -112,13 +112,11 @@ describe("SessionTimeoutWarning", () => {
     render(<SessionTimeoutWarning userId="user-123" />)
 
     await waitFor(
-      async () => {
+      () => {
         const extendButton = screen.getByRole("button", { name: /extend session/i })
         fireEvent.click(extendButton)
 
-        await waitFor(() => {
-          expect(mockRefreshSession).toHaveBeenCalled()
-        })
+        expect(mockRefreshSession).toHaveBeenCalled()
       },
       { timeout: 32000 },
     )
@@ -126,10 +124,15 @@ describe("SessionTimeoutWarning", () => {
 
   it("should hide warning after successful refresh", async () => {
     const futureTime = Math.floor(Date.now() / 1000) + 200
-    mockGetSession.mockResolvedValue({
-      data: { session: { expires_at: futureTime } },
-      error: null,
-    })
+    mockGetSession
+      .mockResolvedValueOnce({
+        data: { session: { expires_at: futureTime } },
+        error: null,
+      })
+      .mockResolvedValue({
+        data: { session: { expires_at: Math.floor(Date.now() / 1000) + 3600 } }, // 1 hour from now
+        error: null,
+      })
     mockRefreshSession.mockResolvedValue({
       data: { session: { user: { id: "user-123" } } },
       error: null,
@@ -143,12 +146,12 @@ describe("SessionTimeoutWarning", () => {
         fireEvent.click(extendButton)
 
         await waitFor(() => {
-          expect(screen.queryByText(/session expiring soon/i)).not.toBeInTheDocument()
+          expect(screen.queryByTestId("dialog")).toBeNull()
         })
       },
       { timeout: 35000 },
     )
-  }, 40000) // Add test timeout as parameter to it() function
+  }, 40000)
 
   it("should not render when userId is undefined", () => {
     render(<SessionTimeoutWarning userId="undefined" />)
