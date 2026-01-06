@@ -576,81 +576,74 @@ export default function VideoManagement() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-white text-sm flex items-center gap-2">
-                        {video.title}
-                        {video.is_published ? (
-                          <Badge className="bg-green-600 text-white text-xs">Published</Badge>
-                        ) : (
-                          <Badge className="bg-gray-600 text-white text-xs">Draft</Badge>
-                        )}
-                      </h4>
-                      {video.description && (
-                        <p className="text-gray-400 text-xs mt-1 line-clamp-2">{video.description}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditVideo(video)}
-                        className="h-8 w-8 p-0 border-gray-600 hover:bg-gray-700"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteVideo(video.id)}
-                        className="h-8 w-8 p-0 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6 lg:justify-between">
+                    {/* Video Details */}
+                    <div className="flex-grow">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-base font-semibold text-white flex-grow">{video.title}</h3>
+                      </div>
 
-                  <div className="flex items-center gap-4 text-xs text-gray-400">
-                    <span>R: {video.recorded || "Unset"}</span>
-                    <span>A: {formatDate(video.created_at)}</span>
-                  </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <span>R: {video.recorded || "Unset"}</span>
+                        <span>A: {formatDate(video.created_at)}</span>
+                      </div>
 
-                  <div className="flex flex-wrap gap-1">
-                    {video.curriculums
-                      .toSorted((a, b) => a.display_order - b.display_order)
-                      .map((curriculum) => (
-                        <Badge
-                          key={curriculum.id}
+                      <div className="flex flex-wrap gap-1">
+                        {video.curriculums
+                          .toSorted((a, b) => a.display_order - b.display_order)
+                          .map((curriculum) => (
+                            <Badge
+                              key={curriculum.id}
+                              variant="outline"
+                              className="text-xs"
+                              style={{
+                                borderColor: curriculum.color,
+                                color: curriculum.color,
+                              }}
+                            >
+                              {curriculum.name}
+                            </Badge>
+                          ))}
+                        {video.categories.map((category) => (
+                          <Badge
+                            key={category.id}
+                            className="text-xs"
+                            style={{
+                              backgroundColor: category.color + "40",
+                              borderColor: category.color,
+                              color: category.color,
+                            }}
+                          >
+                            {category.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex flex-col items-end justify-between text-xs text-gray-400 flex-shrink-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Button
+                          size="sm"
                           variant="outline"
-                          className="text-xs"
-                          style={{
-                            borderColor: curriculum.color,
-                            color: curriculum.color,
-                          }}
+                          onClick={() => handleEditVideo(video)}
+                          className="h-8 w-8 p-0 hover:bg-primary/10"
                         >
-                          {curriculum.name}
-                        </Badge>
-                      ))}
-                    {video.categories.map((category) => (
-                      <Badge
-                        key={category.id}
-                        className="text-xs"
-                        style={{
-                          backgroundColor: category.color + "40",
-                          borderColor: category.color,
-                          color: category.color,
-                        }}
-                      >
-                        {category.name}
-                      </Badge>
-                    ))}
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteVideo(video.id)}
+                          className="h-8 w-8 p-0 !bg-red-600 text-white hover:!bg-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div>{video.views || 0} views</div>
+                      <div>Last Viewed: {formatLastViewed(video.last_viewed_at)}</div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Stats */}
-                <div className="flex flex-col items-end justify-between text-xs text-gray-400 flex-shrink-0">
-                  <div>{video.views || 0} views</div>
-                  <div>Last Viewed: {formatLastViewed(video.last_viewed_at)}</div>
                 </div>
               </div>
             ))}

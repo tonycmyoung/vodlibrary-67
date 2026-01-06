@@ -23,6 +23,8 @@ export default function UserSortControl({ sortBy, sortOrder, onSortChange }: Use
     { value: "full_name", label: "Name" },
     { value: "created_at", label: "Joined Date" },
     { value: "last_login", label: "Last Login" },
+    { value: "last_view", label: "Last View" },
+    { value: "view_count", label: "View Count" },
   ]
 
   return (
