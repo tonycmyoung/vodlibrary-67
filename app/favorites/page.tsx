@@ -27,7 +27,9 @@ export default async function FavoritesPage() {
   // Check if user is approved
   const { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, profile_image_url, role") // Added role field to query
+    .select(
+      "is_approved, full_name, profile_image_url, role, current_belt:curriculums!current_belt_id(id, name, display_order, color)",
+    )
     .eq("id", user.id)
     .single()
 
@@ -42,6 +44,7 @@ export default async function FavoritesPage() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
+    current_belt: userProfile?.current_belt || null,
   }
 
   return (

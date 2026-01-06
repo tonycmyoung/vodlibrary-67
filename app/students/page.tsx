@@ -15,7 +15,15 @@ export default async function StudentsPage() {
 
   const { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, email, profile_image_url, role, school")
+    .select(`
+      is_approved, 
+      full_name, 
+      email, 
+      profile_image_url, 
+      role, 
+      school,
+      current_belt:curriculums!current_belt_id(id, name, display_order, color)
+    `)
     .eq("id", user.id)
     .single()
 

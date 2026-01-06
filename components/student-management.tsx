@@ -35,7 +35,6 @@ import UserFilter from "@/components/user-filter"
 import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
-import { TableRow } from "@/components/ui/table"
 
 interface UserInterface {
   id: string
@@ -672,127 +671,128 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
             }
 
             return (
-              <TableRow key={student.id} className="border-gray-700 hover:bg-gray-800/50">
-                <div className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3">
-                  <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
-                    <Avatar className="h-12 w-12 flex-shrink-0">
-                      <AvatarImage
-                        src={student.profile_image_url || "/placeholder.svg"}
-                        alt={student.full_name || student.email}
-                      />
-                      <AvatarFallback className="bg-red-600 text-white flex-shrink-0">
-                        {getInitials(student.full_name, student.email)}
-                      </AvatarFallback>
-                    </Avatar>
+              <div
+                key={student.id}
+                className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3"
+              >
+                <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
+                  <Avatar className="h-12 w-12 flex-shrink-0">
+                    <AvatarImage
+                      src={student.profile_image_url || "/placeholder.svg"}
+                      alt={student.full_name || student.email}
+                    />
+                    <AvatarFallback className="bg-red-600 text-white flex-shrink-0">
+                      {getInitials(student.full_name, student.email)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        {isEditing ? (
-                          <Input
-                            value={editValues.full_name}
-                            onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
-                            className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
-                            placeholder="Full name"
-                          />
-                        ) : (
-                          <h4 className="font-medium text-white truncate">{student.full_name || "No name provided"}</h4>
-                        )}
-                        <Badge variant="default" className={roleBadgeClass}>
-                          {student.role || "Student"}
-                        </Badge>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      {isEditing ? (
+                        <Input
+                          value={editValues.full_name}
+                          onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
+                          className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+                          placeholder="Full name"
+                        />
+                      ) : (
+                        <h4 className="font-medium text-white truncate">{student.full_name || "No name provided"}</h4>
+                      )}
+                      <Badge variant="default" className={roleBadgeClass}>
+                        {student.role || "Student"}
+                      </Badge>
 
-                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                          <Clock className="w-3 h-3 flex-shrink-0" />
-                          <span>{student.last_login ? formatDate(student.last_login) : "Never"}</span>
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Clock className="w-3 h-3 flex-shrink-0" />
+                        <span>{student.last_login ? formatDate(student.last_login) : "Never"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <LogIn className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                          {student.login_count} login{student.login_count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Play className="w-3 h-3 flex-shrink-0" />
+                        <span>{student.last_view ? formatDate(student.last_view) : "Never"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+                        <Eye className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                          {student.view_count} view{student.view_count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{student.email}</span>
                         </div>
-
-                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                          <LogIn className="w-3 h-3 flex-shrink-0" />
-                          <span>
-                            {student.login_count} login{student.login_count !== 1 ? "s" : ""}
-                          </span>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          {isEditing ? (
+                            <Input
+                              value={editValues.teacher}
+                              onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                              placeholder="Teacher name"
+                            />
+                          ) : (
+                            <>
+                              <GraduationCap className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{student.teacher || "Not specified"}</span>
+                            </>
+                          )}
                         </div>
-
-                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                          <Play className="w-3 h-3 flex-shrink-0" />
-                          <span>{student.last_view ? formatDate(student.last_view) : "Never"}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                          <Eye className="w-3 h-3 flex-shrink-0" />
-                          <span>
-                            {student.view_count} view{student.view_count !== 1 ? "s" : ""}
-                          </span>
+                        <div className="flex items-center space-x-1 min-w-0">
+                          {isEditing ? (
+                            <Input
+                              value={editValues.school}
+                              onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+                              placeholder="School name"
+                            />
+                          ) : (
+                            <>
+                              <Building className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{student.school || "Not specified"}</span>
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <Mail className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{student.email}</span>
-                          </div>
-                          <div className="flex items-center space-x-1 min-w-0">
-                            {isEditing ? (
-                              <Input
-                                value={editValues.teacher}
-                                onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-                                className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                                placeholder="Teacher name"
-                              />
-                            ) : (
-                              <>
-                                <GraduationCap className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{student.teacher || "Not specified"}</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-1 min-w-0">
-                            {isEditing ? (
-                              <Input
-                                value={editValues.school}
-                                onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-                                className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                                placeholder="School name"
-                              />
-                            ) : (
-                              <>
-                                <Building className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{student.school || "Not specified"}</span>
-                              </>
-                            )}
-                          </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>Join: {formatDate(student.created_at)}</span>
                         </div>
-
-                        <div className="space-y-1">
+                        {student.approved_at && (
                           <div className="flex items-center space-x-1 min-w-0">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>Join: {formatDate(student.created_at)}</span>
+                            <span>Appr: {formatDate(student.approved_at)}</span>
                           </div>
-                          {student.approved_at && (
-                            <div className="flex items-center space-x-1 min-w-0">
-                              <Calendar className="w-3 h-3 flex-shrink-0" />
-                              <span>Appr: {formatDate(student.approved_at)}</span>
-                            </div>
-                          )}
-                          {student.inviter?.full_name && (
-                            <div className="flex items-center space-x-1 min-w-0">
-                              <User className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">Inv: {student.inviter.full_name}</span>
-                            </div>
-                          )}
-                          {!student.inviter && student.is_approved && (
-                            <div className="flex items-center space-x-1 min-w-0 text-gray-500">
-                              <User className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">Inv: Direct</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
+                        {student.inviter?.full_name && (
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">Inv: {student.inviter.full_name}</span>
+                          </div>
+                        )}
+                        {!student.inviter && student.is_approved && (
+                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+                            <User className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">Inv: Direct</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end ml-auto pl-4">
+                  <div className="flex flex-shrink-0 w-32 md:ml-4">
                     <div className="flex flex-col gap-1 w-full">
                       {userRole === "Head Teacher" && (
                         <select
@@ -886,7 +886,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                     </div>
                   </div>
                 </div>
-              </TableRow>
+              </div>
             )
           })}
         </div>
