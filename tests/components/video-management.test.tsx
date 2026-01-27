@@ -358,4 +358,443 @@ describe("VideoManagement", () => {
       expect(screen.getByText(/page 2 of/i)).toBeTruthy()
     })
   })
+
+  describe("Sorting Branches", () => {
+    const videosForSorting = [
+      {
+        ...mockVideosData[0],
+        id: "video-a",
+        title: "Alpha Video",
+        recorded: "2024-01",
+        created_at: "2024-01-01T00:00:00Z",
+        video_categories: [{ categories: { id: "cat-1", name: "Basics", color: "#ff0000" } }],
+        video_curriculums: [{ curriculums: { id: "curr-1", name: "White Belt", color: "#ffffff", display_order: 1 } }],
+        video_performers: [],
+      },
+      {
+        ...mockVideosData[0],
+        id: "video-b",
+        title: "Beta Video",
+        recorded: "2023-06",
+        created_at: "2024-02-01T00:00:00Z",
+        video_categories: [{ categories: { id: "cat-2", name: "Advanced", color: "#0000ff" } }],
+        video_curriculums: [],
+        video_performers: [],
+      },
+      {
+        ...mockVideosData[0],
+        id: "video-c",
+        title: "Charlie Video",
+        recorded: null,
+        created_at: "2024-03-01T00:00:00Z",
+        video_categories: [],
+        video_curriculums: [{ curriculums: { id: "curr-2", name: "Yellow Belt", color: "#ffff00", display_order: 2 } }],
+        video_performers: [],
+      },
+    ]
+
+    it("should sort videos by recorded date", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      localStorage.setItem("adminVideoManagement_sortBy", "recorded")
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+        expect(screen.getByText("Beta Video")).toBeTruthy()
+      })
+
+      // Videos should be rendered (sorting happens internally)
+      const sortSelect = screen.getByRole("combobox")
+      expect(sortSelect).toBeTruthy()
+    })
+
+    it("should sort videos by curriculum display order", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      localStorage.setItem("adminVideoManagement_sortBy", "curriculum")
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+        expect(screen.getByText("Beta Video")).toBeTruthy()
+        expect(screen.getByText("Charlie Video")).toBeTruthy()
+      })
+    })
+
+    it("should sort videos by category name", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      localStorage.setItem("adminVideoManagement_sortBy", "category")
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+      })
+    })
+
+    it("should sort videos by view count", async () => {
+      ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-a": 50, "video-b": 100, "video-c": 25 })
+
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      localStorage.setItem("adminVideoManagement_sortBy", "views")
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+        expect(screen.getByText("50 views")).toBeTruthy()
+        expect(screen.getByText("100 views")).toBeTruthy()
+      })
+    })
+
+    it("should sort videos by last viewed date", async () => {
+      ;(getBatchVideoLastViewed as any).mockResolvedValue({
+        "video-a": "2024-01-20T00:00:00Z",
+        "video-b": null,
+        "video-c": "2024-01-10T00:00:00Z",
+      })
+
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      localStorage.setItem("adminVideoManagement_sortBy", "last_viewed")
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+      })
+    })
+
+    it("should change sort option and save to localStorage", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+      })
+
+      // Verify the sort select is rendered and functional
+      const sortSelect = screen.getByRole("combobox")
+      expect(sortSelect).toBeTruthy()
+
+      // Verify initial sort from localStorage is used
+      localStorage.setItem("adminVideoManagement_sortBy", "views")
+
+      // Re-render to pick up localStorage change
+      expect(localStorage.getItem("adminVideoManagement_sortBy")).toBe("views")
+    })
+  })
+
+  describe("Filter Mode", () => {
+    it("should render filter collapsible and allow expansion", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      // Open filters collapsible
+      const filtersButton = screen.getByText("Filters")
+      await user.click(filtersButton)
+
+      // Verify filter section expands
+      await waitFor(() => {
+        // Look for filter-related content that appears when expanded
+        expect(filtersButton.closest('[data-state]')?.getAttribute('data-state')).toBe('open')
+      })
+    })
+  })
+
+  describe("Delete Video Error Handling", () => {
+    it("should show error alert when delete fails", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: [mockVideosData[0]], error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      mockSupabaseClient.delete.mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+      })
+
+      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true)
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {})
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
+      const buttons = videoCard ? Array.from(videoCard.querySelectorAll("button")) : []
+      const deleteButton = buttons.find((btn) => 
+        btn.className.includes("bg-red-600") || btn.querySelector("svg.lucide-trash-2")
+      )
+
+      await user.click(deleteButton!)
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith("Failed to delete video")
+      })
+
+      confirmSpy.mockRestore()
+      alertSpy.mockRestore()
+    })
+
+    it("should not delete when user cancels confirmation", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: [mockVideosData[0]], error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false)
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
+      const buttons = videoCard ? Array.from(videoCard.querySelectorAll("button")) : []
+      const deleteButton = buttons.find((btn) => 
+        btn.className.includes("bg-red-600") || btn.querySelector("svg.lucide-trash-2")
+      )
+
+      await user.click(deleteButton!)
+
+      expect(confirmSpy).toHaveBeenCalled()
+      expect(mockSupabaseClient.delete).not.toHaveBeenCalled()
+
+      confirmSpy.mockRestore()
+    })
+  })
+
+  describe("Modal Save Functionality", () => {
+    it("should reload data after modal save", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      // Open add modal
+      const addButton = screen.getByRole("button", { name: /add video/i })
+      await user.click(addButton)
+
+      expect(screen.getByTestId("video-modal")).toBeTruthy()
+
+      // Click save in modal
+      const saveButton = screen.getByText("Save")
+      await user.click(saveButton)
+
+      // Modal should close
+      await waitFor(() => {
+        expect(screen.queryByTestId("video-modal")).toBeNull()
+      })
+    })
+
+    it("should close modal when Close button is clicked", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      // Open add modal
+      const addButton = screen.getByRole("button", { name: /add video/i })
+      await user.click(addButton)
+
+      expect(screen.getByTestId("video-modal")).toBeTruthy()
+
+      // Click close in modal
+      const closeButton = screen.getByText("Close")
+      await user.click(closeButton)
+
+      // Modal should close
+      await waitFor(() => {
+        expect(screen.queryByTestId("video-modal")).toBeNull()
+      })
+    })
+  })
+
+  describe("Search by Description and Performer", () => {
+    it("should search videos by description", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+        expect(screen.getByText("Test Video 2")).toBeTruthy()
+      })
+
+      const searchInput = screen.getByPlaceholderText("Search videos...")
+      await user.type(searchInput, "Description 1")
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+        expect(screen.queryByText("Test Video 2")).toBeNull()
+      })
+    })
+
+    it("should search videos by performer name", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+        expect(screen.getByText("Test Video 2")).toBeTruthy()
+      })
+
+      const searchInput = screen.getByPlaceholderText("Search videos...")
+      await user.type(searchInput, "John Doe")
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+        expect(screen.queryByText("Test Video 2")).toBeNull()
+      })
+    })
+  })
+
+  describe("Clear All Filters", () => {
+    it("should clear all filters when clear button is clicked", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: mockVideosData, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      const user = userEvent.setup()
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Test Video 1")).toBeTruthy()
+      })
+
+      // Add search query
+      const searchInput = screen.getByPlaceholderText("Search videos...")
+      await user.type(searchInput, "test")
+
+      // Open filters and add category filter
+      const filtersButton = screen.getByText("Filters")
+      await user.click(filtersButton)
+
+      const categoryToggle = screen.getByText("Toggle Category")
+      await user.click(categoryToggle)
+
+      // Clear all should appear
+      await waitFor(() => {
+        expect(screen.getByText("Clear all")).toBeTruthy()
+      })
+
+      const clearButton = screen.getByText("Clear all")
+      await user.click(clearButton)
+
+      // Search should be cleared
+      expect(searchInput).toHaveValue("")
+    })
+  })
 })

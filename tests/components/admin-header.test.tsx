@@ -25,6 +25,15 @@ vi.mock("@/components/invite-user-modal", () => ({
   ),
 }))
 
+// Mock about modal component
+vi.mock("@/components/about-modal", () => ({
+  default: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
+    <div data-testid="about-modal" data-open={isOpen}>
+      <button onClick={onClose}>Close About Modal</button>
+    </div>
+  ),
+}))
+
 describe("AdminHeader", () => {
   const mockPush = vi.fn()
   const mockUser = {
@@ -178,5 +187,226 @@ describe("AdminHeader", () => {
       expect(screen.getByText("Audit")).toBeTruthy()
       expect(screen.getByText("Profile")).toBeTruthy()
     }
+  })
+
+  describe("About Modal", () => {
+    it("should open about modal when About is clicked in dropdown", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        const aboutMenuItem = screen.getByText("About")
+        await user.click(aboutMenuItem)
+
+        const modal = screen.getByTestId("about-modal")
+        expect(modal).toHaveAttribute("data-open", "true")
+      }
+    })
+
+    it("should close about modal when onClose is called", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+        const aboutMenuItem = screen.getByText("About")
+        await user.click(aboutMenuItem)
+
+        const closeButton = screen.getByText("Close About Modal")
+        await user.click(closeButton)
+
+        const modal = screen.getByTestId("about-modal")
+        expect(modal).toHaveAttribute("data-open", "false")
+      }
+    })
+  })
+
+  describe("User Initials Edge Cases", () => {
+    it("should handle three-word names correctly", () => {
+      const threeNameUser = { ...mockUser, full_name: "John Paul Smith" }
+      render(<AdminHeader user={threeNameUser} />)
+
+      const fallback = screen.getByText("JPS")
+      expect(fallback).toBeTruthy()
+    })
+
+    it("should handle single name correctly", () => {
+      const singleNameUser = { ...mockUser, full_name: "John" }
+      render(<AdminHeader user={singleNameUser} />)
+
+      const fallback = screen.getByText("J")
+      expect(fallback).toBeTruthy()
+    })
+  })
+
+  describe("Mobile Menu Navigation", () => {
+    it("should close mobile menu when Users link is clicked", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      // Get mobile Users link (there are two - desktop nav and mobile menu)
+      const usersLinks = screen.getAllByText("Users")
+      expect(usersLinks.length).toBe(2)
+
+      // Click the mobile version (last one)
+      await user.click(usersLinks[usersLinks.length - 1])
+
+      // After click, mobile menu should close, only desktop link remains visible
+      const usersLinksAfterClose = screen.getAllByText("Users")
+      expect(usersLinksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when Videos link is clicked", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      const videosLinks = screen.getAllByText("Videos")
+      expect(videosLinks.length).toBe(2)
+
+      await user.click(videosLinks[videosLinks.length - 1])
+
+      const videosLinksAfterClose = screen.getAllByText("Videos")
+      expect(videosLinksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when Metadata link is clicked", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      const metadataLinks = screen.getAllByText("Metadata")
+      expect(metadataLinks.length).toBe(2)
+
+      await user.click(metadataLinks[metadataLinks.length - 1])
+
+      const metadataLinksAfterClose = screen.getAllByText("Metadata")
+      expect(metadataLinksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when Notifications link is clicked", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      const notificationsLinks = screen.getAllByText("Notifications")
+      expect(notificationsLinks.length).toBe(2)
+
+      await user.click(notificationsLinks[notificationsLinks.length - 1])
+
+      const notificationsLinksAfterClose = screen.getAllByText("Notifications")
+      expect(notificationsLinksAfterClose.length).toBe(1)
+    })
+
+    it("should open invite modal and close mobile menu when Invite User is clicked in mobile menu", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      // Find the mobile Invite User button (it's a button, not a link in mobile menu)
+      const inviteButtons = screen.getAllByText("Invite User")
+      const mobileInviteButton = inviteButtons.find((el) => el.closest("button") && !el.closest('[role="menuitem"]'))
+
+      if (mobileInviteButton) {
+        await user.click(mobileInviteButton)
+
+        // Invite modal should be open
+        const modal = screen.getByTestId("invite-modal")
+        expect(modal).toHaveAttribute("data-open", "true")
+
+        // Mobile menu should be closed (Student View not visible)
+        expect(screen.queryByText("Student View")).toBeNull()
+      }
+    })
+
+    it("should navigate to signout and close mobile menu when Sign Out is clicked in mobile menu", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+      await user.click(menuButton!)
+
+      // Find mobile Sign Out button
+      const signOutButtons = screen.getAllByText("Sign Out")
+      const mobileSignOutButton = signOutButtons.find(
+        (el) => el.closest("button") && el.closest("button")?.className.includes("w-full"),
+      )
+
+      if (mobileSignOutButton) {
+        await user.click(mobileSignOutButton)
+
+        expect(mockPush).toHaveBeenCalledWith("/signout")
+      }
+    })
+  })
+
+  describe("Dropdown Menu Additional Items", () => {
+    it("should display user full name in dropdown header", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        expect(screen.getByText("John Doe")).toBeTruthy()
+        expect(screen.getByText("Administrator")).toBeTruthy()
+      }
+    })
+
+    it("should show About menu item in dropdown", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        expect(screen.getByText("About")).toBeTruthy()
+      }
+    })
+  })
+
+  describe("Mobile Menu Toggle", () => {
+    it("should show X icon when mobile menu is open", async () => {
+      const user = userEvent.setup()
+      render(<AdminHeader user={mockUser} />)
+
+      const buttons = screen.getAllByRole("button")
+      const menuButton = buttons.find((btn) => btn.className.includes("lg:hidden"))
+
+      // Initially should have Menu icon (represented by class)
+      await user.click(menuButton!)
+
+      // After click, menu should be open and show Student View
+      expect(screen.getByText("Student View")).toBeTruthy()
+
+      // Click again to close
+      await user.click(menuButton!)
+
+      // Student View should not be visible
+      expect(screen.queryByText("Student View")).toBeNull()
+    })
   })
 })
