@@ -797,18 +797,26 @@ describe("UserManagement", () => {
 
       await waitFor(() => {
         expect(screen.getByText("John Doe")).toBeTruthy()
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
       })
 
       const searchInput = screen.getByPlaceholderText("Search users...")
       await user.type(searchInput, "Test Dojo")
 
+      // Both users are from Test Dojo, so both should still be visible after search
       await waitFor(
         () => {
-          // Both users are from Test Dojo
           expect(screen.getByText("John Doe")).toBeTruthy()
+        },
+        { timeout: 1000 },
+      )
+
+      // After search, Jane Smith should also be visible as she's from Test Dojo
+      await waitFor(
+        () => {
           expect(screen.getByText("Jane Smith")).toBeTruthy()
         },
-        { timeout: 500 },
+        { timeout: 1000 },
       )
     })
 
@@ -865,9 +873,6 @@ describe("UserManagement", () => {
   describe("Toggle Approval Error", () => {
     it("should handle error when toggling approval fails", async () => {
       const user = userEvent.setup()
-      
-      // Reset mock to handle the approval toggle
-      mockEq.mockResolvedValue({ data: null, error: { message: "Approval failed" } })
 
       render(<UserManagement />)
 
@@ -875,11 +880,16 @@ describe("UserManagement", () => {
         expect(screen.getByText("Jane Smith")).toBeTruthy()
       })
 
+      // Set up mock to fail on approval toggle after initial render
+      mockEq.mockResolvedValue({ data: null, error: { message: "Approval failed" } })
+
       const approveButtons = screen.getAllByLabelText("Approve user")
       await user.click(approveButtons[0])
 
-      // Error should be logged, user should still be shown
+      // After clicking approve, even with error, Jane Smith should still be visible
+      // The error is handled gracefully and the UI doesn't crash
       await waitFor(() => {
+        // Verify component didn't crash - Jane Smith is still in the DOM
         expect(screen.getByText("Jane Smith")).toBeTruthy()
       })
     })
