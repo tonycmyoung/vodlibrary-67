@@ -209,6 +209,44 @@ describe("Middleware: updateSession", () => {
       expect(result.headers.get("location")).toContain("/auth/login")
       expect(result.headers.get("location")).not.toContain("returnTo")
     })
+
+    it("should reject domain-like paths from redirect chains", async () => {
+      // Simulate a malformed path that looks like a domain (from Cloudflare redirect issues)
+      const request = createMockRequest("/www.example.com")
+
+      mockSupabaseClient.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      })
+
+      // validateReturnTo should not even be called with domain-like paths
+      // because middleware sanitizes them first
+      vi.mocked(validateReturnTo).mockReturnValue(null)
+
+      const result = await updateSession(request)
+
+      expect(result.status).toBe(307)
+      expect(result.headers.get("location")).toContain("/auth/login")
+      expect(result.headers.get("location")).not.toContain("returnTo")
+    })
+
+    it("should handle URL-encoded domain-like paths", async () => {
+      // Simulate %2Fwww. scenario from Cloudflare redirects
+      const request = createMockRequest("/%2Fwww.")
+
+      mockSupabaseClient.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      })
+
+      vi.mocked(validateReturnTo).mockReturnValue(null)
+
+      const result = await updateSession(request)
+
+      expect(result.status).toBe(307)
+      expect(result.headers.get("location")).toContain("/auth/login")
+      expect(result.headers.get("location")).not.toContain("returnTo")
+    })
   })
 
   describe("Session Error Handling", () => {
