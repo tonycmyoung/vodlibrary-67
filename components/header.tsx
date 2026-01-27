@@ -17,6 +17,7 @@ import {
   Users,
   SquarePlay,
   Ribbon,
+  Info,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
@@ -25,6 +26,7 @@ import InviteUserModal from "@/components/invite-user-modal"
 import DonationModal from "@/components/donation-modal"
 import CurriculumModal from "@/components/curriculum-modal"
 import ContributeModal from "@/components/contribute-modal"
+import AboutModal from "@/components/about-modal"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -56,6 +58,7 @@ export default function Header({ user }: HeaderProps) {
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
   const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState(false)
   const [isContributeModalOpen, setIsContributeModalOpen] = useState(false)
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const initials = user.full_name
@@ -248,6 +251,13 @@ export default function Header({ user }: HeaderProps) {
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={() => setIsAboutModalOpen(true)}
+                >
+                  <Info className="mr-2 h-4 w-4" />
+                  About
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -345,6 +355,7 @@ export default function Header({ user }: HeaderProps) {
       <DonationModal isOpen={isDonationModalOpen} onClose={() => setIsDonationModalOpen(false)} />
       <CurriculumModal isOpen={isCurriculumModalOpen} onClose={() => setIsCurriculumModalOpen(false)} />
       <ContributeModal isOpen={isContributeModalOpen} onClose={() => setIsContributeModalOpen(false)} />
+      <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
     </>
   )
 }

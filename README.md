@@ -52,7 +52,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 The application requires the following environment variables:
 
-```bash
+\`\`\`bash
 # Supabase Configuration
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
@@ -71,7 +71,7 @@ BLOB_READ_WRITE_TOKEN=
 NEXT_PUBLIC_FULL_SITE_URL=
 NEXT_PUBLIC_SITE_URL=
 NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
-```
+\`\`\`
 
 ## Quick Start
 

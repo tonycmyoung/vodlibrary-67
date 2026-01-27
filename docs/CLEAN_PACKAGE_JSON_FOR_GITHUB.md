@@ -10,7 +10,7 @@ Your GitHub repository has an outdated package.json. Replace it with this versio
 
 ## Clean package.json content:
 
-```json
+\`\`\`json
 {
   "name": "my-v0-project",
   "version": "0.1.0",
@@ -122,7 +122,7 @@ Your GitHub repository has an outdated package.json. Replace it with this versio
     "lint-staged": "^15.3.0"
   }
 }
-```
+\`\`\`
 
 ## What changed:
 - Removed @playwright/test

@@ -45,7 +45,7 @@
 
 Run these commands in your local clone:
 
-```bash
+\`\`\`bash
 # Install dependencies
 npm install
 
@@ -70,7 +70,7 @@ npm run type-check
 npm run lint
 
 # Expected: No ESLint errors (or only warnings)
-```
+\`\`\`
 
 ### 3. SonarQube Analysis
 
@@ -90,7 +90,7 @@ After pushing to GitHub (or deploying to Vercel):
 
 Test the pre-commit hook:
 
-```bash
+\`\`\`bash
 # Make a small change to any file
 # Try to commit
 git add .
@@ -98,7 +98,7 @@ git commit -m "test commit"
 
 # Expected: lint-staged runs automatically
 # Expected: Code is formatted before commit
-```
+\`\`\`
 
 ## Troubleshooting
 
@@ -107,11 +107,11 @@ git commit -m "test commit"
 **Issue**: `npm test` fails with module not found
 
 **Solution**:
-```bash
+\`\`\`bash
 rm -rf node_modules package-lock.json
 npm install
 npm test
-```
+\`\`\`
 
 ### SonarQube Not Showing Results
 
@@ -128,10 +128,10 @@ npm test
 **Issue**: Pre-commit hook doesn't run
 
 **Solution**:
-```bash
+\`\`\`bash
 npm run prepare
 git config core.hooksPath .husky
-```
+\`\`\`
 
 ### TypeScript Errors After Deployment
 
