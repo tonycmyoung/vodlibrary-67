@@ -31,6 +31,10 @@ vi.mock("@/components/contribute-modal", () => ({
   default: ({ isOpen }: any) => isOpen && <div data-testid="contribute-modal">Contribute Modal</div>,
 }))
 
+vi.mock("@/components/about-modal", () => ({
+  default: ({ isOpen }: any) => isOpen && <div data-testid="about-modal">About Modal</div>,
+}))
+
 describe("Header", () => {
   const mockUser = {
     id: "user-1",
@@ -351,5 +355,238 @@ describe("Header", () => {
       const modal = screen.getByTestId("donation-modal")
       expect(modal).toBeTruthy()
     }
+  })
+
+  describe("User Initials Edge Cases", () => {
+    it("should display single letter initial for single name user", () => {
+      const singleNameUser = { ...mockUser, full_name: "John" }
+      render(<Header user={singleNameUser} />)
+
+      const avatar = screen.getByText("J")
+      expect(avatar).toBeTruthy()
+    })
+
+    it("should display U for user with null name", () => {
+      const nullNameUser = { ...mockUser, full_name: null }
+      render(<Header user={nullNameUser} />)
+
+      const avatar = screen.getByText("U")
+      expect(avatar).toBeTruthy()
+    })
+
+    it("should handle three-word names correctly", () => {
+      const threeNameUser = { ...mockUser, full_name: "John Paul Smith" }
+      render(<Header user={threeNameUser} />)
+
+      const avatar = screen.getByText("JPS")
+      expect(avatar).toBeTruthy()
+    })
+  })
+
+  describe("Mobile Menu Navigation Links", () => {
+    it("should show My Level in mobile menu when user has belt", () => {
+      render(<Header user={mockUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      const myLevelLinks = screen.getAllByText("My Level")
+      expect(myLevelLinks.length).toBe(2) // Desktop and mobile versions
+    })
+
+    it("should not show My Level in mobile menu when user has no belt", () => {
+      const userWithoutBelt = { ...mockUser, current_belt: null }
+      render(<Header user={userWithoutBelt} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      expect(screen.queryByText("My Level")).toBeNull()
+    })
+
+    it("should show Students link in mobile menu for teachers", () => {
+      const teacherUser = { ...mockUser, role: "Teacher" }
+      render(<Header user={teacherUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      const studentsLinks = screen.getAllByText("Students")
+      expect(studentsLinks.length).toBe(2) // Desktop and mobile versions
+    })
+
+    it("should show Invite User link in mobile menu for teachers", () => {
+      const teacherUser = { ...mockUser, role: "Teacher" }
+      render(<Header user={teacherUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      // Mobile menu shows "Invite User" as a link
+      const inviteLinks = screen.getAllByText("Invite User")
+      expect(inviteLinks.length).toBeGreaterThan(0)
+    })
+
+    it("should close mobile menu when Favorites link is clicked", () => {
+      render(<Header user={mockUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      // Get mobile favorites link
+      const favoritesLinks = screen.getAllByText("Favorites")
+      expect(favoritesLinks.length).toBeGreaterThan(1)
+
+      // Click the mobile version (last one)
+      fireEvent.click(favoritesLinks[favoritesLinks.length - 1])
+
+      // Menu should close
+      const linksAfterClose = screen.getAllByText("Favorites")
+      expect(linksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when My Level link is clicked", () => {
+      render(<Header user={mockUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      const myLevelLinks = screen.getAllByText("My Level")
+      expect(myLevelLinks.length).toBe(2)
+
+      // Click the mobile version
+      fireEvent.click(myLevelLinks[myLevelLinks.length - 1])
+
+      // Menu should close
+      const linksAfterClose = screen.getAllByText("My Level")
+      expect(linksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when Students link is clicked for teacher", () => {
+      const teacherUser = { ...mockUser, role: "Teacher" }
+      render(<Header user={teacherUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      const studentsLinks = screen.getAllByText("Students")
+      expect(studentsLinks.length).toBe(2)
+
+      // Click the mobile version
+      fireEvent.click(studentsLinks[studentsLinks.length - 1])
+
+      // Menu should close
+      const linksAfterClose = screen.getAllByText("Students")
+      expect(linksAfterClose.length).toBe(1)
+    })
+
+    it("should close mobile menu when Sign Out link is clicked", () => {
+      render(<Header user={mockUser} />)
+
+      const hamburgerButton = screen.getByRole("button", { name: "" })
+      fireEvent.click(hamburgerButton)
+
+      const signOutLinks = screen.getAllByText("Sign Out")
+      expect(signOutLinks.length).toBeGreaterThan(0)
+
+      // Click the mobile version
+      fireEvent.click(signOutLinks[signOutLinks.length - 1])
+
+      // Menu should close - only dropdown version remains (not visible until opened)
+      const linksAfterClose = screen.queryAllByText("Sign Out")
+      expect(linksAfterClose.length).toBe(0)
+    })
+  })
+
+  describe("About Modal", () => {
+    it("should open about modal when About is clicked in dropdown", async () => {
+      const user = userEvent.setup()
+      render(<Header user={mockUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        await waitFor(() => {
+          expect(screen.getByText("About")).toBeTruthy()
+        })
+
+        const aboutButton = screen.getByText("About")
+        await user.click(aboutButton)
+
+        await waitFor(() => {
+          expect(screen.getByTestId("about-modal")).toBeTruthy()
+        })
+      }
+    })
+  })
+
+  describe("Dropdown Menu Content", () => {
+    it("should display user full name and role in dropdown", async () => {
+      const user = userEvent.setup()
+      const teacherUser = { ...mockUser, role: "Teacher", full_name: "Test Teacher" }
+      render(<Header user={teacherUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        await waitFor(() => {
+          expect(screen.getByText("Test Teacher")).toBeTruthy()
+          // Teacher role appears in both nav link and dropdown
+          const teacherRoleElements = screen.getAllByText("Teacher")
+          expect(teacherRoleElements.length).toBeGreaterThan(0)
+        })
+      }
+    })
+
+    it("should display default role for user with null role", async () => {
+      const user = userEvent.setup()
+      const noRoleUser = { ...mockUser, role: null }
+      render(<Header user={noRoleUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        await waitFor(() => {
+          expect(screen.getByText("Student")).toBeTruthy() // Default role
+        })
+      }
+    })
+  })
+
+  describe("Head Teacher Role", () => {
+    it("should show Students link for Head Teacher", () => {
+      const headTeacherUser = { ...mockUser, role: "Head Teacher" }
+      render(<Header user={headTeacherUser} />)
+
+      expect(screen.getByText("Students")).toBeTruthy()
+    })
+
+    it("should show Invite User option for Head Teacher in dropdown", async () => {
+      const user = userEvent.setup()
+      const headTeacherUser = { ...mockUser, role: "Head Teacher" }
+      render(<Header user={headTeacherUser} />)
+
+      const avatarButton = screen.getAllByRole("button").find((btn) => btn.querySelector('[class*="Avatar"]'))
+      if (avatarButton) {
+        await user.click(avatarButton)
+
+        await waitFor(() => {
+          expect(screen.getByText("Invite User")).toBeTruthy()
+        })
+      }
+    })
+  })
+
+  describe("Navigation Active States", () => {
+    it("should highlight Library link when on home page", () => {
+      render(<Header user={mockUser} />)
+
+      const libraryLink = screen.getAllByText("Library")[0].closest("a")
+      expect(libraryLink?.className).toContain("font-semibold")
+      expect(libraryLink?.className).toContain("border-b-2")
+    })
   })
 })

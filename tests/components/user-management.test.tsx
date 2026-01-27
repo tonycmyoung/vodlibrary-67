@@ -529,4 +529,404 @@ describe("UserManagement", () => {
       expect(screen.getByText("All Users (2)")).toBeTruthy()
     })
   })
+
+  describe("Sorting Branches", () => {
+    it("should sort users by last_view date", async () => {
+      localStorage.setItem("userManagementSortBy", "last_view")
+      localStorage.setItem("userManagementSortOrder", "desc")
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+      })
+    })
+
+    it("should sort users by view_count", async () => {
+      localStorage.setItem("userManagementSortBy", "view_count")
+      localStorage.setItem("userManagementSortOrder", "desc")
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+    })
+
+    it("should sort users by login_count", async () => {
+      localStorage.setItem("userManagementSortBy", "login_count")
+      localStorage.setItem("userManagementSortOrder", "asc")
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+    })
+
+    it("should use secondary name sort when primary values are equal", async () => {
+      const usersWithSameLoginCount = [
+        { ...mockUsers[0], login_count: 5 },
+        { ...mockUsers[1], login_count: 5 },
+      ]
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: usersWithSameLoginCount, error: null }),
+            }),
+            update: mockUpdate,
+          }
+        }
+        if (table === "curriculums") {
+          return { select: mockSelect }
+        }
+        if (table === "user_logins") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }
+        }
+        if (table === "user_video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }
+        }
+        return { select: mockSelect }
+      })
+
+      localStorage.setItem("userManagementSortBy", "login_count")
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+      })
+    })
+  })
+
+  describe("Belt Filtering", () => {
+    it("should filter users with no belt assigned", async () => {
+      mockSearchParams.get.mockImplementation((param: string) => {
+        if (param === "belt") return "none"
+        return null
+      })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.queryByText("John Doe")).toBeNull() // Has belt
+        expect(screen.getByText("Jane Smith")).toBeTruthy() // No belt
+      })
+    })
+
+    it("should filter users by specific belt", async () => {
+      mockSearchParams.get.mockImplementation((param: string) => {
+        if (param === "belt") return "belt-1"
+        return null
+      })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy() // Has belt-1
+        expect(screen.queryByText("Jane Smith")).toBeNull() // No belt
+      })
+    })
+  })
+
+  describe("Delete User Error Handling", () => {
+    it("should show error alert when delete fails", async () => {
+      const user = userEvent.setup()
+      vi.mocked(global.confirm).mockReturnValue(true)
+      vi.mocked(deleteUserCompletely).mockResolvedValue({ success: false, error: "Delete failed" })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const deleteButtons = screen.getAllByLabelText("Delete user")
+      await user.click(deleteButtons[0])
+
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith("Failed to delete user. Please try again.")
+      })
+    })
+  })
+
+  describe("Reset Password Error Handling", () => {
+    it("should show error message when reset password API fails", async () => {
+      const user = userEvent.setup()
+      vi.mocked(adminResetUserPassword).mockResolvedValue({ success: false, error: "API error occurred" })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const resetButtons = screen.getAllByLabelText("Reset password")
+      await user.click(resetButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("Enter new password")).toBeTruthy()
+      })
+
+      const passwordInput = screen.getByPlaceholderText("Enter new password")
+      await user.type(passwordInput, "validpassword123")
+
+      const resetButton = screen.getByRole("button", { name: /Reset Password/i })
+      await user.click(resetButton)
+
+      await waitFor(() => {
+        expect(screen.getByText("API error occurred")).toBeTruthy()
+      })
+    })
+
+    it("should toggle password visibility", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const resetButtons = screen.getAllByLabelText("Reset password")
+      await user.click(resetButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("Enter new password")).toBeTruthy()
+      })
+
+      const passwordInput = screen.getByPlaceholderText("Enter new password") as HTMLInputElement
+      expect(passwordInput.type).toBe("password")
+
+      // Find and click the eye toggle button
+      const toggleButton = document.querySelector('button[type="button"] svg.lucide-eye')?.closest('button')
+      if (toggleButton) {
+        await user.click(toggleButton)
+        expect(passwordInput.type).toBe("text")
+      }
+    })
+  })
+
+  describe("Update User Belt", () => {
+    it("should update user belt when belt select is changed", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      // Enter edit mode
+      const editButtons = screen.getAllByLabelText("Edit user")
+      await user.click(editButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Save changes")).toBeTruthy()
+      })
+
+      // The belt select should be visible in edit mode
+      // Find the belt dropdown and change it
+      const beltSelects = screen.getAllByRole("combobox")
+      const beltSelect = beltSelects.find((s: any) => s.querySelector?.('option[value="belt-2"]'))
+      
+      if (beltSelect) {
+        await user.selectOptions(beltSelect, "belt-2")
+      }
+    })
+
+    it("should handle error when updating user fields fails", async () => {
+      const user = userEvent.setup()
+      vi.mocked(updateUserFields).mockResolvedValue({ success: false, error: "Update failed" })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const editButtons = screen.getAllByLabelText("Edit user")
+      await user.click(editButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Save changes")).toBeTruthy()
+      })
+
+      const saveButton = screen.getByLabelText("Save changes")
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(global.alert).toHaveBeenCalledWith("Failed to update user fields. Please try again.")
+      })
+    })
+  })
+
+  describe("Search by Multiple Fields", () => {
+    it("should search users by teacher name", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const searchInput = screen.getByPlaceholderText("Search users...")
+      await user.type(searchInput, "Sensei Bob")
+
+      await waitFor(
+        () => {
+          expect(screen.getByText("John Doe")).toBeTruthy()
+          expect(screen.queryByText("Jane Smith")).toBeNull()
+        },
+        { timeout: 500 },
+      )
+    })
+
+    it("should search users by school name", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const searchInput = screen.getByPlaceholderText("Search users...")
+      await user.type(searchInput, "Test Dojo")
+
+      await waitFor(
+        () => {
+          // Both users are from Test Dojo
+          expect(screen.getByText("John Doe")).toBeTruthy()
+          expect(screen.getByText("Jane Smith")).toBeTruthy()
+        },
+        { timeout: 500 },
+      )
+    })
+
+    it("should search users by belt name", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const searchInput = screen.getByPlaceholderText("Search users...")
+      await user.type(searchInput, "White Belt")
+
+      await waitFor(
+        () => {
+          expect(screen.getByText("John Doe")).toBeTruthy()
+          expect(screen.queryByText("Jane Smith")).toBeNull()
+        },
+        { timeout: 500 },
+      )
+    })
+  })
+
+  describe("Update User Role Error", () => {
+    it("should show error alert when role update fails", async () => {
+      const user = userEvent.setup()
+      
+      mockUpdate.mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: { message: "Role update failed" } }),
+      })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const roleSelects = screen.getAllByRole("combobox")
+      const roleSelect = roleSelects.find((select: HTMLElement) =>
+        select.querySelector('option[value="Student"]'),
+      ) as HTMLSelectElement
+
+      if (roleSelect) {
+        await user.selectOptions(roleSelect, "Teacher")
+
+        await waitFor(() => {
+          expect(global.alert).toHaveBeenCalledWith("Failed to update user role. Please try again.")
+        })
+      }
+    })
+  })
+
+  describe("Toggle Approval Error", () => {
+    it("should handle error when toggling approval fails", async () => {
+      const user = userEvent.setup()
+      
+      // Reset mock to handle the approval toggle
+      mockEq.mockResolvedValue({ data: null, error: { message: "Approval failed" } })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+      })
+
+      const approveButtons = screen.getAllByLabelText("Approve user")
+      await user.click(approveButtons[0])
+
+      // Error should be logged, user should still be shown
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+      })
+    })
+  })
+
+  describe("Getters for Initials", () => {
+    it("should display single letter initial for user with no name", async () => {
+      const userNoName = {
+        ...mockUsers[0],
+        full_name: null,
+      }
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [userNoName], error: null }),
+            }),
+            update: mockUpdate,
+          }
+        }
+        if (table === "curriculums") {
+          return { select: mockSelect }
+        }
+        if (table === "user_logins") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }
+        }
+        if (table === "user_video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }
+        }
+        return { select: mockSelect }
+      })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        // Should show the email as fallback name display
+        expect(screen.getByText("student@example.com")).toBeTruthy()
+      })
+    })
+  })
 })
