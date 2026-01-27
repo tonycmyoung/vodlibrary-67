@@ -44,13 +44,9 @@ describe("AboutModal", () => {
     expect(screen.getByText(/Copyright 2025-2026/i)).toBeTruthy()
   })
 
-  it("should display deployment info section", () => {
+  it("should display deployment date", () => {
     render(<AboutModal isOpen={true} onClose={mockOnClose} />)
-    expect(screen.getByText(/Deployment Info/i)).toBeTruthy()
-    expect(screen.getByText(/Version/i)).toBeTruthy()
-    expect(screen.getByText(/Built/i)).toBeTruthy()
-    expect(screen.getByText(/Branch/i)).toBeTruthy()
-    expect(screen.getByText(/Commit/i)).toBeTruthy()
+    expect(screen.getByText(/Deployed:/i)).toBeTruthy()
   })
 
   it("should have a close button", () => {
@@ -68,10 +64,8 @@ describe("AboutModal", () => {
     expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
 
-  it("should display version number", () => {
+  it("should display development build text when no timestamp is set", () => {
     render(<AboutModal isOpen={true} onClose={mockOnClose} />)
-    // Should show default version or env variable
-    const versionElements = screen.getAllByText(/0\.1\.0|local/i)
-    expect(versionElements.length).toBeGreaterThan(0)
+    expect(screen.getByText(/Development Build/i)).toBeTruthy()
   })
 })
