@@ -10,7 +10,7 @@ import { logAuditEvent } from "./audit"
 
 export async function inviteUser(email: string) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -378,7 +378,7 @@ export async function deleteUserCompletely(userId: string) {
       .eq("id", userId)
       .single()
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -482,7 +482,7 @@ export async function updateProfile(params: {
 
 export async function updateUserBelt(userId: string, beltId: string | null) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -627,7 +627,7 @@ export async function fetchUnconfirmedEmailUsers() {
 
 export async function resendConfirmationEmail(email: string) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
