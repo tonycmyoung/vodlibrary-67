@@ -9,11 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug, FileText } from "lucide-react"
+import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug, FileText, Info } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
 import InviteUserModal from "@/components/invite-user-modal"
+import AboutModal from "@/components/about-modal"
 import { useState } from "react"
 
 interface AdminHeaderProps {
@@ -29,6 +30,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ user }: AdminHeaderProps) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
@@ -173,6 +175,14 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem
+                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  onClick={() => setIsAboutModalOpen(true)}
+                >
+                  <Info className="mr-2 h-4 w-4" />
+                  About
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -245,6 +255,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
       </header>
 
       <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
+      <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
     </>
   )
 }
