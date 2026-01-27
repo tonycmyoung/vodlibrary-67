@@ -1,20 +1,35 @@
 /**
  * Validates and sanitizes a returnTo parameter for safe redirects
  * @param returnTo - The returnTo parameter from URL or form data
- * @returns Validated path or null if invalid
+ * @returns Validated and decoded path or null if invalid
  */
 export function validateReturnTo(returnTo: string | null | undefined): string | null {
   if (!returnTo || typeof returnTo !== "string") {
     return null
   }
 
+  // Decode URL-encoded values first to handle cases like %2Fwww.
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(returnTo.trim())
+  } catch {
+    // Invalid URL encoding - reject
+    return null
+  }
+
   // Must be a relative path starting with /
-  if (!returnTo.startsWith("/")) {
+  if (!decoded.startsWith("/")) {
     return null
   }
 
   // Cannot contain protocol or domain (prevent open redirect)
-  if (returnTo.includes("://") || returnTo.includes("//")) {
+  if (decoded.includes("://") || decoded.includes("//")) {
+    return null
+  }
+
+  // Reject paths that look like domains or contain www.
+  // This catches malformed redirects from external redirectors (e.g., Cloudflare)
+  if (/^\/?(www\.|[a-z0-9-]+\.[a-z]{2,})/i.test(decoded)) {
     return null
   }
 
@@ -32,19 +47,20 @@ export function validateReturnTo(returnTo: string | null | undefined): string | 
   ]
 
   // Check exact matches
-  if (excludedPaths.includes(returnTo)) {
+  if (excludedPaths.includes(decoded)) {
     return null
   }
 
   // Check if starts with excluded prefixes
   const excludedPrefixes = ["/auth/", "/admin/", "/api/"]
   for (const prefix of excludedPrefixes) {
-    if (returnTo.startsWith(prefix)) {
+    if (decoded.startsWith(prefix)) {
       return null
     }
   }
 
-  return returnTo
+  // Return the decoded value for clean paths
+  return decoded
 }
 
 /**

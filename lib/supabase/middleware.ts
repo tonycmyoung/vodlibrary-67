@@ -118,7 +118,24 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (!session) {
-      const currentPath = request.nextUrl.pathname
+      // Get the pathname and ensure it's a clean relative path
+      // This guards against malformed paths from redirect chains (e.g., Cloudflare)
+      let currentPath = request.nextUrl.pathname
+
+      // Decode if URL-encoded (e.g., %2Fwww. -> /www.)
+      try {
+        currentPath = decodeURIComponent(currentPath)
+      } catch {
+        // Invalid encoding - use empty path which will be rejected by validateReturnTo
+        currentPath = ""
+      }
+
+      // Reject paths that look like they contain domain information
+      // This catches cases where external redirects inject domain-like values
+      if (/^\/?(www\.|[a-z0-9-]+\.[a-z]{2,})/i.test(currentPath)) {
+        currentPath = ""
+      }
+
       const validReturnTo = validateReturnTo(currentPath)
 
       const redirectUrl = new URL("/auth/login", request.url)
