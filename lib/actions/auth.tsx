@@ -21,7 +21,12 @@ export async function signIn(formData: FormData) {
   const password = formData.get("password") as string
   const returnTo = formData.get("returnTo") as string | null
 
+  console.log("[v0] signIn called with email:", email)
+  console.log("[v0] NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "set" : "NOT SET")
+  console.log("[v0] NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "set" : "NOT SET")
+
   if (!email || !password) {
+    console.log("[v0] Missing email or password")
     const returnToParam = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
     const errorUrl = `/auth/login?error=auth_error${returnToParam}`
     redirect(errorUrl)
@@ -51,6 +56,8 @@ export async function signIn(formData: FormData) {
     email,
     password,
   })
+
+  console.log("[v0] signInWithPassword result - error:", error?.message || "none", "user:", data?.user?.id || "none")
 
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
