@@ -97,6 +97,8 @@ describe("UserManagement", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useRouter).mockReturnValue(mockRouter as any)
+    // Reset mockSearchParams.get to return null for all params
+    mockSearchParams.get = vi.fn((param: string) => null)
     vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
     mockEq = vi.fn().mockResolvedValue({ data: null, error: null })
