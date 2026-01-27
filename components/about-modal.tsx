@@ -1,7 +1,6 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { Info } from "lucide-react"
 
 interface AboutModalProps {
@@ -68,17 +67,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             <p className="text-gray-500 text-sm text-center">
               Deployed: {formatBuildDate(buildTimestamp)}
             </p>
-          </div>
-
-          {/* Close Button */}
-          <div className="pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-            >
-              Close
-            </Button>
           </div>
         </div>
       </DialogContent>

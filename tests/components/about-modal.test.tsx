@@ -49,20 +49,7 @@ describe("AboutModal", () => {
     expect(screen.getByText(/Deployed:/i)).toBeTruthy()
   })
 
-  it("should have a close button", () => {
-    render(<AboutModal isOpen={true} onClose={mockOnClose} />)
-    const closeButton = screen.getByRole("button", { name: /close/i })
-    expect(closeButton).toBeTruthy()
-  })
 
-  it("should call onClose when Close button is clicked", () => {
-    render(<AboutModal isOpen={true} onClose={mockOnClose} />)
-    const closeButton = screen.getByRole("button", { name: /close/i })
-
-    fireEvent.click(closeButton)
-
-    expect(mockOnClose).toHaveBeenCalledTimes(1)
-  })
 
   it("should display development build text when no timestamp is set", () => {
     render(<AboutModal isOpen={true} onClose={mockOnClose} />)
