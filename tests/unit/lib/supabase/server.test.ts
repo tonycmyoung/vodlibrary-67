@@ -17,9 +17,9 @@ vi.mock("@supabase/ssr", () => ({
   })),
 }))
 
-// Mock next/headers
+// Mock next/headers - cookies() is now async in Next.js 15
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => ({
+  cookies: vi.fn(() => Promise.resolve({
     getAll: vi.fn(() => []),
     set: vi.fn(),
   })),
@@ -38,8 +38,8 @@ describe("Supabase Server Client", () => {
   })
 
   describe("createServerClient", () => {
-    it("should create a Supabase server client with environment variables", () => {
-      const client = createServerClient()
+    it("should create a Supabase server client with environment variables", async () => {
+      const client = await createServerClient()
 
       expect(client).toBeDefined()
       expect(client.auth).toBeDefined()
@@ -47,7 +47,7 @@ describe("Supabase Server Client", () => {
     })
 
     it("should return a functioning auth client", async () => {
-      const client = createServerClient()
+      const client = await createServerClient()
 
       const { data: userData } = await client.auth.getUser()
       expect(userData.user).toBeDefined()
@@ -58,7 +58,7 @@ describe("Supabase Server Client", () => {
     })
 
     it("should return a functioning database client", async () => {
-      const client = createServerClient()
+      const client = await createServerClient()
 
       const query = client.from("test_table")
       const { data } = await query.select()
@@ -68,7 +68,7 @@ describe("Supabase Server Client", () => {
 
   describe("createClient (cached)", () => {
     it("should return a functioning client", async () => {
-      const client = createClient()
+      const client = await createClient()
 
       expect(client).toBeDefined()
       expect(client.auth).toBeDefined()
