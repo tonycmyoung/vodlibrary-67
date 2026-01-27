@@ -118,30 +118,46 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (!session) {
+      // DEBUG: Log incoming request details to trace returnTo issue
+      console.log("[v0] Middleware: No session - building login redirect")
+      console.log("[v0] Middleware: request.url =", request.url)
+      console.log("[v0] Middleware: request.nextUrl.href =", request.nextUrl.href)
+      console.log("[v0] Middleware: request.nextUrl.pathname =", request.nextUrl.pathname)
+      console.log("[v0] Middleware: request.nextUrl.search =", request.nextUrl.search)
+      console.log("[v0] Middleware: request.nextUrl.hostname =", request.nextUrl.hostname)
+      console.log("[v0] Middleware: request.nextUrl.origin =", request.nextUrl.origin)
+      console.log("[v0] Middleware: existing returnTo param =", request.nextUrl.searchParams.get("returnTo"))
+
       // Get the pathname and ensure it's a clean relative path
       // This guards against malformed paths from redirect chains (e.g., Cloudflare)
       let currentPath = request.nextUrl.pathname
+      console.log("[v0] Middleware: currentPath (before decode) =", currentPath)
 
       // Decode if URL-encoded (e.g., %2Fwww. -> /www.)
       try {
         currentPath = decodeURIComponent(currentPath)
+        console.log("[v0] Middleware: currentPath (after decode) =", currentPath)
       } catch {
         // Invalid encoding - use empty path which will be rejected by validateReturnTo
+        console.log("[v0] Middleware: decodeURIComponent failed, setting empty path")
         currentPath = ""
       }
 
       // Reject paths that look like they contain domain information
       // This catches cases where external redirects inject domain-like values
       if (/^\/?(www\.|[a-z0-9-]+\.[a-z]{2,})/i.test(currentPath)) {
+        console.log("[v0] Middleware: currentPath rejected (domain-like pattern) =", currentPath)
         currentPath = ""
       }
 
       const validReturnTo = validateReturnTo(currentPath)
+      console.log("[v0] Middleware: validReturnTo =", validReturnTo)
 
       const redirectUrl = new URL("/auth/login", request.url)
       if (validReturnTo) {
         redirectUrl.searchParams.set("returnTo", validReturnTo)
       }
+      console.log("[v0] Middleware: final redirectUrl =", redirectUrl.toString())
 
       return NextResponse.redirect(redirectUrl)
     }
