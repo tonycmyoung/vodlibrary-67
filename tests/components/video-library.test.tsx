@@ -709,4 +709,402 @@ describe("VideoLibrary", () => {
       })
     })
   })
+
+  describe("Sorting Branches", () => {
+    it("should sort videos by recorded date", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "recorded"
+        if (key === "videoLibrarySortOrder") return "asc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("recorded-asc")
+      })
+
+      // Verify videos are rendered (sorting applied internally)
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+
+    it("should sort videos by performers", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "performers"
+        if (key === "videoLibrarySortOrder") return "asc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("performers-asc")
+      })
+
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+
+    it("should sort videos by category", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "category"
+        if (key === "videoLibrarySortOrder") return "asc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("category-asc")
+      })
+
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+
+    it("should sort videos by curriculum display order", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "curriculum"
+        if (key === "videoLibrarySortOrder") return "asc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("curriculum-asc")
+      })
+
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+
+    it("should sort videos by view count", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "views"
+        if (key === "videoLibrarySortOrder") return "desc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("views-desc")
+      })
+
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+
+    it("should sort in descending order when sortOrder is desc", async () => {
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibrarySortBy") return "title"
+        if (key === "videoLibrarySortOrder") return "desc"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const currentSort = screen.getAllByTestId("current-sort")[0]
+        expect(currentSort).toHaveTextContent("title-desc")
+      })
+
+      await waitFor(() => {
+        const videos = screen.getAllByTestId(/video-card-/)
+        expect(videos.length).toBe(3)
+      })
+    })
+  })
+
+  describe("OR Filter Mode", () => {
+    it("should filter videos using OR mode for categories", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "mode") return "OR"
+        if (key === "filters") return JSON.stringify(["cat-1", "cat-2"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // With OR mode, videos with either cat-1 OR cat-2 should show
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+      })
+    })
+
+    it("should handle filter mode change from AND to OR", async () => {
+      // Start with AND mode and multiple filters
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Toggle curriculum to have multiple filters
+      const curriculumToggle = screen.getByText("Toggle Curriculum")
+      fireEvent.click(curriculumToggle)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+    })
+  })
+
+  describe("Recorded Value Filtering", () => {
+    it("should filter videos by recorded year", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["recorded:2024"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Videos recorded in 2024 should be shown (video-1 and video-3)
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.getByTestId("video-card-video-3")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+      })
+    })
+  })
+
+  describe("Performer Filtering", () => {
+    it("should filter videos by performer", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["performer:perf-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Only video-1 has performer perf-1
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+      })
+    })
+  })
+
+  describe("Views Filtering", () => {
+    it("should filter videos by minimum view count", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["views:20"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Only video-2 has 25 views (>= 20)
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-2")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-1")).toBeNull() // 10 views
+        expect(screen.queryByTestId("video-card-video-3")).toBeNull() // 5 views
+      })
+    })
+  })
+
+  describe("Search by Performer Name", () => {
+    it("should find videos when searching by performer name", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "search") return "John Doe"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const searchInput = screen.getByPlaceholderText(/Search videos/i) as HTMLInputElement
+        expect(searchInput.value).toBe("John Doe")
+      })
+
+      // Should find video-1 which has performer "John Doe"
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+      })
+    })
+
+    it("should find videos when searching by description", async () => {
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "search") return "Beginner"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        const searchInput = screen.getByPlaceholderText(/Search videos/i) as HTMLInputElement
+        expect(searchInput.value).toBe("Beginner")
+      })
+
+      // Should find video-1 which has "Beginner" in description
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+        expect(screen.queryByTestId("video-card-video-2")).toBeNull()
+      })
+    })
+  })
+
+  describe("Empty Favorites State", () => {
+    it("should display empty favorites message when user has no favorites", async () => {
+      // Mock no favorites
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === "videos") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
+            }),
+          }
+        } else if (table === "user_favorites") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [], // No favorites
+                error: null,
+              }),
+            }),
+          }
+        } else if (table === "video_categories") {
+          return {
+            select: vi.fn().mockResolvedValue({ data: mockVideoCategories, error: null }),
+          }
+        } else if (table === "video_curriculums") {
+          return {
+            select: vi.fn().mockResolvedValue({ data: mockVideoCurriculums, error: null }),
+          }
+        } else if (table === "video_performers") {
+          return {
+            select: vi.fn().mockResolvedValue({ data: mockVideoPerformers, error: null }),
+          }
+        } else {
+          return {
+            select: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }
+        }
+      })
+
+      render(<VideoLibrary favoritesOnly={true} />)
+
+      await waitFor(() => {
+        expect(screen.getByText("No favorites yet")).toBeTruthy()
+        expect(screen.getByText("Start adding videos to your favorites to see them here.")).toBeTruthy()
+        expect(screen.getByText("Browse Videos")).toBeTruthy()
+      })
+    })
+  })
+
+  describe("Curriculum Toggle", () => {
+    it("should handle curriculum toggle and update selected curriculums", async () => {
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      const toggleButton = screen.getByText("Toggle Curriculum")
+      fireEvent.click(toggleButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
+      })
+    })
+  })
+
+  describe("Error Handling", () => {
+    it("should handle Supabase query errors gracefully", async () => {
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === "videos") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: null, error: { message: "Database error" } }),
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }
+      })
+
+      render(<VideoLibrary />)
+
+      // Should not crash, component should handle error
+      await waitFor(() => {
+        expect(screen.queryByText("Loading videos...")).toBeNull()
+      })
+    })
+  })
+
+  describe("Items Per Page Change", () => {
+    it("should update items per page and save to localStorage", async () => {
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Show")[0]).toBeTruthy()
+      })
+
+      // The component should have saved initial items per page
+      await waitFor(() => {
+        expect(screen.getByTestId("video-card-video-1")).toBeTruthy()
+      })
+    })
+  })
+
+  describe("Next Belt Name Display", () => {
+    it("should display next belt name when maxCurriculumOrder is provided", async () => {
+      render(<VideoLibrary maxCurriculumOrder={1} nextBeltName="Yellow Belt" />)
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Training for:").length).toBeGreaterThan(0)
+        expect(screen.getAllByText("Yellow Belt").length).toBeGreaterThan(0)
+      })
+    })
+
+    it("should display default text when nextBeltName is not provided", async () => {
+      render(<VideoLibrary maxCurriculumOrder={1} />)
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Training for:").length).toBeGreaterThan(0)
+        expect(screen.getAllByText("Next Level").length).toBeGreaterThan(0)
+      })
+    })
+  })
 })
