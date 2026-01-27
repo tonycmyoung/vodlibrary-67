@@ -69,6 +69,33 @@ describe("Auth Utilities", () => {
       expect(validateReturnTo("/pending-approval")).toBeNull()
       expect(validateReturnTo("/setup-admin")).toBeNull()
     })
+
+    it("should reject URL-encoded domain-like paths", () => {
+      expect(validateReturnTo("%2Fwww.")).toBeNull()
+      expect(validateReturnTo("%2Fwww.example.com")).toBeNull()
+      expect(validateReturnTo("%2Ftykobudo.com.au")).toBeNull()
+    })
+
+    it("should reject paths containing www.", () => {
+      expect(validateReturnTo("/www.example.com")).toBeNull()
+      expect(validateReturnTo("/www.")).toBeNull()
+      expect(validateReturnTo("www.tykobudo.com")).toBeNull()
+    })
+
+    it("should reject paths that look like domains", () => {
+      expect(validateReturnTo("/example.com")).toBeNull()
+      expect(validateReturnTo("/tykobudo.com.au")).toBeNull()
+    })
+
+    it("should handle invalid URL encoding gracefully", () => {
+      expect(validateReturnTo("%")).toBeNull()
+      expect(validateReturnTo("%ZZ")).toBeNull()
+    })
+
+    it("should accept valid URL-encoded paths and return decoded value", () => {
+      expect(validateReturnTo("%2Fvideos")).toBe("/videos")
+      expect(validateReturnTo("%2Fvideo%2F123")).toBe("/video/123")
+    })
   })
 
   describe("getAuthErrorMessage", () => {
