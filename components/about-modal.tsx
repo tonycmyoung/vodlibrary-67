@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Info, GitBranch, Calendar, Tag, Hash } from "lucide-react"
+import { Info } from "lucide-react"
 
 interface AboutModalProps {
   isOpen: boolean
@@ -10,11 +10,8 @@ interface AboutModalProps {
 }
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
-  // Build-time environment variables (set via next.config.mjs)
+  // Build-time environment variable (set via next.config.mjs)
   const buildTimestamp = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || "Development"
-  const gitCommitSha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "local"
-  const gitBranch = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || "local"
-  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.1.0"
 
   // Format the build timestamp for display
   const formatBuildDate = (timestamp: string) => {
@@ -30,9 +27,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
       return timestamp
     }
   }
-
-  // Shorten commit SHA for display
-  const shortCommitSha = gitCommitSha.length > 7 ? gitCommitSha.substring(0, 7) : gitCommitSha
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -69,43 +63,11 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             <p className="text-gray-500 text-sm text-center mt-1">Copyright 2025-2026. All rights reserved.</p>
           </div>
 
-          {/* Deployment Information */}
-          <div className="border-t border-gray-700 pt-4 space-y-3">
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Deployment Info</h3>
-
-            <div className="space-y-2 bg-gray-800/50 rounded-md p-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-gray-400">
-                  <Tag className="h-4 w-4" />
-                  Version
-                </span>
-                <span className="font-mono text-green-400">{appVersion}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-gray-400">
-                  <Calendar className="h-4 w-4" />
-                  Built
-                </span>
-                <span className="font-mono text-green-400">{formatBuildDate(buildTimestamp)}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-gray-400">
-                  <GitBranch className="h-4 w-4" />
-                  Branch
-                </span>
-                <span className="font-mono text-green-400">{gitBranch}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-gray-400">
-                  <Hash className="h-4 w-4" />
-                  Commit
-                </span>
-                <span className="font-mono text-green-400">{shortCommitSha}</span>
-              </div>
-            </div>
+          {/* Deployment Date */}
+          <div className="border-t border-gray-700 pt-4">
+            <p className="text-gray-500 text-sm text-center">
+              Deployed: {formatBuildDate(buildTimestamp)}
+            </p>
           </div>
 
           {/* Close Button */}
