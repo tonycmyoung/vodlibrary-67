@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin-header"
 import AdminNotificationManagement from "@/components/admin-notification-management"
 
 export default async function AdminNotificationsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

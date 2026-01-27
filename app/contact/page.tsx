@@ -4,7 +4,7 @@ import Header from "@/components/header"
 import SendMessageForm from "@/components/send-message-form"
 
 export default async function ContactPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

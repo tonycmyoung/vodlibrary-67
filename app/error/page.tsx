@@ -3,16 +3,13 @@
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Home, RefreshCw } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
-interface ErrorPageProps {
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export default function ErrorPage({ searchParams }: ErrorPageProps) {
+export default function ErrorPage() {
   const router = useRouter()
-  const errorType = searchParams.type as string
-  const message = searchParams.message as string
+  const searchParams = useSearchParams()
+  const errorType = searchParams.get("type") || ""
+  const message = searchParams.get("message") || ""
 
   const getErrorContent = () => {
     switch (errorType) {

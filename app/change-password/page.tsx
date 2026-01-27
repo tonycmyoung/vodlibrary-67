@@ -4,7 +4,7 @@ import ChangePasswordForm from "@/components/change-password-form"
 import Header from "@/components/header"
 
 export default async function ChangePasswordPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
