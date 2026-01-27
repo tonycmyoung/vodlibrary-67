@@ -4,7 +4,7 @@ import Header from "@/components/header"
 import StudentManagement from "@/components/student-management"
 
 export default async function StudentsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

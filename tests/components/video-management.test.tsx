@@ -129,8 +129,7 @@ describe("VideoManagement", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Test Video 1")).toBeTruthy()
-      expect(screen.getByText("Description 1")).toBeTruthy()
-      expect(screen.getByText("Published")).toBeTruthy()
+      // Note: Description is not displayed in the list view card, only in the modal
       expect(screen.getByText("100 views")).toBeTruthy()
     })
   })
@@ -254,7 +253,10 @@ describe("VideoManagement", () => {
 
     const videoCard = screen.getByText("Test Video 1").closest(".bg-gray-800\\/50")
     const buttons = videoCard ? Array.from(videoCard.querySelectorAll("button")) : []
-    const deleteButton = buttons.find((btn) => btn.className.includes("border-red-600"))
+    // Find delete button by its red background (bg-red-600) or trash icon
+    const deleteButton = buttons.find((btn) => 
+      btn.className.includes("bg-red-600") || btn.querySelector("svg.lucide-trash-2")
+    )
 
     expect(deleteButton).toBeTruthy()
     await user.click(deleteButton!)

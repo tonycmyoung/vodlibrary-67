@@ -6,8 +6,11 @@ import { validateReturnTo, getAuthErrorMessage } from "@/lib/utils/auth"
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { confirmed?: string; returnTo?: string; error?: string; reset?: string }
+  searchParams: Promise<{ confirmed?: string; returnTo?: string; error?: string; reset?: string }>
 }) {
+  // Await searchParams as required by Next.js 15
+  const params = await searchParams
+
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -17,14 +20,14 @@ export default async function LoginPage({
     )
   }
 
-  const returnTo = searchParams.returnTo
+  const returnTo = params.returnTo
   const validatedReturnTo = validateReturnTo(returnTo)
 
-  const errorCode = searchParams.error
+  const errorCode = params.error
   const errorMessage = getAuthErrorMessage(errorCode)
 
   // Check if user is already logged in
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -37,11 +40,11 @@ export default async function LoginPage({
     }
   }
 
-  const resetSuccess = searchParams.reset === "success"
+  const resetSuccess = params.reset === "success"
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900 px-4 py-12 sm:px-6 lg:px-8">
-      {searchParams.confirmed === "true" && (
+      {params.confirmed === "true" && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
           <div className="flex items-center space-x-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

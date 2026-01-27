@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin-header"
 import AuditLogDashboard from "@/components/audit-log-dashboard"
 
 export default async function AdminAuditPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

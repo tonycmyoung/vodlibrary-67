@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin-header"
 import MetadataManagement from "@/components/metadata-management"
 
 export default async function AdminMetadataPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

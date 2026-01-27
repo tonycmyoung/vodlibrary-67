@@ -27,7 +27,7 @@ export async function signIn(formData: FormData) {
     redirect(errorUrl)
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -156,7 +156,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "You must accept both the EULA and Privacy Policy to create an account" }
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -333,7 +333,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
     return { error: "All fields are required" }
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -383,7 +383,7 @@ export async function createAdminUser(prevState: any, formData: FormData) {
 }
 
 export async function signOutServerAction() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const authCookieNames = ["sb-access-token", "sb-refresh-token", "supabase-auth-token"]
 
   authCookieNames.forEach((name) => {
@@ -403,7 +403,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

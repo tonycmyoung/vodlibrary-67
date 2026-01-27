@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin-header"
 import DebugDashboard from "@/components/debug-dashboard"
 
 export default async function AdminDebugPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

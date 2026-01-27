@@ -28,11 +28,13 @@ vi.mock("@supabase/ssr", () => ({
   })),
 }))
 
+// Mock Next.js modules - cookies() is now async in Next.js 15
+const mockCookieStore = {
+  getAll: vi.fn(() => []),
+  set: vi.fn(),
+}
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => []),
-    set: vi.fn(),
-  })),
+  cookies: vi.fn(() => Promise.resolve(mockCookieStore)),
 }))
 
 describe("videos actions", () => {

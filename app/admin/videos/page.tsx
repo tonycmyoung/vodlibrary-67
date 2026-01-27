@@ -4,7 +4,7 @@ import AdminHeader from "@/components/admin-header"
 import VideoManagement from "@/components/video-management"
 
 export default async function AdminVideosPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const {
     data: { user },

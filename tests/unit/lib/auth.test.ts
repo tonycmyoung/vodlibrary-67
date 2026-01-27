@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { getCurrentUser } from "@/lib/auth"
 import { createServerClient } from "@supabase/ssr"
 
-// Mock Next.js modules
+// Mock Next.js modules - cookies() is now async in Next.js 15
+const mockCookieStore = {
+  getAll: vi.fn(() => [{ name: "sb-access-token", value: "mock-token" }]),
+  set: vi.fn(),
+}
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => [{ name: "sb-access-token", value: "mock-token" }]),
-    set: vi.fn(),
-  })),
+  cookies: vi.fn(() => Promise.resolve(mockCookieStore)),
 }))
 
 // Mock Supabase

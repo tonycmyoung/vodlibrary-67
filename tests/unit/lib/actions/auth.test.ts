@@ -3,12 +3,14 @@ import { signUp, createAdminUser, signOutServerAction, updatePassword, signIn } 
 import { createServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 
-// Mock Next.js modules
+// Mock Next.js modules - cookies() is now async in Next.js 15
+// Create a stable mock object so methods remain callable after await
+const mockCookieStore = {
+  getAll: vi.fn(() => []),
+  set: vi.fn(),
+}
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => []),
-    set: vi.fn(),
-  })),
+  cookies: vi.fn(() => Promise.resolve(mockCookieStore)),
 }))
 
 vi.mock("next/navigation", () => ({
