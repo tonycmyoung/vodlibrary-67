@@ -7,6 +7,16 @@ vi.mock("@/lib/actions", () => ({
   getTelemetryData: vi.fn(),
 }))
 
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+  }: {
+    children: React.ReactNode
+    href: string
+  }) => <a href={href}>{children}</a>,
+}))
+
 describe("AdminStats", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -172,5 +182,76 @@ describe("AdminStats", () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith("admin-refresh-stats", expect.any(Function))
 
     removeEventListenerSpy.mockRestore()
+  })
+
+  it("should render Total Users card as a link to /admin/users", async () => {
+    vi.mocked(actions.getTelemetryData).mockResolvedValue({
+      success: true,
+      data: {
+        totalUsers: 100,
+        totalViews: 2000,
+        thisWeekViews: 200,
+        lastWeekViews: 150,
+        thisWeekUserLogins: 50,
+        lastWeekUserLogins: 40,
+      },
+    })
+
+    render(<AdminStats />)
+
+    await waitFor(() => {
+      expect(screen.getByText("Total Users")).toBeTruthy()
+    })
+
+    const totalUsersLink = screen.getByText("Total Users").closest("a")
+    expect(totalUsersLink).toBeTruthy()
+    expect(totalUsersLink?.getAttribute("href")).toBe("/admin/users")
+  })
+
+  it("should render Logons This Week card as a link to /admin/debug", async () => {
+    vi.mocked(actions.getTelemetryData).mockResolvedValue({
+      success: true,
+      data: {
+        totalUsers: 100,
+        totalViews: 2000,
+        thisWeekViews: 200,
+        lastWeekViews: 150,
+        thisWeekUserLogins: 50,
+        lastWeekUserLogins: 40,
+      },
+    })
+
+    render(<AdminStats />)
+
+    await waitFor(() => {
+      expect(screen.getByText("Logons This Week")).toBeTruthy()
+    })
+
+    const logonsLink = screen.getByText("Logons This Week").closest("a")
+    expect(logonsLink).toBeTruthy()
+    expect(logonsLink?.getAttribute("href")).toBe("/admin/debug")
+  })
+
+  it("should not render Videos Viewed This Week card as a link", async () => {
+    vi.mocked(actions.getTelemetryData).mockResolvedValue({
+      success: true,
+      data: {
+        totalUsers: 100,
+        totalViews: 2000,
+        thisWeekViews: 200,
+        lastWeekViews: 150,
+        thisWeekUserLogins: 50,
+        lastWeekUserLogins: 40,
+      },
+    })
+
+    render(<AdminStats />)
+
+    await waitFor(() => {
+      expect(screen.getByText("Videos Viewed This Week")).toBeTruthy()
+    })
+
+    const videosCard = screen.getByText("Videos Viewed This Week").closest("a")
+    expect(videosCard).toBeNull()
   })
 })
