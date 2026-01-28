@@ -57,6 +57,7 @@
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "latest",
     "@vitest/browser-playwright": "latest",
     "@vitest/browser-preview": "latest",
