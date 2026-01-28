@@ -441,22 +441,16 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
   
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  // Fetch video views with video info
+  // First, simple query to check if table has data
   const { data: viewLogs, error } = await serviceSupabase
     .from("video_views")
-    .select(`
-      id,
-      video_id,
-      user_id,
-      viewed_at,
-      videos (
-        id,
-        title
-      )
-    `)
+    .select("id, video_id, user_id, viewed_at")
     .order("viewed_at", { ascending: false })
 
   console.log("[v0] Query result - viewLogs count:", viewLogs?.length ?? 0, "error:", error)
+  if (viewLogs && viewLogs.length > 0) {
+    console.log("[v0] First view log:", JSON.stringify(viewLogs[0]))
+  }
 
   if (error) {
     console.error("Error fetching video view logs:", error)
@@ -466,6 +460,20 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
   // Get all unique video IDs and user IDs
   const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
   const userIds = [...new Set(viewLogs?.filter((log: any) => log.user_id).map((log: any) => log.user_id) || [])]
+
+  // Fetch video titles
+  let videoTitles: Record<string, string> = {}
+  if (videoIds.length > 0) {
+    const { data: videosData } = await serviceSupabase
+      .from("videos")
+      .select("id, title")
+      .in("id", videoIds)
+
+    videoTitles = (videosData || []).reduce((acc: Record<string, string>, video: any) => {
+      acc[video.id] = video.title
+      return acc
+    }, {})
+  }
 
   // Fetch categories for all videos
   let videoCategories: Record<string, string[]> = {}
@@ -513,7 +521,7 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
   const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
     id: log.id,
     video_id: log.video_id,
-    video_title: log.videos?.title || "Unknown Video",
+    video_title: videoTitles[log.video_id] || "Unknown Video",
     categories: videoCategories[log.video_id] || [],
     user_id: log.user_id,
     user_name: log.user_id ? usersMap[log.user_id]?.name || null : null,
