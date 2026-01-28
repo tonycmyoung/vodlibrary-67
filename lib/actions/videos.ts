@@ -435,45 +435,35 @@ export interface VideoViewLog {
 }
 
 export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
-  console.log("[v0] fetchVideoViewLogs called")
-  console.log("[v0] SUPABASE_URL exists:", !!process.env.SUPABASE_URL)
-  console.log("[v0] SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY)
-  
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-  // First, simple query to check if table has data
+  // Query user_video_views which has proper FK to public.users
   const { data: viewLogs, error } = await serviceSupabase
-    .from("video_views")
-    .select("id, video_id, user_id, viewed_at")
+    .from("user_video_views")
+    .select(`
+      id,
+      video_id,
+      user_id,
+      viewed_at,
+      videos (
+        id,
+        title
+      ),
+      users (
+        id,
+        name,
+        email
+      )
+    `)
     .order("viewed_at", { ascending: false })
-
-  console.log("[v0] Query result - viewLogs count:", viewLogs?.length ?? 0, "error:", error)
-  if (viewLogs && viewLogs.length > 0) {
-    console.log("[v0] First view log:", JSON.stringify(viewLogs[0]))
-  }
 
   if (error) {
     console.error("Error fetching video view logs:", error)
     return []
   }
 
-  // Get all unique video IDs and user IDs
+  // Get all unique video IDs for category lookup
   const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
-  const userIds = [...new Set(viewLogs?.filter((log: any) => log.user_id).map((log: any) => log.user_id) || [])]
-
-  // Fetch video titles
-  let videoTitles: Record<string, string> = {}
-  if (videoIds.length > 0) {
-    const { data: videosData } = await serviceSupabase
-      .from("videos")
-      .select("id, title")
-      .in("id", videoIds)
-
-    videoTitles = (videosData || []).reduce((acc: Record<string, string>, video: any) => {
-      acc[video.id] = video.title
-      return acc
-    }, {})
-  }
 
   // Fetch categories for all videos
   let videoCategories: Record<string, string[]> = {}
@@ -503,29 +493,15 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
     }, {})
   }
 
-  // Fetch user info separately (from public.users table, not auth.users)
-  let usersMap: Record<string, { name: string | null; email: string | null }> = {}
-  if (userIds.length > 0) {
-    const { data: usersData } = await serviceSupabase
-      .from("users")
-      .select("id, name, email")
-      .in("id", userIds)
-
-    usersMap = (usersData || []).reduce((acc: Record<string, { name: string | null; email: string | null }>, user: any) => {
-      acc[user.id] = { name: user.name, email: user.email }
-      return acc
-    }, {})
-  }
-
   // Transform the data
   const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
     id: log.id,
     video_id: log.video_id,
-    video_title: videoTitles[log.video_id] || "Unknown Video",
+    video_title: log.videos?.title || "Unknown Video",
     categories: videoCategories[log.video_id] || [],
     user_id: log.user_id,
-    user_name: log.user_id ? usersMap[log.user_id]?.name || null : null,
-    user_email: log.user_id ? usersMap[log.user_id]?.email || null : null,
+    user_name: log.users?.name || null,
+    user_email: log.users?.email || null,
     viewed_at: log.viewed_at,
   }))
 
