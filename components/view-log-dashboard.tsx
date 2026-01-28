@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { RefreshCw, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, User, Loader2 } from "lucide-react"
+import { fetchVideoViewLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
 
 const ITEMS_PER_PAGE = 25
@@ -41,78 +41,10 @@ export default function ViewLogDashboard() {
   const loadLogs = async () => {
     setLoading(true)
     try {
-      const supabase = createClient()
-
-      // Fetch video views with video and user data
-      const { data: viewLogs, error } = await supabase
-        .from("video_views")
-        .select(`
-          id,
-          video_id,
-          user_id,
-          viewed_at,
-          videos (
-            id,
-            title
-          ),
-          users (
-            id,
-            full_name,
-            email
-          )
-        `)
-        .order("viewed_at", { ascending: false })
-
-      if (error) {
-        console.error("Error fetching video view logs:", error)
-        return
+      const data = await fetchVideoViewLogs()
+      if (data && Array.isArray(data)) {
+        setLogs(data)
       }
-
-      // Get all unique video IDs
-      const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
-
-      // Fetch categories for all videos
-      let videoCategories: Record<string, string[]> = {}
-      if (videoIds.length > 0) {
-        const { data: categoryData } = await supabase
-          .from("video_categories")
-          .select(`
-            video_id,
-            categories (
-              name
-            )
-          `)
-          .in("video_id", videoIds)
-
-        // Build a map of video_id to category names
-        videoCategories = (categoryData || []).reduce((acc: Record<string, string[]>, item: any) => {
-          const videoId = item.video_id
-          const categoryName = item.categories?.name
-          if (categoryName) {
-            if (!acc[videoId]) {
-              acc[videoId] = []
-            }
-            if (!acc[videoId].includes(categoryName)) {
-              acc[videoId].push(categoryName)
-            }
-          }
-          return acc
-        }, {})
-      }
-
-      // Transform the data
-      const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
-        id: log.id,
-        video_id: log.video_id,
-        video_title: log.videos?.title || "Unknown Video",
-        categories: videoCategories[log.video_id] || [],
-        user_id: log.user_id,
-        user_name: log.users?.full_name || null,
-        user_email: log.users?.email || null,
-        viewed_at: log.viewed_at,
-      }))
-
-      setLogs(transformedData)
     } catch (error) {
       console.error("Failed to load view logs:", error)
     } finally {

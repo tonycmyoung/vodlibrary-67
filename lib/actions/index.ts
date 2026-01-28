@@ -15,7 +15,7 @@ import {
   adminResetUserPassword,
   fetchStudentsForHeadTeacher,
 } from "./users"
-import { incrementVideoViews, saveVideo } from "./videos"
+import { incrementVideoViews, saveVideo, fetchVideoViewLogs } from "./videos"
 import { addPerformer, updatePerformer, deletePerformer } from "./performers"
 import { fetchNotificationsWithSenders, sendNotificationWithEmail } from "./notifications"
 import { getTelemetryData, clearAuthDebugLogs, fetchAuthDebugLogs } from "./admin"
@@ -41,6 +41,7 @@ export {
   fetchStudentsForHeadTeacher,
   incrementVideoViews,
   saveVideo,
+  fetchVideoViewLogs,
   addPerformer,
   updatePerformer,
   deletePerformer,

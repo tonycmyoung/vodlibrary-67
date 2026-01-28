@@ -2,89 +2,53 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import ViewLogDashboard from "@/components/view-log-dashboard"
+import * as actions from "@/lib/actions"
 
-// Mock Supabase client
-const mockSelect = vi.fn()
-const mockOrder = vi.fn()
-const mockIn = vi.fn()
-const mockFrom = vi.fn()
-
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    from: mockFrom,
-  }),
+vi.mock("@/lib/actions", () => ({
+  fetchVideoViewLogs: vi.fn(),
 }))
 
-const mockViewLogs = [
+const mockLogs = [
   {
-    id: "view-1",
+    id: "log-1",
     video_id: "video-1",
+    video_title: "Basic Bo Techniques",
+    categories: ["Bo", "Basics"],
     user_id: "user-1",
+    user_name: "John Doe",
+    user_email: "john@example.com",
     viewed_at: new Date().toISOString(),
-    videos: { id: "video-1", title: "Basic Bo Techniques" },
-    users: { id: "user-1", full_name: "John Doe", email: "john@example.com" },
   },
   {
-    id: "view-2",
+    id: "log-2",
     video_id: "video-2",
+    video_title: "Advanced Sai Forms",
+    categories: ["Sai"],
     user_id: null,
+    user_name: null,
+    user_email: null,
     viewed_at: new Date(Date.now() - 3600000).toISOString(),
-    videos: { id: "video-2", title: "Advanced Sai Forms" },
-    users: null,
   },
   {
-    id: "view-3",
+    id: "log-3",
     video_id: "video-3",
+    video_title: "Tonfa Combinations",
+    categories: [],
     user_id: "user-2",
+    user_name: null,
+    user_email: "jane@example.com",
     viewed_at: new Date(Date.now() - 7200000).toISOString(),
-    videos: { id: "video-3", title: "Tonfa Combinations" },
-    users: { id: "user-2", full_name: null, email: "jane@example.com" },
   },
-]
-
-const mockCategoryData = [
-  { video_id: "video-1", categories: { name: "Bo" } },
-  { video_id: "video-1", categories: { name: "Basics" } },
-  { video_id: "video-2", categories: { name: "Sai" } },
 ]
 
 describe("ViewLogDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Default mock implementation
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: mockViewLogs,
-              error: null,
-            }),
-          }),
-        }
-      }
-      if (table === "video_categories") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: mockCategoryData,
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue(mockLogs)
   })
 
   it("should display loading state initially", () => {
-    // Make the query hang
-    mockFrom.mockImplementation(() => ({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockImplementation(() => new Promise(() => {})),
-      }),
-    }))
+    vi.mocked(actions.fetchVideoViewLogs).mockImplementation(() => new Promise(() => {}))
 
     render(<ViewLogDashboard />)
 
@@ -104,19 +68,7 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display empty state when no logs exist", async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue([])
 
     render(<ViewLogDashboard />)
 
@@ -185,28 +137,17 @@ describe("ViewLogDashboard", () => {
       expect(screen.getByText("Basic Bo Techniques")).toBeTruthy()
     })
 
-    // Clear calls count
-    mockFrom.mockClear()
-
     const refreshButton = screen.getByRole("button", { name: /refresh/i })
     await user.click(refreshButton)
 
     await waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith("video_views")
+      expect(actions.fetchVideoViewLogs).toHaveBeenCalledTimes(2)
     })
   })
 
   it("should handle fetch errors gracefully", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
-    mockFrom.mockImplementation(() => ({
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: "Database error" },
-        }),
-      }),
-    }))
+    vi.mocked(actions.fetchVideoViewLogs).mockRejectedValue(new Error("Database error"))
 
     render(<ViewLogDashboard />)
 
@@ -277,37 +218,17 @@ describe("ViewLogDashboard", () => {
   it("should display pagination controls when there are multiple pages", async () => {
     // Create 30 mock logs to span 2 pages
     const manyLogs = Array.from({ length: 30 }, (_, i) => ({
-      id: `view-${i}`,
+      id: `log-${i}`,
       video_id: `video-${i}`,
+      video_title: `Video ${i}`,
+      categories: [],
       user_id: null,
+      user_name: null,
+      user_email: null,
       viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
-      videos: { id: `video-${i}`, title: `Video ${i}` },
-      users: null,
     }))
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: manyLogs,
-              error: null,
-            }),
-          }),
-        }
-      }
-      if (table === "video_categories") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue(manyLogs)
 
     render(<ViewLogDashboard />)
 
@@ -321,37 +242,17 @@ describe("ViewLogDashboard", () => {
 
   it("should disable previous button on first page", async () => {
     const manyLogs = Array.from({ length: 30 }, (_, i) => ({
-      id: `view-${i}`,
+      id: `log-${i}`,
       video_id: `video-${i}`,
+      video_title: `Video ${i}`,
+      categories: [],
       user_id: null,
+      user_name: null,
+      user_email: null,
       viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
-      videos: { id: `video-${i}`, title: `Video ${i}` },
-      users: null,
     }))
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: manyLogs,
-              error: null,
-            }),
-          }),
-        }
-      }
-      if (table === "video_categories") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue(manyLogs)
 
     render(<ViewLogDashboard />)
 
@@ -365,37 +266,17 @@ describe("ViewLogDashboard", () => {
 
   it("should navigate to next page when next button is clicked", async () => {
     const manyLogs = Array.from({ length: 30 }, (_, i) => ({
-      id: `view-${i}`,
+      id: `log-${i}`,
       video_id: `video-${i}`,
+      video_title: `Video ${i}`,
+      categories: [],
       user_id: null,
+      user_name: null,
+      user_email: null,
       viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
-      videos: { id: `video-${i}`, title: `Video ${i}` },
-      users: null,
     }))
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: manyLogs,
-              error: null,
-            }),
-          }),
-        }
-      }
-      if (table === "video_categories") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue(manyLogs)
 
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
@@ -425,37 +306,17 @@ describe("ViewLogDashboard", () => {
 
   it("should reset to page 1 when search query changes", async () => {
     const manyLogs = Array.from({ length: 30 }, (_, i) => ({
-      id: `view-${i}`,
+      id: `log-${i}`,
       video_id: `video-${i}`,
+      video_title: `Video ${i}`,
+      categories: [],
       user_id: null,
+      user_name: null,
+      user_email: null,
       viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
-      videos: { id: `video-${i}`, title: `Video ${i}` },
-      users: null,
     }))
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "video_views") {
-        return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: manyLogs,
-              error: null,
-            }),
-          }),
-        }
-      }
-      if (table === "video_categories") {
-        return {
-          select: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }
-      }
-      return { select: vi.fn() }
-    })
+    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue(manyLogs)
 
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
