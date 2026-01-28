@@ -78,7 +78,6 @@ export default function UserManagement() {
   }
 
   const [users, setUsers] = useState<UserInterface[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -228,9 +227,7 @@ export default function UserManagement() {
     return result
   }, [users, debouncedSearchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
 
-  useEffect(() => {
-    setFilteredUsers(processedUsers)
-  }, [processedUsers])
+
 
   const reconstructURL = (role: string, school: string, belt: string, search: string) => {
     const params = new URLSearchParams()
@@ -282,11 +279,12 @@ export default function UserManagement() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
+      // Only reconstruct URL for search changes - filter changes handle their own URL updates
       reconstructURL(selectedRole, selectedSchool, selectedBelt, searchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedRole, selectedSchool, selectedBelt])
+  }, [searchQuery]) // Only debounce search, filters update URL immediately in their handlers
 
   useEffect(() => {
     fetchUsers()
@@ -694,7 +692,7 @@ export default function UserManagement() {
                       onRoleChange={handleRoleChange}
                       onSchoolChange={handleSchoolChange}
                       onBeltChange={handleBeltChange}
-                      userCount={filteredUsers.length}
+                      userCount={processedUsers.length}
                     />
                     <Button
                       onClick={() => setShowMobileFilters(false)}
@@ -719,7 +717,7 @@ export default function UserManagement() {
                   onRoleChange={handleRoleChange}
                   onSchoolChange={handleSchoolChange}
                   onBeltChange={handleBeltChange}
-                  userCount={filteredUsers.length}
+                  userCount={processedUsers.length}
                 />
               </div>
               <div className="ml-6 flex-shrink-0">
@@ -733,7 +731,7 @@ export default function UserManagement() {
           </div>
         </div>
         <div className="space-y-3 mt-4">
-          {filteredUsers.map((user) => {
+          {processedUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
             const isAdmin = user.email === "acmyma@gmail.com"
             const isEditing = editingUser === user.id
@@ -1120,7 +1118,7 @@ export default function UserManagement() {
             )
           })}
         </div>
-        {filteredUsers.length === 0 && (
+        {processedUsers.length === 0 && (
           <div className="text-center py-8">
             <p className="text-gray-400">No users found matching your criteria.</p>
           </div>

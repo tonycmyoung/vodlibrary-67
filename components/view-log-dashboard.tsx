@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { RefreshCw, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, User, Loader2 } from "lucide-react"
+import { RefreshCw, AlertCircle, Search, Eye, User, Loader2 } from "lucide-react"
 import { fetchVideoViewLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
 
@@ -132,13 +132,40 @@ export default function ViewLogDashboard() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="flex items-center justify-between text-sm text-gray-400">
-        <span>
-          Showing {filteredLogs.length === 0 ? 0 : (validCurrentPage - 1) * ITEMS_PER_PAGE + 1}-
-          {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length} views
-          {debouncedSearch && ` matching "${debouncedSearch}"`}
-        </span>
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">
+            Showing {filteredLogs.length === 0 ? 0 : (validCurrentPage - 1) * ITEMS_PER_PAGE + 1}-
+            {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length} views
+            {debouncedSearch && ` matching "${debouncedSearch}"`}
+          </span>
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => handlePageChange(validCurrentPage - 1)}
+              disabled={validCurrentPage === 1}
+              variant="outline"
+              size="sm"
+              className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-gray-400">
+              Page {validCurrentPage} of {totalPages}
+            </span>
+            <Button
+              onClick={() => handlePageChange(validCurrentPage + 1)}
+              disabled={validCurrentPage === totalPages}
+              variant="outline"
+              size="sm"
+              className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -205,39 +232,6 @@ export default function ViewLogDashboard() {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">
-                  Page {validCurrentPage} of {totalPages}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => handlePageChange(validCurrentPage - 1)}
-                  disabled={validCurrentPage === 1}
-                  variant="outline"
-                  size="sm"
-                  className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
-                </Button>
-                <Button
-                  onClick={() => handlePageChange(validCurrentPage + 1)}
-                  disabled={validCurrentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                  className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>
