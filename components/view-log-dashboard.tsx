@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { RefreshCw, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, User, Loader2 } from "lucide-react"
 import { fetchVideoViewLogs } from "@/lib/actions"
 import { formatDistanceToNow } from "date-fns"
@@ -15,7 +14,6 @@ interface VideoViewLog {
   id: string
   video_id: string
   video_title: string
-  categories: string[]
   user_id: string | null
   user_name: string | null
   user_email: string | null
@@ -65,8 +63,7 @@ export default function ViewLogDashboard() {
       (log) =>
         log.video_title.toLowerCase().includes(searchLower) ||
         log.user_name?.toLowerCase().includes(searchLower) ||
-        log.user_email?.toLowerCase().includes(searchLower) ||
-        log.categories.some((cat) => cat.toLowerCase().includes(searchLower))
+        log.user_email?.toLowerCase().includes(searchLower)
     )
   }, [logs, debouncedSearch])
 
@@ -167,7 +164,6 @@ export default function ViewLogDashboard() {
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-300">Video</th>
-                  <th className="text-left p-3 text-sm font-medium text-gray-300">Categories</th>
                   <th className="text-left p-3 text-sm font-medium text-gray-300">User</th>
                 </tr>
               </thead>
@@ -184,23 +180,6 @@ export default function ViewLogDashboard() {
                         <div className="flex items-center gap-2">
                           <Eye className="w-4 h-4 text-purple-400 flex-shrink-0" />
                           <span className="text-sm text-gray-300">{log.video_title}</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-1">
-                          {log.categories.length > 0 ? (
-                            log.categories.map((category) => (
-                              <Badge
-                                key={category}
-                                variant="outline"
-                                className="text-xs bg-gray-700/50 text-gray-300 border-gray-600"
-                              >
-                                {category}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500">-</span>
-                          )}
                         </div>
                       </td>
                       <td className="p-3">

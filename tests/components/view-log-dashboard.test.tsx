@@ -13,7 +13,6 @@ const mockLogs = [
     id: "log-1",
     video_id: "video-1",
     video_title: "Basic Bo Techniques",
-    categories: ["Bo", "Basics"],
     user_id: "user-1",
     user_name: "John Doe",
     user_email: "john@example.com",
@@ -23,7 +22,6 @@ const mockLogs = [
     id: "log-2",
     video_id: "video-2",
     video_title: "Advanced Sai Forms",
-    categories: ["Sai"],
     user_id: null,
     user_name: null,
     user_email: null,
@@ -33,7 +31,6 @@ const mockLogs = [
     id: "log-3",
     video_id: "video-3",
     video_title: "Tonfa Combinations",
-    categories: [],
     user_id: "user-2",
     user_name: null,
     user_email: "jane@example.com",
@@ -104,29 +101,6 @@ describe("ViewLogDashboard", () => {
       // User 2 has no name but has email - should show email prefix as name
       expect(screen.getByText("jane")).toBeTruthy()
     })
-  })
-
-  it("should display category badges", async () => {
-    render(<ViewLogDashboard />)
-
-    await waitFor(() => {
-      expect(screen.getByText("Bo")).toBeTruthy()
-    })
-
-    expect(screen.getByText("Basics")).toBeTruthy()
-    expect(screen.getByText("Sai")).toBeTruthy()
-  })
-
-  it("should display dash for videos without categories", async () => {
-    render(<ViewLogDashboard />)
-
-    await waitFor(() => {
-      expect(screen.getByText("Tonfa Combinations")).toBeTruthy()
-    })
-
-    // Check that there's a dash in the row (for empty categories)
-    const row = screen.getByText("Tonfa Combinations").closest("tr")
-    expect(row?.textContent).toContain("-")
   })
 
   it("should refresh logs when refresh button is clicked", async () => {
@@ -221,7 +195,6 @@ describe("ViewLogDashboard", () => {
       id: `log-${i}`,
       video_id: `video-${i}`,
       video_title: `Video ${i}`,
-      categories: [],
       user_id: null,
       user_name: null,
       user_email: null,
@@ -245,7 +218,6 @@ describe("ViewLogDashboard", () => {
       id: `log-${i}`,
       video_id: `video-${i}`,
       video_title: `Video ${i}`,
-      categories: [],
       user_id: null,
       user_name: null,
       user_email: null,
@@ -269,7 +241,6 @@ describe("ViewLogDashboard", () => {
       id: `log-${i}`,
       video_id: `video-${i}`,
       video_title: `Video ${i}`,
-      categories: [],
       user_id: null,
       user_name: null,
       user_email: null,
@@ -309,7 +280,6 @@ describe("ViewLogDashboard", () => {
       id: `log-${i}`,
       video_id: `video-${i}`,
       video_title: `Video ${i}`,
-      categories: [],
       user_id: null,
       user_name: null,
       user_email: null,
