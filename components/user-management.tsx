@@ -286,7 +286,7 @@ export default function UserManagement() {
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedRole, selectedSchool, selectedBelt])
+  }, [searchQuery])
 
   useEffect(() => {
     fetchUsers()
