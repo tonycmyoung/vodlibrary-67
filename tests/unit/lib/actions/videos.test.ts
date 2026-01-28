@@ -9,6 +9,7 @@ import {
   getVideosWithViewCounts,
   getBatchVideoViewCounts,
   getBatchVideoLastViewed,
+  fetchVideoViewLogs,
 } from "@/lib/actions/videos"
 
 const mockFrom = vi.fn()
@@ -727,6 +728,238 @@ describe("videos actions", () => {
       expect(result).toEqual({
         "video-1": "2024-01-20T11:00:00Z",
       })
+    })
+  })
+
+  describe("fetchVideoViewLogs", () => {
+    it("should fetch video view logs with pagination", async () => {
+      const mockViewLogs = [
+        {
+          id: "view-1",
+          video_id: "video-1",
+          user_id: "user-1",
+          viewed_at: "2024-01-15T10:00:00Z",
+          videos: { id: "video-1", title: "Test Video 1" },
+          users: { id: "user-1", name: "John Doe", email: "john@example.com" },
+        },
+        {
+          id: "view-2",
+          video_id: "video-2",
+          user_id: null,
+          viewed_at: "2024-01-14T09:00:00Z",
+          videos: { id: "video-2", title: "Test Video 2" },
+          users: null,
+        },
+      ]
+
+      const mockCategoryData = [
+        { video_id: "video-1", categories: { name: "Bo" } },
+        { video_id: "video-1", categories: { name: "Basics" } },
+      ]
+
+      let callCount = 0
+      mockFrom.mockImplementation((table: string) => {
+        callCount++
+        if (table === "video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: vi.fn().mockResolvedValue({
+                  data: mockViewLogs,
+                  error: null,
+                  count: 2,
+                }),
+              }),
+            }),
+          }
+        }
+        if (table === "video_categories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({
+                data: mockCategoryData,
+                error: null,
+              }),
+            }),
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      const result = await fetchVideoViewLogs(1, 25, "")
+
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.totalCount).toBe(2)
+      expect(result.data?.[0]).toMatchObject({
+        id: "view-1",
+        video_title: "Test Video 1",
+        user_name: "John Doe",
+        user_email: "john@example.com",
+        categories: ["Bo", "Basics"],
+      })
+      expect(result.data?.[1]).toMatchObject({
+        id: "view-2",
+        video_title: "Test Video 2",
+        user_id: null,
+        user_name: null,
+        categories: [],
+      })
+    })
+
+    it("should return empty array when no view logs exist", async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null,
+                  count: 0,
+                }),
+              }),
+            }),
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      const result = await fetchVideoViewLogs(1, 25, "")
+
+      expect(result.success).toBe(true)
+      expect(result.data).toEqual([])
+      expect(result.totalCount).toBe(0)
+    })
+
+    it("should handle database error", async () => {
+      mockFrom.mockImplementation(() => ({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "Query failed" },
+              count: null,
+            }),
+          }),
+        }),
+      }))
+
+      const result = await fetchVideoViewLogs(1, 25, "")
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to fetch video view logs")
+    })
+
+    it("should handle unexpected errors gracefully", async () => {
+      mockFrom.mockImplementation(() => {
+        throw new Error("Unexpected error")
+      })
+
+      const result = await fetchVideoViewLogs(1, 25, "")
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to fetch video view logs")
+    })
+
+    it("should apply search filter when provided", async () => {
+      const mockOr = vi.fn().mockReturnValue({
+        range: vi.fn().mockResolvedValue({
+          data: [],
+          error: null,
+          count: 0,
+        }),
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                or: mockOr,
+              }),
+            }),
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      await fetchVideoViewLogs(1, 25, "Bo")
+
+      expect(mockOr).toHaveBeenCalledWith(
+        expect.stringContaining("Bo")
+      )
+    })
+
+    it("should calculate correct offset for pagination", async () => {
+      const mockRange = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        count: 0,
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: mockRange,
+              }),
+            }),
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      await fetchVideoViewLogs(3, 25, "")
+
+      // Page 3 with 25 items per page = offset 50 to 74
+      expect(mockRange).toHaveBeenCalledWith(50, 74)
+    })
+
+    it("should handle missing video title gracefully", async () => {
+      const mockViewLogs = [
+        {
+          id: "view-1",
+          video_id: "video-1",
+          user_id: null,
+          viewed_at: "2024-01-15T10:00:00Z",
+          videos: null,
+          users: null,
+        },
+      ]
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: vi.fn().mockResolvedValue({
+                  data: mockViewLogs,
+                  error: null,
+                  count: 1,
+                }),
+              }),
+            }),
+          }
+        }
+        if (table === "video_categories") {
+          return {
+            select: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({
+                data: [],
+                error: null,
+              }),
+            }),
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      const result = await fetchVideoViewLogs(1, 25, "")
+
+      expect(result.success).toBe(true)
+      expect(result.data?.[0].video_title).toBe("Unknown Video")
     })
   })
 })

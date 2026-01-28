@@ -422,3 +422,131 @@ export async function getBatchVideoLastViewed(videoIds: string[]): Promise<Recor
 
   return lastViewedMap
 }
+
+export interface VideoViewLog {
+  id: string
+  video_id: string
+  video_title: string
+  categories: string[]
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
+  viewed_at: string
+}
+
+export interface FetchVideoViewLogsResult {
+  success: boolean
+  data?: VideoViewLog[]
+  totalCount?: number
+  error?: string
+}
+
+export async function fetchVideoViewLogs(
+  page: number = 1,
+  pageSize: number = 25,
+  searchQuery: string = ""
+): Promise<FetchVideoViewLogsResult> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Calculate offset
+    const offset = (page - 1) * pageSize
+
+    // First, get video views with video and user info
+    let query = serviceSupabase
+      .from("video_views")
+      .select(
+        `
+        id,
+        video_id,
+        user_id,
+        viewed_at,
+        videos!inner (
+          id,
+          title
+        ),
+        users (
+          id,
+          name,
+          email
+        )
+      `,
+        { count: "exact" }
+      )
+      .order("viewed_at", { ascending: false })
+
+    // Apply search filter if provided
+    if (searchQuery.trim()) {
+      // We need to search by video title or user name/email
+      // This requires a more complex approach since we're filtering on joined tables
+      query = query.or(
+        `videos.title.ilike.%${searchQuery}%,users.name.ilike.%${searchQuery}%,users.email.ilike.%${searchQuery}%`
+      )
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + pageSize - 1)
+
+    const { data: viewLogs, error, count } = await query
+
+    if (error) {
+      console.error("Error fetching video view logs:", error)
+      return { success: false, error: "Failed to fetch video view logs" }
+    }
+
+    // Get category information for each video
+    const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
+    
+    let videoCategories: Record<string, string[]> = {}
+    
+    if (videoIds.length > 0) {
+      const { data: categoryData } = await serviceSupabase
+        .from("video_categories")
+        .select(
+          `
+          video_id,
+          categories (
+            name
+          )
+        `
+        )
+        .in("video_id", videoIds)
+
+      // Build a map of video_id to category names
+      videoCategories = (categoryData || []).reduce((acc: Record<string, string[]>, item: any) => {
+        const videoId = item.video_id
+        const categoryName = item.categories?.name
+        if (categoryName) {
+          if (!acc[videoId]) {
+            acc[videoId] = []
+          }
+          if (!acc[videoId].includes(categoryName)) {
+            acc[videoId].push(categoryName)
+          }
+        }
+        return acc
+      }, {})
+    }
+
+    // Transform the data
+    const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
+      id: log.id,
+      video_id: log.video_id,
+      video_title: log.videos?.title || "Unknown Video",
+      categories: videoCategories[log.video_id] || [],
+      user_id: log.user_id,
+      user_name: log.users?.name || null,
+      user_email: log.users?.email || null,
+      viewed_at: log.viewed_at,
+    }))
+
+    return {
+      success: true,
+      data: transformedData,
+      totalCount: count || 0,
+    }
+  } catch (error) {
+    console.error("Error in fetchVideoViewLogs:", error)
+    return { success: false, error: "Failed to fetch video view logs" }
+  }
+}

@@ -232,7 +232,7 @@ describe("AdminStats", () => {
     expect(logonsLink?.getAttribute("href")).toBe("/admin/debug")
   })
 
-  it("should not render Videos Viewed This Week card as a link", async () => {
+  it("should render Videos Viewed This Week card as a link to /admin/viewlog", async () => {
     vi.mocked(actions.getTelemetryData).mockResolvedValue({
       success: true,
       data: {
@@ -251,7 +251,8 @@ describe("AdminStats", () => {
       expect(screen.getByText("Videos Viewed This Week")).toBeTruthy()
     })
 
-    const videosCard = screen.getByText("Videos Viewed This Week").closest("a")
-    expect(videosCard).toBeNull()
+    const videosLink = screen.getByText("Videos Viewed This Week").closest("a")
+    expect(videosLink).toBeTruthy()
+    expect(videosLink?.getAttribute("href")).toBe("/admin/viewlog")
   })
 })

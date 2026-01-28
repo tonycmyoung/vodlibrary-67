@@ -74,6 +74,7 @@ export default function AdminStats() {
       icon: TrendingUp,
       color: "text-emerald-400",
       bgColor: "bg-emerald-500/10",
+      href: "/admin/viewlog",
     },
     {
       title: "Logons This Week",
