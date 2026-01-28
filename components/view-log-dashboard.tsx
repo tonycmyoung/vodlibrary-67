@@ -1,16 +1,26 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, User } from "lucide-react"
-import { fetchVideoViewLogs } from "@/lib/actions"
-import type { VideoViewLog } from "@/lib/actions/videos"
+import { RefreshCw, AlertCircle, Search, ChevronLeft, ChevronRight, Eye, User, Loader2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 const ITEMS_PER_PAGE = 25
+
+interface VideoViewLog {
+  id: string
+  video_id: string
+  video_title: string
+  categories: string[]
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
+  viewed_at: string
+}
 
 export default function ViewLogDashboard() {
   const [logs, setLogs] = useState<VideoViewLog[]>([])
@@ -18,9 +28,6 @@ export default function ViewLogDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
-
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   // Debounce search input
   useEffect(() => {
@@ -31,35 +38,123 @@ export default function ViewLogDashboard() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const loadLogs = useCallback(async () => {
+  const loadLogs = async () => {
     setLoading(true)
     try {
-      const result = await fetchVideoViewLogs(currentPage, ITEMS_PER_PAGE, debouncedSearch)
-      if (result.success && result.data) {
-        setLogs(result.data)
-        setTotalCount(result.totalCount || 0)
+      const supabase = createClient()
+
+      // Fetch video views with video and user data
+      const { data: viewLogs, error } = await supabase
+        .from("video_views")
+        .select(`
+          id,
+          video_id,
+          user_id,
+          viewed_at,
+          videos (
+            id,
+            title
+          ),
+          users (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .order("viewed_at", { ascending: false })
+
+      if (error) {
+        console.error("Error fetching video view logs:", error)
+        return
       }
+
+      // Get all unique video IDs
+      const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
+
+      // Fetch categories for all videos
+      let videoCategories: Record<string, string[]> = {}
+      if (videoIds.length > 0) {
+        const { data: categoryData } = await supabase
+          .from("video_categories")
+          .select(`
+            video_id,
+            categories (
+              name
+            )
+          `)
+          .in("video_id", videoIds)
+
+        // Build a map of video_id to category names
+        videoCategories = (categoryData || []).reduce((acc: Record<string, string[]>, item: any) => {
+          const videoId = item.video_id
+          const categoryName = item.categories?.name
+          if (categoryName) {
+            if (!acc[videoId]) {
+              acc[videoId] = []
+            }
+            if (!acc[videoId].includes(categoryName)) {
+              acc[videoId].push(categoryName)
+            }
+          }
+          return acc
+        }, {})
+      }
+
+      // Transform the data
+      const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
+        id: log.id,
+        video_id: log.video_id,
+        video_title: log.videos?.title || "Unknown Video",
+        categories: videoCategories[log.video_id] || [],
+        user_id: log.user_id,
+        user_name: log.users?.full_name || null,
+        user_email: log.users?.email || null,
+        viewed_at: log.viewed_at,
+      }))
+
+      setLogs(transformedData)
     } catch (error) {
       console.error("Failed to load view logs:", error)
     } finally {
       setLoading(false)
     }
-  }, [currentPage, debouncedSearch])
+  }
 
   useEffect(() => {
     loadLogs()
-  }, [loadLogs])
+  }, [])
 
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
-    }
-  }
+  // Client-side filtering
+  const filteredLogs = useMemo(() => {
+    if (!debouncedSearch) return logs
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
-    }
+    const searchLower = debouncedSearch.toLowerCase()
+    return logs.filter(
+      (log) =>
+        log.video_title.toLowerCase().includes(searchLower) ||
+        log.user_name?.toLowerCase().includes(searchLower) ||
+        log.user_email?.toLowerCase().includes(searchLower) ||
+        log.categories.some((cat) => cat.toLowerCase().includes(searchLower))
+    )
+  }, [logs, debouncedSearch])
+
+  // Client-side pagination
+  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE)
+  const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
+
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return filteredLogs.slice(startIndex, endIndex)
+  }, [filteredLogs, validCurrentPage])
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearch])
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(Math.max(1, Math.min(newPage, totalPages || 1)))
   }
 
   const formatDateTime = (dateString: string) => {
@@ -68,6 +163,14 @@ export default function ViewLogDashboard() {
       relative: formatDistanceToNow(date, { addSuffix: true }),
       absolute: date.toLocaleString(),
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+      </div>
+    )
   }
 
   return (
@@ -103,25 +206,14 @@ export default function ViewLogDashboard() {
       {/* Stats Row */}
       <div className="flex items-center justify-between text-sm text-gray-400">
         <span>
-          {totalCount} view{totalCount !== 1 ? "s" : ""} total
+          Showing {filteredLogs.length === 0 ? 0 : (validCurrentPage - 1) * ITEMS_PER_PAGE + 1}-
+          {Math.min(validCurrentPage * ITEMS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length} views
           {debouncedSearch && ` matching "${debouncedSearch}"`}
         </span>
-        {totalPages > 1 && (
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-        )}
       </div>
 
       {/* Table */}
-      {loading ? (
-        <Card className="bg-gray-800 border-gray-700">
-          <CardContent className="p-8 text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-500" />
-            <p className="text-gray-400">Loading view logs...</p>
-          </CardContent>
-        </Card>
-      ) : logs.length === 0 ? (
+      {filteredLogs.length === 0 ? (
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-8 text-center">
             <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
@@ -148,7 +240,7 @@ export default function ViewLogDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => {
+                {paginatedLogs.map((log) => {
                   const { relative, absolute } = formatDateTime(log.viewed_at)
                   return (
                     <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/50">
@@ -205,30 +297,34 @@ export default function ViewLogDashboard() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                variant="outline"
-                size="sm"
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 bg-transparent disabled:opacity-50"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
-              </Button>
-              <span className="text-sm text-gray-400 px-4">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                variant="outline"
-                size="sm"
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 bg-transparent disabled:opacity-50"
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">
+                  Page {validCurrentPage} of {totalPages}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handlePageChange(validCurrentPage - 1)}
+                  disabled={validCurrentPage === 1}
+                  variant="outline"
+                  size="sm"
+                  className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  onClick={() => handlePageChange(validCurrentPage + 1)}
+                  disabled={validCurrentPage === totalPages}
+                  variant="outline"
+                  size="sm"
+                  className="bg-black/50 border-gray-700 text-white hover:bg-gray-700"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </>

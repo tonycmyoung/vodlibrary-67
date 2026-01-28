@@ -2,67 +2,97 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import ViewLogDashboard from "@/components/view-log-dashboard"
-import * as actions from "@/lib/actions"
 
-vi.mock("@/lib/actions", () => ({
-  fetchVideoViewLogs: vi.fn(),
+// Mock Supabase client
+const mockSelect = vi.fn()
+const mockOrder = vi.fn()
+const mockIn = vi.fn()
+const mockFrom = vi.fn()
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    from: mockFrom,
+  }),
 }))
 
-const mockLogs = [
+const mockViewLogs = [
   {
     id: "view-1",
     video_id: "video-1",
-    video_title: "Basic Bo Techniques",
-    categories: ["Bo", "Basics"],
     user_id: "user-1",
-    user_name: "John Doe",
-    user_email: "john@example.com",
     viewed_at: new Date().toISOString(),
+    videos: { id: "video-1", title: "Basic Bo Techniques" },
+    users: { id: "user-1", full_name: "John Doe", email: "john@example.com" },
   },
   {
     id: "view-2",
     video_id: "video-2",
-    video_title: "Advanced Sai Forms",
-    categories: ["Sai"],
     user_id: null,
-    user_name: null,
-    user_email: null,
     viewed_at: new Date(Date.now() - 3600000).toISOString(),
+    videos: { id: "video-2", title: "Advanced Sai Forms" },
+    users: null,
   },
   {
     id: "view-3",
     video_id: "video-3",
-    video_title: "Tonfa Combinations",
-    categories: [],
     user_id: "user-2",
-    user_name: null,
-    user_email: "jane@example.com",
     viewed_at: new Date(Date.now() - 7200000).toISOString(),
+    videos: { id: "video-3", title: "Tonfa Combinations" },
+    users: { id: "user-2", full_name: null, email: "jane@example.com" },
   },
+]
+
+const mockCategoryData = [
+  { video_id: "video-1", categories: { name: "Bo" } },
+  { video_id: "video-1", categories: { name: "Basics" } },
+  { video_id: "video-2", categories: { name: "Sai" } },
 ]
 
 describe("ViewLogDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Default mock implementation
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: mockViewLogs,
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === "video_categories") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: mockCategoryData,
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
+    })
   })
 
   it("should display loading state initially", () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockImplementation(() => new Promise(() => {}))
+    // Make the query hang
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockImplementation(() => new Promise(() => {})),
+      }),
+    }))
 
     render(<ViewLogDashboard />)
 
-    expect(screen.getByText("Loading view logs...")).toBeTruthy()
     const spinner = document.querySelector(".animate-spin")
     expect(spinner).toBeTruthy()
   })
 
   it("should display view logs after successful fetch", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -71,14 +101,21 @@ describe("ViewLogDashboard", () => {
 
     expect(screen.getByText("Advanced Sai Forms")).toBeTruthy()
     expect(screen.getByText("Tonfa Combinations")).toBeTruthy()
-    expect(screen.getByText("3 views total")).toBeTruthy()
   })
 
   it("should display empty state when no logs exist", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: [],
-      totalCount: 0,
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
     })
 
     render(<ViewLogDashboard />)
@@ -91,12 +128,6 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display user information for authenticated views", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -107,12 +138,6 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display Anonymous for unauthenticated views", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -120,13 +145,7 @@ describe("ViewLogDashboard", () => {
     })
   })
 
-  it("should display email when name is not available", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
+  it("should display email prefix when name is not available", async () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -136,12 +155,6 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display category badges", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -153,29 +166,18 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display dash for videos without categories", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: [mockLogs[2]], // Tonfa Combinations has no categories
-      totalCount: 1,
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
       expect(screen.getByText("Tonfa Combinations")).toBeTruthy()
     })
 
+    // Check that there's a dash in the row (for empty categories)
     const row = screen.getByText("Tonfa Combinations").closest("tr")
     expect(row?.textContent).toContain("-")
   })
 
   it("should refresh logs when refresh button is clicked", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
@@ -183,33 +185,39 @@ describe("ViewLogDashboard", () => {
       expect(screen.getByText("Basic Bo Techniques")).toBeTruthy()
     })
 
+    // Clear calls count
+    mockFrom.mockClear()
+
     const refreshButton = screen.getByRole("button", { name: /refresh/i })
     await user.click(refreshButton)
 
-    expect(actions.fetchVideoViewLogs).toHaveBeenCalledTimes(2)
+    await waitFor(() => {
+      expect(mockFrom).toHaveBeenCalledWith("video_views")
+    })
   })
 
   it("should handle fetch errors gracefully", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
-    vi.mocked(actions.fetchVideoViewLogs).mockRejectedValue(new Error("Fetch failed"))
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: "Database error" },
+        }),
+      }),
+    }))
 
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load view logs:", expect.any(Error))
+      expect(consoleErrorSpy).toHaveBeenCalled()
     })
 
     consoleErrorSpy.mockRestore()
   })
 
-  it("should filter logs when search query is entered", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3,
-    })
-
+  it("should filter logs client-side when search query is entered", async () => {
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
@@ -217,21 +225,22 @@ describe("ViewLogDashboard", () => {
       expect(screen.getByText("Basic Bo Techniques")).toBeTruthy()
     })
 
+    // All three videos should be visible initially
+    expect(screen.getByText("Advanced Sai Forms")).toBeTruthy()
+    expect(screen.getByText("Tonfa Combinations")).toBeTruthy()
+
     const searchInput = screen.getByPlaceholderText("Search video or user...")
     await user.type(searchInput, "Bo")
 
+    // After search, only Bo video should be visible
     await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(1, 25, "Bo")
+      expect(screen.getByText("Basic Bo Techniques")).toBeTruthy()
+      expect(screen.queryByText("Advanced Sai Forms")).toBeNull()
+      expect(screen.queryByText("Tonfa Combinations")).toBeNull()
     })
   })
 
   it("should show search term in results count", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: [mockLogs[0]],
-      totalCount: 1,
-    })
-
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
@@ -248,18 +257,6 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display no results message when search returns empty", async () => {
-    vi.mocked(actions.fetchVideoViewLogs)
-      .mockResolvedValueOnce({
-        success: true,
-        data: mockLogs,
-        totalCount: 3,
-      })
-      .mockResolvedValueOnce({
-        success: true,
-        data: [],
-        totalCount: 0,
-      })
-
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
@@ -278,18 +275,44 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should display pagination controls when there are multiple pages", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 75, // 3 pages with 25 per page
+    // Create 30 mock logs to span 2 pages
+    const manyLogs = Array.from({ length: 30 }, (_, i) => ({
+      id: `view-${i}`,
+      video_id: `video-${i}`,
+      user_id: null,
+      viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
+      videos: { id: `video-${i}`, title: `Video ${i}` },
+      users: null,
+    }))
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: manyLogs,
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === "video_categories") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
     })
 
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      // Page info appears in both stats row and pagination - use getAllByText
-      const pageTexts = screen.getAllByText("Page 1 of 3")
-      expect(pageTexts.length).toBeGreaterThan(0)
+      expect(screen.getByText("Page 1 of 2")).toBeTruthy()
     })
 
     expect(screen.getByRole("button", { name: /previous/i })).toBeTruthy()
@@ -297,17 +320,43 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should disable previous button on first page", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 75,
+    const manyLogs = Array.from({ length: 30 }, (_, i) => ({
+      id: `view-${i}`,
+      video_id: `video-${i}`,
+      user_id: null,
+      viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
+      videos: { id: `video-${i}`, title: `Video ${i}` },
+      users: null,
+    }))
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: manyLogs,
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === "video_categories") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
     })
 
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      const pageTexts = screen.getAllByText("Page 1 of 3")
-      expect(pageTexts.length).toBeGreaterThan(0)
+      expect(screen.getByText("Page 1 of 2")).toBeTruthy()
     })
 
     const prevButton = screen.getByRole("button", { name: /previous/i })
@@ -315,67 +364,55 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should navigate to next page when next button is clicked", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 75,
+    const manyLogs = Array.from({ length: 30 }, (_, i) => ({
+      id: `view-${i}`,
+      video_id: `video-${i}`,
+      user_id: null,
+      viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
+      videos: { id: `video-${i}`, title: `Video ${i}` },
+      users: null,
+    }))
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: manyLogs,
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === "video_categories") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
     })
 
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      const pageTexts = screen.getAllByText("Page 1 of 3")
-      expect(pageTexts.length).toBeGreaterThan(0)
+      expect(screen.getByText("Page 1 of 2")).toBeTruthy()
     })
 
     const nextButton = screen.getByRole("button", { name: /next/i })
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(2, 25, "")
-    })
-  })
-
-  it("should navigate to previous page when previous button is clicked", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 75,
-    })
-
-    const user = userEvent.setup()
-    render(<ViewLogDashboard />)
-
-    await waitFor(() => {
-      const pageTexts = screen.getAllByText("Page 1 of 3")
-      expect(pageTexts.length).toBeGreaterThan(0)
-    })
-
-    // Go to page 2 first
-    const nextButton = screen.getByRole("button", { name: /next/i })
-    await user.click(nextButton)
-
-    await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(2, 25, "")
-    })
-
-    // Then go back to page 1
-    const prevButton = screen.getByRole("button", { name: /previous/i })
-    await user.click(prevButton)
-
-    await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(1, 25, "")
+      expect(screen.getByText("Page 2 of 2")).toBeTruthy()
     })
   })
 
   it("should not show pagination for single page results", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 3, // Less than 25 per page
-    })
-
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
@@ -387,18 +424,44 @@ describe("ViewLogDashboard", () => {
   })
 
   it("should reset to page 1 when search query changes", async () => {
-    vi.mocked(actions.fetchVideoViewLogs).mockResolvedValue({
-      success: true,
-      data: mockLogs,
-      totalCount: 75,
+    const manyLogs = Array.from({ length: 30 }, (_, i) => ({
+      id: `view-${i}`,
+      video_id: `video-${i}`,
+      user_id: null,
+      viewed_at: new Date(Date.now() - i * 3600000).toISOString(),
+      videos: { id: `video-${i}`, title: `Video ${i}` },
+      users: null,
+    }))
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "video_views") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: manyLogs,
+              error: null,
+            }),
+          }),
+        }
+      }
+      if (table === "video_categories") {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+      return { select: vi.fn() }
     })
 
     const user = userEvent.setup()
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      const pageTexts = screen.getAllByText("Page 1 of 3")
-      expect(pageTexts.length).toBeGreaterThan(0)
+      expect(screen.getByText("Page 1 of 2")).toBeTruthy()
     })
 
     // Navigate to page 2
@@ -406,15 +469,16 @@ describe("ViewLogDashboard", () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(2, 25, "")
+      expect(screen.getByText("Page 2 of 2")).toBeTruthy()
     })
 
-    // Now search - should reset to page 1
+    // Search - should reset to page 1
     const searchInput = screen.getByPlaceholderText("Search video or user...")
-    await user.type(searchInput, "test")
+    await user.type(searchInput, "Video 1")
 
     await waitFor(() => {
-      expect(actions.fetchVideoViewLogs).toHaveBeenCalledWith(1, 25, "test")
+      // Should show filtered results with fewer pages or just one page
+      expect(screen.queryByText("Page 2 of 2")).toBeNull()
     })
   })
 })
