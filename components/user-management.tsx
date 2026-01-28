@@ -70,14 +70,19 @@ export default function UserManagement() {
   const searchParams = useSearchParams()
   const storagePrefix = "userManagement"
 
+  // Debug: track component renders
+  console.log("[v0] UserManagement render")
+
   const urlState = {
     role: searchParams.get("role") || "all",
     school: searchParams.get("school") || "all",
     search: searchParams.get("search") || "",
     belt: searchParams.get("belt") || "all",
   }
+  console.log("[v0] urlState:", urlState)
 
   const [users, setUsers] = useState<UserInterface[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
@@ -227,7 +232,9 @@ export default function UserManagement() {
     return result
   }, [users, debouncedSearchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
 
-
+  useEffect(() => {
+    setFilteredUsers(processedUsers)
+  }, [processedUsers])
 
   const reconstructURL = (role: string, school: string, belt: string, search: string) => {
     const params = new URLSearchParams()
@@ -277,16 +284,18 @@ export default function UserManagement() {
   }
 
   useEffect(() => {
+    console.log("[v0] Debounce effect triggered - searchQuery:", searchQuery)
     const timer = setTimeout(() => {
+      console.log("[v0] Debounce timer fired - setting debouncedSearchQuery and calling reconstructURL")
       setDebouncedSearchQuery(searchQuery)
-      // Only reconstruct URL for search changes - filter changes handle their own URL updates
       reconstructURL(selectedRole, selectedSchool, selectedBelt, searchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery]) // Only debounce search, filters update URL immediately in their handlers
+  }, [searchQuery, selectedRole, selectedSchool, selectedBelt])
 
   useEffect(() => {
+    console.log("[v0] Initial mount effect - calling fetchUsers and fetchCurriculums")
     fetchUsers()
     fetchCurriculums()
   }, [])
@@ -307,6 +316,7 @@ export default function UserManagement() {
   }
 
   const fetchUsers = async () => {
+    console.log("[v0] fetchUsers called - current loading state:", loading)
     try {
       const supabase = createClient()
 
@@ -692,7 +702,7 @@ export default function UserManagement() {
                       onRoleChange={handleRoleChange}
                       onSchoolChange={handleSchoolChange}
                       onBeltChange={handleBeltChange}
-                      userCount={processedUsers.length}
+                      userCount={filteredUsers.length}
                     />
                     <Button
                       onClick={() => setShowMobileFilters(false)}
@@ -717,7 +727,7 @@ export default function UserManagement() {
                   onRoleChange={handleRoleChange}
                   onSchoolChange={handleSchoolChange}
                   onBeltChange={handleBeltChange}
-                  userCount={processedUsers.length}
+                  userCount={filteredUsers.length}
                 />
               </div>
               <div className="ml-6 flex-shrink-0">
@@ -731,7 +741,7 @@ export default function UserManagement() {
           </div>
         </div>
         <div className="space-y-3 mt-4">
-          {processedUsers.map((user) => {
+          {filteredUsers.map((user) => {
             const isProcessing = processingUsers.has(user.id)
             const isAdmin = user.email === "acmyma@gmail.com"
             const isEditing = editingUser === user.id
@@ -1118,7 +1128,7 @@ export default function UserManagement() {
             )
           })}
         </div>
-        {processedUsers.length === 0 && (
+        {filteredUsers.length === 0 && (
           <div className="text-center py-8">
             <p className="text-gray-400">No users found matching your criteria.</p>
           </div>
