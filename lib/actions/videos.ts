@@ -435,6 +435,10 @@ export interface VideoViewLog {
 }
 
 export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
+  console.log("[v0] fetchVideoViewLogs called")
+  console.log("[v0] SUPABASE_URL exists:", !!process.env.SUPABASE_URL)
+  console.log("[v0] SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+  
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
   // Fetch video views with video info
@@ -451,6 +455,8 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
       )
     `)
     .order("viewed_at", { ascending: false })
+
+  console.log("[v0] Query result - viewLogs count:", viewLogs?.length ?? 0, "error:", error)
 
   if (error) {
     console.error("Error fetching video view logs:", error)
