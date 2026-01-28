@@ -863,20 +863,46 @@ describe("videos actions", () => {
     })
 
     it("should apply search filter when provided", async () => {
-      const mockOr = vi.fn().mockReturnValue({
-        range: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-          count: 0,
-        }),
+      const mockIlike = vi.fn().mockResolvedValue({
+        data: [{ id: "video-1" }],
+        error: null,
+      })
+
+      const mockOr = vi.fn().mockResolvedValue({
+        data: [{ id: "user-1" }],
+        error: null,
+      })
+
+      const mockRange = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        count: 0,
+      })
+
+      const mockOrFilter = vi.fn().mockReturnValue({
+        range: mockRange,
       })
 
       mockFrom.mockImplementation((table: string) => {
+        if (table === "videos") {
+          return {
+            select: vi.fn().mockReturnValue({
+              ilike: mockIlike,
+            }),
+          }
+        }
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnValue({
+              or: mockOr,
+            }),
+          }
+        }
         if (table === "video_views") {
           return {
             select: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
-                or: mockOr,
+                or: mockOrFilter,
               }),
             }),
           }
@@ -886,9 +912,10 @@ describe("videos actions", () => {
 
       await fetchVideoViewLogs(1, 25, "Bo")
 
-      expect(mockOr).toHaveBeenCalledWith(
-        expect.stringContaining("Bo")
-      )
+      // Should search videos by title
+      expect(mockIlike).toHaveBeenCalledWith("title", "%bo%")
+      // Should search users by name or email
+      expect(mockOr).toHaveBeenCalledWith("name.ilike.%bo%,email.ilike.%bo%")
     })
 
     it("should calculate correct offset for pagination", async () => {

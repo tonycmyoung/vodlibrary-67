@@ -287,7 +287,9 @@ describe("ViewLogDashboard", () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1 of 3")).toBeTruthy()
+      // Page info appears in both stats row and pagination - use getAllByText
+      const pageTexts = screen.getAllByText("Page 1 of 3")
+      expect(pageTexts.length).toBeGreaterThan(0)
     })
 
     expect(screen.getByRole("button", { name: /previous/i })).toBeTruthy()
@@ -304,7 +306,8 @@ describe("ViewLogDashboard", () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1 of 3")).toBeTruthy()
+      const pageTexts = screen.getAllByText("Page 1 of 3")
+      expect(pageTexts.length).toBeGreaterThan(0)
     })
 
     const prevButton = screen.getByRole("button", { name: /previous/i })
@@ -322,7 +325,8 @@ describe("ViewLogDashboard", () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1 of 3")).toBeTruthy()
+      const pageTexts = screen.getAllByText("Page 1 of 3")
+      expect(pageTexts.length).toBeGreaterThan(0)
     })
 
     const nextButton = screen.getByRole("button", { name: /next/i })
@@ -344,7 +348,8 @@ describe("ViewLogDashboard", () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1 of 3")).toBeTruthy()
+      const pageTexts = screen.getAllByText("Page 1 of 3")
+      expect(pageTexts.length).toBeGreaterThan(0)
     })
 
     // Go to page 2 first
@@ -392,7 +397,8 @@ describe("ViewLogDashboard", () => {
     render(<ViewLogDashboard />)
 
     await waitFor(() => {
-      expect(screen.getByText("Page 1 of 3")).toBeTruthy()
+      const pageTexts = screen.getAllByText("Page 1 of 3")
+      expect(pageTexts.length).toBeGreaterThan(0)
     })
 
     // Navigate to page 2

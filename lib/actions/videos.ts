@@ -449,10 +449,31 @@ export async function fetchVideoViewLogs(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Calculate offset
-    const offset = (page - 1) * pageSize
+    const searchTerm = searchQuery.trim().toLowerCase()
 
-    // First, get video views with video and user info
+    // If there's a search query, we need to find matching video_ids and user_ids first
+    let matchingVideoIds: string[] | null = null
+    let matchingUserIds: string[] | null = null
+
+    if (searchTerm) {
+      // Find videos matching the search term
+      const { data: matchingVideos } = await serviceSupabase
+        .from("videos")
+        .select("id")
+        .ilike("title", `%${searchTerm}%`)
+
+      matchingVideoIds = matchingVideos?.map((v) => v.id) || []
+
+      // Find users matching the search term
+      const { data: matchingUsers } = await serviceSupabase
+        .from("users")
+        .select("id")
+        .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+
+      matchingUserIds = matchingUsers?.map((u) => u.id) || []
+    }
+
+    // Build the main query
     let query = serviceSupabase
       .from("video_views")
       .select(
@@ -461,7 +482,7 @@ export async function fetchVideoViewLogs(
         video_id,
         user_id,
         viewed_at,
-        videos!inner (
+        videos (
           id,
           title
         ),
@@ -475,16 +496,33 @@ export async function fetchVideoViewLogs(
       )
       .order("viewed_at", { ascending: false })
 
-    // Apply search filter if provided
-    if (searchQuery.trim()) {
-      // We need to search by video title or user name/email
-      // This requires a more complex approach since we're filtering on joined tables
-      query = query.or(
-        `videos.title.ilike.%${searchQuery}%,users.name.ilike.%${searchQuery}%,users.email.ilike.%${searchQuery}%`
-      )
+    // Apply search filter if we have matching IDs
+    if (searchTerm) {
+      const allMatchingVideoIds = matchingVideoIds || []
+      const allMatchingUserIds = matchingUserIds || []
+
+      if (allMatchingVideoIds.length === 0 && allMatchingUserIds.length === 0) {
+        // No matches found, return empty results
+        return {
+          success: true,
+          data: [],
+          totalCount: 0,
+        }
+      }
+
+      // Build OR filter for video_id and user_id
+      const filters: string[] = []
+      if (allMatchingVideoIds.length > 0) {
+        filters.push(`video_id.in.(${allMatchingVideoIds.join(",")})`)
+      }
+      if (allMatchingUserIds.length > 0) {
+        filters.push(`user_id.in.(${allMatchingUserIds.join(",")})`)
+      }
+      query = query.or(filters.join(","))
     }
 
-    // Apply pagination
+    // Calculate offset and apply pagination
+    const offset = (page - 1) * pageSize
     query = query.range(offset, offset + pageSize - 1)
 
     const { data: viewLogs, error, count } = await query
@@ -496,9 +534,9 @@ export async function fetchVideoViewLogs(
 
     // Get category information for each video
     const videoIds = [...new Set(viewLogs?.map((log: any) => log.video_id) || [])]
-    
+
     let videoCategories: Record<string, string[]> = {}
-    
+
     if (videoIds.length > 0) {
       const { data: categoryData } = await serviceSupabase
         .from("video_categories")
