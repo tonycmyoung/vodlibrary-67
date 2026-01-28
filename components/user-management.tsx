@@ -70,16 +70,12 @@ export default function UserManagement() {
   const searchParams = useSearchParams()
   const storagePrefix = "userManagement"
 
-  // Debug: track component renders
-  console.log("[v0] UserManagement render")
-
   const urlState = {
     role: searchParams.get("role") || "all",
     school: searchParams.get("school") || "all",
     search: searchParams.get("search") || "",
     belt: searchParams.get("belt") || "all",
   }
-  console.log("[v0] urlState:", urlState)
 
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
@@ -284,9 +280,7 @@ export default function UserManagement() {
   }
 
   useEffect(() => {
-    console.log("[v0] Debounce effect triggered - searchQuery:", searchQuery)
     const timer = setTimeout(() => {
-      console.log("[v0] Debounce timer fired - setting debouncedSearchQuery and calling reconstructURL")
       setDebouncedSearchQuery(searchQuery)
       reconstructURL(selectedRole, selectedSchool, selectedBelt, searchQuery)
     }, 300)
@@ -295,7 +289,6 @@ export default function UserManagement() {
   }, [searchQuery, selectedRole, selectedSchool, selectedBelt])
 
   useEffect(() => {
-    console.log("[v0] Initial mount effect - calling fetchUsers and fetchCurriculums")
     fetchUsers()
     fetchCurriculums()
   }, [])
@@ -316,7 +309,6 @@ export default function UserManagement() {
   }
 
   const fetchUsers = async () => {
-    console.log("[v0] fetchUsers called - current loading state:", loading)
     try {
       const supabase = createClient()
 
