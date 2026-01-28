@@ -422,3 +422,55 @@ export async function getBatchVideoLastViewed(videoIds: string[]): Promise<Recor
 
   return lastViewedMap
 }
+
+export interface VideoViewLog {
+  id: string
+  video_id: string
+  video_title: string
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
+  viewed_at: string
+}
+
+export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
+  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  // Query user_video_views which has proper FK to public.users
+  const { data: viewLogs, error } = await serviceSupabase
+    .from("user_video_views")
+    .select(`
+      id,
+      video_id,
+      user_id,
+      viewed_at,
+      videos (
+        id,
+        title
+      ),
+      users (
+        id,
+        full_name,
+        email
+      )
+    `)
+    .order("viewed_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching video view logs:", error)
+    return []
+  }
+
+  // Transform the data
+  const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
+    id: log.id,
+    video_id: log.video_id,
+    video_title: log.videos?.title || "Unknown Video",
+    user_id: log.user_id,
+    user_name: log.users?.full_name || null,
+    user_email: log.users?.email || null,
+    viewed_at: log.viewed_at,
+  }))
+
+  return transformedData
+}

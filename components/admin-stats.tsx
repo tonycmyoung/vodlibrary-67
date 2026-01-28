@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Users, TrendingUp, LogIn } from "lucide-react"
 import { getTelemetryData } from "@/lib/actions"
@@ -63,6 +64,7 @@ export default function AdminStats() {
       icon: Users,
       color: "text-blue-400",
       bgColor: "bg-blue-500/10",
+      href: "/admin/users",
     },
     {
       title: "Videos Viewed This Week",
@@ -72,6 +74,7 @@ export default function AdminStats() {
       icon: TrendingUp,
       color: "text-emerald-400",
       bgColor: "bg-emerald-500/10",
+      href: "/admin/viewlog",
     },
     {
       title: "Logons This Week",
@@ -80,6 +83,7 @@ export default function AdminStats() {
       icon: LogIn,
       color: "text-indigo-400",
       bgColor: "bg-indigo-500/10",
+      href: "/admin/debug",
     },
   ]
 
@@ -104,8 +108,10 @@ export default function AdminStats() {
     <div key={refreshKey} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
       {statCards.map((stat) => {
         const Icon = stat.icon
-        return (
-          <Card key={stat.title} className="bg-black/60 border-gray-800 hover:border-purple-700 transition-colors">
+        const cardContent = (
+          <Card
+            className={`bg-black/60 border-gray-800 hover:border-purple-700 transition-colors ${stat.href ? "cursor-pointer" : ""}`}
+          >
             <div className="p-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-300">{stat.title}</h3>
@@ -126,6 +132,14 @@ export default function AdminStats() {
               </div>
             </div>
           </Card>
+        )
+
+        return stat.href ? (
+          <Link key={stat.title} href={stat.href}>
+            {cardContent}
+          </Link>
+        ) : (
+          <div key={stat.title}>{cardContent}</div>
         )
       })}
     </div>
