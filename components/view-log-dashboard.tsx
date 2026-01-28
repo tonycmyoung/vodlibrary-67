@@ -39,14 +39,16 @@ export default function ViewLogDashboard() {
   }, [searchQuery])
 
   const loadLogs = async () => {
+    console.log("[v0] loadLogs called")
     setLoading(true)
     try {
       const data = await fetchVideoViewLogs()
+      console.log("[v0] fetchVideoViewLogs returned:", data?.length ?? 0, "items")
       if (data && Array.isArray(data)) {
         setLogs(data)
       }
     } catch (error) {
-      console.error("Failed to load view logs:", error)
+      console.error("[v0] Failed to load view logs:", error)
     } finally {
       setLoading(false)
     }
