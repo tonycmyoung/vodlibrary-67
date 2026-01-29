@@ -1,6 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Manrope } from "next/font/google"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import "./globals.css"
 import { LoadingProvider } from "@/components/loading-provider"
 import { LegalFooter } from "@/components/legal-footer"
@@ -50,6 +52,8 @@ export default function RootLayout({
           <div className="flex-1">{children}</div>
           <LegalFooter />
         </LoadingProvider>
+        <Analytics />
+        <SpeedInsights />
 
       </body>
     </html>
