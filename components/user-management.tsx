@@ -134,25 +134,24 @@ const buildUserWithNewBelt = (
   }
 }
 
-// User stats badges component - extracted to reduce cognitive complexity
+// Pluralize helper to reduce duplication
+const pluralize = (count: number, singular: string) => `${count} ${singular}${count === 1 ? "" : "s"}`
+
+// Stat badge item to reduce structural duplication
+const StatBadgeItem = ({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) => (
+  <div className={STYLES.statBadge}>
+    <Icon className={STYLES.iconSmall} />
+    <span>{children}</span>
+  </div>
+)
+
+// User stats badges component - uses StatBadgeItem to reduce duplication
 const UserStatsBadges = ({ user }: { user: UserInterface }) => (
   <>
-    <div className={STYLES.statBadge}>
-      <Clock className={STYLES.iconSmall} />
-      <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
-    </div>
-    <div className={STYLES.statBadge}>
-      <LogIn className={STYLES.iconSmall} />
-      <span>{user.login_count} login{user.login_count !== 1 ? "s" : ""}</span>
-    </div>
-    <div className={STYLES.statBadge}>
-      <Play className={STYLES.iconSmall} />
-      <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
-    </div>
-    <div className={STYLES.statBadge}>
-      <Eye className={STYLES.iconSmall} />
-      <span>{user.view_count} view{user.view_count !== 1 ? "s" : ""}</span>
-    </div>
+    <StatBadgeItem icon={Clock}>{user.last_login ? formatDate(user.last_login) : "Never"}</StatBadgeItem>
+    <StatBadgeItem icon={LogIn}>{pluralize(user.login_count, "login")}</StatBadgeItem>
+    <StatBadgeItem icon={Play}>{user.last_view ? formatDate(user.last_view) : "Never"}</StatBadgeItem>
+    <StatBadgeItem icon={Eye}>{pluralize(user.view_count, "view")}</StatBadgeItem>
   </>
 )
 
@@ -170,33 +169,36 @@ const ApprovalBadge = ({ isApproved }: { isApproved: boolean }) => (
   </Badge>
 )
 
-// User dates info component - extracted to reduce cognitive complexity
-const UserDatesInfo = ({ user }: { user: UserInterface }) => (
-  <div className="space-y-1">
-    <div className={STYLES.infoRow}>
-      <Calendar className={STYLES.iconSmall} />
-      <span>J: {formatDate(user.created_at)}</span>
-    </div>
-    {user.approved_at && (
-      <div className={STYLES.infoRow}>
-        <Calendar className={STYLES.iconSmall} />
-        <span>A: {formatDate(user.approved_at)}</span>
-      </div>
-    )}
-    {user.inviter?.full_name && (
-      <div className={STYLES.infoRow}>
-        <User className={STYLES.iconSmall} />
-        <span className="truncate">I: {user.inviter.full_name}</span>
-      </div>
-    )}
-    {!user.inviter && user.is_approved && (
-      <div className={`${STYLES.infoRow} text-gray-500`}>
-        <User className={STYLES.iconSmall} />
-        <span className="truncate">I: Direct</span>
-      </div>
-    )}
+// Info row item to reduce structural duplication
+const InfoRowItem = ({ 
+  icon: Icon, 
+  children, 
+  className = "" 
+}: { 
+  icon: React.ElementType
+  children: React.ReactNode
+  className?: string 
+}) => (
+  <div className={`${STYLES.infoRow}${className ? ` ${className}` : ""}`}>
+    <Icon className={STYLES.iconSmall} />
+    {children}
   </div>
 )
+
+// User dates info component - uses InfoRowItem to reduce duplication
+const UserDatesInfo = ({ user }: { user: UserInterface }) => {
+  const inviterName = user.inviter?.full_name
+  const showDirectInvite = !user.inviter && user.is_approved
+  
+  return (
+    <div className="space-y-1">
+      <InfoRowItem icon={Calendar}><span>J: {formatDate(user.created_at)}</span></InfoRowItem>
+      {user.approved_at && <InfoRowItem icon={Calendar}><span>A: {formatDate(user.approved_at)}</span></InfoRowItem>}
+      {inviterName && <InfoRowItem icon={User}><span className="truncate">I: {inviterName}</span></InfoRowItem>}
+      {showDirectInvite && <InfoRowItem icon={User} className="text-gray-500"><span className="truncate">I: Direct</span></InfoRowItem>}
+    </div>
+  )
+}
 
 type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
 
@@ -204,7 +206,35 @@ type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "l
 type EditValuesType = { full_name: string; teacher: string; school: string; current_belt_id: string | null }
 type SetEditValuesType = React.Dispatch<React.SetStateAction<EditValuesType>>
 
-// User info display component - shows email, teacher, school fields (edit mode vs view mode)
+// Editable field component to reduce duplication in UserInfoFields
+const EditableField = ({
+  isEditing,
+  editValue,
+  onEditChange,
+  placeholder,
+  icon: Icon,
+  displayValue,
+}: {
+  isEditing: boolean
+  editValue: string
+  onEditChange: (value: string) => void
+  placeholder: string
+  icon: React.ElementType
+  displayValue: string
+}) => (
+  <div className={STYLES.infoRow}>
+    {isEditing ? (
+      <Input value={editValue} onChange={(e) => onEditChange(e.target.value)} className={STYLES.inputSmall} placeholder={placeholder} />
+    ) : (
+      <>
+        <Icon className={STYLES.iconSmall} />
+        <span className="truncate">{displayValue || "Not specified"}</span>
+      </>
+    )}
+  </div>
+)
+
+// User info display component - uses EditableField to reduce duplication
 const UserInfoFields = ({
   user,
   isEditing,
@@ -219,43 +249,25 @@ const UserInfoFields = ({
   curriculums: Curriculum[]
 }) => (
   <div className="space-y-1">
-    <div className={STYLES.infoRow}>
-      <Mail className={STYLES.iconSmall} />
-      <span className="truncate">{user.email}</span>
-    </div>
-    <div className={STYLES.infoRow}>
-      {isEditing ? (
-        <Input
-          value={editValues.teacher}
-          onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-          className={STYLES.inputSmall}
-          placeholder="Teacher name"
-        />
-      ) : (
-        <>
-          <GraduationCap className={STYLES.iconSmall} />
-          <span className="truncate">{user.teacher || "Not specified"}</span>
-        </>
-      )}
-    </div>
-    <div className={STYLES.infoRow}>
-      {isEditing ? (
-        <Input
-          value={editValues.school}
-          onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-          className={STYLES.inputSmall}
-          placeholder="School name"
-        />
-      ) : (
-        <>
-          <Building className={STYLES.iconSmall} />
-          <span className="truncate">{user.school || "Not specified"}</span>
-        </>
-      )}
-    </div>
+    <InfoRowItem icon={Mail}><span className="truncate">{user.email}</span></InfoRowItem>
+    <EditableField
+      isEditing={isEditing}
+      editValue={editValues.teacher}
+      onEditChange={(v) => setEditValues({ ...editValues, teacher: v })}
+      placeholder="Teacher name"
+      icon={GraduationCap}
+      displayValue={user.teacher}
+    />
+    <EditableField
+      isEditing={isEditing}
+      editValue={editValues.school}
+      onEditChange={(v) => setEditValues({ ...editValues, school: v })}
+      placeholder="School name"
+      icon={Building}
+      displayValue={user.school}
+    />
     {isEditing && (
-      <div className={STYLES.infoRow}>
-        <Award className={STYLES.iconSmall} />
+      <InfoRowItem icon={Award}>
         <Select
           value={editValues.current_belt_id || "none"}
           onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
@@ -264,20 +276,18 @@ const UserInfoFields = ({
             <SelectValue placeholder="Belt" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-700">
-            <SelectItem value="none" className="text-white text-xs">
-              No Belt
-            </SelectItem>
-            {curriculums.map((curriculum) => (
-              <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
+            <SelectItem value="none" className="text-white text-xs">No Belt</SelectItem>
+            {curriculums.map((c) => (
+              <SelectItem key={c.id} value={c.id} className="text-white text-xs">
                 <span className="flex items-center">
-                  <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: curriculum.color }} />
-                  {curriculum.name}
+                  <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: c.color }} />
+                  {c.name}
                 </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </InfoRowItem>
     )}
   </div>
 )
@@ -330,14 +340,7 @@ const PasswordResetDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setResetPasswordUser(user.id)}
-          disabled={isProcessing}
-          className={`border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white ${STYLES.btnIcon}`}
-          aria-label="Reset password"
-        >
+        <Button size="sm" variant="outline" onClick={() => setResetPasswordUser(user.id)} disabled={isProcessing} className={`border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white ${STYLES.btnIcon}`} aria-label="Reset password">
           <Key className={STYLES.iconSmall} />
         </Button>
       </DialogTrigger>
@@ -420,7 +423,28 @@ const PasswordResetDialog = ({
   )
 }
 
-// Edit mode buttons - extracted to reduce complexity
+// Reusable icon button to reduce structural duplication
+const IconButton = ({
+  onClick,
+  disabled,
+  className,
+  ariaLabel,
+  icon: Icon,
+  variant = "outline",
+}: {
+  onClick: () => void
+  disabled: boolean
+  className: string
+  ariaLabel: string
+  icon: React.ElementType
+  variant?: "outline" | "default"
+}) => (
+  <Button size="sm" variant={variant} onClick={onClick} disabled={disabled} className={`${STYLES.btnIcon} ${className}`} aria-label={ariaLabel}>
+    <Icon className={STYLES.iconSmall} />
+  </Button>
+)
+
+// Edit mode buttons - uses IconButton to reduce duplication
 const EditModeButtons = ({
   isProcessing,
   saveEditing,
@@ -431,25 +455,8 @@ const EditModeButtons = ({
   cancelEditing: () => void
 }) => (
   <>
-    <Button
-      size="sm"
-      onClick={saveEditing}
-      disabled={isProcessing}
-      className={`bg-green-600 hover:bg-green-700 text-white ${STYLES.btnIcon}`}
-      aria-label="Save changes"
-    >
-      <Save className={STYLES.iconSmall} />
-    </Button>
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={cancelEditing}
-      disabled={isProcessing}
-      className={`border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white ${STYLES.btnIcon} bg-transparent`}
-      aria-label="Cancel editing"
-    >
-      <X className={STYLES.iconSmall} />
-    </Button>
+    <IconButton onClick={saveEditing} disabled={isProcessing} className="bg-green-600 hover:bg-green-700 text-white" ariaLabel="Save changes" icon={Save} variant="default" />
+    <IconButton onClick={cancelEditing} disabled={isProcessing} className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white bg-transparent" ariaLabel="Cancel editing" icon={X} />
   </>
 )
 
@@ -488,58 +495,40 @@ const ViewModeButtons = ({
   deleteUser,
   generateRandomPassword,
   handleResetPassword,
-}: ViewModeButtonsProps) => (
-  <>
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={() => startEditing(user)}
-      disabled={isProcessing}
-      className={`border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white ${STYLES.btnIcon}`}
-      aria-label="Edit user"
-    >
-      <Edit2 className={STYLES.iconSmall} />
-    </Button>
-    <PasswordResetDialog
-      user={user}
-      isOpen={resetPasswordUser === user.id}
-      isProcessing={isProcessing}
-      newPassword={newPassword}
-      showPassword={showPassword}
-      resetPasswordError={resetPasswordError}
-      setResetPasswordUser={setResetPasswordUser}
-      setNewPassword={setNewPassword}
-      setShowPassword={setShowPassword}
-      setResetPasswordError={setResetPasswordError}
-      generateRandomPassword={generateRandomPassword}
-      handleResetPassword={handleResetPassword}
-    />
-    <Button
-      size="sm"
-      variant={user.is_approved ? "outline" : "default"}
-      onClick={() => toggleUserApproval(user.id, user.is_approved)}
-      disabled={isProcessing}
-      className={`${STYLES.btnIcon} ${
-        user.is_approved
-          ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-          : "bg-green-600 hover:bg-green-700 text-white"
-      }`}
-      aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
-    >
-      {user.is_approved ? <UserX className={STYLES.iconSmall} /> : <UserCheck className={STYLES.iconSmall} />}
-    </Button>
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={() => deleteUser(user.id, user.email)}
-      disabled={isProcessing}
-      className={`border-red-600 text-red-400 hover:bg-red-600 hover:text-white ${STYLES.btnIcon}`}
-      aria-label="Delete user"
-    >
-      <Trash2 className={STYLES.iconSmall} />
-    </Button>
-  </>
-)
+}: ViewModeButtonsProps) => {
+  const approvalStyle = user.is_approved
+    ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+    : "bg-green-600 hover:bg-green-700 text-white"
+  
+  return (
+    <>
+      <IconButton onClick={() => startEditing(user)} disabled={isProcessing} className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white" ariaLabel="Edit user" icon={Edit2} />
+      <PasswordResetDialog
+        user={user}
+        isOpen={resetPasswordUser === user.id}
+        isProcessing={isProcessing}
+        newPassword={newPassword}
+        showPassword={showPassword}
+        resetPasswordError={resetPasswordError}
+        setResetPasswordUser={setResetPasswordUser}
+        setNewPassword={setNewPassword}
+        setShowPassword={setShowPassword}
+        setResetPasswordError={setResetPasswordError}
+        generateRandomPassword={generateRandomPassword}
+        handleResetPassword={handleResetPassword}
+      />
+      <IconButton
+        onClick={() => toggleUserApproval(user.id, user.is_approved)}
+        disabled={isProcessing}
+        className={approvalStyle}
+        ariaLabel={user.is_approved ? "Revoke approval" : "Approve user"}
+        icon={user.is_approved ? UserX : UserCheck}
+        variant={user.is_approved ? "outline" : "default"}
+      />
+      <IconButton onClick={() => deleteUser(user.id, user.email)} disabled={isProcessing} className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white" ariaLabel="Delete user" icon={Trash2} />
+    </>
+  )
+}
 
 // User action buttons component - refactored for reduced cognitive complexity
 interface UserActionButtonsProps {
