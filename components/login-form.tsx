@@ -58,7 +58,7 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
 
     const supabase = createClient()
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${globalThis.location.origin}/auth/reset-password`,
     })
 
     setIsResetting(false)

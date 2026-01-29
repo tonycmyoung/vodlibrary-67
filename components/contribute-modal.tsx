@@ -11,7 +11,7 @@ interface ContributeModalProps {
 
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {
   const handleContributeClick = () => {
-    window.open(
+    globalThis.open(
       "https://drive.google.com/drive/folders/0BwMHmixA7yBXREJYa19LMy1zNnM?resourcekey=0-97Q651ce0-pVxCkxi8NddA",
       "_blank",
     )

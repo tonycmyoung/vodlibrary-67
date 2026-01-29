@@ -59,7 +59,7 @@ describe("DonationModal", () => {
 
     fireEvent.click(paypalButton)
 
-    expect(window.open).toHaveBeenCalledWith("https://paypal.me/TonyYoung1", "_blank")
+    expect(globalThis.open).toHaveBeenCalledWith("https://paypal.me/TonyYoung1", "_blank")
   })
 
   it("should display PayID email address", () => {

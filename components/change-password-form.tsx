@@ -19,7 +19,7 @@ export default function ChangePasswordForm() {
   useEffect(() => {
     if (message?.type === "success") {
       const timer = setTimeout(() => {
-        window.location.href = "/"
+        globalThis.location.href = "/"
       }, 3000)
 
       return () => clearTimeout(timer)

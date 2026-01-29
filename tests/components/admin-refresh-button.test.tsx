@@ -18,9 +18,9 @@ describe("AdminRefreshButton", () => {
     const user = userEvent.setup()
     const eventSpy = vi.fn()
 
-    window.addEventListener("admin-refresh-pending-users", eventSpy)
-    window.addEventListener("admin-refresh-unconfirmed-users", eventSpy)
-    window.addEventListener("admin-refresh-stats", eventSpy)
+    globalThis.addEventListener("admin-refresh-pending-users", eventSpy)
+    globalThis.addEventListener("admin-refresh-unconfirmed-users", eventSpy)
+    globalThis.addEventListener("admin-refresh-stats", eventSpy)
 
     render(<AdminRefreshButton />)
 
@@ -31,9 +31,9 @@ describe("AdminRefreshButton", () => {
       expect(eventSpy).toHaveBeenCalledTimes(3)
     })
 
-    window.removeEventListener("admin-refresh-pending-users", eventSpy)
-    window.removeEventListener("admin-refresh-unconfirmed-users", eventSpy)
-    window.removeEventListener("admin-refresh-stats", eventSpy)
+    globalThis.removeEventListener("admin-refresh-pending-users", eventSpy)
+    globalThis.removeEventListener("admin-refresh-unconfirmed-users", eventSpy)
+    globalThis.removeEventListener("admin-refresh-stats", eventSpy)
   })
 
   it("should show refreshing state with spinning icon", async () => {
@@ -92,13 +92,13 @@ describe("AdminRefreshButton", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
     let callCount = 0
-    const originalDispatch = window.dispatchEvent
-    vi.spyOn(window, "dispatchEvent").mockImplementation((event) => {
+    const originalDispatch = globalThis.dispatchEvent
+    vi.spyOn(globalThis, "dispatchEvent").mockImplementation((event) => {
       callCount++
       if (callCount === 1) {
         throw new Error("Event dispatch failed")
       }
-      return originalDispatch.call(window, event)
+      return originalDispatch.call(globalThis, event)
     })
 
     render(<AdminRefreshButton />)
