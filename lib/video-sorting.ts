@@ -99,7 +99,9 @@ export function compareVideos(
     views: () => (a.views || 0) - (b.views || 0),
   }
 
-  let comparison = comparisons[sortBy]()
+  // Fallback to title sort for unknown sortBy values
+  const compareFn = comparisons[sortBy] || comparisons.title
+  let comparison = compareFn()
 
   // Secondary sort by title if primary values are equal
   if (comparison === 0 && sortBy !== "title") {
