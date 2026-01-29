@@ -178,7 +178,7 @@ const InfoRowItem = ({
   icon: React.ElementType
   children: React.ReactNode
   className?: string 
-) => (
+}) => (
   <div className={[STYLES.infoRow, className].filter(Boolean).join(" ")}>
     <Icon className={STYLES.iconSmall} />
     {children}
