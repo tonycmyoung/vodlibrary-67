@@ -311,6 +311,72 @@ const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
 const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
+// Circuit breaker helper functions - extracted to reduce cognitive complexity
+function recordCircuitBreakerFailure() {
+  failureCount++
+  lastFailureTime = Date.now()
+}
+
+function recordCircuitBreakerSuccess() {
+  failureCount = 0
+  lastFailureTime = 0
+}
+
+function resetCircuitBreaker() {
+  failureCount = 0
+  lastFailureTime = 0
+}
+
+function isCircuitBreakerTimedOut(): boolean {
+  const timeSinceLastFailure = Date.now() - lastFailureTime
+  return timeSinceLastFailure >= CIRCUIT_BREAKER_TIMEOUT
+}
+
+function isCircuitBreakerOpen(): boolean {
+  if (failureCount < CIRCUIT_BREAKER_THRESHOLD) return false
+  if (isCircuitBreakerTimedOut()) {
+    resetCircuitBreaker()
+    return false
+  }
+  return true
+}
+
+// Cache helper functions
+function setCachedData(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() })
+}
+
+function getCachedData(key: string) {
+  const cached = cache.get(key)
+  const isValid = cached && Date.now() - cached.timestamp < CACHE_DURATION
+  return isValid ? cached.data : null
+}
+
+// URL filter separator - extracted to reduce cognitive complexity
+function separateUrlFilters(
+  filters: string[],
+  categoryIds: Set<string>,
+  curriculumIds: Set<string>
+): { categories: string[]; curriculums: string[] } {
+  const categories: string[] = []
+  const curriculums: string[] = []
+
+  for (const filterId of filters) {
+    const isPrefixedFilter =
+      filterId.startsWith("recorded:") ||
+      filterId.startsWith("performer:") ||
+      filterId.startsWith("views:")
+
+    if (categoryIds.has(filterId) || isPrefixedFilter) {
+      categories.push(filterId)
+    } else if (curriculumIds.has(filterId)) {
+      curriculums.push(filterId)
+    }
+  }
+
+  return { categories, curriculums }
+}
+
 // Helper functions to reduce nesting in video data processing
 function getVideoCategoriesForVideo(
   videoId: string,
@@ -408,36 +474,6 @@ function checkFilterMatch<T>(
   return filterMode === "AND"
     ? selectedItems.every((item) => videoItems.has(item))
     : selectedItems.some((item) => videoItems.has(item))
-}
-
-// Helper to determine if a filter ID belongs to categories (vs curriculums)
-function isCategoryTypeFilter(filterId: string, categoryIds: Set<string>): boolean {
-  return (
-    categoryIds.has(filterId) ||
-    filterId.startsWith("recorded:") ||
-    filterId.startsWith("performer:") ||
-    filterId.startsWith("views:")
-  )
-}
-
-// Helper to separate URL filters into categories and curriculums
-function separateUrlFilters(
-  filters: string[],
-  categoryIds: Set<string>,
-  curriculumIds: Set<string>
-): { categories: string[]; curriculums: string[] } {
-  const categories: string[] = []
-  const curriculums: string[] = []
-  
-  for (const filterId of filters) {
-    if (isCategoryTypeFilter(filterId, categoryIds)) {
-      categories.push(filterId)
-    } else if (curriculumIds.has(filterId)) {
-      curriculums.push(filterId)
-    }
-  }
-  
-  return { categories, curriculums }
 }
 
 // Helper to check views filter
@@ -772,7 +808,6 @@ export default function VideoLibrary({
 
   const loadFromCache = () => {
     const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
-
     if (cachedVideos) {
       setAllVideos(cachedVideos)
     }
@@ -782,61 +817,26 @@ export default function VideoLibrary({
     setCachedData(favoritesOnly ? "favoriteVideos" : "videos", data)
   }
 
-  const setCachedData = (key: string, data: any) => {
-    cache.set(key, { data, timestamp: Date.now() })
-  }
-
-  const getCachedData = (key: string) => {
-    const cached = cache.get(key)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data
-    }
-    return null
-  }
-
-  const recordCircuitBreakerFailure = () => {
-    failureCount++
-    lastFailureTime = Date.now()
-  }
-
-  const recordCircuitBreakerSuccess = () => {
-    failureCount = 0
-    lastFailureTime = 0
-  }
-
-  const isCircuitBreakerOpen = () => {
-    if (failureCount < CIRCUIT_BREAKER_THRESHOLD) return false
-    
-    const timeSinceLastFailure = Date.now() - lastFailureTime
-    const isTimedOut = timeSinceLastFailure >= CIRCUIT_BREAKER_TIMEOUT
-    
-    if (isTimedOut) {
-      failureCount = 0
-      lastFailureTime = 0
-      return false
-    }
-    
-    return true
-  }
-
   useEffect(() => {
     setCategories(processedData.categories)
     setCurriculums(processedData.curriculums)
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
 
-    const hasFiltersToProcess = urlState.filters.length > 0 && 
-      processedData.categories.length > 0 && 
+    const hasFiltersToProcess =
+      urlState.filters.length > 0 &&
+      processedData.categories.length > 0 &&
       processedData.curriculums.length > 0
-    
-    if (!hasFiltersToProcess) return
-    
-    const categoryIds = new Set(processedData.categories.map((c) => c.id))
-    const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
-    const separated = separateUrlFilters(urlState.filters, categoryIds, curriculumIds)
-    
-    setSelectedCategories(separated.categories)
-    setSelectedCurriculums(separated.curriculums)
+
+    if (hasFiltersToProcess) {
+      const categoryIds = new Set(processedData.categories.map((c) => c.id))
+      const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
+      const { categories: separatedCategories, curriculums: separatedCurriculums } =
+        separateUrlFilters(urlState.filters, categoryIds, curriculumIds)
+
+      setSelectedCategories(separatedCategories)
+      setSelectedCurriculums(separatedCurriculums)
+    }
   }, [processedData])
 
   const [sortBy, setSortBy] = useState<VideoSortBy>(() => {
@@ -908,18 +908,30 @@ export default function VideoLibrary({
   const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", page: number) => {
     const params = new URLSearchParams()
 
-    if (filters.length > 0) params.set("filters", encodeURIComponent(JSON.stringify(filters)))
-    if (search.trim()) params.set("search", search)
-    if (mode !== "AND") params.set("mode", mode)
-    if (page > 1) params.set("page", page.toString())
+    if (filters.length > 0) {
+      params.set("filters", encodeURIComponent(JSON.stringify(filters)))
+    }
 
-    const queryString = params.toString()
-    const newSearch = queryString ? `?${queryString}` : ""
-    
-    if (window.location.search === newSearch) return
-    
-    const newURL = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
-    router.replace(newURL, { scroll: false })
+    if (search.trim()) {
+      params.set("search", search)
+    }
+
+    if (mode !== "AND") {
+      params.set("mode", mode)
+    }
+
+    if (page > 1) {
+      params.set("page", page.toString())
+    }
+
+    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
+
+    const currentSearch = window.location.search
+    const newSearch = params.toString() ? `?${params.toString()}` : ""
+
+    if (currentSearch !== newSearch) {
+      router.replace(newURL, { scroll: false })
+    }
   }
 
   const handleCurriculumToggle = (curriculumId: string) => {

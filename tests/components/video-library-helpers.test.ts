@@ -229,6 +229,31 @@ const createMockVideo = (overrides: Partial<Video> = {}): Video => ({
   ...overrides,
 })
 
+// separateUrlFilters helper function (mirroring video-library.tsx)
+function separateUrlFilters(
+  filters: string[],
+  categoryIds: Set<string>,
+  curriculumIds: Set<string>
+): { categories: string[]; curriculums: string[] } {
+  const categories: string[] = []
+  const curriculums: string[] = []
+
+  for (const filterId of filters) {
+    const isPrefixedFilter =
+      filterId.startsWith("recorded:") ||
+      filterId.startsWith("performer:") ||
+      filterId.startsWith("views:")
+
+    if (categoryIds.has(filterId) || isPrefixedFilter) {
+      categories.push(filterId)
+    } else if (curriculumIds.has(filterId)) {
+      curriculums.push(filterId)
+    }
+  }
+
+  return { categories, curriculums }
+}
+
 describe("Video Library Helper Functions", () => {
   describe("getVideoCategoriesForVideo", () => {
     it("should return empty array when categoriesData is null", () => {
@@ -508,118 +533,47 @@ describe("Video Library Helper Functions", () => {
     })
   })
 
-  // Tests for new helper functions added during cognitive complexity refactoring
-  describe("isCategoryTypeFilter", () => {
-    // Re-implement the function locally to test the logic
-    function isCategoryTypeFilter(filterId: string, categoryIds: Set<string>): boolean {
-      return (
-        categoryIds.has(filterId) ||
-        filterId.startsWith("recorded:") ||
-        filterId.startsWith("performer:") ||
-        filterId.startsWith("views:")
-      )
-    }
-
-    it("should return true for category IDs in the set", () => {
-      const categoryIds = new Set(["cat-1", "cat-2"])
-      expect(isCategoryTypeFilter("cat-1", categoryIds)).toBe(true)
-      expect(isCategoryTypeFilter("cat-2", categoryIds)).toBe(true)
-    })
-
-    it("should return true for recorded: prefixed filters", () => {
-      const categoryIds = new Set<string>()
-      expect(isCategoryTypeFilter("recorded:2024", categoryIds)).toBe(true)
-      expect(isCategoryTypeFilter("recorded:2023", categoryIds)).toBe(true)
-    })
-
-    it("should return true for performer: prefixed filters", () => {
-      const categoryIds = new Set<string>()
-      expect(isCategoryTypeFilter("performer:perf-1", categoryIds)).toBe(true)
-    })
-
-    it("should return true for views: prefixed filters", () => {
-      const categoryIds = new Set<string>()
-      expect(isCategoryTypeFilter("views:100", categoryIds)).toBe(true)
-    })
-
-    it("should return false for IDs not in category set and no prefix", () => {
-      const categoryIds = new Set(["cat-1"])
-      expect(isCategoryTypeFilter("curr-1", categoryIds)).toBe(false)
-      expect(isCategoryTypeFilter("other-id", categoryIds)).toBe(false)
-    })
-  })
-
   describe("separateUrlFilters", () => {
-    // Re-implement locally to test
-    function isCategoryTypeFilter(filterId: string, categoryIds: Set<string>): boolean {
-      return (
-        categoryIds.has(filterId) ||
-        filterId.startsWith("recorded:") ||
-        filterId.startsWith("performer:") ||
-        filterId.startsWith("views:")
-      )
-    }
+    const categoryIds = new Set(["cat-1", "cat-2", "cat-3"])
+    const curriculumIds = new Set(["curr-1", "curr-2"])
 
-    function separateUrlFilters(
-      filters: string[],
-      categoryIds: Set<string>,
-      curriculumIds: Set<string>
-    ): { categories: string[]; curriculums: string[] } {
-      const categories: string[] = []
-      const curriculums: string[] = []
-      
-      for (const filterId of filters) {
-        if (isCategoryTypeFilter(filterId, categoryIds)) {
-          categories.push(filterId)
-        } else if (curriculumIds.has(filterId)) {
-          curriculums.push(filterId)
-        }
-      }
-      
-      return { categories, curriculums }
-    }
-
-    it("should separate category filters from curriculum filters", () => {
-      const categoryIds = new Set(["cat-1", "cat-2"])
-      const curriculumIds = new Set(["curr-1", "curr-2"])
-      const filters = ["cat-1", "curr-1", "cat-2", "curr-2"]
-      
+    it("should separate categories and curriculums", () => {
+      const filters = ["cat-1", "curr-1", "cat-2"]
       const result = separateUrlFilters(filters, categoryIds, curriculumIds)
-      
+
       expect(result.categories).toEqual(["cat-1", "cat-2"])
-      expect(result.curriculums).toEqual(["curr-1", "curr-2"])
-    })
-
-    it("should handle prefixed filters as categories", () => {
-      const categoryIds = new Set(["cat-1"])
-      const curriculumIds = new Set(["curr-1"])
-      const filters = ["cat-1", "recorded:2024", "performer:perf-1", "views:50", "curr-1"]
-      
-      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
-      
-      expect(result.categories).toEqual(["cat-1", "recorded:2024", "performer:perf-1", "views:50"])
       expect(result.curriculums).toEqual(["curr-1"])
     })
 
-    it("should return empty arrays when no filters provided", () => {
-      const categoryIds = new Set(["cat-1"])
-      const curriculumIds = new Set(["curr-1"])
-      
+    it("should include prefixed filters in categories", () => {
+      const filters = ["recorded:2024", "performer:perf-1", "views:100", "cat-1"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["recorded:2024", "performer:perf-1", "views:100", "cat-1"])
+      expect(result.curriculums).toEqual([])
+    })
+
+    it("should handle empty filters", () => {
       const result = separateUrlFilters([], categoryIds, curriculumIds)
-      
+
       expect(result.categories).toEqual([])
       expect(result.curriculums).toEqual([])
     })
 
-    it("should ignore filters that match neither category nor curriculum", () => {
-      const categoryIds = new Set(["cat-1"])
-      const curriculumIds = new Set(["curr-1"])
-      const filters = ["cat-1", "unknown-id", "curr-1", "another-unknown"]
-      
+    it("should ignore filters that match neither categories nor curriculums", () => {
+      const filters = ["unknown-id", "cat-1", "curr-1"]
       const result = separateUrlFilters(filters, categoryIds, curriculumIds)
-      
+
       expect(result.categories).toEqual(["cat-1"])
       expect(result.curriculums).toEqual(["curr-1"])
+    })
+
+    it("should handle mixed prefixed and non-prefixed filters", () => {
+      const filters = ["cat-1", "recorded:2024", "curr-1", "performer:perf-1", "curr-2"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["cat-1", "recorded:2024", "performer:perf-1"])
+      expect(result.curriculums).toEqual(["curr-1", "curr-2"])
     })
   })
 })

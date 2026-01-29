@@ -215,6 +215,10 @@ export default function VideoManagement() {
       let bValue: any
 
       switch (sortBy) {
+        case "title":
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
         case "created_at": {
           aValue = new Date(a.created_at).getTime()
           bValue = new Date(b.created_at).getTime()
@@ -226,12 +230,19 @@ export default function VideoManagement() {
           break
         }
         case "curriculum": {
-          const getMinDisplayOrder = (video: Video) =>
-            video.curriculums.length > 0
-              ? video.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
-              : Number.MAX_SAFE_INTEGER
-          aValue = getMinDisplayOrder(a)
-          bValue = getMinDisplayOrder(b)
+          if (a.curriculums.length === 0 && b.curriculums.length === 0) {
+            aValue = Number.MAX_SAFE_INTEGER
+            bValue = Number.MAX_SAFE_INTEGER
+          } else if (a.curriculums.length > 0 && b.curriculums.length === 0) {
+            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
+            bValue = Number.MAX_SAFE_INTEGER
+          } else if (a.curriculums.length === 0 && b.curriculums.length > 0) {
+            aValue = Number.MAX_SAFE_INTEGER
+            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
+          } else {
+            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
+            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
+          }
           break
         }
         case "category": {
@@ -249,7 +260,6 @@ export default function VideoManagement() {
           bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
           break
         }
-        case "title":
         default:
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
