@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useMemo } from "react"
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react"
 import { usePathname } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -20,6 +20,48 @@ export function useLoading() {
   return context
 }
 
+// Helper function to check if a link should be skipped (extracted to reduce nesting)
+function shouldSkipLink(link: HTMLAnchorElement): boolean {
+  return (
+    link.href.startsWith("mailto:") ||
+    link.href.startsWith("tel:") ||
+    link.href.startsWith("#") ||
+    link.target === "_blank"
+  )
+}
+
+// Helper function to check if link is internal navigation (extracted to reduce nesting)
+function isInternalNavigation(href: string): boolean {
+  try {
+    const url = new URL(href)
+    const currentUrl = new URL(window.location.href)
+    return url.origin === currentUrl.origin
+  } catch {
+    return false
+  }
+}
+
+// Helper function to determine if loading should be shown for a click event
+function shouldShowLoadingForClick(target: HTMLElement): boolean {
+  // Skip form elements and elements marked with data-no-loading
+  if (target.closest("input, select, textarea, [data-no-loading]")) {
+    return false
+  }
+
+  const link = target.closest("a[href]") as HTMLAnchorElement
+  const navButton = target.closest("[data-navigate]") as HTMLElement
+
+  if (link?.href) {
+    if (shouldSkipLink(link)) {
+      return false
+    }
+    return isInternalNavigation(link.href)
+  }
+
+  // Show loading for elements marked with data-navigate
+  return !!navButton
+}
+
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [showSpinner, setShowSpinner] = useState(false)
@@ -30,6 +72,22 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     setShowSpinner(false)
   }, [pathname])
 
+  // Callback to show spinner if still loading (extracted to reduce nesting)
+  const showSpinnerIfLoading = useCallback(() => {
+    setIsLoading((current) => {
+      if (current) {
+        setShowSpinner(true)
+      }
+      return current
+    })
+  }, [])
+
+  // Callback to clear loading state (extracted to reduce nesting)
+  const clearLoadingState = useCallback(() => {
+    setIsLoading(false)
+    setShowSpinner(false)
+  }, [])
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout
     let clearTimeoutId: NodeJS.Timeout
@@ -37,63 +95,17 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
 
-      // Check if click is on a navigation element
-      const link = target.closest("a[href]") as HTMLAnchorElement
-      const navButton = target.closest("[data-navigate]") as HTMLElement
-
-      if (target.closest("input, select, textarea, [data-no-loading]")) {
+      if (!shouldShowLoadingForClick(target)) {
         return
       }
 
-      let shouldShowLoading = false
+      setIsLoading(true)
 
-      if (link?.href) {
-        // Skip external links, mailto, tel, and hash links
-        if (
-          link.href.startsWith("mailto:") ||
-          link.href.startsWith("tel:") ||
-          link.href.startsWith("#") ||
-          link.target === "_blank"
-        ) {
-          return
-        }
+      // Show spinner after 200ms delay
+      timeoutId = setTimeout(showSpinnerIfLoading, 200)
 
-        try {
-          const url = new URL(link.href)
-          const currentUrl = new URL(window.location.href)
-
-          // Show loading for internal navigation (including same page with different params)
-          if (url.origin === currentUrl.origin) {
-            shouldShowLoading = true
-          }
-        } catch {
-          // Invalid URL, skip
-          return
-        }
-      } else if (navButton) {
-        // Show loading for elements marked with data-navigate
-        shouldShowLoading = true
-      }
-
-      if (shouldShowLoading) {
-        setIsLoading(true)
-
-        // Show spinner after 200ms delay
-        timeoutId = setTimeout(() => {
-          setIsLoading((current) => {
-            if (current) {
-              setShowSpinner(true)
-            }
-            return current
-          })
-        }, 200)
-
-        // Auto-clear after 10 seconds as fallback
-        clearTimeoutId = setTimeout(() => {
-          setIsLoading(false)
-          setShowSpinner(false)
-        }, 10000)
-      }
+      // Auto-clear after 10 seconds as fallback
+      clearTimeoutId = setTimeout(clearLoadingState, 10000)
     }
 
     document.addEventListener("click", handleClick, true) // Use capture phase
@@ -103,7 +115,7 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
       if (timeoutId) clearTimeout(timeoutId)
       if (clearTimeoutId) clearTimeout(clearTimeoutId)
     }
-  }, [])
+  }, [showSpinnerIfLoading, clearLoadingState])
 
   const setLoading = (loading: boolean) => {
     setIsLoading(loading)
