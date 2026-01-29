@@ -26,7 +26,7 @@ export default function ChangePasswordForm() {
     }
   }, [message])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     setMessage(null)
@@ -54,48 +54,52 @@ export default function ChangePasswordForm() {
       return
     }
 
-    try {
-      const supabase = createClient()
+    const submitAsync = async () => {
+      try {
+        const supabase = createClient()
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
 
-      if (!user?.email) {
-        setMessage({ type: "error", text: "Unable to verify user identity" })
+        if (!user?.email) {
+          setMessage({ type: "error", text: "Unable to verify user identity" })
+          setIsSubmitting(false)
+          return
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: currentPassword,
+        })
+
+        if (signInError) {
+          setMessage({ type: "error", text: "Current password is incorrect" })
+          setIsSubmitting(false)
+          return
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        })
+
+        if (updateError) {
+          console.error("Error changing password:", updateError)
+          setMessage({ type: "error", text: updateError.message || "Failed to change password" })
+          setIsSubmitting(false)
+          return
+        }
+
+        setMessage({ type: "success", text: "Password changed successfully! Redirecting..." })
+      } catch (error) {
+        console.error("Error in password change:", error)
+        setMessage({ type: "error", text: "An unexpected error occurred" })
+      } finally {
         setIsSubmitting(false)
-        return
       }
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      })
-
-      if (signInError) {
-        setMessage({ type: "error", text: "Current password is incorrect" })
-        setIsSubmitting(false)
-        return
-      }
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (updateError) {
-        console.error("Error changing password:", updateError)
-        setMessage({ type: "error", text: updateError.message || "Failed to change password" })
-        setIsSubmitting(false)
-        return
-      }
-
-      setMessage({ type: "success", text: "Password changed successfully! Redirecting..." })
-    } catch (error) {
-      console.error("Error in password change:", error)
-      setMessage({ type: "error", text: "An unexpected error occurred" })
-    } finally {
-      setIsSubmitting(false)
     }
+
+    void submitAsync()
   }
 
   return (

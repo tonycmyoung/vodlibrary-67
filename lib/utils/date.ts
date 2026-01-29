@@ -24,7 +24,7 @@ export const formatDate = (dateString: string | null | undefined): string => {
     })
 
     return result
-  } catch (error) {
+  } catch {
     return "Invalid date"
   }
 }
@@ -48,7 +48,7 @@ export const formatShortDate = (dateString: string | null | undefined): string =
       month: "short",
       day: "numeric",
     })
-  } catch (error) {
+  } catch {
     return "Invalid date"
   }
 }
@@ -75,7 +75,7 @@ export const formatTimeAgo = (dateString: string | null | undefined): string => 
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
     if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
     return `${Math.floor(diffInSeconds / 2592000)} months ago`
-  } catch (error) {
+  } catch {
     return "Invalid date"
   }
 }
