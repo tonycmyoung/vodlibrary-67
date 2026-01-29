@@ -1,5 +1,3 @@
-"use server"
-
 export { signIn, signUp, createAdminUser, signOutServerAction, updatePassword } from "./auth"
 export {
   inviteUser,
