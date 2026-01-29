@@ -147,6 +147,7 @@ export default function UnconfirmedEmailUsers() {
         }))
       }, 3000)
     } catch (error) {
+      console.error("Error resending confirmation email:", error)
       setResendStates((prev) => ({
         ...prev,
         [user.email]: {

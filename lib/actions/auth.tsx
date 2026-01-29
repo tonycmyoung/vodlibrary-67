@@ -120,7 +120,9 @@ export async function signIn(formData: FormData) {
         }
       }
     } catch (trackingError) {
-      // Don't fail signin if tracking fails
+      // Intentionally empty: Login tracking is non-critical and should not
+      // cause signin to fail. Errors are logged elsewhere in the tracking flow.
+      console.error("Login tracking failed (non-critical):", trackingError)
     }
   }
 

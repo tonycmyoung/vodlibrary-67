@@ -194,4 +194,29 @@ describe("UnconfirmedEmailUsers", () => {
 
     consoleSpy.mockRestore()
   })
+
+  it("should log error when resend throws exception", async () => {
+    const user = userEvent.setup()
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.mocked(actions.resendConfirmationEmail).mockRejectedValue(new Error("Network error"))
+
+    render(<UnconfirmedEmailUsers />)
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeTruthy()
+    })
+
+    const resendButtons = screen.getAllByRole("button", { name: /resend/i })
+    await user.click(resendButtons[0])
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Error resending confirmation email:",
+        expect.any(Error)
+      )
+      expect(screen.getByText("Failed to send email")).toBeTruthy()
+    })
+
+    consoleSpy.mockRestore()
+  })
 })
