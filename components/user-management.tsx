@@ -183,150 +183,461 @@ const UserDatesInfo = ({ user }: { user: UserInterface }) => (
   </div>
 )
 
-// User name display component - extracted to reduce nesting
-const UserNameDisplay = ({
+type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
+
+// User info display component - shows email, teacher, school fields (edit mode vs view mode)
+const UserInfoFields = ({
   user,
   isEditing,
-  editValues,
-  setEditValues,
-}: {
-  user: UserInterface
-  isEditing: boolean
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
-  setEditValues: React.Dispatch<
-    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
-  >
-}) => {
-  if (isEditing) {
-    return (
-      <Input
-        value={editValues.full_name}
-        onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
-        className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
-        placeholder="Full name"
-      />
-    )
-  }
-  return <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
-}
-
-// User badges row component - extracted to reduce nesting
-const UserBadgesRow = ({ user, isAdmin }: { user: UserInterface; isAdmin: boolean }) => {
-  if (isAdmin) {
-    return <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
-  }
-  return (
-    <>
-      <ApprovalBadge isApproved={user.is_approved} />
-      <Badge className={getRoleBadgeClass(user.role)}>{user.role || "Student"}</Badge>
-      <UserStatsBadges user={user} />
-    </>
-  )
-}
-
-// Teacher field component - extracted to reduce nesting
-const TeacherField = ({
-  user,
-  isEditing,
-  editValues,
-  setEditValues,
-}: {
-  user: UserInterface
-  isEditing: boolean
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
-  setEditValues: React.Dispatch<
-    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
-  >
-}) => {
-  if (isEditing) {
-    return (
-      <Input
-        value={editValues.teacher}
-        onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-        className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-        placeholder="Teacher name"
-      />
-    )
-  }
-  return (
-    <>
-      <GraduationCap className="w-3 h-3 flex-shrink-0" />
-      <span className="truncate">{user.teacher || "Not specified"}</span>
-    </>
-  )
-}
-
-// School field component - extracted to reduce nesting
-const SchoolField = ({
-  user,
-  isEditing,
-  editValues,
-  setEditValues,
-}: {
-  user: UserInterface
-  isEditing: boolean
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
-  setEditValues: React.Dispatch<
-    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
-  >
-}) => {
-  if (isEditing) {
-    return (
-      <Input
-        value={editValues.school}
-        onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-        className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-        placeholder="School name"
-      />
-    )
-  }
-  return (
-    <>
-      <Building className="w-3 h-3 flex-shrink-0" />
-      <span className="truncate">{user.school || "Not specified"}</span>
-    </>
-  )
-}
-
-// Belt selector for editing mode - extracted to reduce nesting
-const EditBeltSelector = ({
   editValues,
   setEditValues,
   curriculums,
 }: {
+  user: UserInterface
+  isEditing: boolean
   editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
   setEditValues: React.Dispatch<
     React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
   >
   curriculums: Curriculum[]
 }) => (
-  <div className="flex items-center space-x-1 min-w-0">
-    <Award className="w-3 h-3 flex-shrink-0" />
-    <Select
-      value={editValues.current_belt_id || "none"}
-      onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
-    >
-      <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
-        <SelectValue placeholder="Belt" />
-      </SelectTrigger>
-      <SelectContent className="bg-gray-800 border-gray-700">
-        <SelectItem value="none" className="text-white text-xs">
-          No Belt
-        </SelectItem>
-        {curriculums.map((curriculum) => (
-          <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
-            <span className="flex items-center">
-              <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: curriculum.color }} />
-              {curriculum.name}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+  <div className="space-y-1">
+    <div className="flex items-center space-x-1 min-w-0">
+      <Mail className="w-3 h-3 flex-shrink-0" />
+      <span className="truncate">{user.email}</span>
+    </div>
+    <div className="flex items-center space-x-1 min-w-0">
+      {isEditing ? (
+        <Input
+          value={editValues.teacher}
+          onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+          className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+          placeholder="Teacher name"
+        />
+      ) : (
+        <>
+          <GraduationCap className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate">{user.teacher || "Not specified"}</span>
+        </>
+      )}
+    </div>
+    <div className="flex items-center space-x-1 min-w-0">
+      {isEditing ? (
+        <Input
+          value={editValues.school}
+          onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+          className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+          placeholder="School name"
+        />
+      ) : (
+        <>
+          <Building className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate">{user.school || "Not specified"}</span>
+        </>
+      )}
+    </div>
+    {isEditing && (
+      <div className="flex items-center space-x-1 min-w-0">
+        <Award className="w-3 h-3 flex-shrink-0" />
+        <Select
+          value={editValues.current_belt_id || "none"}
+          onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
+        >
+          <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
+            <SelectValue placeholder="Belt" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-700">
+            <SelectItem value="none" className="text-white text-xs">
+              No Belt
+            </SelectItem>
+            {curriculums.map((curriculum) => (
+              <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
+                <span className="flex items-center">
+                  <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: curriculum.color }} />
+                  {curriculum.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )}
   </div>
 )
 
-type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
+// User action buttons component - extracted to reduce cognitive complexity
+interface UserActionButtonsProps {
+  user: UserInterface
+  isEditing: boolean
+  isProcessing: boolean
+  resetPasswordUser: string | null
+  newPassword: string
+  showPassword: boolean
+  resetPasswordError: string
+  curriculums: Curriculum[]
+  setResetPasswordUser: (id: string | null) => void
+  setNewPassword: (password: string) => void
+  setShowPassword: (show: boolean) => void
+  setResetPasswordError: (error: string) => void
+  startEditing: (user: UserInterface) => void
+  saveEditing: () => void
+  cancelEditing: () => void
+  updateUserRole: (userId: string, role: string) => void
+  updateUserBelt: (userId: string, beltId: string | null) => void
+  toggleUserApproval: (userId: string, currentStatus: boolean) => void
+  deleteUser: (userId: string, email: string) => void
+  generateRandomPassword: () => void
+  handleResetPassword: () => void
+}
+
+const UserActionButtons = ({
+  user,
+  isEditing,
+  isProcessing,
+  resetPasswordUser,
+  newPassword,
+  showPassword,
+  resetPasswordError,
+  curriculums,
+  setResetPasswordUser,
+  setNewPassword,
+  setShowPassword,
+  setResetPasswordError,
+  startEditing,
+  saveEditing,
+  cancelEditing,
+  updateUserRole,
+  updateUserBelt,
+  toggleUserApproval,
+  deleteUser,
+  generateRandomPassword,
+  handleResetPassword,
+}: UserActionButtonsProps) => (
+  <div className="flex flex-shrink-0 w-32 md:ml-4">
+    <div className="flex flex-col gap-1 w-full">
+      <select
+        value={user.role || "Student"}
+        onChange={(e) => updateUserRole(user.id, e.target.value)}
+        disabled={isProcessing || isEditing}
+        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+      >
+        <option value="Student">Student</option>
+        <option value="Teacher">Teacher</option>
+        <option value="Head Teacher">Head Teacher</option>
+      </select>
+
+      <select
+        value={user.current_belt_id || ""}
+        onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
+        disabled={isProcessing || isEditing}
+        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+      >
+        <option value="">No belt</option>
+        {curriculums.map((curriculum) => (
+          <option key={curriculum.id} value={curriculum.id}>
+            {curriculum.name}
+          </option>
+        ))}
+      </select>
+
+      <div className="flex gap-1">
+        {isEditing ? (
+          <>
+            <Button
+              size="sm"
+              onClick={saveEditing}
+              disabled={isProcessing}
+              className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+              aria-label="Save changes"
+            >
+              <Save className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={cancelEditing}
+              disabled={isProcessing}
+              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+              aria-label="Cancel editing"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => startEditing(user)}
+              disabled={isProcessing}
+              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+              aria-label="Edit user"
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+            <Dialog
+              open={resetPasswordUser === user.id}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setResetPasswordUser(null)
+                  setNewPassword("")
+                  setShowPassword(false)
+                  setResetPasswordError("")
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setResetPasswordUser(user.id)}
+                  disabled={isProcessing}
+                  className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
+                  aria-label="Reset password"
+                >
+                  <Key className="w-3 h-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Set a new password for <span className="font-medium text-white">{user.email}</span>
+                    </p>
+                    <div className="space-y-2">
+                      <label htmlFor="new-password" className="text-sm text-gray-300">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          type={showPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value)
+                            setResetPasswordError("")
+                          }}
+                          placeholder="Enter new password"
+                          className="bg-gray-800 border-gray-600 text-white pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400">Minimum 8 characters</p>
+                    </div>
+                    <Button
+                      onClick={generateRandomPassword}
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+                    >
+                      Generate Random Password
+                    </Button>
+                  </div>
+                  {resetPasswordError && (
+                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
+                      {resetPasswordError}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleResetPassword}
+                      disabled={isProcessing || !newPassword}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Resetting...
+                        </>
+                      ) : (
+                        "Reset Password"
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setResetPasswordUser(null)
+                        setNewPassword("")
+                        setShowPassword(false)
+                        setResetPasswordError("")
+                      }}
+                      variant="outline"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button
+              size="sm"
+              variant={user.is_approved ? "outline" : "default"}
+              onClick={() => toggleUserApproval(user.id, user.is_approved)}
+              disabled={isProcessing}
+              className={`p-1 h-6 w-6 ${
+                user.is_approved
+                  ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+              aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
+            >
+              {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => deleteUser(user.id, user.email)}
+              disabled={isProcessing}
+              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+              aria-label="Delete user"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)
+
+// User row component - extracted to reduce cognitive complexity of main render
+interface UserRowProps {
+  user: UserInterface
+  isProcessing: boolean
+  isAdmin: boolean
+  isEditing: boolean
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+  setEditValues: React.Dispatch<
+    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
+  >
+  resetPasswordUser: string | null
+  newPassword: string
+  showPassword: boolean
+  resetPasswordError: string
+  curriculums: Curriculum[]
+  setResetPasswordUser: (id: string | null) => void
+  setNewPassword: (password: string) => void
+  setShowPassword: (show: boolean) => void
+  setResetPasswordError: (error: string) => void
+  startEditing: (user: UserInterface) => void
+  saveEditing: () => void
+  cancelEditing: () => void
+  updateUserRole: (userId: string, role: string) => void
+  updateUserBelt: (userId: string, beltId: string | null) => void
+  toggleUserApproval: (userId: string, currentStatus: boolean) => void
+  deleteUser: (userId: string, email: string) => void
+  generateRandomPassword: () => void
+  handleResetPassword: () => void
+}
+
+const UserRow = ({
+  user,
+  isProcessing,
+  isAdmin,
+  isEditing,
+  editValues,
+  setEditValues,
+  resetPasswordUser,
+  newPassword,
+  showPassword,
+  resetPasswordError,
+  curriculums,
+  setResetPasswordUser,
+  setNewPassword,
+  setShowPassword,
+  setResetPasswordError,
+  startEditing,
+  saveEditing,
+  cancelEditing,
+  updateUserRole,
+  updateUserBelt,
+  toggleUserApproval,
+  deleteUser,
+  generateRandomPassword,
+  handleResetPassword,
+}: UserRowProps) => (
+  <div className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3">
+    <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
+      <Avatar className="h-12 w-12 flex-shrink-0">
+        <AvatarImage src={user.profile_image_url || "/placeholder.svg"} alt={user.full_name || user.email} />
+        <AvatarFallback className="bg-purple-600 text-white flex-shrink-0">
+          {getInitials(user.full_name, user.email)}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          {isEditing ? (
+            <Input
+              value={editValues.full_name}
+              onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
+              className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+              placeholder="Full name"
+            />
+          ) : (
+            <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
+          )}
+          {isAdmin ? (
+            <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
+          ) : (
+            <>
+              <ApprovalBadge isApproved={user.is_approved} />
+              <Badge className={getRoleBadgeClass(user.role)}>{user.role || "Student"}</Badge>
+              <UserStatsBadges user={user} />
+            </>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
+          <UserInfoFields
+            user={user}
+            isEditing={isEditing}
+            editValues={editValues}
+            setEditValues={setEditValues}
+            curriculums={curriculums}
+          />
+          <UserDatesInfo user={user} />
+        </div>
+      </div>
+    </div>
+
+    {!isAdmin && (
+      <UserActionButtons
+        user={user}
+        isEditing={isEditing}
+        isProcessing={isProcessing}
+        resetPasswordUser={resetPasswordUser}
+        newPassword={newPassword}
+        showPassword={showPassword}
+        resetPasswordError={resetPasswordError}
+        curriculums={curriculums}
+        setResetPasswordUser={setResetPasswordUser}
+        setNewPassword={setNewPassword}
+        setShowPassword={setShowPassword}
+        setResetPasswordError={setResetPasswordError}
+        startEditing={startEditing}
+        saveEditing={saveEditing}
+        cancelEditing={cancelEditing}
+        updateUserRole={updateUserRole}
+        updateUserBelt={updateUserBelt}
+        toggleUserApproval={toggleUserApproval}
+        deleteUser={deleteUser}
+        generateRandomPassword={generateRandomPassword}
+        handleResetPassword={handleResetPassword}
+      />
+    )}
+  </div>
+)
 
 export default function UserManagement() {
   const router = useRouter()
@@ -962,325 +1273,35 @@ export default function UserManagement() {
           </div>
         </div>
         <div className="space-y-3 mt-4">
-          {filteredUsers.map((user) => {
-            const isProcessing = processingUsers.has(user.id)
-            const isAdmin = user.email === "acmyma@gmail.com"
-            const isEditing = editingUser === user.id
-
-            return (
-              <div
-                key={user.id}
-                className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 gap-3"
-              >
-                <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
-                  <Avatar className="h-12 w-12 flex-shrink-0">
-                    <AvatarImage
-                      src={user.profile_image_url || "/placeholder.svg"}
-                      alt={user.full_name || user.email}
-                    />
-                    <AvatarFallback className="bg-purple-600 text-white flex-shrink-0">
-                      {getInitials(user.full_name, user.email)}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      {isEditing ? (
-                        <Input
-                          value={editValues.full_name}
-                          onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
-                          className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
-                          placeholder="Full name"
-                        />
-                      ) : (
-                        <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
-                      )}
-                      {isAdmin ? (
-                        <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
-                      ) : (
-                        <>
-                          <ApprovalBadge isApproved={user.is_approved} />
-                          <Badge className={getRoleBadgeClass(user.role)}>{user.role || "Student"}</Badge>
-                          <UserStatsBadges user={user} />
-                        </>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 min-w-0">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.teacher}
-                              onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                              placeholder="Teacher name"
-                            />
-                          ) : (
-                            <>
-                              <GraduationCap className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{user.teacher || "Not specified"}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1 min-w-0">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.school}
-                              onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                              placeholder="School name"
-                            />
-                          ) : (
-                            <>
-                              <Building className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{user.school || "Not specified"}</span>
-                            </>
-                          )}
-                        </div>
-                        {isEditing && (
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <Award className="w-3 h-3 flex-shrink-0" />
-                            <Select
-                              value={editValues.current_belt_id || "none"}
-                              onValueChange={(value) =>
-                                setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })
-                              }
-                            >
-                              <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
-                                <SelectValue placeholder="Belt" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-800 border-gray-700">
-                                <SelectItem value="none" className="text-white text-xs">
-                                  No Belt
-                                </SelectItem>
-                                {curriculums.map((curriculum) => (
-                                  <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
-                                    <span className="flex items-center">
-                                      <span
-                                        className="w-2 h-2 rounded-full mr-1"
-                                        style={{ backgroundColor: curriculum.color }}
-                                      />
-                                      {curriculum.name}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </div>
-
-                      <UserDatesInfo user={user} />
-                    </div>
-                  </div>
-                </div>
-
-                {!isAdmin && (
-                  <div className="flex flex-shrink-0 w-32 md:ml-4">
-                    <div className="flex flex-col gap-1 w-full">
-                      <select
-                        value={user.role || "Student"}
-                        onChange={(e) => updateUserRole(user.id, e.target.value)}
-                        disabled={isProcessing || isEditing}
-                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
-                      >
-                        <option value="Student">Student</option>
-                        <option value="Teacher">Teacher</option>
-                        <option value="Head Teacher">Head Teacher</option>
-                      </select>
-
-                      <select
-                        value={user.current_belt_id || ""}
-                        onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
-                        disabled={isProcessing || isEditing}
-                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
-                      >
-                        <option value="">No belt</option>
-                        {curriculums.map((curriculum) => (
-                          <option key={curriculum.id} value={curriculum.id}>
-                            {curriculum.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <div className="flex gap-1">
-                        {isEditing ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={saveEditing}
-                              disabled={isProcessing}
-                              className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
-                              aria-label="Save changes"
-                            >
-                              <Save className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEditing}
-                              disabled={isProcessing}
-                              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
-                              aria-label="Cancel editing"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEditing(user)}
-                              disabled={isProcessing}
-                              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
-                              aria-label="Edit user"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                            <Dialog
-                              open={resetPasswordUser === user.id}
-                              onOpenChange={(open) => {
-                                if (!open) {
-                                  setResetPasswordUser(null)
-                                  setNewPassword("")
-                                  setShowPassword(false)
-                                  setResetPasswordError("")
-                                }
-                              }}
-                            >
-                              <DialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setResetPasswordUser(user.id)}
-                                  disabled={isProcessing}
-                                  className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
-                                  aria-label="Reset password"
-                                >
-                                  <Key className="w-3 h-3" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="bg-gray-900 border-gray-700 text-white">
-                                <DialogHeader>
-                                  <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                  <div>
-                                    <p className="text-sm text-gray-400 mb-4">
-                                      Set a new password for{" "}
-                                      <span className="font-medium text-white">{user.email}</span>
-                                    </p>
-                                    <div className="space-y-2">
-                                      <label htmlFor="new-password" className="text-sm text-gray-300">
-                                        New Password
-                                      </label>
-                                      <div className="relative">
-                                        <Input
-                                          id="new-password"
-                                          type={showPassword ? "text" : "password"}
-                                          value={newPassword}
-                                          onChange={(e) => {
-                                            setNewPassword(e.target.value)
-                                            setResetPasswordError("")
-                                          }}
-                                          placeholder="Enter new password"
-                                          className="bg-gray-800 border-gray-600 text-white pr-10"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => setShowPassword(!showPassword)}
-                                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                                          aria-label={showPassword ? "Hide password" : "Show password"}
-                                        >
-                                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                      </div>
-                                      <p className="text-xs text-gray-400">Minimum 8 characters</p>
-                                    </div>
-                                    <Button
-                                      onClick={generateRandomPassword}
-                                      variant="outline"
-                                      size="sm"
-                                      className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
-                                    >
-                                      Generate Random Password
-                                    </Button>
-                                  </div>
-                                  {resetPasswordError && (
-                                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
-                                      {resetPasswordError}
-                                    </div>
-                                  )}
-                                  <div className="flex gap-2">
-                                    <Button
-                                      onClick={handleResetPassword}
-                                      disabled={isProcessing || !newPassword}
-                                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                                    >
-                                      {isProcessing ? (
-                                        <>
-                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                          Resetting...
-                                        </>
-                                      ) : (
-                                        "Reset Password"
-                                      )}
-                                    </Button>
-                                    <Button
-                                      onClick={() => {
-                                        setResetPasswordUser(null)
-                                        setNewPassword("")
-                                        setShowPassword(false)
-                                        setResetPasswordError("")
-                                      }}
-                                      variant="outline"
-                                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                            <Button
-                              size="sm"
-                              variant={user.is_approved ? "outline" : "default"}
-                              onClick={() => toggleUserApproval(user.id, user.is_approved)}
-                              disabled={isProcessing}
-                              className={`p-1 h-6 w-6 ${
-                                user.is_approved
-                                  ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                                  : "bg-green-600 hover:bg-green-700 text-white"
-                              }`}
-                              aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
-                            >
-                              {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteUser(user.id, user.email)}
-                              disabled={isProcessing}
-                              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
-                              aria-label="Delete user"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {filteredUsers.map((user) => (
+            <UserRow
+              key={user.id}
+              user={user}
+              isProcessing={processingUsers.has(user.id)}
+              isAdmin={user.email === "acmyma@gmail.com"}
+              isEditing={editingUser === user.id}
+              editValues={editValues}
+              setEditValues={setEditValues}
+              resetPasswordUser={resetPasswordUser}
+              newPassword={newPassword}
+              showPassword={showPassword}
+              resetPasswordError={resetPasswordError}
+              curriculums={curriculums}
+              setResetPasswordUser={setResetPasswordUser}
+              setNewPassword={setNewPassword}
+              setShowPassword={setShowPassword}
+              setResetPasswordError={setResetPasswordError}
+              startEditing={startEditing}
+              saveEditing={saveEditing}
+              cancelEditing={cancelEditing}
+              updateUserRole={updateUserRole}
+              updateUserBelt={updateUserBelt}
+              toggleUserApproval={toggleUserApproval}
+              deleteUser={deleteUser}
+              generateRandomPassword={generateRandomPassword}
+              handleResetPassword={handleResetPassword}
+            />
+          ))}
         </div>
         {filteredUsers.length === 0 && (
           <div className="text-center py-8">
