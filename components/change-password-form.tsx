@@ -26,7 +26,7 @@ export default function ChangePasswordForm() {
     }
   }, [message])
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: { preventDefault: () => void; currentTarget: HTMLFormElement }) => {
     e.preventDefault()
     setIsSubmitting(true)
     setMessage(null)

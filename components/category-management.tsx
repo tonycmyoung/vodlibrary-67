@@ -98,7 +98,7 @@ export default function CategoryManagement() {
     setEditingCategory(null)
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault()
 
     const submitAsync = async () => {
