@@ -54,6 +54,7 @@ export default function RootLayout({
         </LoadingProvider>
         <Analytics />
         <SpeedInsights />
+
       </body>
     </html>
   )
