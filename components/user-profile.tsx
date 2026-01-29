@@ -42,6 +42,37 @@ interface UserProfileProps {
   }>
 }
 
+// Helper functions to reduce cognitive complexity
+function getRoleBadgeClass(user: UserProfileProps["user"]): string {
+  if (user.isAdmin) {
+    return "bg-purple-600 text-white"
+  }
+  if (user.role === "Teacher" || user.role === "Head Teacher") {
+    return "bg-blue-600 text-white"
+  }
+  return "bg-green-600 text-white"
+}
+
+function getRoleLabel(user: UserProfileProps["user"]): string {
+  if (user.isAdmin) {
+    return "System Administrator"
+  }
+  if (user.role === "Teacher" || user.role === "Head Teacher") {
+    return `Approved ${user.role}`
+  }
+  return "Approved Student"
+}
+
+function getRoleDescription(user: UserProfileProps["user"]): string {
+  if (user.isAdmin) {
+    return "You have full administrative access to the system."
+  }
+  if (user.role === "Teacher" || user.role === "Head Teacher") {
+    return "Your account has teacher privileges. Only administrators can change your role."
+  }
+  return "Your account has been approved for video access. Only administrators can change your role."
+}
+
 export default function UserProfile({ user, curriculums }: UserProfileProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -239,17 +270,7 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
                         <Mail className="w-4 h-4" />
                         <span>{user.email}</span>
                       </div>
-                      <Badge
-                        className={(() => {
-                          if (user.isAdmin) {
-                            return "bg-purple-600 text-white"
-                          } else if (user.role === "Teacher" || user.role === "Head Teacher") {
-                            return "bg-blue-600 text-white"
-                          } else {
-                            return "bg-green-600 text-white"
-                          }
-                        })()}
-                      >
+                      <Badge className={getRoleBadgeClass(user)}>
                         {user.isAdmin ? "Administrator" : user.role || "Student"}
                       </Badge>
                     </div>
@@ -450,38 +471,12 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
                 Account Status
               </label>
               <div id="profile-status" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <Badge
-                  className={(() => {
-                    if (user.isAdmin) {
-                      return "bg-purple-600 text-white"
-                    } else if (user.role === "Teacher" || user.role === "Head Teacher") {
-                      return "bg-blue-600 text-white"
-                    } else {
-                      return "bg-green-600 text-white"
-                    }
-                  })()}
-                >
-                  {(() => {
-                    if (user.isAdmin) {
-                      return "System Administrator"
-                    } else if (user.role === "Teacher" || user.role === "Head Teacher") {
-                      return `Approved ${user.role}`
-                    } else {
-                      return "Approved Student"
-                    }
-                  })()}
+                <Badge className={getRoleBadgeClass(user)}>
+                  {getRoleLabel(user)}
                 </Badge>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                {(() => {
-                  if (user.isAdmin) {
-                    return "You have full administrative access to the system."
-                  } else if (user.role === "Teacher" || user.role === "Head Teacher") {
-                    return "Your account has teacher privileges. Only administrators can change your role."
-                  } else {
-                    return "Your account has been approved for video access. Only administrators can change your role."
-                  }
-                })()}
+                {getRoleDescription(user)}
               </p>
             </div>
           </div>
