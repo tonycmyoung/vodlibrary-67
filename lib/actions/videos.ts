@@ -1,12 +1,157 @@
 "use server"
 
-import { createClient } from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
+// Helper function to create service client
+function getServiceClient() {
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+}
+
+// Helper to insert video relationships (categories, curriculums, performers)
+async function insertVideoRelationships(
+  serviceSupabase: SupabaseClient,
+  videoId: string,
+  categoryIds: string[],
+  curriculumIds: string[],
+  performerIds: string[],
+) {
+  // Insert category relationships
+  if (categoryIds.length > 0) {
+    const categoryInserts = categoryIds.map((categoryId) => ({
+      video_id: videoId,
+      category_id: categoryId,
+    }))
+    const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
+    if (categoryError) {
+      console.error("Error inserting video categories:", categoryError)
+    }
+  }
+
+  // Insert curriculum relationships
+  if (curriculumIds.length > 0) {
+    const curriculumInserts = curriculumIds.map((curriculumId) => ({
+      video_id: videoId,
+      curriculum_id: curriculumId,
+    }))
+    const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
+    if (curriculumError) {
+      console.error("Error inserting video curriculums:", curriculumError)
+    }
+  }
+
+  // Insert performer relationships
+  if (performerIds.length > 0) {
+    const performerInserts = performerIds.map((performerId) => ({
+      video_id: videoId,
+      performer_id: performerId,
+    }))
+    const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
+    if (performerError) {
+      console.error("Error inserting video performers:", performerError)
+    }
+  }
+}
+
+// Helper to delete existing video relationships
+async function deleteVideoRelationships(serviceSupabase: SupabaseClient, videoId: string) {
+  await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
+  await serviceSupabase.from("video_curriculums").delete().eq("video_id", videoId)
+  await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
+}
+
+// Helper to update an existing video
+async function updateExistingVideo(
+  serviceSupabase: SupabaseClient,
+  videoId: string,
+  videoFields: {
+    title: string
+    description?: string
+    videoUrl: string
+    thumbnailUrl?: string
+    durationSeconds?: number | null
+    isPublished: boolean
+    recorded?: string | null
+  },
+  categoryIds: string[],
+  curriculumIds: string[],
+  performerIds: string[],
+): Promise<{ success?: string; error?: string }> {
+  const { title, description, videoUrl, thumbnailUrl, durationSeconds, isPublished, recorded } = videoFields
+
+  const { error: videoError } = await serviceSupabase
+    .from("videos")
+    .update({
+      title,
+      description,
+      video_url: videoUrl,
+      thumbnail_url: thumbnailUrl,
+      duration_seconds: durationSeconds,
+      is_published: isPublished,
+      recorded,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", videoId)
+
+  if (videoError) {
+    console.error("Error updating video:", videoError)
+    return { error: "Failed to update video" }
+  }
+
+  // Delete existing relationships and insert new ones
+  await deleteVideoRelationships(serviceSupabase, videoId)
+  await insertVideoRelationships(serviceSupabase, videoId, categoryIds, curriculumIds, performerIds)
+
+  return { success: "Video updated successfully" }
+}
+
+// Helper to create a new video
+async function createNewVideo(
+  serviceSupabase: SupabaseClient,
+  videoFields: {
+    title: string
+    description?: string
+    videoUrl: string
+    thumbnailUrl?: string
+    durationSeconds?: number | null
+    isPublished: boolean
+    recorded?: string | null
+  },
+  categoryIds: string[],
+  curriculumIds: string[],
+  performerIds: string[],
+): Promise<{ success?: string; error?: string }> {
+  const { title, description, videoUrl, thumbnailUrl, durationSeconds, isPublished, recorded } = videoFields
+
+  const { data: videoData, error: videoError } = await serviceSupabase
+    .from("videos")
+    .insert({
+      title,
+      description,
+      video_url: videoUrl,
+      thumbnail_url: thumbnailUrl,
+      duration_seconds: durationSeconds,
+      is_published: isPublished,
+      recorded,
+    })
+    .select()
+    .single()
+
+  if (videoError) {
+    console.error("Error saving video:", videoError)
+    return { error: "Failed to save video" }
+  }
+
+  const newVideoId = videoData.id
+  await insertVideoRelationships(serviceSupabase, newVideoId, categoryIds, curriculumIds, performerIds)
+
+  return { success: "Video saved successfully" }
+}
+
 export async function incrementVideoViews(videoId: string): Promise<{ success?: boolean; error?: string }> {
   try {
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = getServiceClient()
 
     let authenticatedUserId: string | null = null
     try {
@@ -109,143 +254,14 @@ export async function saveVideo(videoData: {
   }
 
   try {
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const serviceSupabase = getServiceClient()
+    const videoFields = { title, description, videoUrl, thumbnailUrl, durationSeconds, isPublished, recorded }
 
     if (videoId) {
-      // Update existing video
-      const { error: videoError } = await serviceSupabase
-        .from("videos")
-        .update({
-          title,
-          description,
-          video_url: videoUrl,
-          thumbnail_url: thumbnailUrl,
-          duration_seconds: durationSeconds,
-          is_published: isPublished,
-          recorded,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", videoId)
-
-      if (videoError) {
-        console.error("Error updating video:", videoError)
-        return { error: "Failed to update video" }
-      }
-
-      // Delete existing category relationships
-      await serviceSupabase.from("video_categories").delete().eq("video_id", videoId)
-
-      await serviceSupabase.from("video_curriculums").delete().eq("video_id", videoId)
-
-      // Delete existing performer relationships
-      await serviceSupabase.from("video_performers").delete().eq("video_id", videoId)
-
-      // Insert new category relationships
-      if (categoryIds.length > 0) {
-        const categoryInserts = categoryIds.map((categoryId) => ({
-          video_id: videoId,
-          category_id: categoryId,
-        }))
-
-        const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
-
-        if (categoryError) {
-          console.error("Error inserting video categories:", categoryError)
-        }
-      }
-
-      if (curriculumIds.length > 0) {
-        const curriculumInserts = curriculumIds.map((curriculumId) => ({
-          video_id: videoId,
-          curriculum_id: curriculumId,
-        }))
-
-        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
-
-        if (curriculumError) {
-          console.error("Error inserting video curriculums:", curriculumError)
-        }
-      }
-
-      // Insert new performer relationships
-      if (performerIds.length > 0) {
-        const performerInserts = performerIds.map((performerId) => ({
-          video_id: videoId,
-          performer_id: performerId,
-        }))
-
-        const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
-
-        if (performerError) {
-          console.error("Error inserting video performers:", performerError)
-        }
-      }
-    } else {
-      // Insert new video
-      const { data: videoData, error: videoError } = await serviceSupabase
-        .from("videos")
-        .insert({
-          title,
-          description,
-          video_url: videoUrl,
-          thumbnail_url: thumbnailUrl,
-          duration_seconds: durationSeconds,
-          is_published: isPublished,
-          recorded,
-        })
-        .select()
-        .single()
-
-      if (videoError) {
-        console.error("Error saving video:", videoError)
-        return { error: "Failed to save video" }
-      }
-
-      const newVideoId = videoData.id
-
-      // Insert category relationships
-      if (categoryIds.length > 0) {
-        const categoryInserts = categoryIds.map((categoryId) => ({
-          video_id: newVideoId,
-          category_id: categoryId,
-        }))
-
-        const { error: categoryError } = await serviceSupabase.from("video_categories").insert(categoryInserts)
-
-        if (categoryError) {
-          console.error("Error inserting video categories:", categoryError)
-        }
-      }
-
-      if (curriculumIds.length > 0) {
-        const curriculumInserts = curriculumIds.map((curriculumId) => ({
-          video_id: newVideoId,
-          curriculum_id: curriculumId,
-        }))
-
-        const { error: curriculumError } = await serviceSupabase.from("video_curriculums").insert(curriculumInserts)
-
-        if (curriculumError) {
-          console.error("Error inserting video curriculums:", curriculumError)
-        }
-      }
-
-      // Insert performer relationships
-      if (performerIds.length > 0) {
-        const performerInserts = performerIds.map((performerId) => ({
-          video_id: newVideoId,
-          performer_id: performerId,
-        }))
-
-        const { error: performerError } = await serviceSupabase.from("video_performers").insert(performerInserts)
-
-        if (performerError) {
-          console.error("Error inserting video performers:", performerError)
-        }
-      }
+      return await updateExistingVideo(serviceSupabase, videoId, videoFields, categoryIds, curriculumIds, performerIds)
     }
 
-    return { success: videoId ? "Video updated successfully" : "Video saved successfully" }
+    return await createNewVideo(serviceSupabase, videoFields, categoryIds, curriculumIds, performerIds)
   } catch (error) {
     console.error("Error in saveVideo:", error)
     return { error: "Failed to save video" }
@@ -254,7 +270,7 @@ export async function saveVideo(videoData: {
 
 // Helper functions for querying video views from the new video_views table
 export async function getVideoViewCount(videoId: string): Promise<number> {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { count, error } = await serviceSupabase
     .from("video_views")
@@ -270,7 +286,7 @@ export async function getVideoViewCount(videoId: string): Promise<number> {
 }
 
 export async function getVideoLastViewed(videoId: string): Promise<string | null> {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { data, error } = await serviceSupabase
     .from("video_views")
@@ -289,7 +305,7 @@ export async function getVideoLastViewed(videoId: string): Promise<string | null
 }
 
 export async function getTotalVideoViews(): Promise<number> {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { count, error } = await serviceSupabase.from("video_views").select("*", { count: "exact", head: true })
 
@@ -302,7 +318,7 @@ export async function getTotalVideoViews(): Promise<number> {
 }
 
 export async function getVideoViewsInDateRange(startDate: Date, endDate: Date): Promise<number> {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { count, error } = await serviceSupabase
     .from("video_views")
@@ -326,7 +342,7 @@ export async function getVideosWithViewCounts(): Promise<
     unique_user_views: number
   }>
 > {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { data, error } = await serviceSupabase.from("video_views").select(`
       video_id,
@@ -362,7 +378,7 @@ export async function getVideosWithViewCounts(): Promise<
 export async function getBatchVideoViewCounts(videoIds: string[]): Promise<Record<string, number>> {
   if (videoIds.length === 0) return {}
 
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { data, error } = await serviceSupabase.from("video_views").select("video_id").in("video_id", videoIds)
 
@@ -392,7 +408,7 @@ export async function getBatchVideoViewCounts(videoIds: string[]): Promise<Recor
 export async function getBatchVideoLastViewed(videoIds: string[]): Promise<Record<string, string | null>> {
   if (videoIds.length === 0) return {}
 
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   const { data, error } = await serviceSupabase
     .from("video_views")
@@ -434,7 +450,7 @@ export interface VideoViewLog {
 }
 
 export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
-  const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const serviceSupabase = getServiceClient()
 
   // Query user_video_views which has proper FK to public.users
   const { data: viewLogs, error } = await serviceSupabase
