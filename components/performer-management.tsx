@@ -158,7 +158,7 @@ export default function PerformerManagement() {
               placeholder="Performer name"
               value={newPerformerName}
               onChange={(e) => setNewPerformerName(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAdd()}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               className="bg-gray-700 border-gray-600 text-white"
             />
             <Button onClick={handleAdd} className="bg-red-600 hover:bg-red-700">
@@ -188,7 +188,7 @@ export default function PerformerManagement() {
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleUpdate()}
+                        onKeyDown={(e) => e.key === "Enter" && handleUpdate()}
                         className="bg-gray-600 border-gray-500 text-white"
                       />
                       <Button size="sm" onClick={handleUpdate} className="bg-green-600 hover:bg-green-700">
