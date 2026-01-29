@@ -122,7 +122,7 @@ function ProfileEditForm({
   imagePreview,
   profileImageUrl,
   setImagePreview,
-}: {
+}: Readonly<{
   formData: { full_name: string; profile_image_url: string }
   setFormData: React.Dispatch<React.SetStateAction<{ full_name: string; profile_image_url: string }>>
   uploadingImage: boolean
@@ -130,7 +130,7 @@ function ProfileEditForm({
   imagePreview: string | null
   profileImageUrl: string | null
   setImagePreview: React.Dispatch<React.SetStateAction<string | null>>
-}) {
+}>) {
   const showRemoveButton = imagePreview || profileImageUrl
   return (
     <div className="space-y-3">
@@ -186,7 +186,7 @@ function ProfileEditForm({
 }
 
 // Extracted component for profile display
-function ProfileDisplay({ user }: { user: UserProfileProps["user"] }) {
+function ProfileDisplay({ user }: Readonly<{ user: UserProfileProps["user"] }>) {
   return (
     <>
       <h1 className="text-3xl font-bold text-white mb-2">{user.full_name || "No name set"}</h1>
@@ -209,14 +209,14 @@ function ProfileEditActions({
   onCancel,
   onSave,
   onEdit,
-}: {
+}: Readonly<{
   isEditing: boolean
   loading: boolean
   uploadingImage: boolean
   onCancel: () => void
   onSave: () => void
   onEdit: () => void
-}) {
+}>) {
   if (isEditing) {
     return (
       <>
@@ -255,11 +255,11 @@ function BeltSelectorValue({
   beltLoading,
   currentBeltId,
   currentBelt,
-}: {
+}: Readonly<{
   beltLoading: boolean
   currentBeltId: string | null
   currentBelt: UserProfileProps["user"]["current_belt"]
-}) {
+}>) {
   if (beltLoading) {
     return (
       <span className="flex items-center">
@@ -397,7 +397,7 @@ function useBeltSelector(userId: string, initialBeltId: string | null) {
 }
 
 // Extracted component for account statistics card
-function AccountStatsCard({ favoriteCount, createdAt }: { favoriteCount: number; createdAt: string }) {
+function AccountStatsCard({ favoriteCount, createdAt }: Readonly<{ favoriteCount: number; createdAt: string }>) {
   return (
     <Card className="bg-black/60 border-gray-800">
       <CardHeader>
@@ -472,13 +472,13 @@ function BeltSelector({
   handleBeltChange,
   currentBelt,
   curriculums,
-}: {
+}: Readonly<{
   currentBeltId: string | null
   beltLoading: boolean
   handleBeltChange: (beltId: string) => void
   currentBelt: UserProfileProps["user"]["current_belt"]
   curriculums: UserProfileProps["curriculums"]
-}) {
+}>) {
   const sortedCurriculums = curriculums.toSorted((a, b) => a.display_order - b.display_order)
 
   return (
@@ -521,13 +521,13 @@ function AccountInformationCard({
   beltLoading,
   handleBeltChange,
   curriculums,
-}: {
+}: Readonly<{
   user: UserProfileProps["user"]
   currentBeltId: string | null
   beltLoading: boolean
   handleBeltChange: (beltId: string) => void
   curriculums: UserProfileProps["curriculums"]
-}) {
+}>) {
   return (
     <Card className="bg-black/60 border-gray-800">
       <CardHeader>
@@ -599,7 +599,7 @@ function ProfileHeaderCard({
   handleImageUpload,
   handleSave,
   handleCancel,
-}: {
+}: Readonly<{
   user: UserProfileProps["user"]
   initials: string
   isEditing: boolean
@@ -613,7 +613,7 @@ function ProfileHeaderCard({
   handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   handleSave: () => void
   handleCancel: () => void
-}) {
+}>) {
   const avatarSrc = imagePreview || user.profile_image_url || "/placeholder.svg"
   const avatarAlt = user.full_name || user.email
 
