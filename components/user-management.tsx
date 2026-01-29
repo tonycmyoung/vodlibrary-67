@@ -206,6 +206,23 @@ type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "l
 type EditValuesType = { full_name: string; teacher: string; school: string; current_belt_id: string | null }
 type SetEditValuesType = React.Dispatch<React.SetStateAction<EditValuesType>>
 
+// Shared type for password reset props to reduce interface duplication
+interface PasswordResetState {
+  resetPasswordUser: string | null
+  newPassword: string
+  showPassword: boolean
+  resetPasswordError: string
+}
+
+interface PasswordResetActions {
+  setResetPasswordUser: (id: string | null) => void
+  setNewPassword: (password: string) => void
+  setShowPassword: (show: boolean) => void
+  setResetPasswordError: (error: string) => void
+  generateRandomPassword: () => void
+  handleResetPassword: () => void
+}
+
 // Editable field component to reduce duplication in UserInfoFields
 const EditableField = ({
   isEditing,
@@ -306,19 +323,11 @@ const clearPasswordResetState = (
 }
 
 // Password reset dialog component - extracted to reduce cognitive complexity
-interface PasswordResetDialogProps {
+interface PasswordResetDialogProps extends Omit<PasswordResetState, 'resetPasswordUser'>, PasswordResetActions {
   user: UserInterface
   isOpen: boolean
   isProcessing: boolean
-  newPassword: string
-  showPassword: boolean
-  resetPasswordError: string
   setResetPasswordUser: (id: string | null) => void
-  setNewPassword: (password: string) => void
-  setShowPassword: (show: boolean) => void
-  setResetPasswordError: (error: string) => void
-  generateRandomPassword: () => void
-  handleResetPassword: () => void
 }
 
 const PasswordResetDialog = ({
@@ -461,22 +470,12 @@ const EditModeButtons = ({
 )
 
 // View mode action buttons - extracted to reduce complexity
-interface ViewModeButtonsProps {
+interface ViewModeButtonsProps extends PasswordResetState, PasswordResetActions {
   user: UserInterface
   isProcessing: boolean
-  resetPasswordUser: string | null
-  newPassword: string
-  showPassword: boolean
-  resetPasswordError: string
-  setResetPasswordUser: (id: string | null) => void
-  setNewPassword: (password: string) => void
-  setShowPassword: (show: boolean) => void
-  setResetPasswordError: (error: string) => void
   startEditing: (user: UserInterface) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
-  generateRandomPassword: () => void
-  handleResetPassword: () => void
 }
 
 const ViewModeButtons = ({
@@ -531,19 +530,11 @@ const ViewModeButtons = ({
 }
 
 // User action buttons component - refactored for reduced cognitive complexity
-interface UserActionButtonsProps {
+interface UserActionButtonsProps extends PasswordResetState, PasswordResetActions {
   user: UserInterface
   isEditing: boolean
   isProcessing: boolean
-  resetPasswordUser: string | null
-  newPassword: string
-  showPassword: boolean
-  resetPasswordError: string
   curriculums: Curriculum[]
-  setResetPasswordUser: (id: string | null) => void
-  setNewPassword: (password: string) => void
-  setShowPassword: (show: boolean) => void
-  setResetPasswordError: (error: string) => void
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
@@ -551,8 +542,6 @@ interface UserActionButtonsProps {
   updateUserBelt: (userId: string, beltId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
-  generateRandomPassword: () => void
-  handleResetPassword: () => void
 }
 
 const UserActionButtons = ({
@@ -633,22 +622,14 @@ const UserActionButtons = ({
 )
 
 // User row component - extracted to reduce cognitive complexity of main render
-interface UserRowProps {
+interface UserRowProps extends PasswordResetState, PasswordResetActions {
   user: UserInterface
   isProcessing: boolean
   isAdmin: boolean
   isEditing: boolean
   editValues: EditValuesType
   setEditValues: SetEditValuesType
-  resetPasswordUser: string | null
-  newPassword: string
-  showPassword: boolean
-  resetPasswordError: string
   curriculums: Curriculum[]
-  setResetPasswordUser: (id: string | null) => void
-  setNewPassword: (password: string) => void
-  setShowPassword: (show: boolean) => void
-  setResetPasswordError: (error: string) => void
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
@@ -656,8 +637,6 @@ interface UserRowProps {
   updateUserBelt: (userId: string, beltId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
-  generateRandomPassword: () => void
-  handleResetPassword: () => void
 }
 
 const UserRow = ({
