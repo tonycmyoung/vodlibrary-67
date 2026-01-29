@@ -38,6 +38,13 @@ import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+interface Curriculum {
+  id: string
+  name: string
+  color: string
+  display_order: number
+}
+
 interface UserInterface {
   id: string
   email: string
@@ -55,13 +62,126 @@ interface UserInterface {
   view_count: number
   inviter?: { full_name: string } | null
   current_belt_id: string | null
-  current_belt?: {
-    id: string
-    name: string
-    color: string
-    display_order: number
-  } | null
+  current_belt?: Curriculum | null
 }
+
+// Helper to get role badge class - extracted to reduce cognitive complexity
+const getRoleBadgeClass = (role: string | null): string => {
+  switch (role) {
+    case "Admin":
+      return "bg-red-600 text-white flex-shrink-0"
+    case "Teacher":
+      return "bg-purple-600 text-white flex-shrink-0"
+    case "Head Teacher":
+      return "bg-teal-600 text-white flex-shrink-0"
+    default:
+      return "bg-gray-600 text-white flex-shrink-0"
+  }
+}
+
+// Helper to get initials - extracted to reduce cognitive complexity
+const getInitials = (name: string | null, email: string): string => {
+  if (name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+  }
+  return email[0].toUpperCase()
+}
+
+// Helper to count active filters - extracted to reduce cognitive complexity
+const countActiveFilters = (role: string, school: string, belt: string): number => {
+  return [role !== "all" && role, school !== "all" && school, belt !== "all" && belt].filter(Boolean).length
+}
+
+// Helper to check if any filter is active
+const hasActiveFilters = (role: string, school: string, belt: string): boolean => {
+  return (role && role !== "all") || (school && school !== "all") || (belt && belt !== "all")
+}
+
+// Helper to build updated user with new belt - extracted to reduce nesting
+const buildUserWithNewBelt = (
+  user: UserInterface,
+  newBeltId: string | null,
+  curriculums: Curriculum[],
+): UserInterface => {
+  const newBelt = newBeltId ? curriculums.find((c) => c.id === newBeltId) : null
+  return {
+    ...user,
+    current_belt_id: newBeltId,
+    current_belt: newBelt ?? undefined,
+  }
+}
+
+// User stats badges component - extracted to reduce cognitive complexity
+const UserStatsBadges = ({ user }: { user: UserInterface }) => (
+  <>
+    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+      <Clock className="w-3 h-3 flex-shrink-0" />
+      <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
+    </div>
+    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+      <LogIn className="w-3 h-3 flex-shrink-0" />
+      <span>
+        {user.login_count} login{user.login_count !== 1 ? "s" : ""}
+      </span>
+    </div>
+    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+      <Play className="w-3 h-3 flex-shrink-0" />
+      <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
+    </div>
+    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
+      <Eye className="w-3 h-3 flex-shrink-0" />
+      <span>
+        {user.view_count} view{user.view_count !== 1 ? "s" : ""}
+      </span>
+    </div>
+  </>
+)
+
+// User approval badge component - extracted to reduce cognitive complexity
+const ApprovalBadge = ({ isApproved }: { isApproved: boolean }) => (
+  <Badge
+    variant={isApproved ? "default" : "outline"}
+    className={
+      isApproved
+        ? "bg-green-600 text-white flex-shrink-0"
+        : "border-yellow-600 text-yellow-400 bg-transparent flex-shrink-0"
+    }
+  >
+    {isApproved ? "Approved" : "Pending"}
+  </Badge>
+)
+
+// User dates info component - extracted to reduce cognitive complexity
+const UserDatesInfo = ({ user }: { user: UserInterface }) => (
+  <div className="space-y-1">
+    <div className="flex items-center space-x-1 min-w-0">
+      <Calendar className="w-3 h-3 flex-shrink-0" />
+      <span>J: {formatDate(user.created_at)}</span>
+    </div>
+    {user.approved_at && (
+      <div className="flex items-center space-x-1 min-w-0">
+        <Calendar className="w-3 h-3 flex-shrink-0" />
+        <span>A: {formatDate(user.approved_at)}</span>
+      </div>
+    )}
+    {user.inviter?.full_name && (
+      <div className="flex items-center space-x-1 min-w-0">
+        <User className="w-3 h-3 flex-shrink-0" />
+        <span className="truncate">I: {user.inviter.full_name}</span>
+      </div>
+    )}
+    {!user.inviter && user.is_approved && (
+      <div className="flex items-center space-x-1 min-w-0 text-gray-500">
+        <User className="w-3 h-3 flex-shrink-0" />
+        <span className="truncate">I: Direct</span>
+      </div>
+    )}
+  </div>
+)
 
 type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
 
@@ -461,26 +581,11 @@ export default function UserManagement() {
 
       if (error) throw error
 
-      // Update local state
+      // Update local state using helper function to reduce nesting
       setUsers((prev) =>
-        prev.map((user) => {
-          if (user.id === userId) {
-            const newBelt = newBeltId ? curriculums.find((c) => c.id === newBeltId) : null
-            return {
-              ...user,
-              current_belt_id: newBeltId,
-              current_belt: newBelt
-                ? {
-                    id: newBelt.id,
-                    name: newBelt.name,
-                    color: newBelt.color,
-                    display_order: newBelt.display_order,
-                  }
-                : undefined,
-            }
-          }
-          return user
-        }),
+        prev.map((user) =>
+          user.id === userId ? buildUserWithNewBelt(user, newBeltId, curriculums) : user,
+        ),
       )
     } catch (error) {
       console.error("Error updating user belt:", error)
@@ -612,17 +717,6 @@ export default function UserManagement() {
     setShowPassword(true)
   }
 
-  const getInitials = (name: string | null, email: string) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    }
-    return email[0].toUpperCase()
-  }
-
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -664,17 +758,9 @@ export default function UserManagement() {
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
-                    {((selectedRole && selectedRole !== "all") ||
-                      (selectedSchool && selectedSchool !== "all") ||
-                      (selectedBelt && selectedBelt !== "all")) && (
+                    {hasActiveFilters(selectedRole, selectedSchool, selectedBelt) && (
                       <span className="ml-2 bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">
-                        {
-                          [
-                            selectedRole !== "all" && selectedRole,
-                            selectedSchool !== "all" && selectedSchool,
-                            selectedBelt !== "all" && selectedBelt,
-                          ].filter(Boolean).length
-                        }
+                        {countActiveFilters(selectedRole, selectedSchool, selectedBelt)}
                       </span>
                     )}
                   </Button>
@@ -770,53 +856,9 @@ export default function UserManagement() {
                         <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
                       ) : (
                         <>
-                          <Badge
-                            variant={user.is_approved ? "default" : "outline"}
-                            className={
-                              user.is_approved
-                                ? "bg-green-600 text-white flex-shrink-0"
-                                : "border-yellow-600 text-yellow-400 bg-transparent flex-shrink-0"
-                            }
-                          >
-                            {user.is_approved ? "Approved" : "Pending"}
-                          </Badge>
-                          {(() => {
-                            let badgeClass: string
-                            if (user.role === "Admin") {
-                              badgeClass = "bg-red-600 text-white flex-shrink-0"
-                            } else if (user.role === "Teacher") {
-                              badgeClass = "bg-purple-600 text-white flex-shrink-0"
-                            } else if (user.role === "Head Teacher") {
-                              badgeClass = "bg-teal-600 text-white flex-shrink-0"
-                            } else {
-                              badgeClass = "bg-gray-600 text-white flex-shrink-0"
-                            }
-
-                            return <Badge className={badgeClass}>{user.role || "Student"}</Badge>
-                          })()}
-                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                            <LogIn className="w-3 h-3 flex-shrink-0" />
-                            <span>
-                              {user.login_count} login{user.login_count !== 1 ? "s" : ""}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                            <Play className="w-3 h-3 flex-shrink-0" />
-                            <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-                            <Eye className="w-3 h-3 flex-shrink-0" />
-                            <span>
-                              {user.view_count} view{user.view_count !== 1 ? "s" : ""}
-                            </span>
-                          </div>
+                          <ApprovalBadge isApproved={user.is_approved} />
+                          <Badge className={getRoleBadgeClass(user.role)}>{user.role || "Student"}</Badge>
+                          <UserStatsBadges user={user} />
                         </>
                       )}
                     </div>
@@ -890,30 +932,7 @@ export default function UserManagement() {
                         )}
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>J: {formatDate(user.created_at)}</span>
-                        </div>
-                        {user.approved_at && (
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>A: {formatDate(user.approved_at)}</span>
-                          </div>
-                        )}
-                        {user.inviter?.full_name && (
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">I: {user.inviter.full_name}</span>
-                          </div>
-                        )}
-                        {!user.inviter && user.is_approved && (
-                          <div className="flex items-center space-x-1 min-w-0 text-gray-500">
-                            <User className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">I: Direct</span>
-                          </div>
-                        )}
-                      </div>
+                      <UserDatesInfo user={user} />
                     </div>
                   </div>
                 </div>
