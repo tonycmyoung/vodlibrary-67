@@ -471,7 +471,7 @@ describe("Video Library Helper Functions", () => {
     })
 
     it("should sort by performers", () => {
-      expect(compareVideos(videoA, videoB, "performers", "asc")).toBeLessThan(0) // Jane < John alphabetically... actually John < Jane
+      expect(compareVideos(videoA, videoB, "performers", "asc")).toBeGreaterThan(0) // videoA has "John Doe", videoB has "Jane Smith", Jane < John alphabetically
     })
 
     it("should sort by category", () => {
