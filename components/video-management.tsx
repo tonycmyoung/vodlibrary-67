@@ -3,6 +3,13 @@
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { getBatchVideoViewCounts, getBatchVideoLastViewed } from "@/lib/actions/videos"
+import {
+  compareVideosWithLastViewed,
+  videoMatchesSearch,
+  checkFilterMatch,
+  parseSelectedFilters,
+  type VideoManagementSortBy,
+} from "@/lib/video-sorting"
 import VideoModal from "@/components/video-modal"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -155,127 +162,43 @@ export default function VideoManagement() {
   const filteredVideos = useMemo(() => {
     let filtered = [...videos]
 
+    // Apply search filter using shared helper
     if (searchQuery) {
-      filtered = filtered.filter(
-        (video) =>
-          video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          video.performers.some((performer) => performer.name.toLowerCase().includes(searchQuery.toLowerCase())),
-      )
+      filtered = filtered.filter((video) => videoMatchesSearch(video, searchQuery))
     }
 
+    // Apply curriculum filter using shared helper
     if (selectedCurriculums.length > 0) {
       filtered = filtered.filter((video) => {
         const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
-        if (filterMode === "AND") {
-          return selectedCurriculums.every((selectedId) => videoCurriculums.has(selectedId))
-        } else {
-          return selectedCurriculums.some((selectedId) => videoCurriculums.has(selectedId))
-        }
+        return checkFilterMatch(selectedCurriculums, videoCurriculums, filterMode)
       })
     }
 
-    const selectedCategoryIds = selectedCategories.filter(
-      (id) => !id.startsWith("recorded:") && !id.startsWith("performer:"),
-    )
-    if (selectedCategoryIds.length > 0) {
+    // Parse and apply category filters using shared helper
+    const parsed = parseSelectedFilters(selectedCategories)
+
+    if (parsed.categoryIds.length > 0) {
       filtered = filtered.filter((video) => {
         const videoCategories = new Set(video.categories.map((cat) => cat.id))
-        if (filterMode === "AND") {
-          return selectedCategoryIds.every((selectedId) => videoCategories.has(selectedId))
-        } else {
-          return selectedCategoryIds.some((selectedId) => videoCategories.has(selectedId))
-        }
+        return checkFilterMatch(parsed.categoryIds, videoCategories, filterMode)
       })
     }
 
-    const selectedPerformerIds = selectedCategories
-      .filter((id) => id.startsWith("performer:"))
-      .map((id) => id.replace("performer:", ""))
-    if (selectedPerformerIds.length > 0) {
+    if (parsed.performerIds.length > 0) {
       filtered = filtered.filter((video) => {
         const videoPerformers = new Set(video.performers.map((perf) => perf.id))
-        if (filterMode === "AND") {
-          return selectedPerformerIds.every((selectedId) => videoPerformers.has(selectedId))
-        } else {
-          return selectedPerformerIds.some((selectedId) => videoPerformers.has(selectedId))
-        }
+        return checkFilterMatch(parsed.performerIds, videoPerformers, filterMode)
       })
     }
 
-    const selectedRecordedValues = selectedCategories
-      .filter((id) => id.startsWith("recorded:"))
-      .map((id) => id.replace("recorded:", ""))
-    if (selectedRecordedValues.length > 0) {
-      filtered = filtered.filter((video) => selectedRecordedValues.includes(video.recorded || ""))
+    if (parsed.recordedValues.length > 0) {
+      filtered = filtered.filter((video) => parsed.recordedValues.includes(video.recorded || ""))
     }
 
-    filtered.sort((a, b) => {
-      let aValue: any
-      let bValue: any
-
-      switch (sortBy) {
-        case "created_at": {
-          aValue = new Date(a.created_at).getTime()
-          bValue = new Date(b.created_at).getTime()
-          break
-        }
-        case "recorded": {
-          aValue = a.recorded || ""
-          bValue = b.recorded || ""
-          break
-        }
-        case "curriculum": {
-          if (a.curriculums.length === 0 && b.curriculums.length === 0) {
-            aValue = Number.MAX_SAFE_INTEGER
-            bValue = Number.MAX_SAFE_INTEGER
-          } else if (a.curriculums.length > 0 && b.curriculums.length === 0) {
-            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
-            bValue = Number.MAX_SAFE_INTEGER
-          } else if (a.curriculums.length === 0 && b.curriculums.length > 0) {
-            aValue = Number.MAX_SAFE_INTEGER
-            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
-          } else {
-            aValue = a.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
-            bValue = b.curriculums.toSorted((x, y) => x.display_order - y.display_order)[0].display_order
-          }
-          break
-        }
-        case "category": {
-          aValue = a.categories.length > 0 ? a.categories[0].name.toLowerCase() : "zzz"
-          bValue = b.categories.length > 0 ? b.categories[0].name.toLowerCase() : "zzz"
-          break
-        }
-        case "views": {
-          aValue = a.views || 0
-          bValue = b.views || 0
-          break
-        }
-        case "last_viewed": {
-          aValue = a.last_viewed_at ? new Date(a.last_viewed_at).getTime() : 0
-          bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
-          break
-        }
-        case "title":
-        default:
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
-          break
-      }
-
-      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1
-      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1
-
-      // Secondary sort by title for all non-title sorts
-      if (sortBy !== "title") {
-        const aTitle = a.title.toLowerCase()
-        const bTitle = b.title.toLowerCase()
-        if (aTitle < bTitle) return -1
-        if (aTitle > bTitle) return 1
-      }
-
-      return 0
-    })
+    // Sort using shared helper
+    const validSortBy = sortBy as VideoManagementSortBy
+    filtered.sort((a, b) => compareVideosWithLastViewed(a, b, validSortBy, sortOrder))
 
     return filtered
   }, [videos, searchQuery, selectedCategories, selectedCurriculums, filterMode, sortBy, sortOrder])

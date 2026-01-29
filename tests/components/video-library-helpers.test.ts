@@ -1,9 +1,16 @@
 import { describe, it, expect } from "vitest"
+import {
+  compareVideos,
+  videoMatchesSearch,
+  videoMatchesFilters,
+  parseSelectedFilters,
+  checkFilterMatch,
+  checkViewsMatch,
+  type SortableVideo,
+  type VideoLibrarySortBy,
+} from "@/lib/video-sorting"
 
-// We need to extract and export these helper functions from video-library.tsx
-// For now, we'll test the logic by re-implementing the helper functions here
-// Once the refactoring stabilizes, these can be moved to a shared utilities file
-
+// Interface extensions for test data - these remain local for video data processing tests
 interface Category {
   id: string
   name: string
@@ -24,23 +31,14 @@ interface Performer {
   name: string
 }
 
-interface Video {
-  id: string
-  title: string
-  description: string | null
+interface Video extends SortableVideo {
   video_url: string
   thumbnail_url: string | null
   duration_seconds: number | null
-  created_at: string
-  recorded: string | null
   updated_at: string
-  views: number
-  categories: Category[]
-  curriculums: Curriculum[]
-  performers: Performer[]
 }
 
-// Helper function implementations (mirroring video-library.tsx)
+// Helper function implementations for video data processing (remain local to video-library.tsx)
 function getVideoCategoriesForVideo(
   videoId: string,
   categoriesData: Array<{ video_id: string; categories: Category }> | null
@@ -69,139 +67,6 @@ function getVideoPerformersForVideo(
   return performersData
     .filter((vp) => vp.video_id === videoId)
     .map((vp) => vp.performers)
-}
-
-function videoMatchesSearch(video: Video, searchQuery: string): boolean {
-  const lowerQuery = searchQuery.toLowerCase()
-  const titleMatch = video.title.toLowerCase().includes(lowerQuery)
-  const descriptionMatch = video.description?.toLowerCase().includes(lowerQuery) || false
-  const performerMatch = video.performers.some((performer) =>
-    performer.name.toLowerCase().includes(lowerQuery)
-  )
-  return titleMatch || descriptionMatch || performerMatch
-}
-
-function parseSelectedFilters(selectedCategories: string[]) {
-  return {
-    categoryIds: selectedCategories.filter(
-      (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:")
-    ),
-    recordedValues: selectedCategories
-      .filter((id) => id.startsWith("recorded:"))
-      .map((id) => id.replace("recorded:", "")),
-    performerIds: selectedCategories
-      .filter((id) => id.startsWith("performer:"))
-      .map((id) => id.replace("performer:", "")),
-    viewsValues: selectedCategories
-      .filter((id) => id.startsWith("views:"))
-      .map((id) => id.replace("views:", "")),
-  }
-}
-
-function checkFilterMatch<T>(
-  selectedItems: T[],
-  videoItems: Set<T>,
-  filterMode: "AND" | "OR"
-): boolean {
-  if (selectedItems.length === 0) return true
-  return filterMode === "AND"
-    ? selectedItems.every((item) => videoItems.has(item))
-    : selectedItems.some((item) => videoItems.has(item))
-}
-
-function checkViewsMatch(
-  selectedViews: string[],
-  videoViews: number,
-  filterMode: "AND" | "OR"
-): boolean {
-  if (selectedViews.length === 0) return true
-  const viewNumbers = selectedViews.map(Number)
-  return filterMode === "AND"
-    ? viewNumbers.every((v) => videoViews >= v)
-    : viewNumbers.some((v) => videoViews >= v)
-}
-
-function videoMatchesFilters(
-  video: Video,
-  selectedCategories: string[],
-  selectedCurriculums: string[],
-  filterMode: "AND" | "OR"
-): boolean {
-  const videoCategories = new Set(video.categories.map((cat) => cat.id))
-  const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
-  const videoPerformers = new Set(video.performers.map((perf) => perf.id))
-
-  const parsed = parseSelectedFilters(selectedCategories)
-
-  const categoryMatches = checkFilterMatch(parsed.categoryIds, videoCategories, filterMode)
-  const curriculumMatches = checkFilterMatch(selectedCurriculums, videoCurriculums, filterMode)
-  const performerMatches = checkFilterMatch(parsed.performerIds, videoPerformers, filterMode)
-  const recordedMatches = parsed.recordedValues.length === 0 || parsed.recordedValues.includes(video.recorded || "")
-  const viewsMatches = checkViewsMatch(parsed.viewsValues, video.views || 0, filterMode)
-
-  const activeFilters = [
-    parsed.categoryIds.length > 0 ? categoryMatches : null,
-    selectedCurriculums.length > 0 ? curriculumMatches : null,
-    parsed.recordedValues.length > 0 ? recordedMatches : null,
-    parsed.performerIds.length > 0 ? performerMatches : null,
-    parsed.viewsValues.length > 0 ? viewsMatches : null,
-  ].filter((match) => match !== null) as boolean[]
-
-  if (activeFilters.length === 0) return true
-  return filterMode === "AND" ? activeFilters.every(Boolean) : activeFilters.some(Boolean)
-}
-
-type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
-
-function compareVideos(a: Video, b: Video, sortBy: VideoSortBy, sortOrder: "asc" | "desc"): number {
-  let comparison = 0
-
-  switch (sortBy) {
-    case "title":
-      comparison = a.title.localeCompare(b.title)
-      break
-    case "created_at":
-      comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      break
-    case "recorded":
-      comparison = (a.recorded || "").localeCompare(b.recorded || "")
-      break
-    case "performers": {
-      const aPerformers = a.performers.map((p) => p.name).join(", ")
-      const bPerformers = b.performers.map((p) => p.name).join(", ")
-      comparison = aPerformers.localeCompare(bPerformers)
-      break
-    }
-    case "category": {
-      const aCategories = a.categories.map((c) => c.name).join(", ")
-      const bCategories = b.categories.map((c) => c.name).join(", ")
-      if (sortOrder === "asc") {
-        if (!aCategories && bCategories) return 1
-        if (aCategories && !bCategories) return -1
-      }
-      comparison = aCategories.localeCompare(bCategories)
-      break
-    }
-    case "curriculum": {
-      const aMinOrder = a.curriculums.length > 0
-        ? Math.min(...a.curriculums.map((c) => c.display_order))
-        : Number.MAX_SAFE_INTEGER
-      const bMinOrder = b.curriculums.length > 0
-        ? Math.min(...b.curriculums.map((c) => c.display_order))
-        : Number.MAX_SAFE_INTEGER
-      comparison = aMinOrder - bMinOrder
-      break
-    }
-    case "views":
-      comparison = (a.views || 0) - (b.views || 0)
-      break
-  }
-
-  if (comparison === 0 && sortBy !== "title") {
-    comparison = a.title.localeCompare(b.title)
-  }
-
-  return sortOrder === "asc" ? comparison : -comparison
 }
 
 // Test data
