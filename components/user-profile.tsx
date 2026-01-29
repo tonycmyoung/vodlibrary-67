@@ -279,20 +279,17 @@ function BeltSelectorValue({
   return "Not specified"
 }
 
-export default function UserProfile({ user, curriculums }: UserProfileProps) {
+// Custom hook to manage profile editing state and handlers
+function useProfileEditor(user: UserProfileProps["user"]) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [currentBeltId, setCurrentBeltId] = useState<string | null>(user.current_belt_id)
-  const [beltLoading, setBeltLoading] = useState(false)
   const [formData, setFormData] = useState({
     full_name: user.full_name || "",
     profile_image_url: user.profile_image_url || "",
   })
-
-  const initials = getInitials(user.full_name, user.email)
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -353,18 +350,40 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
     setIsEditing(false)
   }
 
+  return {
+    isEditing,
+    setIsEditing,
+    loading,
+    uploadingImage,
+    imagePreview,
+    setImagePreview,
+    formData,
+    setFormData,
+    handleImageUpload,
+    handleSave,
+    handleCancel,
+  }
+}
+
+// Custom hook to manage belt selection state and handlers
+function useBeltSelector(userId: string, initialBeltId: string | null) {
+  const router = useRouter()
+  const [currentBeltId, setCurrentBeltId] = useState<string | null>(initialBeltId)
+  const [beltLoading, setBeltLoading] = useState(false)
+
   const handleBeltChange = async (beltId: string) => {
     setBeltLoading(true)
 
     try {
       const { updateUserBelt } = await import("@/lib/actions/users")
-      const result = await updateUserBelt(user.id, beltId === "none" ? null : beltId)
+      const newBeltId = beltId === "none" ? null : beltId
+      const result = await updateUserBelt(userId, newBeltId)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to update belt")
       }
 
-      setCurrentBeltId(beltId === "none" ? null : beltId)
+      setCurrentBeltId(newBeltId)
       router.refresh()
     } catch (error) {
       console.error("Error updating belt:", error)
@@ -374,201 +393,325 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
     }
   }
 
+  return { currentBeltId, beltLoading, handleBeltChange }
+}
+
+// Extracted component for account statistics card
+function AccountStatsCard({ favoriteCount, createdAt }: { favoriteCount: number; createdAt: string }) {
+  return (
+    <Card className="bg-black/60 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center space-x-2">
+          <User className="w-5 h-5" />
+          <span>Account Statistics</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-gray-300">
+            <Heart className="w-4 h-4 text-red-400" />
+            <span>Favorite Videos</span>
+          </div>
+          <span className="text-white font-semibold">{favoriteCount}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-gray-300">
+            <Calendar className="w-4 h-4 text-blue-400" />
+            <span>Member Since</span>
+          </div>
+          <span className="text-white font-semibold">{formatShortDate(createdAt)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Extracted component for quick actions card
+function QuickActionsCard() {
+  return (
+    <Card className="bg-black/60 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white">Quick Actions</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button asChild className="w-full justify-start bg-red-600 hover:bg-red-700 text-white">
+          <a href="/favorites">
+            <Heart className="w-4 h-4 mr-2" />
+            View My Favorites
+          </a>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+        >
+          <Link href="/change-password">
+            <Lock className="w-4 h-4 mr-2" />
+            Change Password
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+        >
+          <a href="/">
+            <User className="w-4 h-4 mr-2" />
+            Browse Video Library
+          </a>
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Extracted component for belt selector
+function BeltSelector({
+  currentBeltId,
+  beltLoading,
+  handleBeltChange,
+  currentBelt,
+  curriculums,
+}: {
+  currentBeltId: string | null
+  beltLoading: boolean
+  handleBeltChange: (beltId: string) => void
+  currentBelt: UserProfileProps["user"]["current_belt"]
+  curriculums: UserProfileProps["curriculums"]
+}) {
+  const sortedCurriculums = curriculums.toSorted((a, b) => a.display_order - b.display_order)
+
+  return (
+    <div>
+      <label htmlFor="current-belt-select" className="block text-sm font-medium text-gray-300 mb-2">
+        Current Belt
+      </label>
+      <Select value={currentBeltId || "none"} onValueChange={handleBeltChange} disabled={beltLoading}>
+        <SelectTrigger id="current-belt-select" className="bg-gray-800 border-gray-700 text-white">
+          <SelectValue>
+            <BeltSelectorValue beltLoading={beltLoading} currentBeltId={currentBeltId} currentBelt={currentBelt} />
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="bg-gray-800 border-gray-700">
+          <SelectItem value="none" className="text-white">
+            Not specified
+          </SelectItem>
+          {sortedCurriculums.map((curriculum) => (
+            <SelectItem key={curriculum.id} value={curriculum.id} className="text-white">
+              <span className="flex items-center">
+                <span
+                  className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
+                  style={{ backgroundColor: curriculum.color }}
+                />
+                {curriculum.name}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-gray-400 mt-1">Select your current belt level</p>
+    </div>
+  )
+}
+
+// Extracted component for account information card
+function AccountInformationCard({
+  user,
+  currentBeltId,
+  beltLoading,
+  handleBeltChange,
+  curriculums,
+}: {
+  user: UserProfileProps["user"]
+  currentBeltId: string | null
+  beltLoading: boolean
+  handleBeltChange: (beltId: string) => void
+  curriculums: UserProfileProps["curriculums"]
+}) {
+  return (
+    <Card className="bg-black/60 border-gray-800">
+      <CardHeader>
+        <CardTitle className="text-white">Account Information</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="profile-email" className="block text-sm font-medium text-gray-300 mb-2">
+              Email Address
+            </label>
+            <div id="profile-email" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <span className="text-white">{user.email}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact admin if needed.</p>
+          </div>
+          <BeltSelector
+            currentBeltId={currentBeltId}
+            beltLoading={beltLoading}
+            handleBeltChange={handleBeltChange}
+            currentBelt={user.current_belt}
+            curriculums={curriculums}
+          />
+          <div>
+            <label htmlFor="profile-teacher" className="block text-sm font-medium text-gray-300 mb-2">
+              Teacher
+            </label>
+            <div id="profile-teacher" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <span className="text-white">{user.teacher || "Not specified"}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
+          </div>
+          <div>
+            <label htmlFor="profile-school" className="block text-sm font-medium text-gray-300 mb-2">
+              School/Dojo
+            </label>
+            <div id="profile-school" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <span className="text-white">{user.school || "Not specified"}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
+          </div>
+          <div>
+            <label htmlFor="profile-status" className="block text-sm font-medium text-gray-300 mb-2">
+              Account Status
+            </label>
+            <div id="profile-status" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <Badge className={getRoleBadgeClass(user)}>{getRoleLabel(user)}</Badge>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">{getRoleDescription(user)}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Extracted component for the profile header card section
+function ProfileHeaderCard({
+  user,
+  initials,
+  isEditing,
+  setIsEditing,
+  loading,
+  uploadingImage,
+  imagePreview,
+  setImagePreview,
+  formData,
+  setFormData,
+  handleImageUpload,
+  handleSave,
+  handleCancel,
+}: {
+  user: UserProfileProps["user"]
+  initials: string
+  isEditing: boolean
+  setIsEditing: (value: boolean) => void
+  loading: boolean
+  uploadingImage: boolean
+  imagePreview: string | null
+  setImagePreview: React.Dispatch<React.SetStateAction<string | null>>
+  formData: { full_name: string; profile_image_url: string }
+  setFormData: React.Dispatch<React.SetStateAction<{ full_name: string; profile_image_url: string }>>
+  handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+  handleSave: () => void
+  handleCancel: () => void
+}) {
+  const avatarSrc = imagePreview || user.profile_image_url || "/placeholder.svg"
+  const avatarAlt = user.full_name || user.email
+
+  return (
+    <Card className="bg-black/60 border-gray-800">
+      <CardContent className="p-8">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-6">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={avatarSrc} alt={avatarAlt} />
+              <AvatarFallback className="bg-red-600 text-white text-2xl">{initials}</AvatarFallback>
+            </Avatar>
+
+            <div>
+              {isEditing ? (
+                <ProfileEditForm
+                  formData={formData}
+                  setFormData={setFormData}
+                  uploadingImage={uploadingImage}
+                  handleImageUpload={handleImageUpload}
+                  imagePreview={imagePreview}
+                  profileImageUrl={user.profile_image_url}
+                  setImagePreview={setImagePreview}
+                />
+              ) : (
+                <ProfileDisplay user={user} />
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <ProfileEditActions
+              isEditing={isEditing}
+              loading={loading}
+              uploadingImage={uploadingImage}
+              onCancel={handleCancel}
+              onSave={handleSave}
+              onEdit={() => setIsEditing(true)}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function UserProfile({ user, curriculums }: UserProfileProps) {
+  const initials = getInitials(user.full_name, user.email)
+
+  const {
+    isEditing,
+    setIsEditing,
+    loading,
+    uploadingImage,
+    imagePreview,
+    setImagePreview,
+    formData,
+    setFormData,
+    handleImageUpload,
+    handleSave,
+    handleCancel,
+  } = useProfileEditor(user)
+
+  const { currentBeltId, beltLoading, handleBeltChange } = useBeltSelector(user.id, user.current_belt_id)
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Profile Header */}
-      <Card className="bg-black/60 border-gray-800">
-        <CardContent className="p-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage
-                  src={imagePreview || user.profile_image_url || "/placeholder.svg"}
-                  alt={user.full_name || user.email}
-                />
-                <AvatarFallback className="bg-red-600 text-white text-2xl">{initials}</AvatarFallback>
-              </Avatar>
-
-              <div>
-                {isEditing ? (
-                  <ProfileEditForm
-                    formData={formData}
-                    setFormData={setFormData}
-                    uploadingImage={uploadingImage}
-                    handleImageUpload={handleImageUpload}
-                    imagePreview={imagePreview}
-                    profileImageUrl={user.profile_image_url}
-                    setImagePreview={setImagePreview}
-                  />
-                ) : (
-                  <ProfileDisplay user={user} />
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <ProfileEditActions
-                isEditing={isEditing}
-                loading={loading}
-                uploadingImage={uploadingImage}
-                onCancel={handleCancel}
-                onSave={handleSave}
-                onEdit={() => setIsEditing(true)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ProfileHeaderCard
+        user={user}
+        initials={initials}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        loading={loading}
+        uploadingImage={uploadingImage}
+        imagePreview={imagePreview}
+        setImagePreview={setImagePreview}
+        formData={formData}
+        setFormData={setFormData}
+        handleImageUpload={handleImageUpload}
+        handleSave={handleSave}
+        handleCancel={handleCancel}
+      />
 
       {/* Stats and Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Account Stats */}
-        <Card className="bg-black/60 border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center space-x-2">
-              <User className="w-5 h-5" />
-              <span>Account Statistics</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Heart className="w-4 h-4 text-red-400" />
-                <span>Favorite Videos</span>
-              </div>
-              <span className="text-white font-semibold">{user.favorite_count}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Calendar className="w-4 h-4 text-blue-400" />
-                <span>Member Since</span>
-              </div>
-              <span className="text-white font-semibold">{formatShortDate(user.created_at)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card className="bg-black/60 border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button asChild className="w-full justify-start bg-red-600 hover:bg-red-700 text-white">
-              <a href="/favorites">
-                <Heart className="w-4 h-4 mr-2" />
-                View My Favorites
-              </a>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-            >
-              <Link href="/change-password">
-                <Lock className="w-4 h-4 mr-2" />
-                Change Password
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-            >
-              <a href="/">
-                <User className="w-4 h-4 mr-2" />
-                Browse Video Library
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
+        <AccountStatsCard favoriteCount={user.favorite_count} createdAt={user.created_at} />
+        <QuickActionsCard />
       </div>
 
       {/* Account Information */}
-      <Card className="bg-black/60 border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white">Account Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="profile-email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div id="profile-email" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <span className="text-white">{user.email}</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact admin if needed.</p>
-            </div>
-            <div>
-              <label htmlFor="current-belt-select" className="block text-sm font-medium text-gray-300 mb-2">
-                Current Belt
-              </label>
-              <Select value={currentBeltId || "none"} onValueChange={handleBeltChange} disabled={beltLoading}>
-                <SelectTrigger id="current-belt-select" className="bg-gray-800 border-gray-700 text-white">
-                  <SelectValue>
-                    <BeltSelectorValue
-                      beltLoading={beltLoading}
-                      currentBeltId={currentBeltId}
-                      currentBelt={user.current_belt}
-                    />
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="none" className="text-white">
-                    Not specified
-                  </SelectItem>
-                  {curriculums
-                    .toSorted((a, b) => a.display_order - b.display_order)
-                    .map((curriculum) => (
-                      <SelectItem key={curriculum.id} value={curriculum.id} className="text-white">
-                        <span className="flex items-center">
-                          <span
-                            className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                            style={{ backgroundColor: curriculum.color }}
-                          />
-                          {curriculum.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-400 mt-1">Select your current belt level</p>
-            </div>
-            <div>
-              <label htmlFor="profile-teacher" className="block text-sm font-medium text-gray-300 mb-2">
-                Teacher
-              </label>
-              <div id="profile-teacher" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <span className="text-white">{user.teacher || "Not specified"}</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
-            </div>
-            <div>
-              <label htmlFor="profile-school" className="block text-sm font-medium text-gray-300 mb-2">
-                School/Dojo
-              </label>
-              <div id="profile-school" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <span className="text-white">{user.school || "Not specified"}</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Contact admin to make changes</p>
-            </div>
-            <div>
-              <label htmlFor="profile-status" className="block text-sm font-medium text-gray-300 mb-2">
-                Account Status
-              </label>
-              <div id="profile-status" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                <Badge className={getRoleBadgeClass(user)}>
-                  {getRoleLabel(user)}
-                </Badge>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {getRoleDescription(user)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <AccountInformationCard
+        user={user}
+        currentBeltId={currentBeltId}
+        beltLoading={beltLoading}
+        handleBeltChange={handleBeltChange}
+        curriculums={curriculums}
+      />
     </div>
   )
 }
