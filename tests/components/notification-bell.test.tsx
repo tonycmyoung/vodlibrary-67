@@ -225,7 +225,7 @@ describe("NotificationBell", () => {
     await waitFor(() => {
       // Verify the delete operation completes and updates local state
       expect(mockDelete).toHaveBeenCalled()
-      expect(mockSelect).toHaveBeenCalled()
+      expect(mockSelectWithData).toHaveBeenCalled()
     })
   })
 

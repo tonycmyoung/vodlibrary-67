@@ -102,6 +102,7 @@
     "tw-animate-css": "latest",
     "vaul": "latest",
     "vite": "latest",
+    "vue-router": "latest",
     "webdriverio": "latest",
     "yaml": "latest",
     "zod": "3.25.67"
