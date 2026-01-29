@@ -134,43 +134,47 @@ export default function VideoModal({
     }
   }
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (isSubmitting) return
 
     setIsSubmitting(true)
 
-    try {
-      const videoData = {
-        title: formData.title,
-        description: formData.description || "",
-        videoUrl: formData.video_url,
-        thumbnailUrl: formData.thumbnail_url || "",
-        curriculumIds: formData.curriculum_ids,
-        categoryIds: formData.category_ids,
-        performerIds: formData.performer_ids,
-        durationSeconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
-        isPublished: formData.is_published,
-        recorded: formData.recorded || null,
-        videoId: editingVideo?.id || null,
+    const submitAsync = async () => {
+      try {
+        const videoData = {
+          title: formData.title,
+          description: formData.description || "",
+          videoUrl: formData.video_url,
+          thumbnailUrl: formData.thumbnail_url || "",
+          curriculumIds: formData.curriculum_ids,
+          categoryIds: formData.category_ids,
+          performerIds: formData.performer_ids,
+          durationSeconds: formData.duration_seconds ? Number.parseInt(formData.duration_seconds) : null,
+          isPublished: formData.is_published,
+          recorded: formData.recorded || null,
+          videoId: editingVideo?.id || null,
+        }
+
+        const result = await saveVideo(videoData)
+
+        if (result.error) {
+          console.error("Error saving video:", result.error)
+          alert(`Error: ${result.error}`)
+          return
+        }
+
+        onSave()
+      } catch (error) {
+        console.error("Error saving video:", error)
+        alert("An unexpected error occurred while saving the video")
+      } finally {
+        setIsSubmitting(false)
       }
-
-      const result = await saveVideo(videoData)
-
-      if (result.error) {
-        console.error("Error saving video:", result.error)
-        alert(`Error: ${result.error}`)
-        return
-      }
-
-      onSave()
-    } catch (error) {
-      console.error("Error saving video:", error)
-      alert("An unexpected error occurred while saving the video")
-    } finally {
-      setIsSubmitting(false)
     }
+
+    void submitAsync()
   }
 
   return (

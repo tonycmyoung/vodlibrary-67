@@ -98,38 +98,42 @@ export default function CategoryManagement() {
     setEditingCategory(null)
   }
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    try {
-      const supabase = createClient()
-      const categoryData = {
-        name: formData.name,
-        description: formData.description || null,
-        color: formData.color,
+    const submitAsync = async () => {
+      try {
+        const supabase = createClient()
+        const categoryData = {
+          name: formData.name,
+          description: formData.description || null,
+          color: formData.color,
+        }
+
+        if (editingCategory) {
+          // Update existing category
+          const { error } = await supabase.from("categories").update(categoryData).eq("id", editingCategory.id)
+
+          if (error) throw error
+        } else {
+          // Create new category
+          const { error } = await supabase.from("categories").insert(categoryData)
+
+          if (error) throw error
+        }
+
+        // Refresh categories
+        await fetchCategories()
+
+        // Close dialog and reset form
+        setIsAddDialogOpen(false)
+        resetForm()
+      } catch (error) {
+        console.error("Error saving category:", error)
       }
-
-      if (editingCategory) {
-        // Update existing category
-        const { error } = await supabase.from("categories").update(categoryData).eq("id", editingCategory.id)
-
-        if (error) throw error
-      } else {
-        // Create new category
-        const { error } = await supabase.from("categories").insert(categoryData)
-
-        if (error) throw error
-      }
-
-      // Refresh categories
-      await fetchCategories()
-
-      // Close dialog and reset form
-      setIsAddDialogOpen(false)
-      resetForm()
-    } catch (error) {
-      console.error("Error saving category:", error)
     }
+
+    void submitAsync()
   }
 
   const handleEdit = (category: Category) => {

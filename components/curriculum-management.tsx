@@ -88,29 +88,33 @@ export default function CurriculumManagement() {
     }
   }
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    try {
-      if (editingCurriculum) {
-        await updateCurriculum(editingCurriculum.id, {
-          name: formData.name,
-          description: formData.description || undefined,
-          color: formData.color,
-        })
-      } else {
-        await addCurriculum({
-          name: formData.name,
-          description: formData.description || undefined,
-          color: formData.color,
-        })
-      }
+    const submitAsync = async () => {
+      try {
+        if (editingCurriculum) {
+          await updateCurriculum(editingCurriculum.id, {
+            name: formData.name,
+            description: formData.description || undefined,
+            color: formData.color,
+          })
+        } else {
+          await addCurriculum({
+            name: formData.name,
+            description: formData.description || undefined,
+            color: formData.color,
+          })
+        }
 
-      await fetchCurriculums()
-      handleDialogChange(false)
-    } catch (error) {
-      console.error("Error saving curriculum:", error)
+        await fetchCurriculums()
+        handleDialogChange(false)
+      } catch (error) {
+        console.error("Error saving curriculum:", error)
+      }
     }
+
+    void submitAsync()
   }
 
   const handleEdit = (curriculum: Curriculum) => {
