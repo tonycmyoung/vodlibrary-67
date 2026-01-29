@@ -5,10 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { X } from "lucide-react"
 
+interface Belt {
+  id: string
+  name: string
+  color: string
+}
+
 interface UserFilterProps {
   roles: string[]
   schools: string[]
-  belts?: Array<{ id: string; name: string; color: string }>
+  belts?: Belt[]
   selectedRole: string
   selectedSchool: string
   selectedBelt?: string
@@ -16,6 +22,101 @@ interface UserFilterProps {
   onSchoolChange: (school: string) => void
   onBeltChange?: (belt: string) => void
   userCount: number
+}
+
+// Helper to check if a filter value is active
+const isFilterActive = (value: string | undefined): boolean => Boolean(value && value !== "all")
+
+// Helper to count active filters
+const countActiveFilters = (role: string, school: string, belt?: string): number => {
+  return [isFilterActive(role), isFilterActive(school), isFilterActive(belt)].filter(Boolean).length
+}
+
+// Helper to get belt display name
+const getBeltDisplayName = (beltId: string, belts?: Belt[]): string => {
+  if (beltId === "none") return "No Belt Set"
+  return belts?.find((b) => b.id === beltId)?.name ?? beltId
+}
+
+// Filter select component - extracted to reduce complexity
+const FilterSelect = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  options,
+  width,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  options: Array<{ value: string; label: string; color?: string }>
+  width: string
+}) => (
+  <div className="flex items-center gap-2">
+    <span className="text-sm text-gray-400 whitespace-nowrap">{label}:</span>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className={`${width} bg-black/50 border-gray-700 text-white`}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent className="bg-gray-900 border-gray-700">
+        <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
+          {placeholder}
+        </SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value} className="text-gray-300 hover:text-gray-900">
+            {option.color ? (
+              <span className="flex items-center">
+                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: option.color }} />
+                {option.label}
+              </span>
+            ) : (
+              option.label
+            )}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)
+
+// Filter badge component - extracted to reduce complexity
+const FilterBadge = ({
+  label,
+  value,
+  onClear,
+  colorClass,
+}: {
+  label: string
+  value: string
+  onClear: () => void
+  colorClass: string
+}) => (
+  <Badge variant="default" className={`cursor-pointer ${colorClass} text-white border-2 ${colorClass}`} onClick={onClear}>
+    {label}: {value}
+    <X className="w-3 h-3 ml-1" />
+  </Badge>
+)
+
+// User count display component - extracted to reduce complexity
+const UserCountDisplay = ({ count, filterCount }: { count: number; filterCount: number }) => {
+  const userText = count === 1 ? "user" : "users"
+  const filterText = filterCount === 1 ? "filter" : "filters"
+
+  if (filterCount > 0) {
+    return (
+      <div className="text-sm text-gray-400">
+        Showing {count} {userText} matching: {filterCount} {filterText}
+      </div>
+    )
+  }
+
+  return (
+    <div className="text-sm text-gray-400">
+      Showing {count} {userText}
+    </div>
+  )
 }
 
 export default function UserFilter({
@@ -36,10 +137,14 @@ export default function UserFilter({
     onBeltChange?.("all")
   }
 
-  const hasActiveFilters =
-    (selectedRole && selectedRole !== "all") ||
-    (selectedSchool && selectedSchool !== "all") ||
-    (selectedBelt && selectedBelt !== "all")
+  const hasActiveFilters = isFilterActive(selectedRole) || isFilterActive(selectedSchool) || isFilterActive(selectedBelt)
+  const activeFilterCount = countActiveFilters(selectedRole, selectedSchool, selectedBelt)
+
+  const roleOptions = roles.map((role) => ({ value: role, label: role }))
+  const schoolOptions = schools.map((school) => ({ value: school, label: school }))
+  const beltOptions = belts
+    ? [{ value: "none", label: "No Belt Set" }, ...belts.map((belt) => ({ value: belt.id, label: belt.name, color: belt.color }))]
+    : []
 
   return (
     <div className="space-y-3">
@@ -60,137 +165,55 @@ export default function UserFilter({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {/* Role Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400 whitespace-nowrap">Role:</span>
-            <Select value={selectedRole} onValueChange={onRoleChange}>
-              <SelectTrigger className="w-32 bg-black/50 border-gray-700 text-white">
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
-                <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
-                  All Roles
-                </SelectItem>
-                {roles.map((role) => (
-                  <SelectItem key={role} value={role} className="text-gray-300 hover:text-gray-900">
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* School Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400 whitespace-nowrap">School:</span>
-            <Select value={selectedSchool} onValueChange={onSchoolChange}>
-              <SelectTrigger className="w-48 bg-black/50 border-gray-700 text-white">
-                <SelectValue placeholder="All Schools" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
-                <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
-                  All Schools
-                </SelectItem>
-                {schools.map((school) => (
-                  <SelectItem key={school} value={school} className="text-gray-300 hover:text-gray-900">
-                    {school}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          <FilterSelect
+            label="Role"
+            value={selectedRole}
+            onChange={onRoleChange}
+            placeholder="All Roles"
+            options={roleOptions}
+            width="w-32"
+          />
+          <FilterSelect
+            label="School"
+            value={selectedSchool}
+            onChange={onSchoolChange}
+            placeholder="All Schools"
+            options={schoolOptions}
+            width="w-48"
+          />
           {belts && onBeltChange && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400 whitespace-nowrap">Belt:</span>
-              <Select value={selectedBelt || "all"} onValueChange={onBeltChange}>
-                <SelectTrigger className="w-40 bg-black/50 border-gray-700 text-white">
-                  <SelectValue placeholder="All Belts" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
-                  <SelectItem value="all" className="text-gray-300 hover:text-gray-900">
-                    All Belts
-                  </SelectItem>
-                  <SelectItem value="none" className="text-gray-300 hover:text-gray-900">
-                    No Belt Set
-                  </SelectItem>
-                  {belts.map((belt) => (
-                    <SelectItem key={belt.id} value={belt.id} className="text-gray-300 hover:text-gray-900">
-                      <span className="flex items-center">
-                        <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: belt.color }} />
-                        {belt.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FilterSelect
+              label="Belt"
+              value={selectedBelt || "all"}
+              onChange={onBeltChange}
+              placeholder="All Belts"
+              options={beltOptions}
+              width="w-40"
+            />
           )}
         </div>
       </div>
 
-      {/* Active Filter Badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2">
-          {selectedRole && selectedRole !== "all" && (
-            <Badge
-              variant="default"
-              className="cursor-pointer bg-blue-600 text-white border-2 border-blue-600"
-              onClick={() => onRoleChange("all")}
-            >
-              Role: {selectedRole}
-              <X className="w-3 h-3 ml-1" />
-            </Badge>
+          {isFilterActive(selectedRole) && (
+            <FilterBadge label="Role" value={selectedRole} onClear={() => onRoleChange("all")} colorClass="bg-blue-600 border-blue-600" />
           )}
-          {selectedSchool && selectedSchool !== "all" && (
-            <Badge
-              variant="default"
-              className="cursor-pointer bg-green-600 text-white border-2 border-green-600"
-              onClick={() => onSchoolChange("all")}
-            >
-              School: {selectedSchool}
-              <X className="w-3 h-3 ml-1" />
-            </Badge>
+          {isFilterActive(selectedSchool) && (
+            <FilterBadge label="School" value={selectedSchool} onClear={() => onSchoolChange("all")} colorClass="bg-green-600 border-green-600" />
           )}
-          {selectedBelt && selectedBelt !== "all" && onBeltChange && (
-            <Badge
-              variant="default"
-              className="cursor-pointer bg-purple-600 text-white border-2 border-purple-600"
-              onClick={() => onBeltChange("all")}
-            >
-              Belt: {selectedBelt === "none" ? "No Belt Set" : belts?.find((b) => b.id === selectedBelt)?.name}
-              <X className="w-3 h-3 ml-1" />
-            </Badge>
+          {isFilterActive(selectedBelt) && onBeltChange && (
+            <FilterBadge
+              label="Belt"
+              value={getBeltDisplayName(selectedBelt!, belts)}
+              onClear={() => onBeltChange("all")}
+              colorClass="bg-purple-600 border-purple-600"
+            />
           )}
         </div>
       )}
 
-      <div className="text-sm text-gray-400">
-        {hasActiveFilters ? (
-          <>
-            Showing {userCount} user{userCount === 1 ? "" : "s"} matching:{" "}
-            {
-              [
-                selectedRole !== "all" && "role",
-                selectedSchool !== "all" && "school",
-                selectedBelt && selectedBelt !== "all" && "belt",
-              ].filter(Boolean).length
-            }{" "}
-            filter
-            {[
-              selectedRole !== "all" && "role",
-              selectedSchool !== "all" && "school",
-              selectedBelt && selectedBelt !== "all" && "belt",
-            ].filter(Boolean).length === 1
-              ? ""
-              : "s"}
-          </>
-        ) : (
-          <>
-            Showing {userCount} user{userCount === 1 ? "" : "s"}
-          </>
-        )}
-      </div>
+      <UserCountDisplay count={userCount} filterCount={activeFilterCount} />
     </div>
   )
 }
