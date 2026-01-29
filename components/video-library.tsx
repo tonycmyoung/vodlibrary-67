@@ -223,6 +223,51 @@ const PaginationControls = ({
   )
 }
 
+// Loading state component
+const LoadingState = ({ favoritesOnly }: { favoritesOnly: boolean }) => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+    <span className="ml-2 text-gray-900">{favoritesOnly ? "Loading your favorites..." : "Loading videos..."}</span>
+  </div>
+)
+
+// Empty favorites state component
+const EmptyFavoritesState = () => (
+  <div className="text-center py-12">
+    <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+      <Heart className="w-8 h-8 text-red-400" />
+    </div>
+    <h3 className="text-xl font-semibold text-white mb-2">No favorites yet</h3>
+    <p className="text-gray-400 mb-6">Start adding videos to your favorites to see them here.</p>
+    <a
+      href="/"
+      className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+    >
+      Browse Videos
+    </a>
+  </div>
+)
+
+// Training banner component - mobile version
+const MobileTrainingBanner = ({ nextBeltName }: { nextBeltName?: string }) => (
+  <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
+    <Ribbon className="w-4 h-4 text-red-500" />
+    <span className="text-sm text-gray-300">
+      Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
+    </span>
+  </div>
+)
+
+// Training banner component - desktop version
+const DesktopTrainingBanner = ({ nextBeltName }: { nextBeltName?: string }) => (
+  <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
+    <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
+    <span className="text-sm text-gray-300">
+      Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
+    </span>
+  </div>
+)
+
 const FilterSection = ({
   categories,
   recordedValues,
@@ -411,50 +456,48 @@ function videoMatchesFilters(
 
 type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
 
-// Helper function to compare videos for sorting
-function compareVideos(a: Video, b: Video, sortBy: VideoSortBy, sortOrder: "asc" | "desc"): number {
-  let comparison = 0
+// Helper functions to get sortable values from videos
+function getPerformersSortValue(video: Video): string {
+  return video.performers.map((p) => p.name).join(", ")
+}
 
-  switch (sortBy) {
-    case "title":
-      comparison = a.title.localeCompare(b.title)
-      break
-    case "created_at":
-      comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      break
-    case "recorded":
-      comparison = (a.recorded || "").localeCompare(b.recorded || "")
-      break
-    case "performers": {
-      const aPerformers = a.performers.map((p) => p.name).join(", ")
-      const bPerformers = b.performers.map((p) => p.name).join(", ")
-      comparison = aPerformers.localeCompare(bPerformers)
-      break
-    }
-    case "category": {
-      const aCategories = a.categories.map((c) => c.name).join(", ")
-      const bCategories = b.categories.map((c) => c.name).join(", ")
-      if (sortOrder === "asc") {
-        if (!aCategories && bCategories) return 1
-        if (aCategories && !bCategories) return -1
-      }
-      comparison = aCategories.localeCompare(bCategories)
-      break
-    }
-    case "curriculum": {
-      const aMinOrder = a.curriculums.length > 0
-        ? Math.min(...a.curriculums.map((c) => c.display_order))
-        : Number.MAX_SAFE_INTEGER
-      const bMinOrder = b.curriculums.length > 0
-        ? Math.min(...b.curriculums.map((c) => c.display_order))
-        : Number.MAX_SAFE_INTEGER
-      comparison = aMinOrder - bMinOrder
-      break
-    }
-    case "views":
-      comparison = (a.views || 0) - (b.views || 0)
-      break
+function getCategoriesSortValue(video: Video): string {
+  return video.categories.map((c) => c.name).join(", ")
+}
+
+function getCurriculumSortValue(video: Video): number {
+  return video.curriculums.length > 0
+    ? Math.min(...video.curriculums.map((c) => c.display_order))
+    : Number.MAX_SAFE_INTEGER
+}
+
+// Helper to handle empty category comparison for ascending sort
+function compareCategoriesWithEmptyHandling(aCategories: string, bCategories: string, sortOrder: "asc" | "desc"): number | null {
+  if (sortOrder !== "asc") return null
+  if (!aCategories && bCategories) return 1
+  if (aCategories && !bCategories) return -1
+  return null
+}
+
+// Helper function to compare videos for sorting - uses lookup object for O(1) comparison logic
+function compareVideos(a: Video, b: Video, sortBy: VideoSortBy, sortOrder: "asc" | "desc"): number {
+  const comparisons: Record<VideoSortBy, () => number> = {
+    title: () => a.title.localeCompare(b.title),
+    created_at: () => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    recorded: () => (a.recorded || "").localeCompare(b.recorded || ""),
+    performers: () => getPerformersSortValue(a).localeCompare(getPerformersSortValue(b)),
+    category: () => {
+      const aCategories = getCategoriesSortValue(a)
+      const bCategories = getCategoriesSortValue(b)
+      const emptyHandling = compareCategoriesWithEmptyHandling(aCategories, bCategories, sortOrder)
+      if (emptyHandling !== null) return emptyHandling
+      return aCategories.localeCompare(bCategories)
+    },
+    curriculum: () => getCurriculumSortValue(a) - getCurriculumSortValue(b),
+    views: () => (a.views || 0) - (b.views || 0),
   }
+
+  let comparison = comparisons[sortBy]()
 
   // Secondary sort by title if primary values are equal
   if (comparison === 0 && sortBy !== "title") {
@@ -949,61 +992,23 @@ export default function VideoLibrary({
     })
   }
 
+  // Early returns for loading and empty states
   if (loading || userLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-        <span className="ml-2 text-gray-900">{favoritesOnly ? "Loading your favorites..." : "Loading videos..."}</span>
-      </div>
-    )
+    return <LoadingState favoritesOnly={favoritesOnly} />
   }
 
-  if (
-    videos.length === 0 &&
-    !debouncedSearchQuery &&
-    selectedCategories.length === 0 &&
-    selectedCurriculums.length === 0
-  ) {
-    if (favoritesOnly) {
-      return (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Heart className="w-8 h-8 text-red-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">No favorites yet</h3>
-          <p className="text-gray-400 mb-6">Start adding videos to your favorites to see them here.</p>
-          <a
-            href="/"
-            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Browse Videos
-          </a>
-        </div>
-      )
-    }
+  const hasNoFiltersApplied = !debouncedSearchQuery && selectedCategories.length === 0 && selectedCurriculums.length === 0
+  if (videos.length === 0 && hasNoFiltersApplied && favoritesOnly) {
+    return <EmptyFavoritesState />
   }
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
-      {maxCurriculumOrder && (
-        <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
-          <Ribbon className="w-4 h-4 text-red-500" />
-          <span className="text-sm text-gray-300">
-            Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-          </span>
-        </div>
-      )}
+      {maxCurriculumOrder && <MobileTrainingBanner nextBeltName={nextBeltName} />}
       <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
         <div className="space-y-2 sm:space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            {maxCurriculumOrder && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
-                <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
-                <span className="text-sm text-gray-300">
-                  Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-                </span>
-              </div>
-            )}
+            {maxCurriculumOrder && <DesktopTrainingBanner nextBeltName={nextBeltName} />}
             <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
