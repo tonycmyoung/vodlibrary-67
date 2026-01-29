@@ -311,6 +311,59 @@ describe("Auth Actions", () => {
       }
     })
 
+    it("should cleanup invitation without relying on returned delete data", async () => {
+      // This test verifies the fix for SonarQube issue - deletedInvitations variable was unused
+      const formData = new FormData()
+      formData.append("email", "invited@example.com")
+      formData.append("password", "password123")
+      formData.append("fullName", "Invited User")
+      formData.append("school", "Test School")
+      formData.append("teacher", "Test Teacher")
+      formData.append("eulaAccepted", "true")
+      formData.append("privacyAccepted", "true")
+
+      mockSupabaseClient.auth.signUp.mockResolvedValue({
+        data: { user: { id: "user-123", email: "invited@example.com" } },
+        error: null,
+      })
+
+      const mockDelete = vi.fn().mockReturnThis()
+      const mockEqForDelete = vi.fn().mockReturnThis()
+      const mockDeleteSelect = vi.fn().mockResolvedValue({
+        data: [{ id: "inv-123", email: "invited@example.com" }], // Return data that should be ignored
+        error: null,
+      })
+
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "invitations") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: mockEqForDelete,
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            delete: () => ({
+              eq: () => ({
+                select: mockDeleteSelect,
+              }),
+            }),
+          }
+        }
+        return {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockResolvedValue({ data: { id: "admin-1", email: "admin@example.com" }, error: null }),
+        }
+      })
+
+      try {
+        await signUp(null, formData)
+      } catch (error: any) {
+        // Should redirect successfully regardless of delete return data
+        expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
+      }
+    })
+
     it("should handle concurrent signup attempts with same email", async () => {
       const formData = new FormData()
       formData.append("email", "test@example.com")

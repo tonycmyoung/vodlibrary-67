@@ -252,7 +252,7 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: "Failed to store legal consent" }
     }
 
-    const { data: deletedInvitations, error: deleteError } = await serviceSupabase
+    const { error: deleteError } = await serviceSupabase
       .from("invitations")
       .delete()
       .eq("email", email.toLowerCase())
