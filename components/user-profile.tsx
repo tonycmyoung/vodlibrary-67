@@ -25,7 +25,7 @@ interface UserProfileProps {
     created_at: string
     profile_image_url: string | null
     favorite_count: number
-    isAdmin?: boolean // Add optional admin flag
+    isAdmin?: boolean
     current_belt_id: string | null
     current_belt?: {
       id: string
@@ -73,6 +73,212 @@ function getRoleDescription(user: UserProfileProps["user"]): string {
   return "Your account has been approved for video access. Only administrators can change your role."
 }
 
+function getInitials(fullName: string | null, email: string): string {
+  if (fullName) {
+    return fullName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+  }
+  return email[0].toUpperCase()
+}
+
+function validateImageFile(file: File): string | null {
+  if (!file.type.startsWith("image/")) {
+    return "Please select an image file"
+  }
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    return "File size must be less than 5MB"
+  }
+  return null
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const response = await fetch("/api/upload-profile-image", {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || "Upload failed")
+  }
+
+  const result = await response.json()
+  return result.url
+}
+
+// Extracted component for profile edit form
+function ProfileEditForm({
+  formData,
+  setFormData,
+  uploadingImage,
+  handleImageUpload,
+  imagePreview,
+  profileImageUrl,
+  setImagePreview,
+}: {
+  formData: { full_name: string; profile_image_url: string }
+  setFormData: React.Dispatch<React.SetStateAction<{ full_name: string; profile_image_url: string }>>
+  uploadingImage: boolean
+  handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+  imagePreview: string | null
+  profileImageUrl: string | null
+  setImagePreview: React.Dispatch<React.SetStateAction<string | null>>
+}) {
+  const showRemoveButton = imagePreview || profileImageUrl
+  return (
+    <div className="space-y-3">
+      <label htmlFor="profile-full-name" className="sr-only">
+        Full name
+      </label>
+      <Input
+        id="profile-full-name"
+        value={formData.full_name}
+        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+        placeholder="Full name"
+        className="bg-gray-800 border-gray-600 text-white"
+      />
+      <div className="space-y-2">
+        <label htmlFor="profile-image-upload" className="block text-sm font-medium text-gray-300">
+          Profile Image
+        </label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            disabled={uploadingImage}
+            className="hidden"
+            id="profile-image-upload"
+          />
+          <label
+            htmlFor="profile-image-upload"
+            className="flex items-center space-x-2 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-700 transition-colors text-white text-sm"
+          >
+            {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <span>{uploadingImage ? "Uploading..." : "Choose Image"}</span>
+          </label>
+          {showRemoveButton && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFormData((prev) => ({ ...prev, profile_image_url: "" }))
+                setImagePreview(null)
+              }}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-gray-400">Upload an image file (max 5MB)</p>
+      </div>
+    </div>
+  )
+}
+
+// Extracted component for profile display
+function ProfileDisplay({ user }: { user: UserProfileProps["user"] }) {
+  return (
+    <>
+      <h1 className="text-3xl font-bold text-white mb-2">{user.full_name || "No name set"}</h1>
+      <div className="flex items-center space-x-4 text-gray-300">
+        <div className="flex items-center space-x-1">
+          <Mail className="w-4 h-4" />
+          <span>{user.email}</span>
+        </div>
+        <Badge className={getRoleBadgeClass(user)}>{user.isAdmin ? "Administrator" : user.role || "Student"}</Badge>
+      </div>
+    </>
+  )
+}
+
+// Extracted component for edit action buttons
+function ProfileEditActions({
+  isEditing,
+  loading,
+  uploadingImage,
+  onCancel,
+  onSave,
+  onEdit,
+}: {
+  isEditing: boolean
+  loading: boolean
+  uploadingImage: boolean
+  onCancel: () => void
+  onSave: () => void
+  onEdit: () => void
+}) {
+  if (isEditing) {
+    return (
+      <>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading || uploadingImage}
+          className="border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+        >
+          <X className="w-4 h-4 mr-1" />
+          Cancel
+        </Button>
+        <Button size="sm" onClick={onSave} disabled={loading || uploadingImage} className="bg-red-600 hover:bg-red-700">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+          Save
+        </Button>
+      </>
+    )
+  }
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={onEdit}
+      className="border-gray-600 text-gray-800 hover:bg-gray-100 hover:text-gray-900 bg-white/90 cursor-pointer hover:border-gray-500 transition-all duration-200"
+    >
+      <Edit className="w-4 h-4 mr-1" />
+      Edit Profile
+    </Button>
+  )
+}
+
+// Extracted component for belt selector display value
+function BeltSelectorValue({
+  beltLoading,
+  currentBeltId,
+  currentBelt,
+}: {
+  beltLoading: boolean
+  currentBeltId: string | null
+  currentBelt: UserProfileProps["user"]["current_belt"]
+}) {
+  if (beltLoading) {
+    return (
+      <span className="flex items-center">
+        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        Updating...
+      </span>
+    )
+  }
+  if (currentBeltId && currentBelt) {
+    return (
+      <span className="flex items-center">
+        <span className="w-3 h-3 rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: currentBelt.color }} />
+        {currentBelt.name}
+      </span>
+    )
+  }
+  return "Not specified"
+}
+
 export default function UserProfile({ user, curriculums }: UserProfileProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -86,48 +292,24 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
     profile_image_url: user.profile_image_url || "",
   })
 
-  const initials = user.full_name
-    ? user.full_name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : user.email[0].toUpperCase()
+  const initials = getInitials(user.full_name, user.email)
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file")
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB")
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      alert(validationError)
       return
     }
 
     setUploadingImage(true)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const response = await fetch("/api/upload-profile-image", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Upload failed")
-      }
-
-      const result = await response.json()
-
-      setFormData((prev) => ({ ...prev, profile_image_url: result.url }))
-      setImagePreview(result.url)
+      const url = await uploadImage(file)
+      setFormData((prev) => ({ ...prev, profile_image_url: url }))
+      setImagePreview(url)
     } catch (error) {
       console.error("Image upload error:", error)
       alert("Failed to upload image. Please try again.")
@@ -209,110 +391,30 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
 
               <div>
                 {isEditing ? (
-                  <div className="space-y-3">
-                    <label htmlFor="profile-full-name" className="sr-only">
-                      Full name
-                    </label>
-                    <Input
-                      id="profile-full-name"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      placeholder="Full name"
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                    <div className="space-y-2">
-                      <label htmlFor="profile-image-upload" className="block text-sm font-medium text-gray-300">
-                        Profile Image
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                          className="hidden"
-                          id="profile-image-upload"
-                        />
-                        <label
-                          htmlFor="profile-image-upload"
-                          className="flex items-center space-x-2 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-700 transition-colors text-white text-sm"
-                        >
-                          {uploadingImage ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Upload className="w-4 h-4" />
-                          )}
-                          <span>{uploadingImage ? "Uploading..." : "Choose Image"}</span>
-                        </label>
-                        {(imagePreview || user.profile_image_url) && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setFormData((prev) => ({ ...prev, profile_image_url: "" }))
-                              setImagePreview(null)
-                            }}
-                            className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400">Upload an image file (max 5MB)</p>
-                    </div>
-                  </div>
+                  <ProfileEditForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    uploadingImage={uploadingImage}
+                    handleImageUpload={handleImageUpload}
+                    imagePreview={imagePreview}
+                    profileImageUrl={user.profile_image_url}
+                    setImagePreview={setImagePreview}
+                  />
                 ) : (
-                  <>
-                    <h1 className="text-3xl font-bold text-white mb-2">{user.full_name || "No name set"}</h1>
-                    <div className="flex items-center space-x-4 text-gray-300">
-                      <div className="flex items-center space-x-1">
-                        <Mail className="w-4 h-4" />
-                        <span>{user.email}</span>
-                      </div>
-                      <Badge className={getRoleBadgeClass(user)}>
-                        {user.isAdmin ? "Administrator" : user.role || "Student"}
-                      </Badge>
-                    </div>
-                  </>
+                  <ProfileDisplay user={user} />
                 )}
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              {isEditing ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={loading || uploadingImage}
-                    className="border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={loading || uploadingImage}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsEditing(true)}
-                  className="border-gray-600 text-gray-800 hover:bg-gray-100 hover:text-gray-900 bg-white/90 cursor-pointer hover:border-gray-500 transition-all duration-200"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  Edit Profile
-                </Button>
-              )}
+              <ProfileEditActions
+                isEditing={isEditing}
+                loading={loading}
+                uploadingImage={uploadingImage}
+                onCancel={handleCancel}
+                onSave={handleSave}
+                onEdit={() => setIsEditing(true)}
+              />
             </div>
           </div>
         </CardContent>
@@ -405,26 +507,11 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
               <Select value={currentBeltId || "none"} onValueChange={handleBeltChange} disabled={beltLoading}>
                 <SelectTrigger id="current-belt-select" className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue>
-                    {beltLoading ? (
-                      <span className="flex items-center">
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Updating...
-                      </span>
-                    ) : (
-                      <>
-                        {currentBeltId && user.current_belt ? (
-                          <span className="flex items-center">
-                            <span
-                              className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                              style={{ backgroundColor: user.current_belt.color }}
-                            />
-                            {user.current_belt.name}
-                          </span>
-                        ) : (
-                          "Not specified"
-                        )}
-                      </>
-                    )}
+                    <BeltSelectorValue
+                      beltLoading={beltLoading}
+                      currentBeltId={currentBeltId}
+                      currentBelt={user.current_belt}
+                    />
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">
