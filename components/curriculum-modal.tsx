@@ -11,7 +11,7 @@ interface CurriculumModalProps {
 
 export default function CurriculumModal({ isOpen, onClose }: CurriculumModalProps) {
   const handleLinkClick = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer")
+    globalThis.open(url, "_blank", "noopener,noreferrer")
   }
 
   return (

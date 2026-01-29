@@ -68,10 +68,10 @@ export default function PendingUsers() {
       fetchPendingUsersData()
     }
 
-    window.addEventListener("admin-refresh-pending-users", handleRefresh)
+    globalThis.addEventListener("admin-refresh-pending-users", handleRefresh)
 
     return () => {
-      window.removeEventListener("admin-refresh-pending-users", handleRefresh)
+      globalThis.removeEventListener("admin-refresh-pending-users", handleRefresh)
     }
   }, [])
 

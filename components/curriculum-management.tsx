@@ -124,7 +124,7 @@ export default function CurriculumManagement() {
   }
 
   const handleDelete = async (curriculumId: string) => {
-    if (!confirm("Are you sure you want to delete this curriculum? This will remove it from all videos.")) return
+    if (!globalThis.confirm("Are you sure you want to delete this curriculum? This will remove it from all videos.")) return
 
     try {
       await deleteCurriculum(curriculumId)

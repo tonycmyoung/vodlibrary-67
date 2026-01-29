@@ -14,7 +14,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
 
   const handleDonateClick = () => {
-    window.open("https://paypal.me/TonyYoung1", "_blank")
+    globalThis.open("https://paypal.me/TonyYoung1", "_blank")
   }
 
   const handleCopyPayID = async () => {

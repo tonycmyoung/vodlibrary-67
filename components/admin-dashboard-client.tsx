@@ -13,9 +13,9 @@ export default function AdminDashboardClient() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      window.dispatchEvent(new CustomEvent("admin-refresh-stats"))
-      window.dispatchEvent(new CustomEvent("admin-refresh-pending-users"))
-      window.dispatchEvent(new CustomEvent("admin-refresh-unconfirmed-users"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-stats"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-pending-users"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-unconfirmed-users"))
 
       // Wait a bit for the events to be processed
       await new Promise((resolve) => setTimeout(resolve, 500))

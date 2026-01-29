@@ -105,7 +105,7 @@ export default function PerformerManagement() {
   }
 
   const handleDelete = async (performer: Performer) => {
-    if (!confirm(`Are you sure you want to delete "${performer.name}"? This will remove them from all videos.`)) {
+    if (!globalThis.confirm(`Are you sure you want to delete "${performer.name}"? This will remove them from all videos.`)) {
       return
     }
 

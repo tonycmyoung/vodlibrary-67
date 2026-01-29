@@ -12,7 +12,7 @@ vi.mock("@/lib/actions", () => ({
   incrementVideoViews: vi.fn(),
 }))
 
-global.window.history.back = vi.fn()
+window.history.back = vi.fn()
 
 describe("VideoPlayer", () => {
   const mockVideo = {
@@ -112,7 +112,7 @@ describe("VideoPlayer", () => {
     const backButton = screen.getByText("Back to Library")
     fireEvent.click(backButton)
 
-    expect(global.window.history.back).toHaveBeenCalled()
+    expect(window.history.back).toHaveBeenCalled()
   })
 
   it("should toggle fullscreen mode when Fullscreen View button is clicked", () => {

@@ -34,10 +34,10 @@ export default function AdminStats() {
       fetchStats()
     }
 
-    window.addEventListener("admin-refresh-stats", handleRefresh)
+    globalThis.addEventListener("admin-refresh-stats", handleRefresh)
 
     return () => {
-      window.removeEventListener("admin-refresh-stats", handleRefresh)
+      globalThis.removeEventListener("admin-refresh-stats", handleRefresh)
     }
   }, [])
 

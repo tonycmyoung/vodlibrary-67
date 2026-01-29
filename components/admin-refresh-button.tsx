@@ -10,9 +10,9 @@ export default function AdminRefreshButton() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      window.dispatchEvent(new CustomEvent("admin-refresh-pending-users"))
-      window.dispatchEvent(new CustomEvent("admin-refresh-unconfirmed-users"))
-      window.dispatchEvent(new CustomEvent("admin-refresh-stats"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-pending-users"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-unconfirmed-users"))
+      globalThis.dispatchEvent(new CustomEvent("admin-refresh-stats"))
 
       await new Promise((resolve) => setTimeout(resolve, 1000))
     } catch (error) {

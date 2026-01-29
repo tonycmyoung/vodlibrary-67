@@ -143,7 +143,7 @@ export default function CategoryManagement() {
   }
 
   const handleDelete = async (categoryId: string) => {
-    if (!confirm("Are you sure you want to delete this category? This will remove it from all videos.")) return
+    if (!globalThis.confirm("Are you sure you want to delete this category? This will remove it from all videos.")) return
 
     try {
       const supabase = createClient()

@@ -58,10 +58,10 @@ export default function UnconfirmedEmailUsers() {
       fetchUnconfirmedUsersData()
     }
 
-    window.addEventListener("admin-refresh-unconfirmed-users", handleRefresh)
+    globalThis.addEventListener("admin-refresh-unconfirmed-users", handleRefresh)
 
     return () => {
-      window.removeEventListener("admin-refresh-unconfirmed-users", handleRefresh)
+      globalThis.removeEventListener("admin-refresh-unconfirmed-users", handleRefresh)
     }
   }, [])
 

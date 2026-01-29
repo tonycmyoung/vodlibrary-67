@@ -402,7 +402,7 @@ export default function UserManagement() {
   }
 
   const deleteUser = async (userId: string, userEmail: string) => {
-    const confirmDelete = window.confirm(
+    const confirmDelete = globalThis.confirm(
       `Are you sure you want to permanently delete the user "${userEmail}"? This will remove both their account and database record. This action cannot be undone.`,
     )
 

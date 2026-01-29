@@ -132,7 +132,7 @@ describe("AdminStats", () => {
     })
 
     // Dispatch refresh event
-    window.dispatchEvent(new Event("admin-refresh-stats"))
+    globalThis.dispatchEvent(new Event("admin-refresh-stats"))
 
     await waitFor(() => {
       expect(screen.getByText("120")).toBeTruthy()
