@@ -45,6 +45,25 @@ interface Curriculum {
   display_order: number
 }
 
+// Shared style constants to reduce duplication
+const STYLES = {
+  // Input styles
+  inputBase: "bg-gray-800 border-gray-600 text-white",
+  inputSmall: "h-5 text-xs bg-gray-800 border-gray-600 text-white",
+  inputMedium: "h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48",
+  // Select styles
+  selectDropdown: "px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none",
+  // Button icon styles
+  btnIcon: "p-1 h-6 w-6",
+  // Icon styles
+  iconSmall: "w-3 h-3 flex-shrink-0",
+  iconMedium: "w-4 h-4",
+  // Layout styles
+  infoRow: "flex items-center space-x-1 min-w-0",
+  // Stat badge styles
+  statBadge: "flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0",
+} as const
+
 interface UserInterface {
   id: string
   email: string
@@ -118,25 +137,21 @@ const buildUserWithNewBelt = (
 // User stats badges component - extracted to reduce cognitive complexity
 const UserStatsBadges = ({ user }: { user: UserInterface }) => (
   <>
-    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-      <Clock className="w-3 h-3 flex-shrink-0" />
+    <div className={STYLES.statBadge}>
+      <Clock className={STYLES.iconSmall} />
       <span>{user.last_login ? formatDate(user.last_login) : "Never"}</span>
     </div>
-    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-      <LogIn className="w-3 h-3 flex-shrink-0" />
-      <span>
-        {user.login_count} login{user.login_count !== 1 ? "s" : ""}
-      </span>
+    <div className={STYLES.statBadge}>
+      <LogIn className={STYLES.iconSmall} />
+      <span>{user.login_count} login{user.login_count !== 1 ? "s" : ""}</span>
     </div>
-    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-      <Play className="w-3 h-3 flex-shrink-0" />
+    <div className={STYLES.statBadge}>
+      <Play className={STYLES.iconSmall} />
       <span>{user.last_view ? formatDate(user.last_view) : "Never"}</span>
     </div>
-    <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800/50 px-2 py-1 rounded flex-shrink-0">
-      <Eye className="w-3 h-3 flex-shrink-0" />
-      <span>
-        {user.view_count} view{user.view_count !== 1 ? "s" : ""}
-      </span>
+    <div className={STYLES.statBadge}>
+      <Eye className={STYLES.iconSmall} />
+      <span>{user.view_count} view{user.view_count !== 1 ? "s" : ""}</span>
     </div>
   </>
 )
@@ -158,25 +173,25 @@ const ApprovalBadge = ({ isApproved }: { isApproved: boolean }) => (
 // User dates info component - extracted to reduce cognitive complexity
 const UserDatesInfo = ({ user }: { user: UserInterface }) => (
   <div className="space-y-1">
-    <div className="flex items-center space-x-1 min-w-0">
-      <Calendar className="w-3 h-3 flex-shrink-0" />
+    <div className={STYLES.infoRow}>
+      <Calendar className={STYLES.iconSmall} />
       <span>J: {formatDate(user.created_at)}</span>
     </div>
     {user.approved_at && (
-      <div className="flex items-center space-x-1 min-w-0">
-        <Calendar className="w-3 h-3 flex-shrink-0" />
+      <div className={STYLES.infoRow}>
+        <Calendar className={STYLES.iconSmall} />
         <span>A: {formatDate(user.approved_at)}</span>
       </div>
     )}
     {user.inviter?.full_name && (
-      <div className="flex items-center space-x-1 min-w-0">
-        <User className="w-3 h-3 flex-shrink-0" />
+      <div className={STYLES.infoRow}>
+        <User className={STYLES.iconSmall} />
         <span className="truncate">I: {user.inviter.full_name}</span>
       </div>
     )}
     {!user.inviter && user.is_approved && (
-      <div className="flex items-center space-x-1 min-w-0 text-gray-500">
-        <User className="w-3 h-3 flex-shrink-0" />
+      <div className={`${STYLES.infoRow} text-gray-500`}>
+        <User className={STYLES.iconSmall} />
         <span className="truncate">I: Direct</span>
       </div>
     )}
@@ -204,48 +219,48 @@ const UserInfoFields = ({
   curriculums: Curriculum[]
 }) => (
   <div className="space-y-1">
-    <div className="flex items-center space-x-1 min-w-0">
-      <Mail className="w-3 h-3 flex-shrink-0" />
+    <div className={STYLES.infoRow}>
+      <Mail className={STYLES.iconSmall} />
       <span className="truncate">{user.email}</span>
     </div>
-    <div className="flex items-center space-x-1 min-w-0">
+    <div className={STYLES.infoRow}>
       {isEditing ? (
         <Input
           value={editValues.teacher}
           onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
-          className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+          className={STYLES.inputSmall}
           placeholder="Teacher name"
         />
       ) : (
         <>
-          <GraduationCap className="w-3 h-3 flex-shrink-0" />
+          <GraduationCap className={STYLES.iconSmall} />
           <span className="truncate">{user.teacher || "Not specified"}</span>
         </>
       )}
     </div>
-    <div className="flex items-center space-x-1 min-w-0">
+    <div className={STYLES.infoRow}>
       {isEditing ? (
         <Input
           value={editValues.school}
           onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-          className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+          className={STYLES.inputSmall}
           placeholder="School name"
         />
       ) : (
         <>
-          <Building className="w-3 h-3 flex-shrink-0" />
+          <Building className={STYLES.iconSmall} />
           <span className="truncate">{user.school || "Not specified"}</span>
         </>
       )}
     </div>
     {isEditing && (
-      <div className="flex items-center space-x-1 min-w-0">
-        <Award className="w-3 h-3 flex-shrink-0" />
+      <div className={STYLES.infoRow}>
+        <Award className={STYLES.iconSmall} />
         <Select
           value={editValues.current_belt_id || "none"}
           onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
         >
-          <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
+          <SelectTrigger className={STYLES.inputSmall}>
             <SelectValue placeholder="Belt" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-700">
@@ -320,10 +335,10 @@ const PasswordResetDialog = ({
           variant="outline"
           onClick={() => setResetPasswordUser(user.id)}
           disabled={isProcessing}
-          className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
+          className={`border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white ${STYLES.btnIcon}`}
           aria-label="Reset password"
         >
-          <Key className="w-3 h-3" />
+          <Key className={STYLES.iconSmall} />
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-gray-900 border-gray-700 text-white">
@@ -349,7 +364,7 @@ const PasswordResetDialog = ({
                     setResetPasswordError("")
                   }}
                   placeholder="Enter new password"
-                  className="bg-gray-800 border-gray-600 text-white pr-10"
+                  className={`${STYLES.inputBase} pr-10`}
                 />
                 <button
                   type="button"
@@ -357,7 +372,7 @@ const PasswordResetDialog = ({
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className={STYLES.iconMedium} /> : <Eye className={STYLES.iconMedium} />}
                 </button>
               </div>
               <p className="text-xs text-gray-400">Minimum 8 characters</p>
@@ -384,7 +399,7 @@ const PasswordResetDialog = ({
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className={`${STYLES.iconMedium} mr-2 animate-spin`} />
                   Resetting...
                 </>
               ) : (
@@ -420,20 +435,20 @@ const EditModeButtons = ({
       size="sm"
       onClick={saveEditing}
       disabled={isProcessing}
-      className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+      className={`bg-green-600 hover:bg-green-700 text-white ${STYLES.btnIcon}`}
       aria-label="Save changes"
     >
-      <Save className="w-3 h-3" />
+      <Save className={STYLES.iconSmall} />
     </Button>
     <Button
       size="sm"
       variant="outline"
       onClick={cancelEditing}
       disabled={isProcessing}
-      className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+      className={`border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white ${STYLES.btnIcon} bg-transparent`}
       aria-label="Cancel editing"
     >
-      <X className="w-3 h-3" />
+      <X className={STYLES.iconSmall} />
     </Button>
   </>
 )
@@ -480,10 +495,10 @@ const ViewModeButtons = ({
       variant="outline"
       onClick={() => startEditing(user)}
       disabled={isProcessing}
-      className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+      className={`border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white ${STYLES.btnIcon}`}
       aria-label="Edit user"
     >
-      <Edit2 className="w-3 h-3" />
+      <Edit2 className={STYLES.iconSmall} />
     </Button>
     <PasswordResetDialog
       user={user}
@@ -504,24 +519,24 @@ const ViewModeButtons = ({
       variant={user.is_approved ? "outline" : "default"}
       onClick={() => toggleUserApproval(user.id, user.is_approved)}
       disabled={isProcessing}
-      className={`p-1 h-6 w-6 ${
+      className={`${STYLES.btnIcon} ${
         user.is_approved
           ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
           : "bg-green-600 hover:bg-green-700 text-white"
       }`}
       aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
     >
-      {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+      {user.is_approved ? <UserX className={STYLES.iconSmall} /> : <UserCheck className={STYLES.iconSmall} />}
     </Button>
     <Button
       size="sm"
       variant="outline"
       onClick={() => deleteUser(user.id, user.email)}
       disabled={isProcessing}
-      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+      className={`border-red-600 text-red-400 hover:bg-red-600 hover:text-white ${STYLES.btnIcon}`}
       aria-label="Delete user"
     >
-      <Trash2 className="w-3 h-3" />
+      <Trash2 className={STYLES.iconSmall} />
     </Button>
   </>
 )
@@ -580,7 +595,7 @@ const UserActionButtons = ({
         value={user.role || "Student"}
         onChange={(e) => updateUserRole(user.id, e.target.value)}
         disabled={isProcessing || isEditing}
-        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+        className={STYLES.selectDropdown}
       >
         <option value="Student">Student</option>
         <option value="Teacher">Teacher</option>
@@ -591,7 +606,7 @@ const UserActionButtons = ({
         value={user.current_belt_id || ""}
         onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
         disabled={isProcessing || isEditing}
-        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+        className={STYLES.selectDropdown}
       >
         <option value="">No belt</option>
         {curriculums.map((curriculum) => (
@@ -697,7 +712,7 @@ const UserRow = ({
             <Input
               value={editValues.full_name}
               onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
-              className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+              className={STYLES.inputMedium}
               placeholder="Full name"
             />
           ) : (
