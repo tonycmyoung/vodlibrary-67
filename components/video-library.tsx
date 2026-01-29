@@ -644,11 +644,11 @@ export default function VideoLibrary({
           .filter((id) => id.startsWith("views:"))
           .map((id) => id.replace("views:", ""))
 
-        let categoryMatches = selectedCategoryIds.length === 0 ? true : false
-        let curriculumMatches = selectedCurriculums.length === 0 ? true : false
-        let recordedMatches = selectedRecordedValues.length === 0 ? true : false
-        let performerMatches = selectedPerformerIds.length === 0 ? true : false
-        let viewsMatches = selectedViews.length === 0 ? true : false
+        let categoryMatches = selectedCategoryIds.length === 0
+        let curriculumMatches = selectedCurriculums.length === 0
+        let recordedMatches = selectedRecordedValues.length === 0
+        let performerMatches = selectedPerformerIds.length === 0
+        let viewsMatches = selectedViews.length === 0
 
         if (selectedCategoryIds.length > 0) {
           if (filterMode === "AND") {

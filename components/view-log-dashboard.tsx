@@ -184,55 +184,53 @@ export default function ViewLogDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
-                  <th className="text-left p-3 text-sm font-medium text-gray-300">Video</th>
-                  <th className="text-left p-3 text-sm font-medium text-gray-300">User</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedLogs.map((log) => {
-                  const { relative, absolute } = formatDateTime(log.viewed_at)
-                  return (
-                    <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                      <td className="p-3">
-                        <div className="text-sm text-gray-300">{relative}</div>
-                        <div className="text-xs text-gray-500">{absolute}</div>
-                      </td>
-                      <td className="p-3">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Date/Time</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Video</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">User</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedLogs.map((log) => {
+                const { relative, absolute } = formatDateTime(log.viewed_at)
+                return (
+                  <tr key={log.id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td className="p-3">
+                      <div className="text-sm text-gray-300">{relative}</div>
+                      <div className="text-xs text-gray-500">{absolute}</div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                        <span className="text-sm text-gray-300">{log.video_title}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      {log.user_id ? (
                         <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                          <span className="text-sm text-gray-300">{log.video_title}</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        {log.user_id ? (
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                            <div>
-                              <div className="text-sm text-gray-300">
-                                {log.user_name || log.user_email?.split("@")[0] || "Unknown"}
-                              </div>
-                              {log.user_email && (
-                                <div className="text-xs text-gray-500 font-mono">{log.user_email}</div>
-                              )}
+                          <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <div>
+                            <div className="text-sm text-gray-300">
+                              {log.user_name || log.user_email?.split("@")[0] || "Unknown"}
                             </div>
+                            {log.user_email && (
+                              <div className="text-xs text-gray-500 font-mono">{log.user_email}</div>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-sm text-gray-500 italic">Anonymous</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500 italic">Anonymous</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )
