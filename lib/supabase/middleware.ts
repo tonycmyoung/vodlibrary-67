@@ -8,7 +8,7 @@ const userApprovalCache = new Map<string, { isApproved: boolean; role: string; t
 const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
 
 const AUTH_ROUTES = ["/auth/login", "/auth/sign-up", "/auth/callback"]
-const PUBLIC_ROUTES = [
+const PUBLIC_ROUTES = new Set([
   "/pending-approval",
   "/setup-admin",
   "/privacy-policy",
@@ -16,7 +16,7 @@ const PUBLIC_ROUTES = [
   "/auth/confirm",
   "/auth/confirm/callback",
   "/auth/reset-password",
-]
+])
 const ADMIN_EMAIL = "acmyma@gmail.com"
 
 function getCachedUserApproval(userId: string) {
@@ -48,7 +48,7 @@ function isAuthRoute(pathname: string): boolean {
 }
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.includes(pathname)
+  return PUBLIC_ROUTES.has(pathname)
 }
 
 function handleSessionError(error: Error | null, request: NextRequest, supabaseResponse: NextResponse): NextResponse {
