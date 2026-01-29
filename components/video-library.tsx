@@ -310,6 +310,314 @@ const FilterSection = ({
   </div>
 )
 
+// No videos state component - extracted to reduce cognitive complexity
+const NoVideosState = ({ favoritesOnly }: { favoritesOnly: boolean }) => (
+  <div className="text-center py-12">
+    <p className="text-gray-400 text-lg">
+      {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
+    </p>
+  </div>
+)
+
+// Search input component - extracted to reduce cognitive complexity
+const SearchInput = ({
+  searchQuery,
+  onSearchChange,
+  onClear,
+  placeholder,
+}: {
+  searchQuery: string
+  onSearchChange: (value: string) => void
+  onClear: () => void
+  placeholder: string
+}) => (
+  <div className="relative flex-1 max-w-md w-full">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+    <Input
+      placeholder={placeholder}
+      value={searchQuery}
+      onChange={(e) => onSearchChange(e.target.value)}
+      className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
+    />
+    {searchQuery && (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClear}
+        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    )}
+  </div>
+)
+
+// Mobile filter dialog component - extracted to reduce cognitive complexity
+const MobileFilterDialog = ({
+  showMobileFilters,
+  setShowMobileFilters,
+  categories,
+  recordedValues,
+  performers,
+  selectedCategories,
+  onCategoryToggle,
+  videoCount,
+  curriculums,
+  selectedCurriculums,
+  onCurriculumToggle,
+  filterMode,
+  onFilterModeChange,
+}: {
+  showMobileFilters: boolean
+  setShowMobileFilters: (show: boolean) => void
+  categories: Category[]
+  recordedValues: string[]
+  performers: Performer[]
+  selectedCategories: string[]
+  onCategoryToggle: (id: string) => void
+  videoCount: number
+  curriculums: Curriculum[]
+  selectedCurriculums: string[]
+  onCurriculumToggle: (id: string) => void
+  filterMode: "AND" | "OR"
+  onFilterModeChange: (mode: "AND" | "OR") => void
+}) => (
+  <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+    <DialogTrigger asChild>
+      <Button
+        variant="outline"
+        size="sm"
+        className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
+      >
+        <Filter className="h-4 w-4 mr-2" />
+        Filters
+        {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
+          <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
+            {selectedCategories.length + selectedCurriculums.length}
+          </span>
+        )}
+      </Button>
+    </DialogTrigger>
+    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle className="text-white">Filter Videos</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4">
+        <FilterSection
+          categories={categories}
+          recordedValues={recordedValues}
+          performers={performers}
+          selectedCategories={selectedCategories}
+          onCategoryToggle={onCategoryToggle}
+          videoCount={videoCount}
+          curriculums={curriculums}
+          selectedCurriculums={selectedCurriculums}
+          onCurriculumToggle={onCurriculumToggle}
+        />
+        {selectedCategories.length + selectedCurriculums.length > 1 && (
+          <FilterModeToggle filterMode={filterMode} onFilterModeChange={onFilterModeChange} />
+        )}
+        <Button
+          onClick={() => setShowMobileFilters(false)}
+          className="w-full bg-red-600 hover:bg-red-700 text-white"
+        >
+          Apply Filters
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+)
+
+// Desktop filter section component - extracted to reduce cognitive complexity
+const DesktopFilterSection = ({
+  categories,
+  recordedValues,
+  performers,
+  selectedCategories,
+  onCategoryToggle,
+  videoCount,
+  curriculums,
+  selectedCurriculums,
+  onCurriculumToggle,
+  filterMode,
+  onFilterModeChange,
+}: {
+  categories: Category[]
+  recordedValues: string[]
+  performers: Performer[]
+  selectedCategories: string[]
+  onCategoryToggle: (id: string) => void
+  videoCount: number
+  curriculums: Curriculum[]
+  selectedCurriculums: string[]
+  onCurriculumToggle: (id: string) => void
+  filterMode: "AND" | "OR"
+  onFilterModeChange: (mode: "AND" | "OR") => void
+}) => (
+  <div className="hidden lg:block">
+    <FilterSection
+      categories={categories}
+      recordedValues={recordedValues}
+      performers={performers}
+      selectedCategories={selectedCategories}
+      onCategoryToggle={onCategoryToggle}
+      videoCount={videoCount}
+      curriculums={curriculums}
+      selectedCurriculums={selectedCurriculums}
+      onCurriculumToggle={onCurriculumToggle}
+    />
+    {selectedCategories.length + selectedCurriculums.length > 1 && (
+      <FilterModeToggle filterMode={filterMode} onFilterModeChange={onFilterModeChange} showDescription />
+    )}
+  </div>
+)
+
+// Video content section - extracted to reduce cognitive complexity
+const VideoContentSection = ({
+  videos,
+  paginatedVideos,
+  totalPages,
+  itemsPerPage,
+  handleItemsPerPageChange,
+  currentPage,
+  handlePageChange,
+  view,
+  userFavorites,
+  onFavoriteToggle,
+  favoritesOnly,
+}: {
+  videos: Video[]
+  paginatedVideos: Video[]
+  totalPages: number
+  itemsPerPage: number
+  handleItemsPerPageChange: (value: string) => void
+  currentPage: number
+  handlePageChange: (page: number) => void
+  view: "grid" | "list"
+  userFavorites: Set<string>
+  onFavoriteToggle: (videoId: string, isFavorited: boolean) => void
+  favoritesOnly: boolean
+}) => {
+  if (videos.length === 0) {
+    return <NoVideosState favoritesOnly={favoritesOnly} />
+  }
+
+  return (
+    <>
+      <PaginationControls
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        handleItemsPerPageChange={handleItemsPerPageChange}
+        currentPage={currentPage}
+        handlePageChange={handlePageChange}
+      />
+      <VideoDisplay
+        view={view}
+        videos={paginatedVideos}
+        userFavorites={userFavorites}
+        onFavoriteToggle={onFavoriteToggle}
+      />
+      <PaginationControls
+        totalPages={totalPages}
+        itemsPerPage={itemsPerPage}
+        handleItemsPerPageChange={handleItemsPerPageChange}
+        currentPage={currentPage}
+        handlePageChange={handlePageChange}
+      />
+    </>
+  )
+}
+
+// Video grid/list display component - extracted to reduce cognitive complexity
+const VideoDisplay = ({
+  view,
+  videos,
+  userFavorites,
+  onFavoriteToggle,
+}: {
+  view: "grid" | "list"
+  videos: Video[]
+  userFavorites: Set<string>
+  onFavoriteToggle: (videoId: string, isFavorited: boolean) => void
+}) => {
+  if (view === "grid") {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {videos.map((video) => (
+          <VideoCard
+            key={video.id}
+            video={video}
+            isFavorited={userFavorites.has(video.id)}
+            onFavoriteToggle={onFavoriteToggle}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {videos.map((video) => (
+        <VideoCardList
+          key={video.id}
+          video={video}
+          isFavorited={userFavorites.has(video.id)}
+          onFavoriteToggle={onFavoriteToggle}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Filter mode toggle component - extracted to reduce cognitive complexity
+const FilterModeToggle = ({
+  filterMode,
+  onFilterModeChange,
+  showDescription = false,
+}: {
+  filterMode: "AND" | "OR"
+  onFilterModeChange: (mode: "AND" | "OR") => void
+  showDescription?: boolean
+}) => (
+  <div className={`flex items-center gap-2 ${showDescription ? "mt-4" : ""}`}>
+    {showDescription && <span className="text-sm text-gray-400">Filter mode:</span>}
+    {!showDescription && <span className="text-sm text-gray-400">Filter mode:</span>}
+    <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
+      <Button
+        variant={filterMode === "AND" ? "default" : "ghost"}
+        size="sm"
+        onClick={() => onFilterModeChange("AND")}
+        className={`text-xs px-3 py-1 ${showDescription ? "" : "flex-1"} ${
+          filterMode === "AND"
+            ? "bg-red-600 text-white hover:bg-red-700"
+            : "text-gray-400 hover:text-white hover:bg-gray-800"
+        }`}
+      >
+        AND
+      </Button>
+      <Button
+        variant={filterMode === "OR" ? "default" : "ghost"}
+        size="sm"
+        onClick={() => onFilterModeChange("OR")}
+        className={`text-xs px-3 py-1 ${showDescription ? "" : "flex-1"} ${
+          filterMode === "OR"
+            ? "bg-red-600 text-white hover:bg-red-700"
+            : "text-gray-400 hover:text-white hover:bg-gray-800"
+        }`}
+      >
+        OR
+      </Button>
+    </div>
+    {showDescription && (
+      <span className="text-xs text-gray-500">
+        {filterMode === "AND"
+          ? "Videos must have ALL selected categories/curriculums"
+          : "Videos can have ANY selected categories/curriculums"}
+      </span>
+    )}
+  </div>
+)
+
 let lastFailureTime = 0
 let failureCount = 0
 const CIRCUIT_BREAKER_THRESHOLD = 3
@@ -441,6 +749,75 @@ function buildVideoWithMetadata(
   }
 }
 
+// Helper function to process video metadata into filter options - reduces cognitive complexity
+function processVideoMetadata(
+  videosToProcess: Video[],
+  maxCurriculumOrder?: number
+): {
+  categories: Category[]
+  curriculums: Curriculum[]
+  performers: Performer[]
+  recordedValues: string[]
+} {
+  if (!videosToProcess.length) {
+    return { categories: [], curriculums: [], performers: [], recordedValues: [] }
+  }
+
+  const categoryMap = new Map<string, Category>()
+  const curriculumMap = new Map<string, Curriculum>()
+  const performerMap = new Map<string, Performer>()
+  const recordedSet = new Set<string>()
+
+  for (const video of videosToProcess) {
+    collectCategoriesFromVideo(video, categoryMap)
+    collectCurriculumsFromVideo(video, curriculumMap, maxCurriculumOrder)
+    collectPerformersFromVideo(video, performerMap)
+    collectRecordedFromVideo(video, recordedSet)
+  }
+
+  return {
+    categories: Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    curriculums: Array.from(curriculumMap.values()).sort((a, b) => a.display_order - b.display_order),
+    performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    recordedValues: Array.from(recordedSet),
+  }
+}
+
+function collectCategoriesFromVideo(video: Video, categoryMap: Map<string, Category>) {
+  video.categories?.forEach((category) => {
+    if (category?.id && category?.name) {
+      categoryMap.set(category.id, category)
+    }
+  })
+}
+
+function collectCurriculumsFromVideo(
+  video: Video,
+  curriculumMap: Map<string, Curriculum>,
+  maxCurriculumOrder?: number
+) {
+  video.curriculums?.forEach((curriculum) => {
+    if (!curriculum?.id || !curriculum?.name) return
+    if (!maxCurriculumOrder || curriculum.display_order <= maxCurriculumOrder) {
+      curriculumMap.set(curriculum.id, curriculum)
+    }
+  })
+}
+
+function collectPerformersFromVideo(video: Video, performerMap: Map<string, Performer>) {
+  video.performers?.forEach((performer) => {
+    if (performer?.id && performer?.name) {
+      performerMap.set(performer.id, performer)
+    }
+  })
+}
+
+function collectRecordedFromVideo(video: Video, recordedSet: Set<string>) {
+  if (video.recorded && video.recorded !== "Unset") {
+    recordedSet.add(video.recorded)
+  }
+}
+
 export default function VideoLibrary({
   favoritesOnly = false,
   maxCurriculumOrder,
@@ -518,48 +895,8 @@ export default function VideoLibrary({
   }, [allVideos, maxCurriculumOrder])
 
   const processedData = useMemo(() => {
-    // Use filtered videos if maxCurriculumOrder is set, otherwise use all videos
     const videosToProcess = maxCurriculumOrder ? filteredByLevel : allVideos
-
-    if (!videosToProcess.length) return { categories: [], curriculums: [], performers: [], recordedValues: [] }
-
-    const categoryMap = new Map<string, Category>()
-    const curriculumMap = new Map<string, Curriculum>()
-    const performerMap = new Map<string, Performer>()
-    const recordedSet = new Set<string>()
-
-    videosToProcess.forEach((video) => {
-      video.categories?.forEach((category) => {
-        if (category?.id && category?.name) {
-          categoryMap.set(category.id, category)
-        }
-      })
-
-      video.curriculums?.forEach((curriculum) => {
-        if (curriculum?.id && curriculum?.name) {
-          if (!maxCurriculumOrder || curriculum.display_order <= maxCurriculumOrder) {
-            curriculumMap.set(curriculum.id, curriculum)
-          }
-        }
-      })
-
-      video.performers?.forEach((performer) => {
-        if (performer?.id && performer?.name) {
-          performerMap.set(performer.id, performer)
-        }
-      })
-
-      if (video.recorded && video.recorded !== "Unset") {
-        recordedSet.add(video.recorded)
-      }
-    })
-
-    return {
-      categories: Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      curriculums: Array.from(curriculumMap.values()).sort((a, b) => a.display_order - b.display_order),
-      performers: Array.from(performerMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      recordedValues: Array.from(recordedSet),
-    }
+    return processVideoMetadata(videosToProcess, maxCurriculumOrder)
   }, [allVideos, filteredByLevel, maxCurriculumOrder])
 
   useEffect(() => {
@@ -890,6 +1227,9 @@ export default function VideoLibrary({
     return <EmptyFavoritesState />
   }
 
+  const searchPlaceholder = favoritesOnly ? "Search favorites..." : "Search videos..."
+  const clearSearch = () => setSearchQuery("")
+
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
       {maxCurriculumOrder && <MobileTrainingBanner nextBeltName={nextBeltName} />}
@@ -897,25 +1237,12 @@ export default function VideoLibrary({
         <div className="space-y-2 sm:space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {maxCurriculumOrder && <DesktopTrainingBanner nextBeltName={nextBeltName} />}
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder={favoritesOnly ? "Search favorites..." : "Search videos..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <SearchInput
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onClear={clearSearch}
+              placeholder={searchPlaceholder}
+            />
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <ViewToggle view={view} onViewChange={handleViewChange} />
               <div className="hidden sm:block">
@@ -925,180 +1252,53 @@ export default function VideoLibrary({
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                    {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
-                      <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
-                        {selectedCategories.length + selectedCurriculums.length}
-                      </span>
-                    )}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Filter Videos</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <FilterSection
-                      categories={categories}
-                      recordedValues={recordedValues}
-                      performers={performers}
-                      selectedCategories={selectedCategories}
-                      onCategoryToggle={handleCategoryToggle}
-                      videoCount={videos.length}
-                      curriculums={curriculums}
-                      selectedCurriculums={selectedCurriculums}
-                      onCurriculumToggle={handleCurriculumToggle}
-                    />
-                    {selectedCategories.length + selectedCurriculums.length > 1 && (
-                      <div className="space-y-2">
-                        <span className="text-sm text-gray-400">Filter mode:</span>
-                        <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
-                          <Button
-                            variant={filterMode === "AND" ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => handleFilterModeChange("AND")}
-                            className={`text-xs px-3 py-1 flex-1 ${
-                              filterMode === "AND"
-                                ? "bg-red-600 text-white hover:bg-red-700"
-                                : "text-gray-400 hover:text-white hover:bg-gray-800"
-                            }`}
-                          >
-                            AND
-                          </Button>
-                          <Button
-                            variant={filterMode === "OR" ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => handleFilterModeChange("OR")}
-                            className={`text-xs px-3 py-1 flex-1 ${
-                              filterMode === "OR"
-                                ? "bg-red-600 text-white hover:bg-red-700"
-                                : "text-gray-400 hover:text-white hover:bg-gray-800"
-                            }`}
-                          >
-                            OR
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    <Button
-                      onClick={() => setShowMobileFilters(false)}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Apply Filters
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <MobileFilterDialog
+                showMobileFilters={showMobileFilters}
+                setShowMobileFilters={setShowMobileFilters}
+                categories={categories}
+                recordedValues={recordedValues}
+                performers={performers}
+                selectedCategories={selectedCategories}
+                onCategoryToggle={handleCategoryToggle}
+                videoCount={videos.length}
+                curriculums={curriculums}
+                selectedCurriculums={selectedCurriculums}
+                onCurriculumToggle={handleCurriculumToggle}
+                filterMode={filterMode}
+                onFilterModeChange={handleFilterModeChange}
+              />
               <div className="flex-1 sm:hidden">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />
               </div>
             </div>
           </div>
         </div>
-        <div className="hidden lg:block">
-          <FilterSection
-            categories={categories}
-            recordedValues={recordedValues}
-            performers={performers}
-            selectedCategories={selectedCategories}
-            onCategoryToggle={handleCategoryToggle}
-            videoCount={videos.length}
-            curriculums={curriculums}
-            selectedCurriculums={selectedCurriculums}
-            onCurriculumToggle={handleCurriculumToggle}
-          />
-          {selectedCategories.length + selectedCurriculums.length > 1 && (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-gray-400">Filter mode:</span>
-              <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
-                <Button
-                  variant={filterMode === "AND" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleFilterModeChange("AND")}
-                  className={`text-xs px-3 py-1 ${
-                    filterMode === "AND"
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "text-gray-400 hover:text-white hover:bg-gray-800"
-                  }`}
-                >
-                  AND
-                </Button>
-                <Button
-                  variant={filterMode === "OR" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleFilterModeChange("OR")}
-                  className={`text-xs px-3 py-1 ${
-                    filterMode === "OR"
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "text-gray-400 hover:text-white hover:bg-gray-800"
-                  }`}
-                >
-                  OR
-                </Button>
-              </div>
-              <span className="text-xs text-gray-500">
-                {filterMode === "AND"
-                  ? "Videos must have ALL selected categories/curriculums"
-                  : "Videos can have ANY selected categories/curriculums"}
-              </span>
-            </div>
-          )}
-        </div>
-        {videos.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
-              {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
-            </p>
-          </div>
-        ) : (
-          <>
-            <PaginationControls
-              totalPages={totalPages}
-              itemsPerPage={itemsPerPage}
-              handleItemsPerPageChange={handleItemsPerPageChange}
-              currentPage={currentPage}
-              handlePageChange={handlePageChange}
-            />
-            {view === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {paginatedVideos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    isFavorited={userFavorites.has(video.id)}
-                    onFavoriteToggle={handleFavoriteToggle}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {paginatedVideos.map((video) => (
-                  <VideoCardList
-                    key={video.id}
-                    video={video}
-                    isFavorited={userFavorites.has(video.id)}
-                    onFavoriteToggle={handleFavoriteToggle}
-                  />
-                ))}
-              </div>
-            )}
-            <PaginationControls
-              totalPages={totalPages}
-              itemsPerPage={itemsPerPage}
-              handleItemsPerPageChange={handleItemsPerPageChange}
-              currentPage={currentPage}
-              handlePageChange={handlePageChange}
-            />
-          </>
-        )}
+        <DesktopFilterSection
+          categories={categories}
+          recordedValues={recordedValues}
+          performers={performers}
+          selectedCategories={selectedCategories}
+          onCategoryToggle={handleCategoryToggle}
+          videoCount={videos.length}
+          curriculums={curriculums}
+          selectedCurriculums={selectedCurriculums}
+          onCurriculumToggle={handleCurriculumToggle}
+          filterMode={filterMode}
+          onFilterModeChange={handleFilterModeChange}
+        />
+        <VideoContentSection
+          videos={videos}
+          paginatedVideos={paginatedVideos}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          handleItemsPerPageChange={handleItemsPerPageChange}
+          currentPage={currentPage}
+          handlePageChange={handlePageChange}
+          view={view}
+          userFavorites={userFavorites}
+          onFavoriteToggle={handleFavoriteToggle}
+          favoritesOnly={favoritesOnly}
+        />
       </div>
     </div>
   )
