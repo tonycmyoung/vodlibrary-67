@@ -185,6 +185,10 @@ const UserDatesInfo = ({ user }: { user: UserInterface }) => (
 
 type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
 
+// Shared type for edit values to reduce duplication
+type EditValuesType = { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+type SetEditValuesType = React.Dispatch<React.SetStateAction<EditValuesType>>
+
 // User info display component - shows email, teacher, school fields (edit mode vs view mode)
 const UserInfoFields = ({
   user,
@@ -195,10 +199,8 @@ const UserInfoFields = ({
 }: {
   user: UserInterface
   isEditing: boolean
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
-  setEditValues: React.Dispatch<
-    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
-  >
+  editValues: EditValuesType
+  setEditValues: SetEditValuesType
   curriculums: Curriculum[]
 }) => (
   <div className="space-y-1">
@@ -265,7 +267,266 @@ const UserInfoFields = ({
   </div>
 )
 
-// User action buttons component - extracted to reduce cognitive complexity
+// Helper to clear password reset state - reduces duplication
+const clearPasswordResetState = (
+  setResetPasswordUser: (id: string | null) => void,
+  setNewPassword: (password: string) => void,
+  setShowPassword: (show: boolean) => void,
+  setResetPasswordError: (error: string) => void,
+) => {
+  setResetPasswordUser(null)
+  setNewPassword("")
+  setShowPassword(false)
+  setResetPasswordError("")
+}
+
+// Password reset dialog component - extracted to reduce cognitive complexity
+interface PasswordResetDialogProps {
+  user: UserInterface
+  isOpen: boolean
+  isProcessing: boolean
+  newPassword: string
+  showPassword: boolean
+  resetPasswordError: string
+  setResetPasswordUser: (id: string | null) => void
+  setNewPassword: (password: string) => void
+  setShowPassword: (show: boolean) => void
+  setResetPasswordError: (error: string) => void
+  generateRandomPassword: () => void
+  handleResetPassword: () => void
+}
+
+const PasswordResetDialog = ({
+  user,
+  isOpen,
+  isProcessing,
+  newPassword,
+  showPassword,
+  resetPasswordError,
+  setResetPasswordUser,
+  setNewPassword,
+  setShowPassword,
+  setResetPasswordError,
+  generateRandomPassword,
+  handleResetPassword,
+}: PasswordResetDialogProps) => {
+  const handleClose = () => clearPasswordResetState(setResetPasswordUser, setNewPassword, setShowPassword, setResetPasswordError)
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setResetPasswordUser(user.id)}
+          disabled={isProcessing}
+          className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
+          aria-label="Reset password"
+        >
+          <Key className="w-3 h-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-400 mb-4">
+              Set a new password for <span className="font-medium text-white">{user.email}</span>
+            </p>
+            <div className="space-y-2">
+              <label htmlFor="new-password" className="text-sm text-gray-300">
+                New Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value)
+                    setResetPasswordError("")
+                  }}
+                  placeholder="Enter new password"
+                  className="bg-gray-800 border-gray-600 text-white pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">Minimum 8 characters</p>
+            </div>
+            <Button
+              onClick={generateRandomPassword}
+              variant="outline"
+              size="sm"
+              className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+            >
+              Generate Random Password
+            </Button>
+          </div>
+          {resetPasswordError && (
+            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
+              {resetPasswordError}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              onClick={handleResetPassword}
+              disabled={isProcessing || !newPassword}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Password"
+              )}
+            </Button>
+            <Button
+              onClick={handleClose}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Edit mode buttons - extracted to reduce complexity
+const EditModeButtons = ({
+  isProcessing,
+  saveEditing,
+  cancelEditing,
+}: {
+  isProcessing: boolean
+  saveEditing: () => void
+  cancelEditing: () => void
+}) => (
+  <>
+    <Button
+      size="sm"
+      onClick={saveEditing}
+      disabled={isProcessing}
+      className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+      aria-label="Save changes"
+    >
+      <Save className="w-3 h-3" />
+    </Button>
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={cancelEditing}
+      disabled={isProcessing}
+      className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
+      aria-label="Cancel editing"
+    >
+      <X className="w-3 h-3" />
+    </Button>
+  </>
+)
+
+// View mode action buttons - extracted to reduce complexity
+interface ViewModeButtonsProps {
+  user: UserInterface
+  isProcessing: boolean
+  resetPasswordUser: string | null
+  newPassword: string
+  showPassword: boolean
+  resetPasswordError: string
+  setResetPasswordUser: (id: string | null) => void
+  setNewPassword: (password: string) => void
+  setShowPassword: (show: boolean) => void
+  setResetPasswordError: (error: string) => void
+  startEditing: (user: UserInterface) => void
+  toggleUserApproval: (userId: string, currentStatus: boolean) => void
+  deleteUser: (userId: string, email: string) => void
+  generateRandomPassword: () => void
+  handleResetPassword: () => void
+}
+
+const ViewModeButtons = ({
+  user,
+  isProcessing,
+  resetPasswordUser,
+  newPassword,
+  showPassword,
+  resetPasswordError,
+  setResetPasswordUser,
+  setNewPassword,
+  setShowPassword,
+  setResetPasswordError,
+  startEditing,
+  toggleUserApproval,
+  deleteUser,
+  generateRandomPassword,
+  handleResetPassword,
+}: ViewModeButtonsProps) => (
+  <>
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => startEditing(user)}
+      disabled={isProcessing}
+      className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
+      aria-label="Edit user"
+    >
+      <Edit2 className="w-3 h-3" />
+    </Button>
+    <PasswordResetDialog
+      user={user}
+      isOpen={resetPasswordUser === user.id}
+      isProcessing={isProcessing}
+      newPassword={newPassword}
+      showPassword={showPassword}
+      resetPasswordError={resetPasswordError}
+      setResetPasswordUser={setResetPasswordUser}
+      setNewPassword={setNewPassword}
+      setShowPassword={setShowPassword}
+      setResetPasswordError={setResetPasswordError}
+      generateRandomPassword={generateRandomPassword}
+      handleResetPassword={handleResetPassword}
+    />
+    <Button
+      size="sm"
+      variant={user.is_approved ? "outline" : "default"}
+      onClick={() => toggleUserApproval(user.id, user.is_approved)}
+      disabled={isProcessing}
+      className={`p-1 h-6 w-6 ${
+        user.is_approved
+          ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+          : "bg-green-600 hover:bg-green-700 text-white"
+      }`}
+      aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
+    >
+      {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+    </Button>
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => deleteUser(user.id, user.email)}
+      disabled={isProcessing}
+      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
+      aria-label="Delete user"
+    >
+      <Trash2 className="w-3 h-3" />
+    </Button>
+  </>
+)
+
+// User action buttons component - refactored for reduced cognitive complexity
 interface UserActionButtonsProps {
   user: UserInterface
   isEditing: boolean
@@ -342,168 +603,25 @@ const UserActionButtons = ({
 
       <div className="flex gap-1">
         {isEditing ? (
-          <>
-            <Button
-              size="sm"
-              onClick={saveEditing}
-              disabled={isProcessing}
-              className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
-              aria-label="Save changes"
-            >
-              <Save className="w-3 h-3" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={cancelEditing}
-              disabled={isProcessing}
-              className="border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-white p-1 h-6 w-6 bg-transparent"
-              aria-label="Cancel editing"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </>
+          <EditModeButtons isProcessing={isProcessing} saveEditing={saveEditing} cancelEditing={cancelEditing} />
         ) : (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => startEditing(user)}
-              disabled={isProcessing}
-              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white p-1 h-6 w-6"
-              aria-label="Edit user"
-            >
-              <Edit2 className="w-3 h-3" />
-            </Button>
-            <Dialog
-              open={resetPasswordUser === user.id}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setResetPasswordUser(null)
-                  setNewPassword("")
-                  setShowPassword(false)
-                  setResetPasswordError("")
-                }
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setResetPasswordUser(user.id)}
-                  disabled={isProcessing}
-                  className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white p-1 h-6 w-6"
-                  aria-label="Reset password"
-                >
-                  <Key className="w-3 h-3" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-gray-900 border-gray-700 text-white">
-                <DialogHeader>
-                  <DialogTitle className="text-white">Reset Password for {user.full_name}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-400 mb-4">
-                      Set a new password for <span className="font-medium text-white">{user.email}</span>
-                    </p>
-                    <div className="space-y-2">
-                      <label htmlFor="new-password" className="text-sm text-gray-300">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          id="new-password"
-                          type={showPassword ? "text" : "password"}
-                          value={newPassword}
-                          onChange={(e) => {
-                            setNewPassword(e.target.value)
-                            setResetPasswordError("")
-                          }}
-                          placeholder="Enter new password"
-                          className="bg-gray-800 border-gray-600 text-white pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-400">Minimum 8 characters</p>
-                    </div>
-                    <Button
-                      onClick={generateRandomPassword}
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
-                    >
-                      Generate Random Password
-                    </Button>
-                  </div>
-                  {resetPasswordError && (
-                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2">
-                      {resetPasswordError}
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleResetPassword}
-                      disabled={isProcessing || !newPassword}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Resetting...
-                        </>
-                      ) : (
-                        "Reset Password"
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setResetPasswordUser(null)
-                        setNewPassword("")
-                        setShowPassword(false)
-                        setResetPasswordError("")
-                      }}
-                      variant="outline"
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button
-              size="sm"
-              variant={user.is_approved ? "outline" : "default"}
-              onClick={() => toggleUserApproval(user.id, user.is_approved)}
-              disabled={isProcessing}
-              className={`p-1 h-6 w-6 ${
-                user.is_approved
-                  ? "border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-              aria-label={user.is_approved ? "Revoke approval" : "Approve user"}
-            >
-              {user.is_approved ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => deleteUser(user.id, user.email)}
-              disabled={isProcessing}
-              className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white p-1 h-6 w-6"
-              aria-label="Delete user"
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </>
+          <ViewModeButtons
+            user={user}
+            isProcessing={isProcessing}
+            resetPasswordUser={resetPasswordUser}
+            newPassword={newPassword}
+            showPassword={showPassword}
+            resetPasswordError={resetPasswordError}
+            setResetPasswordUser={setResetPasswordUser}
+            setNewPassword={setNewPassword}
+            setShowPassword={setShowPassword}
+            setResetPasswordError={setResetPasswordError}
+            startEditing={startEditing}
+            toggleUserApproval={toggleUserApproval}
+            deleteUser={deleteUser}
+            generateRandomPassword={generateRandomPassword}
+            handleResetPassword={handleResetPassword}
+          />
         )}
       </div>
     </div>
@@ -516,10 +634,8 @@ interface UserRowProps {
   isProcessing: boolean
   isAdmin: boolean
   isEditing: boolean
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
-  setEditValues: React.Dispatch<
-    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
-  >
+  editValues: EditValuesType
+  setEditValues: SetEditValuesType
   resetPasswordUser: string | null
   newPassword: string
   showPassword: boolean
