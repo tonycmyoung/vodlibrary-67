@@ -8,7 +8,6 @@ import {
   videoMatchesSearch,
   checkFilterMatch,
   parseSelectedFilters,
-  type SortableVideoWithLastViewed,
   type VideoManagementSortBy,
 } from "@/lib/video-sorting"
 import VideoModal from "@/components/video-modal"

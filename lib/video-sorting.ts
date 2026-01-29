@@ -136,7 +136,7 @@ export function compareVideosWithLastViewed(
   }
 
   // Delegate to the base compare function for all other sort types
-  return compareVideos(a, b, sortBy as VideoLibrarySortBy, sortOrder)
+  return compareVideos(a, b, sortBy, sortOrder)
 }
 
 /**
@@ -228,7 +228,7 @@ export function videoMatchesFilters(
     parsed.recordedValues.length > 0 ? recordedMatches : null,
     parsed.performerIds.length > 0 ? performerMatches : null,
     parsed.viewsValues.length > 0 ? viewsMatches : null,
-  ].filter((match) => match !== null) as boolean[]
+  ].filter((match): match is boolean => match !== null)
 
   if (activeFilters.length === 0) return true
   return filterMode === "AND" ? activeFilters.every(Boolean) : activeFilters.some(Boolean)
