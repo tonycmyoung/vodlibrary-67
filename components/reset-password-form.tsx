@@ -45,11 +45,16 @@ export default function ResetPasswordForm() {
   useEffect(() => {
     const supabase = createClient()
 
+    // Helper function to handle session activation
+    const activateSession = () => {
+      setHasSession(true)
+      setIsLoading(false)
+    }
+
     // Check for existing session first
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setHasSession(true)
-        setIsLoading(false)
+        activateSession()
         return
       }
     })
@@ -59,11 +64,9 @@ export default function ResetPasswordForm() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        setHasSession(true)
-        setIsLoading(false)
+        activateSession()
       } else if (event === "SIGNED_IN" && session) {
-        setHasSession(true)
-        setIsLoading(false)
+        activateSession()
       } else if (event === "SIGNED_OUT") {
         setHasSession(false)
         setSessionError("Your password reset link has expired. Please request a new one.")

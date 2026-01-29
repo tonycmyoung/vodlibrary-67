@@ -39,6 +39,58 @@ describe("ResetPasswordForm", () => {
     })
   })
 
+  it("should show form when PASSWORD_RECOVERY event is triggered", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
+
+    // Capture the callback when onAuthStateChange is called
+    let authStateCallback: ((event: string, session: any) => void) | null = null
+    mockOnAuthStateChange.mockImplementation((callback) => {
+      authStateCallback = callback
+      return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
+    })
+
+    render(<ResetPasswordForm />)
+
+    // Trigger PASSWORD_RECOVERY event
+    if (authStateCallback) {
+      authStateCallback("PASSWORD_RECOVERY", null)
+    }
+
+    await waitFor(
+      () => {
+        const titleElement = document.querySelector('[data-slot="card-title"]')
+        expect(titleElement?.textContent).toMatch(/reset your password/i)
+      },
+      { timeout: 2000 },
+    )
+  })
+
+  it("should show form when SIGNED_IN event is triggered with session", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
+
+    // Capture the callback when onAuthStateChange is called
+    let authStateCallback: ((event: string, session: any) => void) | null = null
+    mockOnAuthStateChange.mockImplementation((callback) => {
+      authStateCallback = callback
+      return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
+    })
+
+    render(<ResetPasswordForm />)
+
+    // Trigger SIGNED_IN event with session
+    if (authStateCallback) {
+      authStateCallback("SIGNED_IN", { user: { id: "user-123" } })
+    }
+
+    await waitFor(
+      () => {
+        const titleElement = document.querySelector('[data-slot="card-title"]')
+        expect(titleElement?.textContent).toMatch(/reset your password/i)
+      },
+      { timeout: 2000 },
+    )
+  })
+
   it("should show loading state initially", () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 

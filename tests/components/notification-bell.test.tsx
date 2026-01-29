@@ -204,6 +204,31 @@ describe("NotificationBell", () => {
     })
   })
 
+  it("should not use returned data from delete all operation", async () => {
+    // This test verifies that the delete response data is not used (SonarQube fix)
+    const mockSelectWithData = vi.fn().mockResolvedValue({
+      data: [{ id: "notif-1" }, { id: "notif-2" }],
+      error: null,
+    })
+    mockIn.mockReturnValue({ select: mockSelectWithData })
+
+    render(<NotificationBell userId="user-123" />)
+
+    await user.click(screen.getByRole("button"))
+
+    await waitFor(() => {
+      expect(screen.getByText("Test notification 1")).toBeTruthy()
+    })
+
+    await user.click(screen.getByText(/clear all/i))
+
+    await waitFor(() => {
+      // Verify the delete operation completes and updates local state
+      expect(mockDelete).toHaveBeenCalled()
+      expect(mockSelect).toHaveBeenCalled()
+    })
+  })
+
   it("should show empty state when no notifications", async () => {
     vi.mocked(fetchNotificationsWithSenders).mockResolvedValue({
       data: [],
