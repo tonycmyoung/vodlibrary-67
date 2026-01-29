@@ -14,6 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Loader2, X, Heart, Filter, Ribbon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
+import {
+  compareVideos,
+  videoMatchesSearch,
+  videoMatchesFilters,
+  type VideoLibrarySortBy,
+} from "@/lib/video-sorting"
 
 interface Video {
   id: string
@@ -435,144 +441,6 @@ function buildVideoWithMetadata(
   }
 }
 
-// Helper function to check if video matches search query
-function videoMatchesSearch(video: Video, searchQuery: string): boolean {
-  const lowerQuery = searchQuery.toLowerCase()
-  const titleMatch = video.title.toLowerCase().includes(lowerQuery)
-  const descriptionMatch = video.description?.toLowerCase().includes(lowerQuery) || false
-  const performerMatch = video.performers.some((performer) =>
-    performer.name.toLowerCase().includes(lowerQuery)
-  )
-  return titleMatch || descriptionMatch || performerMatch
-}
-
-// Helper function to parse selected filters into categorized groups
-function parseSelectedFilters(selectedCategories: string[]) {
-  return {
-    categoryIds: selectedCategories.filter(
-      (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:")
-    ),
-    recordedValues: selectedCategories
-      .filter((id) => id.startsWith("recorded:"))
-      .map((id) => id.replace("recorded:", "")),
-    performerIds: selectedCategories
-      .filter((id) => id.startsWith("performer:"))
-      .map((id) => id.replace("performer:", "")),
-    viewsValues: selectedCategories
-      .filter((id) => id.startsWith("views:"))
-      .map((id) => id.replace("views:", "")),
-  }
-}
-
-// Helper to check if items match based on filter mode
-function checkFilterMatch<T>(
-  selectedItems: T[],
-  videoItems: Set<T>,
-  filterMode: "AND" | "OR"
-): boolean {
-  if (selectedItems.length === 0) return true
-  return filterMode === "AND"
-    ? selectedItems.every((item) => videoItems.has(item))
-    : selectedItems.some((item) => videoItems.has(item))
-}
-
-// Helper to check views filter
-function checkViewsMatch(
-  selectedViews: string[],
-  videoViews: number,
-  filterMode: "AND" | "OR"
-): boolean {
-  if (selectedViews.length === 0) return true
-  const viewNumbers = selectedViews.map(Number)
-  return filterMode === "AND"
-    ? viewNumbers.every((v) => videoViews >= v)
-    : viewNumbers.some((v) => videoViews >= v)
-}
-
-// Helper function to check if video matches all active filters
-function videoMatchesFilters(
-  video: Video,
-  selectedCategories: string[],
-  selectedCurriculums: string[],
-  filterMode: "AND" | "OR"
-): boolean {
-  const videoCategories = new Set(video.categories.map((cat) => cat.id))
-  const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
-  const videoPerformers = new Set(video.performers.map((perf) => perf.id))
-
-  const parsed = parseSelectedFilters(selectedCategories)
-
-  const categoryMatches = checkFilterMatch(parsed.categoryIds, videoCategories, filterMode)
-  const curriculumMatches = checkFilterMatch(selectedCurriculums, videoCurriculums, filterMode)
-  const performerMatches = checkFilterMatch(parsed.performerIds, videoPerformers, filterMode)
-  const recordedMatches = parsed.recordedValues.length === 0 || parsed.recordedValues.includes(video.recorded || "")
-  const viewsMatches = checkViewsMatch(parsed.viewsValues, video.views || 0, filterMode)
-
-  const activeFilters = [
-    parsed.categoryIds.length > 0 ? categoryMatches : null,
-    selectedCurriculums.length > 0 ? curriculumMatches : null,
-    parsed.recordedValues.length > 0 ? recordedMatches : null,
-    parsed.performerIds.length > 0 ? performerMatches : null,
-    parsed.viewsValues.length > 0 ? viewsMatches : null,
-  ].filter((match) => match !== null) as boolean[]
-
-  if (activeFilters.length === 0) return true
-  return filterMode === "AND" ? activeFilters.every(Boolean) : activeFilters.some(Boolean)
-}
-
-type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
-
-// Helper functions to get sortable values from videos
-function getPerformersSortValue(video: Video): string {
-  return video.performers.map((p) => p.name).join(", ")
-}
-
-function getCategoriesSortValue(video: Video): string {
-  return video.categories.map((c) => c.name).join(", ")
-}
-
-function getCurriculumSortValue(video: Video): number {
-  return video.curriculums.length > 0
-    ? Math.min(...video.curriculums.map((c) => c.display_order))
-    : Number.MAX_SAFE_INTEGER
-}
-
-// Helper to handle empty category comparison for ascending sort
-function compareCategoriesWithEmptyHandling(aCategories: string, bCategories: string, sortOrder: "asc" | "desc"): number | null {
-  if (sortOrder !== "asc") return null
-  if (!aCategories && bCategories) return 1
-  if (aCategories && !bCategories) return -1
-  return null
-}
-
-// Helper function to compare videos for sorting - uses lookup object for O(1) comparison logic
-function compareVideos(a: Video, b: Video, sortBy: VideoSortBy, sortOrder: "asc" | "desc"): number {
-  const comparisons: Record<VideoSortBy, () => number> = {
-    title: () => a.title.localeCompare(b.title),
-    created_at: () => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    recorded: () => (a.recorded || "").localeCompare(b.recorded || ""),
-    performers: () => getPerformersSortValue(a).localeCompare(getPerformersSortValue(b)),
-    category: () => {
-      const aCategories = getCategoriesSortValue(a)
-      const bCategories = getCategoriesSortValue(b)
-      const emptyHandling = compareCategoriesWithEmptyHandling(aCategories, bCategories, sortOrder)
-      if (emptyHandling !== null) return emptyHandling
-      return aCategories.localeCompare(bCategories)
-    },
-    curriculum: () => getCurriculumSortValue(a) - getCurriculumSortValue(b),
-    views: () => (a.views || 0) - (b.views || 0),
-  }
-
-  let comparison = comparisons[sortBy]()
-
-  // Secondary sort by title if primary values are equal
-  if (comparison === 0 && sortBy !== "title") {
-    comparison = a.title.localeCompare(b.title)
-  }
-
-  return sortOrder === "asc" ? comparison : -comparison
-}
-
 export default function VideoLibrary({
   favoritesOnly = false,
   maxCurriculumOrder,
@@ -839,10 +707,10 @@ export default function VideoLibrary({
     }
   }, [processedData])
 
-  const [sortBy, setSortBy] = useState<VideoSortBy>(() => {
+  const [sortBy, setSortBy] = useState<VideoLibrarySortBy>(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
-      return (localStorage.getItem(storageKey) as VideoSortBy) || "created_at"
+      return (localStorage.getItem(storageKey) as VideoLibrarySortBy) || "created_at"
     }
     return "created_at"
   })
@@ -957,7 +825,7 @@ export default function VideoLibrary({
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy as VideoSortBy)
+    setSortBy(newSortBy as VideoLibrarySortBy)
     setSortOrder(newSortOrder)
 
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
