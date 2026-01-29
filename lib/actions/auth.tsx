@@ -55,8 +55,8 @@ export async function signIn(formData: FormData) {
   const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
   const additionalData: any = {
-    email_confirmed: data?.user?.email_confirmed_at ? true : false,
-    user_exists: data?.user ? true : false,
+    email_confirmed: !!data?.user?.email_confirmed_at,
+    user_exists: !!data?.user,
     returnTo: returnTo || null,
   }
 

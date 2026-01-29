@@ -90,7 +90,7 @@ export default function AdminStats() {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...new Array(3)].map((_, i) => (
+        {Array.from({ length: 3 }, (_, i) => (
           <Card key={`skeleton-card-${i + 1}`} className="bg-black/60 border-gray-800">
             <div className="p-6">
               <div className="animate-pulse">
