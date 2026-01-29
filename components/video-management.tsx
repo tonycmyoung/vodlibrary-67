@@ -335,7 +335,7 @@ export default function VideoManagement() {
   }
 
   const handleDeleteVideo = async (videoId: string) => {
-    if (!confirm("Are you sure you want to delete this video?")) return
+    if (!globalThis.confirm("Are you sure you want to delete this video?")) return
 
     const supabase = createClient()
     const { error } = await supabase.from("videos").delete().eq("id", videoId)

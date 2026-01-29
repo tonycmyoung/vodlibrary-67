@@ -214,7 +214,7 @@ describe("PerformerManagement", () => {
   })
 
   it("should delete performer with confirmation", async () => {
-    window.confirm = vi.fn(() => true)
+    globalThis.confirm = vi.fn(() => true)
 
     render(<PerformerManagement />)
 
@@ -231,13 +231,13 @@ describe("PerformerManagement", () => {
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(globalThis.confirm).toHaveBeenCalled()
       expect(deletePerformer).toHaveBeenCalledWith("perf-1")
     })
   })
 
   it("should not delete performer if user cancels confirmation", async () => {
-    window.confirm = vi.fn(() => false)
+    globalThis.confirm = vi.fn(() => false)
 
     render(<PerformerManagement />)
 
@@ -253,7 +253,7 @@ describe("PerformerManagement", () => {
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(globalThis.confirm).toHaveBeenCalled()
     })
 
     expect(deletePerformer).not.toHaveBeenCalled()

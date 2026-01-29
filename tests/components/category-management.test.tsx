@@ -226,7 +226,7 @@ describe("CategoryManagement", () => {
   })
 
   it("should handle category deletion with confirmation", async () => {
-    window.confirm = vi.fn(() => true)
+    globalThis.confirm = vi.fn(() => true)
 
     render(<CategoryManagement />)
 
@@ -246,13 +246,13 @@ describe("CategoryManagement", () => {
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(globalThis.confirm).toHaveBeenCalled()
       expect(mockDelete).toHaveBeenCalled()
     })
   })
 
   it("should not delete category if user cancels confirmation", async () => {
-    window.confirm = vi.fn(() => false)
+    globalThis.confirm = vi.fn(() => false)
 
     render(<CategoryManagement />)
 
@@ -272,7 +272,7 @@ describe("CategoryManagement", () => {
     await user.click(deleteButton as HTMLElement)
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled()
+      expect(globalThis.confirm).toHaveBeenCalled()
     })
 
     expect(mockDelete).not.toHaveBeenCalled()

@@ -210,7 +210,7 @@ describe("CurriculumManagement", () => {
   it("should delete curriculum when delete button is clicked and confirmed", async () => {
     const user = userEvent.setup()
     const confirmSpy = vi.fn(() => true)
-    window.confirm = confirmSpy
+    globalThis.confirm = confirmSpy
     vi.mocked(curriculumActions.deleteCurriculum).mockResolvedValue(undefined)
 
     render(<CurriculumManagement />)
@@ -236,7 +236,7 @@ describe("CurriculumManagement", () => {
   it("should not delete curriculum when deletion is cancelled", async () => {
     const user = userEvent.setup()
     const confirmSpy = vi.fn(() => false)
-    window.confirm = confirmSpy
+    globalThis.confirm = confirmSpy
 
     render(<CurriculumManagement />)
 

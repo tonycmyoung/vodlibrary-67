@@ -39,7 +39,7 @@ export default function AuditLogDashboard() {
   }
 
   const handleClearLogs = async () => {
-    if (!confirm("Are you sure you want to clear all audit logs? This action cannot be undone.")) {
+    if (!globalThis.confirm("Are you sure you want to clear all audit logs? This action cannot be undone.")) {
       return
     }
 
