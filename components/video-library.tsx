@@ -805,9 +805,9 @@ export default function VideoLibrary({
       params.set("page", page.toString())
     }
 
-    const newURL = params.toString() ? `${globalThis.location.pathname}?${params.toString()}` : globalThis.location.pathname
+    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
 
-    const currentSearch = globalThis.location.search
+    const currentSearch = window.location.search
     const newSearch = params.toString() ? `?${params.toString()}` : ""
 
     if (currentSearch !== newSearch) {

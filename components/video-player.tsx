@@ -49,7 +49,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const [isIOSSafari, setIsIOSSafari] = useState(false)
 
   useEffect(() => {
-    const userAgent = globalThis.navigator.userAgent
+    const userAgent = window.navigator.userAgent
     const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent)
     const isIPhone = /iPhone/.test(userAgent)
     setIsIOSSafari(isIPhone && isSafari)
@@ -131,7 +131,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   }
 
   const handleBackClick = () => {
-    globalThis.history.back()
+    window.history.back()
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
