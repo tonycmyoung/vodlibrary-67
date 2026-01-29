@@ -51,8 +51,8 @@ export default function Header({ user }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
   const isAdmin = user.email === "acmyma@gmail.com"
-  const isStudentView = typeof globalThis !== "undefined" && globalThis.location?.pathname === "/student-view"
-  const isProfilePage = typeof globalThis !== "undefined" && globalThis.location?.pathname === "/profile"
+  const isStudentView = pathname === "/student-view"
+  const isProfilePage = pathname === "/profile"
   const showAdminView = isAdmin && (isStudentView || isProfilePage)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)

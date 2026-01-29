@@ -60,7 +60,7 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const url = new URL(link.href)
-          const currentUrl = new URL(globalThis.location.href)
+          const currentUrl = new URL(window.location.href)
 
           // Show loading for internal navigation (including same page with different params)
           if (url.origin === currentUrl.origin) {
