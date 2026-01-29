@@ -266,6 +266,204 @@ const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
 const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
+// Helper functions to reduce nesting in video data processing
+function getVideoCategoriesForVideo(
+  videoId: string,
+  categoriesData: Array<{ video_id: string; categories: Category }> | null
+): Category[] {
+  if (!categoriesData) return []
+  return categoriesData
+    .filter((vc) => vc.video_id === videoId)
+    .map((vc) => vc.categories)
+}
+
+function getVideoCurriculumsForVideo(
+  videoId: string,
+  curriculumsData: Array<{ video_id: string; curriculums: Curriculum }> | null
+): Curriculum[] {
+  if (!curriculumsData) return []
+  return curriculumsData
+    .filter((vc) => vc.video_id === videoId)
+    .map((vc) => vc.curriculums)
+}
+
+function getVideoPerformersForVideo(
+  videoId: string,
+  performersData: Array<{ video_id: string; performers: Performer }> | null
+): Performer[] {
+  if (!performersData) return []
+  return performersData
+    .filter((vp) => vp.video_id === videoId)
+    .map((vp) => vp.performers)
+}
+
+interface VideoBaseData {
+  id: string
+  title: string
+  description: string | null
+  video_url: string
+  thumbnail_url: string | null
+  duration_seconds: number | null
+  created_at: string
+  recorded: string | null
+  updated_at: string
+}
+
+function buildVideoWithMetadata(
+  video: VideoBaseData,
+  categoriesData: Array<{ video_id: string; categories: Category }> | null,
+  curriculumsData: Array<{ video_id: string; curriculums: Curriculum }> | null,
+  performersData: Array<{ video_id: string; performers: Performer }> | null
+): Video {
+  return {
+    ...video,
+    views: 0,
+    categories: getVideoCategoriesForVideo(video.id, categoriesData),
+    curriculums: getVideoCurriculumsForVideo(video.id, curriculumsData),
+    performers: getVideoPerformersForVideo(video.id, performersData),
+  }
+}
+
+// Helper function to check if video matches search query
+function videoMatchesSearch(video: Video, searchQuery: string): boolean {
+  const lowerQuery = searchQuery.toLowerCase()
+  const titleMatch = video.title.toLowerCase().includes(lowerQuery)
+  const descriptionMatch = video.description?.toLowerCase().includes(lowerQuery) || false
+  const performerMatch = video.performers.some((performer) =>
+    performer.name.toLowerCase().includes(lowerQuery)
+  )
+  return titleMatch || descriptionMatch || performerMatch
+}
+
+// Helper function to parse selected filters into categorized groups
+function parseSelectedFilters(selectedCategories: string[]) {
+  return {
+    categoryIds: selectedCategories.filter(
+      (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:")
+    ),
+    recordedValues: selectedCategories
+      .filter((id) => id.startsWith("recorded:"))
+      .map((id) => id.replace("recorded:", "")),
+    performerIds: selectedCategories
+      .filter((id) => id.startsWith("performer:"))
+      .map((id) => id.replace("performer:", "")),
+    viewsValues: selectedCategories
+      .filter((id) => id.startsWith("views:"))
+      .map((id) => id.replace("views:", "")),
+  }
+}
+
+// Helper to check if items match based on filter mode
+function checkFilterMatch<T>(
+  selectedItems: T[],
+  videoItems: Set<T>,
+  filterMode: "AND" | "OR"
+): boolean {
+  if (selectedItems.length === 0) return true
+  return filterMode === "AND"
+    ? selectedItems.every((item) => videoItems.has(item))
+    : selectedItems.some((item) => videoItems.has(item))
+}
+
+// Helper to check views filter
+function checkViewsMatch(
+  selectedViews: string[],
+  videoViews: number,
+  filterMode: "AND" | "OR"
+): boolean {
+  if (selectedViews.length === 0) return true
+  const viewNumbers = selectedViews.map(Number)
+  return filterMode === "AND"
+    ? viewNumbers.every((v) => videoViews >= v)
+    : viewNumbers.some((v) => videoViews >= v)
+}
+
+// Helper function to check if video matches all active filters
+function videoMatchesFilters(
+  video: Video,
+  selectedCategories: string[],
+  selectedCurriculums: string[],
+  filterMode: "AND" | "OR"
+): boolean {
+  const videoCategories = new Set(video.categories.map((cat) => cat.id))
+  const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
+  const videoPerformers = new Set(video.performers.map((perf) => perf.id))
+
+  const parsed = parseSelectedFilters(selectedCategories)
+
+  const categoryMatches = checkFilterMatch(parsed.categoryIds, videoCategories, filterMode)
+  const curriculumMatches = checkFilterMatch(selectedCurriculums, videoCurriculums, filterMode)
+  const performerMatches = checkFilterMatch(parsed.performerIds, videoPerformers, filterMode)
+  const recordedMatches = parsed.recordedValues.length === 0 || parsed.recordedValues.includes(video.recorded || "")
+  const viewsMatches = checkViewsMatch(parsed.viewsValues, video.views || 0, filterMode)
+
+  const activeFilters = [
+    parsed.categoryIds.length > 0 ? categoryMatches : null,
+    selectedCurriculums.length > 0 ? curriculumMatches : null,
+    parsed.recordedValues.length > 0 ? recordedMatches : null,
+    parsed.performerIds.length > 0 ? performerMatches : null,
+    parsed.viewsValues.length > 0 ? viewsMatches : null,
+  ].filter((match) => match !== null) as boolean[]
+
+  if (activeFilters.length === 0) return true
+  return filterMode === "AND" ? activeFilters.every(Boolean) : activeFilters.some(Boolean)
+}
+
+type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
+
+// Helper function to compare videos for sorting
+function compareVideos(a: Video, b: Video, sortBy: VideoSortBy, sortOrder: "asc" | "desc"): number {
+  let comparison = 0
+
+  switch (sortBy) {
+    case "title":
+      comparison = a.title.localeCompare(b.title)
+      break
+    case "created_at":
+      comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      break
+    case "recorded":
+      comparison = (a.recorded || "").localeCompare(b.recorded || "")
+      break
+    case "performers": {
+      const aPerformers = a.performers.map((p) => p.name).join(", ")
+      const bPerformers = b.performers.map((p) => p.name).join(", ")
+      comparison = aPerformers.localeCompare(bPerformers)
+      break
+    }
+    case "category": {
+      const aCategories = a.categories.map((c) => c.name).join(", ")
+      const bCategories = b.categories.map((c) => c.name).join(", ")
+      if (sortOrder === "asc") {
+        if (!aCategories && bCategories) return 1
+        if (aCategories && !bCategories) return -1
+      }
+      comparison = aCategories.localeCompare(bCategories)
+      break
+    }
+    case "curriculum": {
+      const aMinOrder = a.curriculums.length > 0
+        ? Math.min(...a.curriculums.map((c) => c.display_order))
+        : Number.MAX_SAFE_INTEGER
+      const bMinOrder = b.curriculums.length > 0
+        ? Math.min(...b.curriculums.map((c) => c.display_order))
+        : Number.MAX_SAFE_INTEGER
+      comparison = aMinOrder - bMinOrder
+      break
+    }
+    case "views":
+      comparison = (a.views || 0) - (b.views || 0)
+      break
+  }
+
+  // Secondary sort by title if primary values are equal
+  if (comparison === 0 && sortBy !== "title") {
+    comparison = a.title.localeCompare(b.title)
+  }
+
+  return sortOrder === "asc" ? comparison : -comparison
+}
+
 export default function VideoLibrary({
   favoritesOnly = false,
   maxCurriculumOrder,
@@ -460,25 +658,14 @@ export default function VideoLibrary({
           throw videosResult.error
         }
 
-        const videosWithMetadata =
-          videosResult.data?.map((video) => {
-            const videoCategories =
-              categoriesResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.categories) || []
-
-            const videoCurriculums =
-              curriculumsResult.data?.filter((vc) => vc.video_id === video.id).map((vc) => vc.curriculums) || []
-
-            const videoPerformers =
-              performersResult.data?.filter((vp) => vp.video_id === video.id).map((vp) => vp.performers) || []
-
-            return {
-              ...video,
-              views: 0, // Initialize with 0, will be updated with actual counts
-              categories: videoCategories,
-              curriculums: videoCurriculums,
-              performers: videoPerformers,
-            }
-          }) || []
+        const videosWithMetadata = (videosResult.data || []).map((video) =>
+          buildVideoWithMetadata(
+            video,
+            categoriesResult.data,
+            curriculumsResult.data,
+            performersResult.data
+          )
+        )
 
         const videoIds = videosWithMetadata.map((video) => video.id)
         const viewCounts = await getBatchVideoViewCounts(videoIds)
@@ -589,8 +776,6 @@ export default function VideoLibrary({
     }
   }, [processedData])
 
-  type VideoSortBy = "title" | "created_at" | "recorded" | "performers" | "category" | "curriculum" | "views"
-
   const [sortBy, setSortBy] = useState<VideoSortBy>(() => {
     if (typeof window !== "undefined") {
       const storageKey = `${storagePrefix}SortBy`
@@ -615,145 +800,16 @@ export default function VideoLibrary({
     }
 
     if (debouncedSearchQuery) {
-      result = result.filter((video) => {
-        const titleMatch = video.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-        const descriptionMatch = video.description?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || false
-        const performerMatch = video.performers.some((performer) =>
-          performer.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()),
-        )
-        return titleMatch || descriptionMatch || performerMatch
-      })
+      result = result.filter((video) => videoMatchesSearch(video, debouncedSearchQuery))
     }
 
     if (selectedCategories.length > 0 || selectedCurriculums.length > 0) {
-      result = result.filter((video) => {
-        const videoCategories = new Set(video.categories.map((cat) => cat.id))
-        const videoCurriculums = new Set(video.curriculums.map((curr) => curr.id))
-        const videoPerformers = new Set(video.performers.map((perf) => perf.id))
-
-        const selectedCategoryIds = selectedCategories.filter(
-          (id) => !id.startsWith("recorded:") && !id.startsWith("performer:") && !id.startsWith("views:"),
-        )
-        const selectedRecordedValues = selectedCategories
-          .filter((id) => id.startsWith("recorded:"))
-          .map((id) => id.replace("recorded:", ""))
-        const selectedPerformerIds = selectedCategories
-          .filter((id) => id.startsWith("performer:"))
-          .map((id) => id.replace("performer:", ""))
-        const selectedViews = selectedCategories
-          .filter((id) => id.startsWith("views:"))
-          .map((id) => id.replace("views:", ""))
-
-        let categoryMatches = selectedCategoryIds.length === 0
-        let curriculumMatches = selectedCurriculums.length === 0
-        let recordedMatches = selectedRecordedValues.length === 0
-        let performerMatches = selectedPerformerIds.length === 0
-        let viewsMatches = selectedViews.length === 0
-
-        if (selectedCategoryIds.length > 0) {
-          if (filterMode === "AND") {
-            categoryMatches = selectedCategoryIds.every((selectedId) => videoCategories.has(selectedId))
-          } else {
-            categoryMatches = selectedCategoryIds.some((selectedId) => videoCategories.has(selectedId))
-          }
-        }
-
-        if (selectedCurriculums.length > 0) {
-          if (filterMode === "AND") {
-            curriculumMatches = selectedCurriculums.every((selectedId) => videoCurriculums.has(selectedId))
-          } else {
-            curriculumMatches = selectedCurriculums.some((selectedId) => videoCurriculums.has(selectedId))
-          }
-        }
-
-        if (selectedRecordedValues.length > 0) {
-          recordedMatches = selectedRecordedValues.includes(video.recorded || "")
-        }
-
-        if (selectedPerformerIds.length > 0) {
-          if (filterMode === "AND") {
-            performerMatches = selectedPerformerIds.every((selectedId) => videoPerformers.has(selectedId))
-          } else {
-            performerMatches = selectedPerformerIds.some((selectedId) => videoPerformers.has(selectedId))
-          }
-        }
-
-        if (selectedViews.length > 0) {
-          const videoViews = video.views || 0
-          const selectedViewNumbers = selectedViews.map(Number)
-          if (filterMode === "AND") {
-            viewsMatches = selectedViewNumbers.every((selectedView) => videoViews >= selectedView)
-          } else {
-            viewsMatches = selectedViewNumbers.some((selectedView) => videoViews >= selectedView)
-          }
-        }
-
-        const activeFilters = [
-          selectedCategoryIds.length > 0 ? categoryMatches : null,
-          selectedCurriculums.length > 0 ? curriculumMatches : null,
-          selectedRecordedValues.length > 0 ? recordedMatches : null,
-          selectedPerformerIds.length > 0 ? performerMatches : null,
-          selectedViews.length > 0 ? viewsMatches : null,
-        ].filter((match) => match !== null)
-
-        if (activeFilters.length === 0) return true
-
-        return filterMode === "AND" ? activeFilters.every((match) => match) : activeFilters.some((match) => match)
-      })
+      result = result.filter((video) =>
+        videoMatchesFilters(video, selectedCategories, selectedCurriculums, filterMode)
+      )
     }
 
-    result.sort((a, b) => {
-      let comparison = 0
-      switch (sortBy) {
-        case "title":
-          comparison = a.title.localeCompare(b.title)
-          break
-        case "created_at":
-          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          break
-        case "recorded":
-          comparison = (a.recorded || "").localeCompare(b.recorded || "")
-          break
-        case "performers": {
-          const aPerformers = a.performers.map((p) => p.name).join(", ")
-          const bPerformers = b.performers.map((p) => p.name).join(", ")
-          comparison = aPerformers.localeCompare(bPerformers)
-          break
-        }
-        case "category": {
-          const aCategories = a.categories.map((c) => c.name).join(", ")
-          const bCategories = b.categories.map((c) => c.name).join(", ")
-
-          // If sorting ascending and one video has no categories, put it at the end
-          if (sortOrder === "asc") {
-            if (!aCategories && bCategories) return 1
-            if (aCategories && !bCategories) return -1
-          }
-
-          comparison = aCategories.localeCompare(bCategories)
-          break
-        }
-        case "curriculum": {
-          const aMinOrder =
-            a.curriculums.length > 0 ? Math.min(...a.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
-          const bMinOrder =
-            b.curriculums.length > 0 ? Math.min(...b.curriculums.map((c) => c.display_order)) : Number.MAX_SAFE_INTEGER
-
-          comparison = aMinOrder - bMinOrder
-          break
-        }
-        case "views":
-          comparison = (a.views || 0) - (b.views || 0)
-          break
-      }
-
-      // If primary sort values are equal and we're not sorting by title, use title as secondary sort
-      if (comparison === 0 && sortBy !== "title") {
-        comparison = a.title.localeCompare(b.title)
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison
-    })
+    result.sort((a, b) => compareVideos(a, b, sortBy, sortOrder))
 
     return result
   }, [
