@@ -410,6 +410,36 @@ function checkFilterMatch<T>(
     : selectedItems.some((item) => videoItems.has(item))
 }
 
+// Helper to determine if a filter ID belongs to categories (vs curriculums)
+function isCategoryTypeFilter(filterId: string, categoryIds: Set<string>): boolean {
+  return (
+    categoryIds.has(filterId) ||
+    filterId.startsWith("recorded:") ||
+    filterId.startsWith("performer:") ||
+    filterId.startsWith("views:")
+  )
+}
+
+// Helper to separate URL filters into categories and curriculums
+function separateUrlFilters(
+  filters: string[],
+  categoryIds: Set<string>,
+  curriculumIds: Set<string>
+): { categories: string[]; curriculums: string[] } {
+  const categories: string[] = []
+  const curriculums: string[] = []
+  
+  for (const filterId of filters) {
+    if (isCategoryTypeFilter(filterId, categoryIds)) {
+      categories.push(filterId)
+    } else if (curriculumIds.has(filterId)) {
+      curriculums.push(filterId)
+    }
+  }
+  
+  return { categories, curriculums }
+}
+
 // Helper to check views filter
 function checkViewsMatch(
   selectedViews: string[],
@@ -775,17 +805,18 @@ export default function VideoLibrary({
   }
 
   const isCircuitBreakerOpen = () => {
-    if (failureCount >= CIRCUIT_BREAKER_THRESHOLD) {
-      const timeSinceLastFailure = Date.now() - lastFailureTime
-      if (timeSinceLastFailure < CIRCUIT_BREAKER_TIMEOUT) {
-        return true
-      } else {
-        failureCount = 0
-        lastFailureTime = 0
-        return false
-      }
+    if (failureCount < CIRCUIT_BREAKER_THRESHOLD) return false
+    
+    const timeSinceLastFailure = Date.now() - lastFailureTime
+    const isTimedOut = timeSinceLastFailure >= CIRCUIT_BREAKER_TIMEOUT
+    
+    if (isTimedOut) {
+      failureCount = 0
+      lastFailureTime = 0
+      return false
     }
-    return false
+    
+    return true
   }
 
   useEffect(() => {
@@ -794,29 +825,18 @@ export default function VideoLibrary({
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
 
-    if (urlState.filters.length > 0 && processedData.categories.length > 0 && processedData.curriculums.length > 0) {
-      const categoryIds = new Set(processedData.categories.map((c) => c.id))
-      const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
-
-      const separatedCategories: string[] = []
-      const separatedCurriculums: string[] = []
-
-      urlState.filters.forEach((filterId) => {
-        if (
-          categoryIds.has(filterId) ||
-          filterId.startsWith("recorded:") ||
-          filterId.startsWith("performer:") ||
-          filterId.startsWith("views:")
-        ) {
-          separatedCategories.push(filterId)
-        } else if (curriculumIds.has(filterId)) {
-          separatedCurriculums.push(filterId)
-        }
-      })
-
-      setSelectedCategories(separatedCategories)
-      setSelectedCurriculums(separatedCurriculums)
-    }
+    const hasFiltersToProcess = urlState.filters.length > 0 && 
+      processedData.categories.length > 0 && 
+      processedData.curriculums.length > 0
+    
+    if (!hasFiltersToProcess) return
+    
+    const categoryIds = new Set(processedData.categories.map((c) => c.id))
+    const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
+    const separated = separateUrlFilters(urlState.filters, categoryIds, curriculumIds)
+    
+    setSelectedCategories(separated.categories)
+    setSelectedCurriculums(separated.curriculums)
   }, [processedData])
 
   const [sortBy, setSortBy] = useState<VideoSortBy>(() => {
@@ -888,30 +908,18 @@ export default function VideoLibrary({
   const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", page: number) => {
     const params = new URLSearchParams()
 
-    if (filters.length > 0) {
-      params.set("filters", encodeURIComponent(JSON.stringify(filters)))
-    }
+    if (filters.length > 0) params.set("filters", encodeURIComponent(JSON.stringify(filters)))
+    if (search.trim()) params.set("search", search)
+    if (mode !== "AND") params.set("mode", mode)
+    if (page > 1) params.set("page", page.toString())
 
-    if (search.trim()) {
-      params.set("search", search)
-    }
-
-    if (mode !== "AND") {
-      params.set("mode", mode)
-    }
-
-    if (page > 1) {
-      params.set("page", page.toString())
-    }
-
-    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
-
-    const currentSearch = window.location.search
-    const newSearch = params.toString() ? `?${params.toString()}` : ""
-
-    if (currentSearch !== newSearch) {
-      router.replace(newURL, { scroll: false })
-    }
+    const queryString = params.toString()
+    const newSearch = queryString ? `?${queryString}` : ""
+    
+    if (window.location.search === newSearch) return
+    
+    const newURL = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname
+    router.replace(newURL, { scroll: false })
   }
 
   const handleCurriculumToggle = (curriculumId: string) => {
