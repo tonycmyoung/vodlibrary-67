@@ -28,7 +28,7 @@ export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProp
   const [message, setMessage] = useState("")
   const [messageType, setMessageType] = useState<"success" | "error" | "">("")
 
-  const handleInvite: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleInvite = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
 
     if (!email.trim()) {
