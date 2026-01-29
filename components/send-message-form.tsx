@@ -22,7 +22,7 @@ export default function SendMessageForm({ userId, userName }: SendMessageFormPro
     message: "",
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!message.trim()) {

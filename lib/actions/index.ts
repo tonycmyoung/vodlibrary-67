@@ -1,7 +1,5 @@
-"use server"
-
-import { signIn, signUp, createAdminUser, signOutServerAction, updatePassword } from "./auth"
-import {
+export { signIn, signUp, createAdminUser, signOutServerAction, updatePassword } from "./auth"
+export {
   inviteUser,
   approveUserServerAction,
   rejectUserServerAction,
@@ -15,42 +13,8 @@ import {
   adminResetUserPassword,
   fetchStudentsForHeadTeacher,
 } from "./users"
-import { incrementVideoViews, saveVideo, fetchVideoViewLogs } from "./videos"
-import { addPerformer, updatePerformer, deletePerformer } from "./performers"
-import { fetchNotificationsWithSenders, sendNotificationWithEmail } from "./notifications"
-import { getTelemetryData, clearAuthDebugLogs, fetchAuthDebugLogs } from "./admin"
-import { logAuditEvent, fetchAuditLogs, clearAuditLogs } from "./audit"
-
-export {
-  signIn,
-  signUp,
-  createAdminUser,
-  signOutServerAction,
-  updatePassword,
-  inviteUser,
-  approveUserServerAction,
-  rejectUserServerAction,
-  updateUserFields,
-  updatePendingUserFields,
-  deleteUserCompletely,
-  updateProfile,
-  fetchPendingUsers,
-  fetchUnconfirmedEmailUsers,
-  resendConfirmationEmail,
-  adminResetUserPassword,
-  fetchStudentsForHeadTeacher,
-  incrementVideoViews,
-  saveVideo,
-  fetchVideoViewLogs,
-  addPerformer,
-  updatePerformer,
-  deletePerformer,
-  fetchNotificationsWithSenders,
-  sendNotificationWithEmail,
-  getTelemetryData,
-  clearAuthDebugLogs,
-  fetchAuthDebugLogs,
-  logAuditEvent,
-  fetchAuditLogs,
-  clearAuditLogs,
-}
+export { incrementVideoViews, saveVideo, fetchVideoViewLogs } from "./videos"
+export { addPerformer, updatePerformer, deletePerformer } from "./performers"
+export { fetchNotificationsWithSenders, sendNotificationWithEmail } from "./notifications"
+export { getTelemetryData, clearAuthDebugLogs, fetchAuthDebugLogs } from "./admin"
+export { logAuditEvent, fetchAuditLogs, clearAuditLogs } from "./audit"

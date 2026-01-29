@@ -45,7 +45,7 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showResetInput, setShowResetInput] = useState(false)
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!resetEmail) {
       setResetError("Please enter your email address")
