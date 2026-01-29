@@ -527,6 +527,28 @@ describe("VideoManagement", () => {
       // Re-render to pick up localStorage change
       expect(localStorage.getItem("adminVideoManagement_sortBy")).toBe("views")
     })
+
+    it("should fall back to title sort for unknown sortBy values (default case)", async () => {
+      mockSupabaseClient.select.mockImplementation((query: string) => {
+        if (query.includes("video_categories")) {
+          return {
+            order: vi.fn().mockResolvedValue({ data: videosForSorting, error: null }),
+          }
+        }
+        return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+      })
+
+      // Set an invalid sortBy value to trigger default case
+      localStorage.setItem("adminVideoManagement_sortBy", "invalid_sort_option")
+      render(<VideoManagement />)
+
+      await waitFor(() => {
+        // Videos should still be sorted alphabetically by title (default behavior)
+        expect(screen.getByText("Alpha Video")).toBeTruthy()
+        expect(screen.getByText("Beta Video")).toBeTruthy()
+        expect(screen.getByText("Charlie Video")).toBeTruthy()
+      })
+    })
   })
 
   describe("Filter Mode", () => {

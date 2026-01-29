@@ -311,6 +311,72 @@ const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
 const cache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
+// Circuit breaker helper functions - extracted to reduce cognitive complexity
+function recordCircuitBreakerFailure() {
+  failureCount++
+  lastFailureTime = Date.now()
+}
+
+function recordCircuitBreakerSuccess() {
+  failureCount = 0
+  lastFailureTime = 0
+}
+
+function resetCircuitBreaker() {
+  failureCount = 0
+  lastFailureTime = 0
+}
+
+function isCircuitBreakerTimedOut(): boolean {
+  const timeSinceLastFailure = Date.now() - lastFailureTime
+  return timeSinceLastFailure >= CIRCUIT_BREAKER_TIMEOUT
+}
+
+function isCircuitBreakerOpen(): boolean {
+  if (failureCount < CIRCUIT_BREAKER_THRESHOLD) return false
+  if (isCircuitBreakerTimedOut()) {
+    resetCircuitBreaker()
+    return false
+  }
+  return true
+}
+
+// Cache helper functions
+function setCachedData(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() })
+}
+
+function getCachedData(key: string) {
+  const cached = cache.get(key)
+  const isValid = cached && Date.now() - cached.timestamp < CACHE_DURATION
+  return isValid ? cached.data : null
+}
+
+// URL filter separator - extracted to reduce cognitive complexity
+function separateUrlFilters(
+  filters: string[],
+  categoryIds: Set<string>,
+  curriculumIds: Set<string>
+): { categories: string[]; curriculums: string[] } {
+  const categories: string[] = []
+  const curriculums: string[] = []
+
+  for (const filterId of filters) {
+    const isPrefixedFilter =
+      filterId.startsWith("recorded:") ||
+      filterId.startsWith("performer:") ||
+      filterId.startsWith("views:")
+
+    if (categoryIds.has(filterId) || isPrefixedFilter) {
+      categories.push(filterId)
+    } else if (curriculumIds.has(filterId)) {
+      curriculums.push(filterId)
+    }
+  }
+
+  return { categories, curriculums }
+}
+
 // Helper functions to reduce nesting in video data processing
 function getVideoCategoriesForVideo(
   videoId: string,
@@ -742,7 +808,6 @@ export default function VideoLibrary({
 
   const loadFromCache = () => {
     const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
-
     if (cachedVideos) {
       setAllVideos(cachedVideos)
     }
@@ -752,67 +817,22 @@ export default function VideoLibrary({
     setCachedData(favoritesOnly ? "favoriteVideos" : "videos", data)
   }
 
-  const setCachedData = (key: string, data: any) => {
-    cache.set(key, { data, timestamp: Date.now() })
-  }
-
-  const getCachedData = (key: string) => {
-    const cached = cache.get(key)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data
-    }
-    return null
-  }
-
-  const recordCircuitBreakerFailure = () => {
-    failureCount++
-    lastFailureTime = Date.now()
-  }
-
-  const recordCircuitBreakerSuccess = () => {
-    failureCount = 0
-    lastFailureTime = 0
-  }
-
-  const isCircuitBreakerOpen = () => {
-    if (failureCount >= CIRCUIT_BREAKER_THRESHOLD) {
-      const timeSinceLastFailure = Date.now() - lastFailureTime
-      if (timeSinceLastFailure < CIRCUIT_BREAKER_TIMEOUT) {
-        return true
-      } else {
-        failureCount = 0
-        lastFailureTime = 0
-        return false
-      }
-    }
-    return false
-  }
-
   useEffect(() => {
     setCategories(processedData.categories)
     setCurriculums(processedData.curriculums)
     setPerformers(processedData.performers)
     setRecordedValues(processedData.recordedValues)
 
-    if (urlState.filters.length > 0 && processedData.categories.length > 0 && processedData.curriculums.length > 0) {
+    const hasFiltersToProcess =
+      urlState.filters.length > 0 &&
+      processedData.categories.length > 0 &&
+      processedData.curriculums.length > 0
+
+    if (hasFiltersToProcess) {
       const categoryIds = new Set(processedData.categories.map((c) => c.id))
       const curriculumIds = new Set(processedData.curriculums.map((c) => c.id))
-
-      const separatedCategories: string[] = []
-      const separatedCurriculums: string[] = []
-
-      urlState.filters.forEach((filterId) => {
-        if (
-          categoryIds.has(filterId) ||
-          filterId.startsWith("recorded:") ||
-          filterId.startsWith("performer:") ||
-          filterId.startsWith("views:")
-        ) {
-          separatedCategories.push(filterId)
-        } else if (curriculumIds.has(filterId)) {
-          separatedCurriculums.push(filterId)
-        }
-      })
+      const { categories: separatedCategories, curriculums: separatedCurriculums } =
+        separateUrlFilters(urlState.filters, categoryIds, curriculumIds)
 
       setSelectedCategories(separatedCategories)
       setSelectedCurriculums(separatedCurriculums)

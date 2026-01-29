@@ -215,11 +215,6 @@ export default function VideoManagement() {
       let bValue: any
 
       switch (sortBy) {
-        case "title":
-        default:
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
-          break
         case "created_at": {
           aValue = new Date(a.created_at).getTime()
           bValue = new Date(b.created_at).getTime()
@@ -261,6 +256,11 @@ export default function VideoManagement() {
           bValue = b.last_viewed_at ? new Date(b.last_viewed_at).getTime() : 0
           break
         }
+        case "title":
+        default:
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
       }
 
       if (aValue < bValue) return sortOrder === "asc" ? -1 : 1

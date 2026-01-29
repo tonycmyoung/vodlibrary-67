@@ -229,6 +229,31 @@ const createMockVideo = (overrides: Partial<Video> = {}): Video => ({
   ...overrides,
 })
 
+// separateUrlFilters helper function (mirroring video-library.tsx)
+function separateUrlFilters(
+  filters: string[],
+  categoryIds: Set<string>,
+  curriculumIds: Set<string>
+): { categories: string[]; curriculums: string[] } {
+  const categories: string[] = []
+  const curriculums: string[] = []
+
+  for (const filterId of filters) {
+    const isPrefixedFilter =
+      filterId.startsWith("recorded:") ||
+      filterId.startsWith("performer:") ||
+      filterId.startsWith("views:")
+
+    if (categoryIds.has(filterId) || isPrefixedFilter) {
+      categories.push(filterId)
+    } else if (curriculumIds.has(filterId)) {
+      curriculums.push(filterId)
+    }
+  }
+
+  return { categories, curriculums }
+}
+
 describe("Video Library Helper Functions", () => {
   describe("getVideoCategoriesForVideo", () => {
     it("should return empty array when categoriesData is null", () => {
@@ -505,6 +530,50 @@ describe("Video Library Helper Functions", () => {
     it("should handle videos with no curriculums", () => {
       const videoNoCurriculum = createMockVideo({ id: "no-curr", title: "No Curr", curriculums: [] })
       expect(compareVideos(videoNoCurriculum, videoA, "curriculum", "asc")).toBeGreaterThan(0)
+    })
+  })
+
+  describe("separateUrlFilters", () => {
+    const categoryIds = new Set(["cat-1", "cat-2", "cat-3"])
+    const curriculumIds = new Set(["curr-1", "curr-2"])
+
+    it("should separate categories and curriculums", () => {
+      const filters = ["cat-1", "curr-1", "cat-2"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["cat-1", "cat-2"])
+      expect(result.curriculums).toEqual(["curr-1"])
+    })
+
+    it("should include prefixed filters in categories", () => {
+      const filters = ["recorded:2024", "performer:perf-1", "views:100", "cat-1"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["recorded:2024", "performer:perf-1", "views:100", "cat-1"])
+      expect(result.curriculums).toEqual([])
+    })
+
+    it("should handle empty filters", () => {
+      const result = separateUrlFilters([], categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual([])
+      expect(result.curriculums).toEqual([])
+    })
+
+    it("should ignore filters that match neither categories nor curriculums", () => {
+      const filters = ["unknown-id", "cat-1", "curr-1"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["cat-1"])
+      expect(result.curriculums).toEqual(["curr-1"])
+    })
+
+    it("should handle mixed prefixed and non-prefixed filters", () => {
+      const filters = ["cat-1", "recorded:2024", "curr-1", "performer:perf-1", "curr-2"]
+      const result = separateUrlFilters(filters, categoryIds, curriculumIds)
+
+      expect(result.categories).toEqual(["cat-1", "recorded:2024", "performer:perf-1"])
+      expect(result.curriculums).toEqual(["curr-1", "curr-2"])
     })
   })
 })
