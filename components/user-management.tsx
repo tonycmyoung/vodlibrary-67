@@ -183,6 +183,149 @@ const UserDatesInfo = ({ user }: { user: UserInterface }) => (
   </div>
 )
 
+// User name display component - extracted to reduce nesting
+const UserNameDisplay = ({
+  user,
+  isEditing,
+  editValues,
+  setEditValues,
+}: {
+  user: UserInterface
+  isEditing: boolean
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+  setEditValues: React.Dispatch<
+    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
+  >
+}) => {
+  if (isEditing) {
+    return (
+      <Input
+        value={editValues.full_name}
+        onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
+        className="h-6 text-sm bg-gray-800 border-gray-600 text-white max-w-48"
+        placeholder="Full name"
+      />
+    )
+  }
+  return <h4 className="font-medium text-white truncate">{user.full_name || "No name provided"}</h4>
+}
+
+// User badges row component - extracted to reduce nesting
+const UserBadgesRow = ({ user, isAdmin }: { user: UserInterface; isAdmin: boolean }) => {
+  if (isAdmin) {
+    return <Badge className="bg-purple-600 text-white flex-shrink-0">Administrator</Badge>
+  }
+  return (
+    <>
+      <ApprovalBadge isApproved={user.is_approved} />
+      <Badge className={getRoleBadgeClass(user.role)}>{user.role || "Student"}</Badge>
+      <UserStatsBadges user={user} />
+    </>
+  )
+}
+
+// Teacher field component - extracted to reduce nesting
+const TeacherField = ({
+  user,
+  isEditing,
+  editValues,
+  setEditValues,
+}: {
+  user: UserInterface
+  isEditing: boolean
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+  setEditValues: React.Dispatch<
+    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
+  >
+}) => {
+  if (isEditing) {
+    return (
+      <Input
+        value={editValues.teacher}
+        onChange={(e) => setEditValues({ ...editValues, teacher: e.target.value })}
+        className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+        placeholder="Teacher name"
+      />
+    )
+  }
+  return (
+    <>
+      <GraduationCap className="w-3 h-3 flex-shrink-0" />
+      <span className="truncate">{user.teacher || "Not specified"}</span>
+    </>
+  )
+}
+
+// School field component - extracted to reduce nesting
+const SchoolField = ({
+  user,
+  isEditing,
+  editValues,
+  setEditValues,
+}: {
+  user: UserInterface
+  isEditing: boolean
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+  setEditValues: React.Dispatch<
+    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
+  >
+}) => {
+  if (isEditing) {
+    return (
+      <Input
+        value={editValues.school}
+        onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+        className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
+        placeholder="School name"
+      />
+    )
+  }
+  return (
+    <>
+      <Building className="w-3 h-3 flex-shrink-0" />
+      <span className="truncate">{user.school || "Not specified"}</span>
+    </>
+  )
+}
+
+// Belt selector for editing mode - extracted to reduce nesting
+const EditBeltSelector = ({
+  editValues,
+  setEditValues,
+  curriculums,
+}: {
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null }
+  setEditValues: React.Dispatch<
+    React.SetStateAction<{ full_name: string; teacher: string; school: string; current_belt_id: string | null }>
+  >
+  curriculums: Curriculum[]
+}) => (
+  <div className="flex items-center space-x-1 min-w-0">
+    <Award className="w-3 h-3 flex-shrink-0" />
+    <Select
+      value={editValues.current_belt_id || "none"}
+      onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
+    >
+      <SelectTrigger className="h-5 text-xs bg-gray-800 border-gray-600 text-white">
+        <SelectValue placeholder="Belt" />
+      </SelectTrigger>
+      <SelectContent className="bg-gray-800 border-gray-700">
+        <SelectItem value="none" className="text-white text-xs">
+          No Belt
+        </SelectItem>
+        {curriculums.map((curriculum) => (
+          <SelectItem key={curriculum.id} value={curriculum.id} className="text-white text-xs">
+            <span className="flex items-center">
+              <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: curriculum.color }} />
+              {curriculum.name}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)
+
 type UserSortBy = "full_name" | "created_at" | "last_login" | "login_count" | "last_view" | "view_count"
 
 export default function UserManagement() {
