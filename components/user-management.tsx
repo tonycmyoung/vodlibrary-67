@@ -178,8 +178,8 @@ const InfoRowItem = ({
   icon: React.ElementType
   children: React.ReactNode
   className?: string 
-}) => (
-  <div className={cn(STYLES.infoRow, className)}>
+) => (
+  <div className={[STYLES.infoRow, className].filter(Boolean).join(" ")}>
     <Icon className={STYLES.iconSmall} />
     {children}
   </div>
