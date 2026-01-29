@@ -1262,10 +1262,8 @@ export default function UserManagement() {
   const generateRandomPassword = () => {
     const length = 12
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-    let password = ""
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length))
-    }
+    const randomValues = crypto.getRandomValues(new Uint32Array(length))
+    const password = Array.from(randomValues, (v) => charset[v % charset.length]).join("")
     setNewPassword(password)
     setShowPassword(true)
   }
