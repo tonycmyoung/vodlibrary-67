@@ -79,55 +79,15 @@ const getEnvironment = (): string => {
 // Check if we're in development mode
 const isDevelopment = () => process.env.NODE_ENV === "development"
 
-// Parse stack trace to extract source file, line number, and function name
-function parseStackTrace(): { sourceFile: string; sourceLine: number | null; functionName: string | null } {
-  const error = new Error("Stack trace capture")
-  const stack = error.stack || ""
-  const lines = stack.split("\n")
-  
-  // Skip the first few lines (Error, parseStackTrace, writeTrace, trace.xxx)
-  // Find the first line that's not from trace-logger.ts
-  for (let i = 3; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.includes("trace-logger")) continue
-    
-    // Parse the stack line - formats vary:
-    // "    at functionName (file:line:col)"
-    // "    at file:line:col"
-    // "    at Object.functionName (file:line:col)"
-    // Use atomic groups via possessive-like patterns to prevent ReDoS
-    const withFnMatch = /^\s*at\s+([^\s(]+)\s+\(([^:]+):(\d+):\d+\)/.exec(line)
-    if (withFnMatch) {
-      let functionName: string | null = withFnMatch[1] || null
-      let sourceFile = withFnMatch[2] || "unknown"
-      const sourceLine = withFnMatch[3] ? Number.parseInt(withFnMatch[3], 10) : null
-      
-      // Clean up function name
-      if (functionName) {
-        functionName = functionName.replace(/^Object\./, "").replace(/^async\s+/, "")
-      }
-      
-      // Clean up source file path
-      sourceFile = cleanSourceFile(sourceFile)
-      
-      return { sourceFile, sourceLine, functionName }
-    }
-    
-    // Try format without function name: "    at file:line:col"
-    const withoutFnMatch = /^\s*at\s+([^:]+):(\d+):\d+/.exec(line)
-    if (withoutFnMatch) {
-      let sourceFile = withoutFnMatch[1] || "unknown"
-      const sourceLine = withoutFnMatch[2] ? Number.parseInt(withoutFnMatch[2], 10) : null
-      
-      // Clean up source file path
-      sourceFile = cleanSourceFile(sourceFile)
-      
-      return { sourceFile, sourceLine, functionName: null }
-    }
-  }
-  
-  return { sourceFile: "unknown", sourceLine: null, functionName: null }
+// Result type for parsed stack line
+interface ParsedStackLine {
+  sourceFile: string
+  sourceLine: number | null
+  functionName: string | null
 }
+
+// Default result when parsing fails
+const DEFAULT_PARSE_RESULT: ParsedStackLine = { sourceFile: "unknown", sourceLine: null, functionName: null }
 
 // Helper to clean webpack prefixes from source file paths
 function cleanSourceFile(sourceFile: string): string {
@@ -143,6 +103,78 @@ function cleanSourceFile(sourceFile: string): string {
     .replace(/\([^)]*\)$/, "")
     .replace(/^\(/, "")
     .trim()
+}
+
+// Clean function name
+function cleanFunctionName(name: string): string | null {
+  if (!name) return null
+  return name.replace(/^Object\./, "").replace(/^async /, "")
+}
+
+// Parse location string "file:line:col" without regex (avoids ReDoS)
+function parseLocation(location: string): { sourceFile: string; sourceLine: number | null } | null {
+  const lastColonIdx = location.lastIndexOf(":")
+  if (lastColonIdx === -1) return null
+  
+  const beforeLastColon = location.substring(0, lastColonIdx)
+  const secondLastColonIdx = beforeLastColon.lastIndexOf(":")
+  if (secondLastColonIdx === -1) return null
+  
+  const sourceFile = cleanSourceFile(beforeLastColon.substring(0, secondLastColonIdx))
+  const lineStr = beforeLastColon.substring(secondLastColonIdx + 1)
+  const sourceLine = lineStr ? Number.parseInt(lineStr, 10) : null
+  
+  if (sourceFile && !Number.isNaN(sourceLine)) {
+    return { sourceFile, sourceLine }
+  }
+  return null
+}
+
+// Parse a single stack line - extracted to reduce cognitive complexity
+function parseStackLine(line: string): ParsedStackLine | null {
+  // Simple string parsing instead of regex to avoid ReDoS
+  const atIndex = line.indexOf(" at ")
+  if (atIndex === -1) return null
+  
+  const afterAt = line.substring(atIndex + 4).trim()
+  const parenOpen = afterAt.indexOf("(")
+  const parenClose = afterAt.lastIndexOf(")")
+  
+  // Format: "functionName (file:line:col)"
+  if (parenOpen > 0 && parenClose > parenOpen) {
+    const functionName = cleanFunctionName(afterAt.substring(0, parenOpen).trim())
+    const locationPart = afterAt.substring(parenOpen + 1, parenClose)
+    const parsed = parseLocation(locationPart)
+    if (parsed) {
+      return { sourceFile: parsed.sourceFile, sourceLine: parsed.sourceLine, functionName }
+    }
+  }
+  
+  // Format: "file:line:col" (no function name)
+  const parsed = parseLocation(afterAt)
+  if (parsed) {
+    return { sourceFile: parsed.sourceFile, sourceLine: parsed.sourceLine, functionName: null }
+  }
+  
+  return null
+}
+
+// Parse stack trace to extract source file, line number, and function name
+function parseStackTrace(): ParsedStackLine {
+  const error = new Error("Stack trace capture")
+  const stack = error.stack || ""
+  const lines = stack.split("\n")
+  
+  // Skip first 3 lines (Error, parseStackTrace, writeTrace) and find caller
+  for (let i = 3; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.includes("trace-logger")) continue
+    
+    const result = parseStackLine(line)
+    if (result) return result
+  }
+  
+  return DEFAULT_PARSE_RESULT
 }
 
 // Fetch trace settings
