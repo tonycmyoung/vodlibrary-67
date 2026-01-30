@@ -66,7 +66,7 @@ describe("audit.ts", () => {
         target_email: "target@example.com",
         additional_data: { reason: "Approved by admin" },
       })
-      expect(consoleErrorSpy).not.toHaveBeenCalled()
+      expect(serverTrace.error).not.toHaveBeenCalled()
     })
 
     it("should log audit event with minimal required fields", async () => {
