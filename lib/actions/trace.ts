@@ -181,7 +181,7 @@ export async function getTraceCategories(): Promise<string[]> {
 
   // Get unique categories
   const categories = [...new Set(data?.map((d) => d.category).filter(Boolean))] as string[]
-  return categories.sort()
+  return categories.sort((a, b) => a.localeCompare(b))
 }
 
 export async function getTraceSourceFiles(): Promise<string[]> {
@@ -206,7 +206,19 @@ export async function getTraceSourceFiles(): Promise<string[]> {
 
   // Get unique source files
   const files = [...new Set(data?.map((d) => d.source_file).filter(Boolean))] as string[]
-  return files.sort()
+  return files.sort((a, b) => a.localeCompare(b))
+}
+
+// Format source location string
+function formatSourceLocation(sourceFile: string, sourceLine: number | null, functionName: string | null): string {
+  let result = sourceFile
+  if (sourceLine) {
+    result += ":" + String(sourceLine)
+  }
+  if (functionName) {
+    result += " (" + functionName + ")"
+  }
+  return result
 }
 
 // Format logs for clipboard - JSON format optimized for AI conversation
@@ -214,7 +226,7 @@ export async function formatTraceLogsForClipboard(logs: TraceLogEntry[]): Promis
   const formatted = logs.map((log) => ({
     timestamp: log.created_at,
     level: log.level,
-    source: `${log.source_file}${log.source_line ? `:${log.source_line}` : ""}${log.function_name ? ` (${log.function_name})` : ""}`,
+    source: formatSourceLocation(log.source_file, log.source_line, log.function_name),
     category: log.category,
     message: log.message,
     payload: log.payload,

@@ -1,6 +1,7 @@
 // Unified trace logger - works in both client and server environments
 // - Server: writes directly to database
 // - Client: sends to /api/trace endpoint
+// SonarCloud fixes applied: 2026-01-30
 
 import type { TraceLevel, TraceOptions } from "./trace-logger"
 
@@ -8,14 +9,14 @@ import type { TraceLevel, TraceOptions } from "./trace-logger"
 export type { TraceLevel, TraceOptions, TraceLogEntry, TraceSettings } from "./trace-logger"
 
 // Check if we're on the server
-const isServer = typeof window === "undefined"
+const isServer = typeof globalThis.window === "undefined"
 
 // Check if we're in development mode
 const isDevelopment = () => process.env.NODE_ENV === "development"
 
 // Parse stack trace to extract source info (works in both environments)
 function parseStackTrace(): { sourceFile: string; sourceLine: number | null; functionName: string | null } {
-  const error = new Error()
+  const error = new Error("Stack trace capture")
   const stack = error.stack || ""
   const lines = stack.split("\n")
   
@@ -26,11 +27,12 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
     if (line.includes("trace.ts") || line.includes("trace-logger")) continue
     
     // Parse stack line - handles various formats
-    const match = line.match(/at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/)
+    const regex = /at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/
+    const match = regex.exec(line)
     if (match) {
       let functionName = match[1] || null
       let sourceFile = match[2] || "unknown"
-      const sourceLine = match[3] ? parseInt(match[3], 10) : null
+      const sourceLine = match[3] ? Number.parseInt(match[3], 10) : null
       
       // Clean up function name
       if (functionName) {
@@ -58,6 +60,18 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
   return { sourceFile: "unknown", sourceLine: null, functionName: null }
 }
 
+// Format location string for console output
+function formatLocation(sourceFile: string, sourceLine: number | null, functionName: string | null): string {
+  let location = sourceFile
+  if (sourceLine) {
+    location += ":" + String(sourceLine)
+  }
+  if (functionName) {
+    location += " " + functionName
+  }
+  return "[" + location + "]"
+}
+
 // Console output for development
 function consoleOutput(
   level: TraceLevel,
@@ -68,10 +82,10 @@ function consoleOutput(
   payload?: Record<string, unknown>
 ) {
   const timestamp = new Date().toISOString()
-  const prefix = `[${timestamp}] [${level.toUpperCase()}]`
-  const location = `[${sourceFile}${sourceLine ? `:${sourceLine}` : ""}${functionName ? ` ${functionName}` : ""}]`
-  const payloadStr = payload ? ` ${JSON.stringify(payload)}` : ""
-  console.log(`${prefix} ${location} ${message}${payloadStr}`)
+  const prefix = "[" + timestamp + "] [" + level.toUpperCase() + "]"
+  const location = formatLocation(sourceFile, sourceLine, functionName)
+  const payloadStr = payload ? " " + JSON.stringify(payload) : ""
+  console.log(prefix + " " + location + " " + message + payloadStr)
 }
 
 // Client-side trace function - sends to API

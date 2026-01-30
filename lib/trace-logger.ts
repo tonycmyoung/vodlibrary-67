@@ -80,7 +80,7 @@ const isDevelopment = () => process.env.NODE_ENV === "development"
 
 // Parse stack trace to extract source file, line number, and function name
 function parseStackTrace(): { sourceFile: string; sourceLine: number | null; functionName: string | null } {
-  const error = new Error()
+  const error = new Error("Stack trace capture")
   const stack = error.stack || ""
   const lines = stack.split("\n")
   
@@ -94,11 +94,12 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
     // "    at functionName (file:line:col)"
     // "    at file:line:col"
     // "    at Object.functionName (file:line:col)"
-    const match = line.match(/at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/)
+    const regex = /at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/
+    const match = regex.exec(line)
     if (match) {
       let functionName = match[1] || null
       let sourceFile = match[2] || "unknown"
-      const sourceLine = match[3] ? parseInt(match[3], 10) : null
+      const sourceLine = match[3] ? Number.parseInt(match[3], 10) : null
       
       // Clean up function name
       if (functionName) {
@@ -182,10 +183,17 @@ async function writeTrace(
   // Always log to console in development
   if (isDevelopment()) {
     const timestamp = new Date().toISOString()
-    const prefix = `[${timestamp}] [${level.toUpperCase()}]`
-    const location = `[${sourceFile}${sourceLine ? `:${sourceLine}` : ""}${functionName ? ` ${functionName}` : ""}]`
-    const payload = options.payload ? ` ${JSON.stringify(options.payload)}` : ""
-    console.log(`${prefix} ${location} ${message}${payload}`)
+    const prefix = "[" + timestamp + "] [" + level.toUpperCase() + "]"
+    let location = sourceFile
+    if (sourceLine) {
+      location += ":" + String(sourceLine)
+    }
+    if (functionName) {
+      location += " " + functionName
+    }
+    const locationStr = "[" + location + "]"
+    const payloadStr = options.payload ? " " + JSON.stringify(options.payload) : ""
+    console.log(prefix + " " + locationStr + " " + message + payloadStr)
   }
   
   // Attempt to write to database

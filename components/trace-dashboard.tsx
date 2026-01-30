@@ -125,7 +125,7 @@ export default function TraceDashboard() {
 
   // Auto-refresh every 5 seconds when enabled
   useEffect(() => {
-    if (!autoRefresh) return
+    if (autoRefresh === false) return
     const interval = setInterval(loadLogs, 5000)
     return () => clearInterval(interval)
   }, [autoRefresh, loadLogs])
@@ -217,7 +217,7 @@ export default function TraceDashboard() {
               </div>
               <Select
                 value={String(settings?.retention_days ?? 7)}
-                onValueChange={(value) => handleUpdateSettings({ retention_days: parseInt(value) })}
+                onValueChange={(value) => handleUpdateSettings({ retention_days: Number.parseInt(value, 10) })}
                 disabled={savingSettings}
               >
                 <SelectTrigger className="w-32 bg-gray-700 border-gray-600 text-white">
@@ -291,7 +291,7 @@ export default function TraceDashboard() {
               <Label className="text-gray-300 mb-2 block">Limit</Label>
               <Select
                 value={String(filter.limit || 200)}
-                onValueChange={(value) => setFilter((f) => ({ ...f, limit: parseInt(value) }))}
+                onValueChange={(value) => setFilter((f) => ({ ...f, limit: Number.parseInt(value, 10) }))}
               >
                 <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                   <SelectValue />
@@ -361,22 +361,23 @@ export default function TraceDashboard() {
           </div>
         </div>
         <div className="text-sm text-gray-400">
-          {logs.length} log{logs.length !== 1 ? "s" : ""} total
-          {settings && !settings.enabled && (
+          {logs.length} {logs.length === 1 ? "log" : "logs"} total
+          {settings && settings.enabled === false && (
             <span className="ml-2 text-yellow-400">(Tracing disabled)</span>
           )}
         </div>
       </div>
 
       {/* Logs Table */}
-      {loading && logs.length === 0 ? (
+      {loading && logs.length === 0 && (
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-8 text-center">
             <Loader2 className="w-8 h-8 mx-auto mb-4 text-gray-400 animate-spin" />
             <p className="text-gray-400">Loading trace logs...</p>
           </CardContent>
         </Card>
-      ) : logs.length === 0 ? (
+      )}
+      {loading === false && logs.length === 0 && (
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-8 text-center">
             <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-500" />
@@ -386,7 +387,8 @@ export default function TraceDashboard() {
             </p>
           </CardContent>
         </Card>
-      ) : (
+      )}
+      {logs.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
