@@ -89,20 +89,35 @@ interface ParsedStackLine {
 // Default result when parsing fails
 const DEFAULT_PARSE_RESULT: ParsedStackLine = { sourceFile: "unknown", sourceLine: null, functionName: null }
 
-// Helper to clean webpack prefixes from source file paths
+// Helper to clean webpack prefixes from source file paths (no regex to avoid ReDoS)
 function cleanSourceFile(sourceFile: string): string {
-  return sourceFile
-    .replace(/^webpack-internal:\/\/\//, "")
-    .replace(/^\(app-pages-browser\)\//, "")
-    .replace(/^\(rsc\)\//, "")
-    .replace(/^\(ssr\)\//, "")
-    .replace(/^\(sc_client\)\//, "")
-    .replace(/^\(sc_server\)\//, "")
-    .replace(/^\(action-browser\)\//, "")
-    .replace(/^\.\//, "")
-    .replace(/\([^)]*\)$/, "")
-    .replace(/^\(/, "")
-    .trim()
+  let result = sourceFile
+  
+  // Remove webpack-internal prefix
+  if (result.startsWith("webpack-internal:///")) {
+    result = result.substring(20)
+  }
+  
+  // Remove common webpack chunk prefixes
+  const prefixes = ["(app-pages-browser)/", "(rsc)/", "(ssr)/", "(sc_client)/", "(sc_server)/", "(action-browser)/", "./"]
+  for (const prefix of prefixes) {
+    if (result.startsWith(prefix)) {
+      result = result.substring(prefix.length)
+    }
+  }
+  
+  // Remove trailing parenthesized content like "(index)"
+  const lastParen = result.lastIndexOf("(")
+  if (lastParen > 0 && result.endsWith(")")) {
+    result = result.substring(0, lastParen)
+  }
+  
+  // Remove leading open paren if present
+  if (result.startsWith("(")) {
+    result = result.substring(1)
+  }
+  
+  return result.trim()
 }
 
 // Clean function name
