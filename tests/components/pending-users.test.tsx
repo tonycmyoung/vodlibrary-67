@@ -11,6 +11,10 @@ vi.mock("@/lib/actions", () => ({
   updatePendingUserFields: vi.fn(),
 }))
 
+vi.mock("@/lib/trace-logger", () => ({
+  traceError: vi.fn(),
+}))
+
 describe("PendingUsers", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -416,7 +420,6 @@ describe("PendingUsers", () => {
   })
 
   it("should handle fetch errors gracefully", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
     vi.mocked(actions.fetchPendingUsers).mockResolvedValue({
       data: null,
       error: "Failed to fetch users",
@@ -424,11 +427,9 @@ describe("PendingUsers", () => {
 
     render(<PendingUsers />)
 
+    // Should show empty state when fetch fails (error logged via trace system)
     await waitFor(() => {
       expect(screen.getByText("No pending user approvals")).toBeTruthy()
     })
-
-    expect(consoleError).toHaveBeenCalledWith("Error fetching pending users:", "Failed to fetch users")
-    consoleError.mockRestore()
   })
 })

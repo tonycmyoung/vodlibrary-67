@@ -14,6 +14,15 @@ vi.mock("@/lib/actions/trace", () => ({
   formatTraceLogsForClipboard: vi.fn(),
 }))
 
+vi.mock("@/lib/trace", () => ({
+  trace: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
 const mockLogs = [
   {
     id: "log-1",
@@ -151,11 +160,11 @@ describe("TraceDashboard", () => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
-    // Check for level badges (case insensitive since they're uppercase in the badge)
-    expect(screen.getByText("INFO")).toBeTruthy()
-    expect(screen.getByText("ERROR")).toBeTruthy()
-    expect(screen.getByText("DEBUG")).toBeTruthy()
-    expect(screen.getByText("WARN")).toBeTruthy()
+    // Level badges render lowercase text with CSS uppercase class
+    expect(screen.getByText("info")).toBeTruthy()
+    expect(screen.getByText("error")).toBeTruthy()
+    expect(screen.getByText("debug")).toBeTruthy()
+    expect(screen.getByText("warn")).toBeTruthy()
   })
 
   it("should display source file and line information", async () => {
@@ -230,10 +239,12 @@ describe("TraceDashboard", () => {
   })
 
   it("should copy logs to clipboard when copy button is clicked", async () => {
-    const mockClipboard = {
-      writeText: vi.fn().mockResolvedValue(undefined),
-    }
-    Object.assign(navigator, { clipboard: mockClipboard })
+    const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    })
 
     const user = userEvent.setup()
     render(<TraceDashboard />)
@@ -246,16 +257,18 @@ describe("TraceDashboard", () => {
     await user.click(copyButton)
 
     await waitFor(() => {
-      expect(mockClipboard.writeText).toHaveBeenCalled()
+      expect(writeTextMock).toHaveBeenCalled()
       expect(traceActions.formatTraceLogsForClipboard).toHaveBeenCalledWith(mockLogs)
     })
   })
 
   it("should show 'Copied!' after successful copy", async () => {
-    const mockClipboard = {
-      writeText: vi.fn().mockResolvedValue(undefined),
-    }
-    Object.assign(navigator, { clipboard: mockClipboard })
+    const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    })
 
     const user = userEvent.setup()
     render(<TraceDashboard />)
@@ -367,12 +380,12 @@ describe("TraceDashboard", () => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
-    // Open level filter dropdown
-    const levelSelect = screen.getByRole("combobox", { name: /level/i })
+    // Find the level select by its displayed value "All Levels"
+    const levelSelect = screen.getByText("All Levels")
     await user.click(levelSelect)
 
-    // Select "Error" option
-    const errorOption = screen.getByRole("option", { name: /error/i })
+    // Select "Error" option from the dropdown
+    const errorOption = await screen.findByRole("option", { name: /error/i })
     await user.click(errorOption)
 
     // Should trigger a new fetch with the filter
