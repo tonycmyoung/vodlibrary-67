@@ -63,6 +63,7 @@ describe("Trace Actions", () => {
       environment: "development",
       user_agent: null,
       ip_address: null,
+      is_client: true,
     },
     {
       id: "log-2",
@@ -81,6 +82,7 @@ describe("Trace Actions", () => {
       environment: "development",
       user_agent: null,
       ip_address: null,
+      is_client: false,
     },
   ]
 
@@ -379,8 +381,8 @@ describe("Trace Actions", () => {
   })
 
   describe("formatTraceLogsForClipboard", () => {
-    it("should format logs as JSON", () => {
-      const result = formatTraceLogsForClipboard(mockTraceLogs as any)
+    it("should format logs as JSON", async () => {
+      const result = await formatTraceLogsForClipboard(mockTraceLogs as any)
       const parsed = JSON.parse(result)
 
       expect(parsed).toHaveLength(2)
@@ -393,10 +395,11 @@ describe("Trace Actions", () => {
         payload: { userId: "123" },
         environment: "development",
         user: "user@test.com",
+        is_client: true,
       })
     })
 
-    it("should handle logs without optional fields", () => {
+    it("should handle logs without optional fields", async () => {
       const minimalLog = {
         id: "log-3",
         created_at: "2024-01-15T08:00:00Z",
@@ -414,17 +417,19 @@ describe("Trace Actions", () => {
         environment: "development",
         user_agent: null,
         ip_address: null,
+        is_client: false,
       }
 
-      const result = formatTraceLogsForClipboard([minimalLog as any])
+      const result = await formatTraceLogsForClipboard([minimalLog as any])
       const parsed = JSON.parse(result)
 
       expect(parsed[0].source).toBe("test.ts")
       expect(parsed[0].user).toBeNull()
+      expect(parsed[0].is_client).toBe(false)
     })
 
-    it("should return empty array for no logs", () => {
-      const result = formatTraceLogsForClipboard([])
+    it("should return empty array for no logs", async () => {
+      const result = await formatTraceLogsForClipboard([])
       expect(JSON.parse(result)).toEqual([])
     })
   })

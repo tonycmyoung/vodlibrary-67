@@ -32,6 +32,7 @@ const mockLogs = [
     environment: "development",
     user_agent: null,
     ip_address: null,
+    is_client: true,
   },
   {
     id: "log-2",
@@ -50,6 +51,7 @@ const mockLogs = [
     environment: "development",
     user_agent: null,
     ip_address: null,
+    is_client: false,
   },
   {
     id: "log-3",
@@ -68,6 +70,7 @@ const mockLogs = [
     environment: "development",
     user_agent: null,
     ip_address: null,
+    is_client: true,
   },
   {
     id: "log-4",
@@ -86,6 +89,7 @@ const mockLogs = [
     environment: "development",
     user_agent: null,
     ip_address: null,
+    is_client: false,
   },
 ]
 
@@ -104,7 +108,7 @@ describe("TraceDashboard", () => {
     vi.mocked(traceActions.fetchTraceLogs).mockResolvedValue(mockLogs)
     vi.mocked(traceActions.fetchTraceSettings).mockResolvedValue(mockSettings)
     vi.mocked(traceActions.getTraceCategories).mockResolvedValue(mockCategories)
-    vi.mocked(traceActions.formatTraceLogsForClipboard).mockReturnValue(JSON.stringify(mockLogs, null, 2))
+    vi.mocked(traceActions.formatTraceLogsForClipboard).mockResolvedValue(JSON.stringify(mockLogs, null, 2))
   })
 
   it("should display loading state initially", () => {
@@ -175,6 +179,22 @@ describe("TraceDashboard", () => {
     const authBadges = screen.getAllByText("auth")
     expect(authBadges.length).toBeGreaterThan(0)
     expect(screen.getByText("video")).toBeTruthy()
+  })
+
+  it("should display Client/Server badges based on is_client field", async () => {
+    render(<TraceDashboard />)
+
+    await waitFor(() => {
+      expect(screen.getByText("User logged in successfully")).toBeTruthy()
+    })
+
+    // Should show Client badges for client-side logs (log-1, log-3)
+    const clientBadges = screen.getAllByText("Client")
+    expect(clientBadges.length).toBe(2)
+
+    // Should show Server badges for server-side logs (log-2, log-4)
+    const serverBadges = screen.getAllByText("Server")
+    expect(serverBadges.length).toBe(2)
   })
 
   it("should refresh logs when refresh button is clicked", async () => {

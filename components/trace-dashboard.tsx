@@ -94,7 +94,7 @@ export default function TraceDashboard() {
   const handleCopyToClipboard = async () => {
     setCopying(true)
     try {
-      const formatted = formatTraceLogsForClipboard(logs)
+      const formatted = await formatTraceLogsForClipboard(logs)
       await navigator.clipboard.writeText(formatted)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)

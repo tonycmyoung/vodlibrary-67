@@ -219,7 +219,8 @@ export async function formatTraceLogsForClipboard(logs: TraceLogEntry[]): Promis
     message: log.message,
     payload: log.payload,
     environment: log.environment,
-    user: log.user_email || log.user_id,
+    user: log.user_email || log.user_id || null,
+    is_client: log.is_client,
   }))
 
   return JSON.stringify(formatted, null, 2)
