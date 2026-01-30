@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug, FileText, Info, Eye } from "lucide-react"
+import { User, Settings, Users, Video, Tags, Home, Bell, UserPlus, Menu, X, LogOut, Bug, FileText, Info, Eye, Activity } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import NotificationBell from "@/components/notification-bell"
@@ -158,6 +158,12 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   <Link href="/admin/viewlog" className="flex items-center">
                     <Eye className="mr-2 h-4 w-4" />
                     View Log
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/trace" className="flex items-center">
+                    <Activity className="mr-2 h-4 w-4" />
+                    Trace
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-700" />
