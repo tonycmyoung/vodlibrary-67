@@ -155,15 +155,15 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
-                  <Link href="/admin/viewlog" className="flex items-center">
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Log
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
                   <Link href="/admin/trace" className="flex items-center">
                     <Activity className="mr-2 h-4 w-4" />
                     Trace
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Link href="/admin/viewlog" className="flex items-center">
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Log
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-700" />
