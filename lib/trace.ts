@@ -14,6 +14,22 @@ const isServer = globalThis.window === undefined
 // Check if we're in development mode
 const isDevelopment = () => process.env.NODE_ENV === "development"
 
+// Helper to clean webpack prefixes from source file paths
+function cleanSourceFile(sourceFile: string): string {
+  return sourceFile
+    .replace(/^webpack-internal:\/\/\//, "")
+    .replace(/^\(app-pages-browser\)\//, "")
+    .replace(/^\(rsc\)\//, "")
+    .replace(/^\(ssr\)\//, "")
+    .replace(/^\(sc_client\)\//, "")
+    .replace(/^\(sc_server\)\//, "")
+    .replace(/^\(action-browser\)\//, "")
+    .replace(/^\.\//, "")
+    .replace(/\([^)]*\)$/, "")
+    .replace(/^\(/, "")
+    .trim()
+}
+
 // Parse stack trace to extract source info (works in both environments)
 function parseStackTrace(): { sourceFile: string; sourceLine: number | null; functionName: string | null } {
   const error = new Error("Stack trace capture")
@@ -26,34 +42,31 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
     // Skip trace.ts and trace-logger.ts frames
     if (line.includes("trace.ts") || line.includes("trace-logger")) continue
     
-    // Parse stack line - handles various formats
-    const regex = /at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/
-    const match = regex.exec(line)
-    if (match) {
-      let functionName = match[1] || null
-      let sourceFile = match[2] || "unknown"
-      const sourceLine = match[3] ? Number.parseInt(match[3], 10) : null
+    // Parse stack line with function name: "    at functionName (file:line:col)"
+    // Use specific patterns to prevent ReDoS
+    const withFnMatch = /^\s*at\s+([^\s(]+)\s+\(([^:]+):(\d+):\d+\)/.exec(line)
+    if (withFnMatch) {
+      let functionName: string | null = withFnMatch[1] || null
+      let sourceFile = withFnMatch[2] || "unknown"
+      const sourceLine = withFnMatch[3] ? Number.parseInt(withFnMatch[3], 10) : null
       
       // Clean up function name
       if (functionName) {
         functionName = functionName.replace(/^Object\./, "").replace(/^async\s+/, "")
       }
       
-      // Clean up source file path - remove webpack internals
-      sourceFile = sourceFile
-        .replace(/^webpack-internal:\/\/\//, "")
-        .replace(/^\(app-pages-browser\)\//, "")
-        .replace(/^\(rsc\)\//, "")
-        .replace(/^\(ssr\)\//, "")
-        .replace(/^\(sc_client\)\//, "")
-        .replace(/^\(sc_server\)\//, "")
-        .replace(/^\(action-browser\)\//, "")
-        .replace(/^\.\//, "")
-        .replace(/\(.*\)$/, "")
-        .replace(/^\(/, "")
-        .trim()
-      
+      sourceFile = cleanSourceFile(sourceFile)
       return { sourceFile, sourceLine, functionName }
+    }
+    
+    // Try format without function name: "    at file:line:col"
+    const withoutFnMatch = /^\s*at\s+([^:]+):(\d+):\d+/.exec(line)
+    if (withoutFnMatch) {
+      let sourceFile = withoutFnMatch[1] || "unknown"
+      const sourceLine = withoutFnMatch[2] ? Number.parseInt(withoutFnMatch[2], 10) : null
+      
+      sourceFile = cleanSourceFile(sourceFile)
+      return { sourceFile, sourceLine, functionName: null }
     }
   }
   

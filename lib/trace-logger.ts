@@ -1,5 +1,6 @@
 // Server-side trace logger - writes directly to database
 // For client-side usage, use lib/trace.ts which auto-detects environment
+// Updated: 2026-01-30 - Fixed ReDoS vulnerabilities, parameter count, and Sonar issues
 
 import { createClient } from "@supabase/supabase-js"
 
@@ -94,37 +95,54 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
     // "    at functionName (file:line:col)"
     // "    at file:line:col"
     // "    at Object.functionName (file:line:col)"
-    const regex = /at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/
-    const match = regex.exec(line)
-    if (match) {
-      let functionName = match[1] || null
-      let sourceFile = match[2] || "unknown"
-      const sourceLine = match[3] ? Number.parseInt(match[3], 10) : null
+    // Use atomic groups via possessive-like patterns to prevent ReDoS
+    const withFnMatch = /^\s*at\s+([^\s(]+)\s+\(([^:]+):(\d+):\d+\)/.exec(line)
+    if (withFnMatch) {
+      let functionName: string | null = withFnMatch[1] || null
+      let sourceFile = withFnMatch[2] || "unknown"
+      const sourceLine = withFnMatch[3] ? Number.parseInt(withFnMatch[3], 10) : null
       
       // Clean up function name
       if (functionName) {
         functionName = functionName.replace(/^Object\./, "").replace(/^async\s+/, "")
       }
       
-      // Clean up source file path - remove webpack internals and get relative path
-      sourceFile = sourceFile
-        .replace(/^webpack-internal:\/\/\//, "")
-        .replace(/^\(app-pages-browser\)\//, "")
-        .replace(/^\(rsc\)\//, "")
-        .replace(/^\(ssr\)\//, "")
-        .replace(/^\(sc_client\)\//, "")
-        .replace(/^\(sc_server\)\//, "")
-        .replace(/^\(action-browser\)\//, "")
-        .replace(/^\.\//, "")
-        .replace(/\(.*\)$/, "")
-        .replace(/^\(/, "")
-        .trim()
+      // Clean up source file path
+      sourceFile = cleanSourceFile(sourceFile)
       
       return { sourceFile, sourceLine, functionName }
+    }
+    
+    // Try format without function name: "    at file:line:col"
+    const withoutFnMatch = /^\s*at\s+([^:]+):(\d+):\d+/.exec(line)
+    if (withoutFnMatch) {
+      let sourceFile = withoutFnMatch[1] || "unknown"
+      const sourceLine = withoutFnMatch[2] ? Number.parseInt(withoutFnMatch[2], 10) : null
+      
+      // Clean up source file path
+      sourceFile = cleanSourceFile(sourceFile)
+      
+      return { sourceFile, sourceLine, functionName: null }
     }
   }
   
   return { sourceFile: "unknown", sourceLine: null, functionName: null }
+}
+
+// Helper to clean webpack prefixes from source file paths
+function cleanSourceFile(sourceFile: string): string {
+  return sourceFile
+    .replace(/^webpack-internal:\/\/\//, "")
+    .replace(/^\(app-pages-browser\)\//, "")
+    .replace(/^\(rsc\)\//, "")
+    .replace(/^\(ssr\)\//, "")
+    .replace(/^\(sc_client\)\//, "")
+    .replace(/^\(sc_server\)\//, "")
+    .replace(/^\(action-browser\)\//, "")
+    .replace(/^\.\//, "")
+    .replace(/\([^)]*\)$/, "")
+    .replace(/^\(/, "")
+    .trim()
 }
 
 // Fetch trace settings
@@ -189,18 +207,22 @@ function logToConsole(
   console.log(prefix + " " + locationStr + " " + message + payloadStr)
 }
 
-// Database write helper - extracted to reduce cognitive complexity
-async function writeToDatabase(
-  client: ReturnType<typeof getTraceClient>,
-  level: TraceLevel,
-  message: string,
-  sourceFile: string,
-  sourceLine: number | null,
-  functionName: string | null,
-  isClient: boolean,
-  environment: string,
+// Database write parameters
+interface WriteParams {
+  client: NonNullable<ReturnType<typeof getTraceClient>>
+  level: TraceLevel
+  message: string
+  sourceFile: string
+  sourceLine: number | null
+  functionName: string | null
+  isClient: boolean
+  environment: string
   options: TraceOptions
-): Promise<void> {
+}
+
+// Database write helper - extracted to reduce cognitive complexity
+async function writeToDatabase(params: WriteParams): Promise<void> {
+  const { client, level, message, sourceFile, sourceLine, functionName, isClient, environment, options } = params
   const { error } = await client.from("trace_logs").insert({
     source_file: sourceFile,
     source_line: sourceLine,
@@ -252,7 +274,7 @@ async function writeTrace(
     const settings = await getTraceSettings()
     if (settings?.enabled === false) return
     
-    await writeToDatabase(client, level, message, sourceFile, sourceLine, functionName, isClient, environment, options)
+    await writeToDatabase({ client, level, message, sourceFile, sourceLine, functionName, isClient, environment, options })
     
     // Increment counter and trigger cleanup every 100th write
     writeCounter++
