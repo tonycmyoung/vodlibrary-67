@@ -40,6 +40,7 @@ import {
 } from "@/lib/actions/trace"
 import type { TraceLogEntry, TraceSettings, TraceLevel } from "@/lib/trace-logger"
 import { formatDistanceToNow } from "date-fns"
+import { trace } from "@/lib/trace"
 
 export default function TraceDashboard() {
   const [logs, setLogs] = useState<TraceLogEntry[]>([])
@@ -117,6 +118,8 @@ export default function TraceDashboard() {
   }
 
   useEffect(() => {
+    // Client-side trace test - logs when dashboard mounts
+    trace.info("Trace dashboard mounted", { category: "admin", payload: { source: "client-side" } })
     loadLogs()
   }, [loadLogs])
 

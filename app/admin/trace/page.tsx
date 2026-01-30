@@ -2,8 +2,11 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import TraceDashboard from "@/components/trace-dashboard"
+import { serverTrace } from "@/lib/trace-logger"
 
 export default async function AdminTracePage() {
+  // Server-side trace test - logs when this page is loaded
+  serverTrace.info("Trace admin page loaded", { category: "admin", payload: { source: "server-side" } })
   const supabase = await createClient()
   const {
     data: { user },
