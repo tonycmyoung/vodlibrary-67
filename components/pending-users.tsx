@@ -14,6 +14,7 @@ import {
   fetchPendingUsers,
 } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
+import { traceError } from "@/lib/trace-logger"
 
 interface PendingUser {
   id: string
@@ -42,7 +43,7 @@ export default function PendingUsers() {
       const result = await fetchPendingUsers()
 
       if (result.error) {
-        console.error("Error fetching pending users:", result.error)
+        traceError("Error fetching pending users", { category: "admin", payload: { error: result.error } })
         return
       }
 
@@ -55,7 +56,7 @@ export default function PendingUsers() {
       })
       setSelectedRoles(initialRoles)
     } catch (error) {
-      console.error("Error fetching pending users:", error)
+      traceError("Error fetching pending users", { category: "admin", payload: { error: String(error) } })
     } finally {
       setLoading(false)
     }
@@ -83,7 +84,7 @@ export default function PendingUsers() {
       const result = await approveUserServerAction(userId, selectedRole)
 
       if (result.error) {
-        console.error("Error approving user:", result.error)
+        traceError("Error approving user", { category: "admin", payload: { error: result.error, userId } })
         return
       }
 
@@ -95,7 +96,7 @@ export default function PendingUsers() {
         return newRoles
       })
     } catch (error) {
-      console.error("Error approving user:", error)
+      traceError("Error approving user", { category: "admin", payload: { error: String(error) } })
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -112,7 +113,7 @@ export default function PendingUsers() {
       const result = await rejectUserServerAction(userId)
 
       if (result.error) {
-        console.error("Error rejecting user:", result.error)
+        traceError("Error rejecting user", { category: "admin", payload: { error: result.error, userId } })
         return
       }
 
@@ -124,7 +125,7 @@ export default function PendingUsers() {
         return newRoles
       })
     } catch (error) {
-      console.error("Error rejecting user:", error)
+      traceError("Error rejecting user", { category: "admin", payload: { error: String(error) } })
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -162,7 +163,7 @@ export default function PendingUsers() {
       const result = await updatePendingUserFields(userId, editValues.full_name, editValues.teacher, editValues.school)
 
       if (result.error) {
-        console.error("Error updating user fields:", result.error)
+        traceError("Error updating user fields", { category: "admin", payload: { error: result.error, userId } })
         return
       }
 
@@ -183,7 +184,7 @@ export default function PendingUsers() {
       setEditingUser(null)
       setEditValues({ full_name: "", teacher: "", school: "" })
     } catch (error) {
-      console.error("Error updating user fields:", error)
+      traceError("Error updating user fields", { category: "admin", payload: { error: String(error) } })
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)

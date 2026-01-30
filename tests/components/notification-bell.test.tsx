@@ -12,6 +12,9 @@ vi.mock("next/navigation")
 vi.mock("@/lib/utils/date", () => ({
   formatTimeAgo: (date: string) => "2 hours ago",
 }))
+vi.mock("@/lib/trace-logger", () => ({
+  traceError: vi.fn(),
+}))
 
 const mockPush = vi.fn()
 const mockFrom = vi.fn()
@@ -287,14 +290,15 @@ describe("NotificationBell", () => {
   })
 
   it("should not fetch notifications with invalid userId", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const { traceError } = await import("@/lib/trace-logger")
 
     render(<NotificationBell userId="" />)
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid userId"), expect.anything())
+      expect(traceError).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid userId"),
+        expect.objectContaining({ category: "notifications" })
+      )
     })
-
-    consoleSpy.mockRestore()
   })
 })
