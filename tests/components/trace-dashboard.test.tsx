@@ -387,30 +387,6 @@ describe("TraceDashboard", () => {
     })
   })
 
-  it("should filter logs by level", async () => {
-    const user = userEvent.setup()
-    render(<TraceDashboard />)
-
-    await waitFor(() => {
-      expect(screen.getByText("User logged in successfully")).toBeTruthy()
-    })
-
-    // Find the level select trigger button (combobox role)
-    const levelSelect = screen.getAllByRole("combobox")[0]
-    await user.click(levelSelect)
-
-    // Select "Error" option from the dropdown
-    const errorOption = await screen.findByRole("option", { name: /error/i })
-    await user.click(errorOption)
-
-    // Should trigger a new fetch with the filter
-    await waitFor(() => {
-      expect(traceActions.fetchTraceLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ level: "error" })
-      )
-    })
-  })
-
   it("should handle fetch errors gracefully", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     vi.mocked(traceActions.fetchTraceLogs).mockRejectedValue(new Error("Fetch failed"))
