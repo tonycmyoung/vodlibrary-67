@@ -362,7 +362,7 @@ export default function TraceDashboard() {
         </div>
         <div className="text-sm text-gray-400">
           {logs.length} {logs.length === 1 ? "log" : "logs"} total
-          {settings && settings.enabled === false && (
+          {settings?.enabled === false && (
             <span className="ml-2 text-yellow-400">(Tracing disabled)</span>
           )}
         </div>

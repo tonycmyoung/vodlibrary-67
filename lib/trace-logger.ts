@@ -166,6 +166,64 @@ async function cleanupOldLogs(retentionDays: number): Promise<void> {
   }
 }
 
+// Console logging helper - extracted to reduce cognitive complexity
+function logToConsole(
+  level: TraceLevel,
+  message: string,
+  sourceFile: string,
+  sourceLine: number | null,
+  functionName: string | null,
+  payload?: Record<string, unknown>
+): void {
+  const timestamp = new Date().toISOString()
+  const prefix = "[" + timestamp + "] [" + level.toUpperCase() + "]"
+  let location = sourceFile
+  if (sourceLine) {
+    location += ":" + String(sourceLine)
+  }
+  if (functionName) {
+    location += " " + functionName
+  }
+  const locationStr = "[" + location + "]"
+  const payloadStr = payload ? " " + JSON.stringify(payload) : ""
+  console.log(prefix + " " + locationStr + " " + message + payloadStr)
+}
+
+// Database write helper - extracted to reduce cognitive complexity
+async function writeToDatabase(
+  client: ReturnType<typeof getTraceClient>,
+  level: TraceLevel,
+  message: string,
+  sourceFile: string,
+  sourceLine: number | null,
+  functionName: string | null,
+  isClient: boolean,
+  environment: string,
+  options: TraceOptions
+): Promise<void> {
+  const { error } = await client.from("trace_logs").insert({
+    source_file: sourceFile,
+    source_line: sourceLine,
+    function_name: functionName,
+    level,
+    category: options.category ?? null,
+    message,
+    payload: options.payload ?? null,
+    user_id: options.userId ?? null,
+    user_email: options.userEmail ?? null,
+    session_id: options.sessionId ?? null,
+    request_id: options.requestId ?? null,
+    environment,
+    user_agent: options.userAgent ?? null,
+    ip_address: options.ipAddress ?? null,
+    is_client: isClient,
+  })
+  
+  if (error) {
+    console.error("[trace-logger] Failed to write trace:", error.message)
+  }
+}
+
 // Core write function
 async function writeTrace(
   level: TraceLevel,
@@ -174,59 +232,27 @@ async function writeTrace(
 ): Promise<void> {
   // Use provided source info (from client) or parse from stack trace (server)
   const parsedSource = parseStackTrace()
-  const sourceFile = options.sourceFile || parsedSource.sourceFile
-  const sourceLine = options.sourceLine !== undefined ? options.sourceLine : parsedSource.sourceLine
-  const functionName = options.functionName !== undefined ? options.functionName : parsedSource.functionName
+  const sourceFile = options.sourceFile ?? parsedSource.sourceFile
+  const sourceLine = options.sourceLine ?? parsedSource.sourceLine
+  const functionName = options.functionName ?? parsedSource.functionName
   const isClient = options.isClient ?? false
   const environment = getEnvironment()
   
   // Always log to console in development
   if (isDevelopment()) {
-    const timestamp = new Date().toISOString()
-    const prefix = "[" + timestamp + "] [" + level.toUpperCase() + "]"
-    let location = sourceFile
-    if (sourceLine) {
-      location += ":" + String(sourceLine)
-    }
-    if (functionName) {
-      location += " " + functionName
-    }
-    const locationStr = "[" + location + "]"
-    const payloadStr = options.payload ? " " + JSON.stringify(options.payload) : ""
-    console.log(prefix + " " + locationStr + " " + message + payloadStr)
+    logToConsole(level, message, sourceFile, sourceLine, functionName, options.payload)
   }
   
   // Attempt to write to database
   const client = getTraceClient()
-  if (!client) return
+  if (client === null) return
   
   try {
     // Check if tracing is enabled (with caching to avoid DB hit on every call)
     const settings = await getTraceSettings()
-    if (settings && !settings.enabled) return
+    if (settings?.enabled === false) return
     
-    const { error } = await client.from("trace_logs").insert({
-      source_file: sourceFile,
-      source_line: sourceLine,
-      function_name: functionName,
-      level,
-      category: options.category || null,
-      message,
-      payload: options.payload || null,
-      user_id: options.userId || null,
-      user_email: options.userEmail || null,
-      session_id: options.sessionId || null,
-      request_id: options.requestId || null,
-      environment,
-      user_agent: options.userAgent || null,
-      ip_address: options.ipAddress || null,
-      is_client: isClient,
-    })
-    
-    if (error) {
-      console.error("[trace-logger] Failed to write trace:", error.message)
-      return
-    }
+    await writeToDatabase(client, level, message, sourceFile, sourceLine, functionName, isClient, environment, options)
     
     // Increment counter and trigger cleanup every 100th write
     writeCounter++

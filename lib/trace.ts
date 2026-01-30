@@ -9,7 +9,7 @@ import type { TraceLevel, TraceOptions } from "./trace-logger"
 export type { TraceLevel, TraceOptions, TraceLogEntry, TraceSettings } from "./trace-logger"
 
 // Check if we're on the server
-const isServer = typeof globalThis.window === "undefined"
+const isServer = globalThis.window === undefined
 
 // Check if we're in development mode
 const isDevelopment = () => process.env.NODE_ENV === "development"
