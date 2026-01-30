@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Clock, RefreshCw } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { traceError } from "@/lib/trace-logger"
 
 interface SessionTimeoutWarningProps {
   userId: string
@@ -47,7 +48,7 @@ export default function SessionTimeoutWarning({ userId }: SessionTimeoutWarningP
         // Session has expired - component will show warning
       }
     } catch (error) {
-      console.error("[v0] Session check error:", error)
+      traceError("Session check error", { category: "auth", payload: { error: String(error) } })
     }
   }, [supabase.auth])
 
@@ -57,13 +58,13 @@ export default function SessionTimeoutWarning({ userId }: SessionTimeoutWarningP
       const { data, error } = await supabase.auth.refreshSession()
 
       if (error) {
-        console.error("[v0] Session refresh error:", error)
+        traceError("Session refresh error", { category: "auth", payload: { error: error.message } })
       } else if (data.session) {
         setShowWarning(false)
         setTimeLeft(0)
       }
     } catch (error) {
-      console.error("[v0] Session refresh failed:", error)
+      traceError("Session refresh failed", { category: "auth", payload: { error: String(error) } })
     } finally {
       setIsRefreshing(false)
     }

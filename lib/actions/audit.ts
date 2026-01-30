@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { serverTrace } from "../trace-logger"
 
 interface AuditLogEntry {
   actor_id: string
@@ -25,10 +26,10 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
     })
 
     if (error) {
-      console.error("[v0] Failed to log audit event:", error)
+      serverTrace.error("Failed to log audit event", { category: "audit", payload: { error: String(error) } })
     }
   } catch (error) {
-    console.error("[v0] Error in logAuditEvent:", error)
+    serverTrace.error("Error in logAuditEvent", { category: "audit", payload: { error: String(error) } })
   }
 }
 
@@ -43,13 +44,13 @@ export async function fetchAuditLogs() {
       .limit(100)
 
     if (error) {
-      console.error("Error fetching audit logs:", error)
+      serverTrace.error("Error fetching audit logs", { category: "audit", payload: { error: String(error) } })
       return []
     }
 
     return data || []
   } catch (error) {
-    console.error("Error in fetchAuditLogs:", error)
+    serverTrace.error("Error in fetchAuditLogs", { category: "audit", payload: { error: String(error) } })
     return []
   }
 }
@@ -64,11 +65,11 @@ export async function clearAuditLogs() {
       .neq("id", "00000000-0000-0000-0000-000000000000")
 
     if (error) {
-      console.error("Error clearing audit logs:", error)
+      serverTrace.error("Error clearing audit logs", { category: "audit", payload: { error: String(error) } })
       throw error
     }
   } catch (error) {
-    console.error("Error in clearAuditLogs:", error)
+    serverTrace.error("Error in clearAuditLogs", { category: "audit", payload: { error: String(error) } })
     throw error
   }
 }

@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, X, Check, Trash2, MessageCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
+import { traceError } from "@/lib/trace-logger"
 import { formatTimeAgo } from "@/lib/utils/date"
 import { useRouter } from "next/navigation"
 
@@ -40,21 +41,21 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
   const fetchNotifications = useCallback(async () => {
     try {
       if (!userId || userId === "undefined" || userId.trim() === "") {
-        console.error("[v0] NotificationBell: Invalid userId provided:", userId)
+        traceError("NotificationBell: Invalid userId provided", { category: "notifications", payload: { userId } })
         return
       }
 
       const result = await fetchNotificationsWithSenders(userId)
 
       if (result.error) {
-        console.error("Error fetching notifications:", result.error)
+        traceError("Error fetching notifications", { category: "notifications", payload: { error: result.error } })
         return
       }
 
       setNotifications(result.data)
       setUnreadCount(result.data.filter((n) => !n.is_read).length)
     } catch (error) {
-      console.error("Error fetching notifications:", error)
+      traceError("Error fetching notifications", { category: "notifications", payload: { error: String(error) } })
     }
   }, [userId]) // Only recreate when userId changes
 
@@ -63,7 +64,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId)
 
       if (error) {
-        console.error("Error marking notification as read:", error)
+        traceError("Error marking notification as read", { category: "notifications", payload: { error: error.message } })
         return
       }
 
@@ -71,7 +72,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n)))
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (error) {
-      console.error("Error marking notification as read:", error)
+      traceError("Error marking notification as read", { category: "notifications", payload: { error: String(error) } })
     }
   }
 
@@ -80,7 +81,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       const { error } = await supabase.from("notifications").delete().eq("id", notificationId)
 
       if (error) {
-        console.error("Error deleting notification:", error)
+        traceError("Error deleting notification", { category: "notifications", payload: { error: error.message, notificationId } })
         return
       }
 
@@ -91,7 +92,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
         return notification && !notification.is_read ? Math.max(0, prev - 1) : prev
       })
     } catch (error) {
-      console.error("Error deleting notification:", error)
+      traceError("Error deleting notification", { category: "notifications", payload: { error: String(error) } })
     }
   }
 
@@ -104,7 +105,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       const { error } = await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds)
 
       if (error) {
-        console.error("Error marking all notifications as read:", error)
+        traceError("Error marking all notifications as read", { category: "notifications", payload: { error: error.message } })
         return
       }
 
@@ -112,7 +113,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
       setUnreadCount(0)
     } catch (error) {
-      console.error("Error marking all notifications as read:", error)
+      traceError("Error marking all notifications as read", { category: "notifications", payload: { error: String(error) } })
     }
   }
 
@@ -125,7 +126,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       const { error } = await supabase.from("notifications").delete().in("id", notificationIds).select()
 
       if (error) {
-        console.error("[v0] Error deleting all notifications:", error)
+        traceError("Error deleting all notifications", { category: "notifications", payload: { error: error.message } })
         return
       }
 
@@ -133,7 +134,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       setNotifications([])
       setUnreadCount(0)
     } catch (error) {
-      console.error("[v0] Error deleting all notifications:", error)
+      traceError("Error deleting all notifications", { category: "notifications", payload: { error: String(error) } })
     }
   }
 
@@ -150,7 +151,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
 
   useEffect(() => {
     if (!userId || userId === "undefined" || userId.trim() === "") {
-      console.error("[v0] NotificationBell useEffect: Invalid userId, skipping fetch:", userId)
+      traceError("NotificationBell useEffect: Invalid userId, skipping fetch", { category: "notifications", payload: { userId } })
       return
     }
 

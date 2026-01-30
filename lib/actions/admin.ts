@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "../auth"
 import { getTotalVideoViews, getVideoViewsInDateRange } from "./videos"
+import { serverTrace } from "../trace-logger"
 
 export async function getTelemetryData() {
   try {
@@ -63,7 +64,7 @@ export async function getTelemetryData() {
 
     return result
   } catch (error) {
-    console.error("[v0] Error getting telemetry data:", error)
+    serverTrace.error("Error getting telemetry data", { category: "admin", payload: { error: String(error) } })
     return {
       success: false,
       data: {
@@ -115,7 +116,7 @@ export async function fetchAuthDebugLogs() {
     .limit(100)
 
   if (error) {
-    console.error("[v0] Error fetching auth debug logs:", error)
+    serverTrace.error("Error fetching auth debug logs", { category: "admin", payload: { error: String(error) } })
     throw new Error("Failed to fetch debug logs")
   }
 

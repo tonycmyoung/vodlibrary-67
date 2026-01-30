@@ -1,4 +1,5 @@
-"use server"
+// Server-side trace logger - writes directly to database
+// For client-side usage, use lib/trace.ts which auto-detects environment
 
 import { createClient } from "@supabase/supabase-js"
 
@@ -215,27 +216,30 @@ async function writeTrace(
   }
 }
 
-// Public API - individual level functions for server actions
-export async function traceDebug(message: string, options?: TraceOptions): Promise<void> {
-  return writeTrace("debug", message, options)
+// Public API - individual level functions
+export function traceDebug(message: string, options?: TraceOptions): void {
+  writeTrace("debug", message, options)
 }
 
-export async function traceInfo(message: string, options?: TraceOptions): Promise<void> {
-  return writeTrace("info", message, options)
+export function traceInfo(message: string, options?: TraceOptions): void {
+  writeTrace("info", message, options)
 }
 
-export async function traceWarn(message: string, options?: TraceOptions): Promise<void> {
-  return writeTrace("warn", message, options)
+export function traceWarn(message: string, options?: TraceOptions): void {
+  writeTrace("warn", message, options)
 }
 
-export async function traceError(message: string, options?: TraceOptions): Promise<void> {
-  return writeTrace("error", message, options)
+export function traceError(message: string, options?: TraceOptions): void {
+  writeTrace("error", message, options)
 }
 
-// Convenience object for cleaner API
-export const trace = {
+// Server-side trace object for direct import in server code
+export const serverTrace = {
   debug: traceDebug,
   info: traceInfo,
   warn: traceWarn,
   error: traceError,
 }
+
+// Export writeTrace for API route usage
+export { writeTrace }
