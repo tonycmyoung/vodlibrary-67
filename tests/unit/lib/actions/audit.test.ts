@@ -7,9 +7,20 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(),
 }))
 
+// Mock trace-logger
+vi.mock("@/lib/trace-logger", () => ({
+  serverTrace: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
+import { serverTrace } from "@/lib/trace-logger"
+
 describe("audit.ts", () => {
   let mockSupabaseClient: any
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -17,9 +28,6 @@ describe("audit.ts", () => {
     // Set up environment variables
     process.env.SUPABASE_URL = "https://test.supabase.co"
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key"
-
-    // Spy on console.error
-    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
     // Create mock Supabase client
     mockSupabaseClient = {
@@ -93,7 +101,10 @@ describe("audit.ts", () => {
         }),
       ).resolves.not.toThrow()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith("[v0] Failed to log audit event:", dbError)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Failed to log audit event",
+        expect.objectContaining({ category: "audit" })
+      )
     })
 
     it("should handle exceptions gracefully", async () => {
@@ -109,7 +120,10 @@ describe("audit.ts", () => {
         }),
       ).resolves.not.toThrow()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith("[v0] Error in logAuditEvent:", exception)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Error in logAuditEvent",
+        expect.objectContaining({ category: "audit" })
+      )
     })
 
     it("should support all action types", async () => {
@@ -193,7 +207,10 @@ describe("audit.ts", () => {
       const result = await fetchAuditLogs()
 
       expect(result).toEqual([])
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error fetching audit logs:", dbError)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Error fetching audit logs",
+        expect.objectContaining({ category: "audit" })
+      )
     })
 
     it("should handle exceptions gracefully", async () => {
@@ -203,7 +220,10 @@ describe("audit.ts", () => {
       const result = await fetchAuditLogs()
 
       expect(result).toEqual([])
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error in fetchAuditLogs:", exception)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Error in fetchAuditLogs",
+        expect.objectContaining({ category: "audit" })
+      )
     })
   })
 
@@ -225,7 +245,10 @@ describe("audit.ts", () => {
 
       await expect(clearAuditLogs()).rejects.toThrow()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error clearing audit logs:", dbError)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Error clearing audit logs",
+        expect.objectContaining({ category: "audit" })
+      )
     })
 
     it("should throw error when exception occurs", async () => {
@@ -234,7 +257,10 @@ describe("audit.ts", () => {
 
       await expect(clearAuditLogs()).rejects.toThrow()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error in clearAuditLogs:", exception)
+      expect(serverTrace.error).toHaveBeenCalledWith(
+        "Error in clearAuditLogs",
+        expect.objectContaining({ category: "audit" })
+      )
     })
   })
 })

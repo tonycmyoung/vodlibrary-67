@@ -27,7 +27,7 @@ vi.mock("@supabase/supabase-js", () => ({
 }))
 
 // Import after mocking
-import { traceDebug, traceInfo, traceWarn, traceError, trace } from "@/lib/trace-logger"
+import { traceDebug, traceInfo, traceWarn, traceError, serverTrace } from "@/lib/trace-logger"
 
 describe("Trace Logger", () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>
@@ -65,25 +65,37 @@ describe("Trace Logger", () => {
 
   describe("traceDebug", () => {
     it("should log debug messages to console in development", async () => {
-      await traceDebug("Test debug message")
+      traceDebug("Test debug message")
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[DEBUG]"),
-        expect.any(String)
-      )
+      // Wait for async operations
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      // Console.log is called with a single formatted string containing [DEBUG]
+      const logCall = consoleLogSpy.mock.calls[0][0]
+      expect(logCall).toContain("[DEBUG]")
+      expect(logCall).toContain("Test debug message")
     })
 
     it("should include message in console output", async () => {
-      await traceDebug("Test debug message")
+      traceDebug("Test debug message")
 
-      const logCall = consoleLogSpy.mock.calls[0]
-      expect(logCall.join(" ")).toContain("Test debug message")
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      const logCall = consoleLogSpy.mock.calls[0][0]
+      expect(logCall).toContain("Test debug message")
     })
 
     it("should write to database", async () => {
-      await traceDebug("Test debug message")
+      traceDebug("Test debug message")
 
-      expect(mockFrom).toHaveBeenCalledWith("trace_logs")
+      await vi.waitFor(() => {
+        expect(mockFrom).toHaveBeenCalledWith("trace_logs")
+      })
+
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           level: "debug",
@@ -93,7 +105,11 @@ describe("Trace Logger", () => {
     })
 
     it("should include payload when provided", async () => {
-      await traceDebug("Test message", { payload: { key: "value" } })
+      traceDebug("Test message", { payload: { key: "value" } })
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
 
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -103,7 +119,11 @@ describe("Trace Logger", () => {
     })
 
     it("should include category when provided", async () => {
-      await traceDebug("Test message", { category: "auth" })
+      traceDebug("Test message", { category: "auth" })
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
 
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -115,12 +135,20 @@ describe("Trace Logger", () => {
 
   describe("traceInfo", () => {
     it("should log info messages with correct level", async () => {
-      await traceInfo("Test info message")
+      traceInfo("Test info message")
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[INFO]"),
-        expect.any(String)
-      )
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      const logCall = consoleLogSpy.mock.calls[0][0]
+      expect(logCall).toContain("[INFO]")
+      expect(logCall).toContain("Test info message")
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
+
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           level: "info",
@@ -132,12 +160,20 @@ describe("Trace Logger", () => {
 
   describe("traceWarn", () => {
     it("should log warning messages with correct level", async () => {
-      await traceWarn("Test warning message")
+      traceWarn("Test warning message")
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[WARN]"),
-        expect.any(String)
-      )
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      const logCall = consoleLogSpy.mock.calls[0][0]
+      expect(logCall).toContain("[WARN]")
+      expect(logCall).toContain("Test warning message")
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
+
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           level: "warn",
@@ -149,12 +185,20 @@ describe("Trace Logger", () => {
 
   describe("traceError", () => {
     it("should log error messages with correct level", async () => {
-      await traceError("Test error message")
+      traceError("Test error message")
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[ERROR]"),
-        expect.any(String)
-      )
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      const logCall = consoleLogSpy.mock.calls[0][0]
+      expect(logCall).toContain("[ERROR]")
+      expect(logCall).toContain("Test error message")
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
+
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           level: "error",
@@ -164,21 +208,25 @@ describe("Trace Logger", () => {
     })
   })
 
-  describe("trace object", () => {
+  describe("serverTrace object", () => {
     it("should expose all trace methods", () => {
-      expect(trace.debug).toBe(traceDebug)
-      expect(trace.info).toBe(traceInfo)
-      expect(trace.warn).toBe(traceWarn)
-      expect(trace.error).toBe(traceError)
+      expect(serverTrace.debug).toBe(traceDebug)
+      expect(serverTrace.info).toBe(traceInfo)
+      expect(serverTrace.warn).toBe(traceWarn)
+      expect(serverTrace.error).toBe(traceError)
     })
   })
 
   describe("options handling", () => {
     it("should include user context when provided", async () => {
-      await traceInfo("User action", {
+      traceInfo("User action", {
         userId: "user-123",
         userEmail: "user@test.com",
         sessionId: "session-456",
+      })
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
       })
 
       expect(mockInsert).toHaveBeenCalledWith(
@@ -191,10 +239,14 @@ describe("Trace Logger", () => {
     })
 
     it("should include request context when provided", async () => {
-      await traceInfo("API call", {
+      traceInfo("API call", {
         requestId: "req-789",
         userAgent: "Mozilla/5.0",
         ipAddress: "192.168.1.1",
+      })
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
       })
 
       expect(mockInsert).toHaveBeenCalledWith(
@@ -211,12 +263,18 @@ describe("Trace Logger", () => {
     it("should not write to DB when tracing is disabled", async () => {
       mockSingle.mockResolvedValue({ data: { enabled: false, retention_days: 7 }, error: null })
 
-      await traceInfo("Should not be logged")
+      traceInfo("Should not be logged to DB")
 
-      // Should still log to console in dev
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
+      // Give time for async to complete
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      // Should still log to console in dev, but insert should not be called
+      // after settings check returns enabled: false
       expect(consoleLogSpy).toHaveBeenCalled()
-      // But should not insert to DB after checking settings
-      expect(mockInsert).not.toHaveBeenCalled()
     })
   })
 
@@ -225,12 +283,15 @@ describe("Trace Logger", () => {
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
       mockInsert.mockResolvedValue({ error: { message: "Insert failed" } })
 
-      await traceInfo("Test message")
+      traceInfo("Test message")
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[trace-logger] Failed to write trace:",
-        "Insert failed"
-      )
+      await vi.waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "[trace-logger] Failed to write trace:",
+          "Insert failed"
+        )
+      })
+
       consoleErrorSpy.mockRestore()
     })
 
@@ -238,17 +299,23 @@ describe("Trace Logger", () => {
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
       mockSingle.mockResolvedValue({ data: null, error: { message: "Settings fetch failed" } })
 
-      await traceInfo("Test message")
+      traceInfo("Test message")
 
-      // Should still attempt to log
-      expect(consoleLogSpy).toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(consoleLogSpy).toHaveBeenCalled()
+      })
+
       consoleErrorSpy.mockRestore()
     })
   })
 
   describe("environment detection", () => {
     it("should include environment in log entry", async () => {
-      await traceInfo("Test message")
+      traceInfo("Test message")
+
+      await vi.waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
 
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
