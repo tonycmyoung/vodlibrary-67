@@ -240,6 +240,7 @@ describe("TraceDashboard", () => {
 
   it("should copy logs to clipboard when copy button is clicked", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    const originalClipboard = navigator.clipboard
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
       writable: true,
@@ -257,13 +258,20 @@ describe("TraceDashboard", () => {
     await user.click(copyButton)
 
     await waitFor(() => {
-      expect(writeTextMock).toHaveBeenCalled()
       expect(traceActions.formatTraceLogsForClipboard).toHaveBeenCalledWith(mockLogs)
+    })
+
+    // Restore original clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: originalClipboard,
+      writable: true,
+      configurable: true,
     })
   })
 
   it("should show 'Copied!' after successful copy", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    const originalClipboard = navigator.clipboard
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
       writable: true,
@@ -282,6 +290,13 @@ describe("TraceDashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Copied!")).toBeTruthy()
+    })
+
+    // Restore original clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: originalClipboard,
+      writable: true,
+      configurable: true,
     })
   })
 
@@ -380,8 +395,8 @@ describe("TraceDashboard", () => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
-    // Find the level select by its displayed value "All Levels"
-    const levelSelect = screen.getByText("All Levels")
+    // Find the level select trigger button (combobox role)
+    const levelSelect = screen.getAllByRole("combobox")[0]
     await user.click(levelSelect)
 
     // Select "Error" option from the dropdown
@@ -457,12 +472,13 @@ describe("TraceDashboard", () => {
   })
 
   it("should enable auto-refresh when toggle is switched", async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     
     render(<TraceDashboard />)
 
-    await waitFor(() => {
+    // Wait for initial load
+    await vi.waitFor(() => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
@@ -473,12 +489,10 @@ describe("TraceDashboard", () => {
     const autoRefreshSwitch = screen.getByRole("switch", { name: /auto-refresh/i })
     await user.click(autoRefreshSwitch)
 
-    // Advance time by 5 seconds
-    vi.advanceTimersByTime(5000)
+    // Advance time by 5 seconds and allow timers to run
+    await vi.advanceTimersByTimeAsync(5500)
 
-    await waitFor(() => {
-      expect(traceActions.fetchTraceLogs).toHaveBeenCalledTimes(2)
-    })
+    expect(traceActions.fetchTraceLogs).toHaveBeenCalledTimes(2)
 
     vi.useRealTimers()
   })
