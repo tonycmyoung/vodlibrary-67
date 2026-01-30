@@ -210,7 +210,7 @@ export async function getTraceSourceFiles(): Promise<string[]> {
 }
 
 // Format logs for clipboard - JSON format optimized for AI conversation
-export function formatTraceLogsForClipboard(logs: TraceLogEntry[]): string {
+export async function formatTraceLogsForClipboard(logs: TraceLogEntry[]): Promise<string> {
   const formatted = logs.map((log) => ({
     timestamp: log.created_at,
     level: log.level,
