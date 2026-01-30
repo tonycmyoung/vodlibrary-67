@@ -185,6 +185,8 @@ describe("AdminHeader", () => {
       expect(screen.getByText("Performers")).toBeTruthy()
       expect(screen.getByText("Debug")).toBeTruthy()
       expect(screen.getByText("Audit")).toBeTruthy()
+      expect(screen.getByText("View Log")).toBeTruthy()
+      expect(screen.getByText("Trace")).toBeTruthy()
       expect(screen.getByText("Profile")).toBeTruthy()
     }
   })
