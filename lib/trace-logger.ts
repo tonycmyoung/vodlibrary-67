@@ -15,6 +15,10 @@ export interface TraceOptions {
   requestId?: string
   userAgent?: string
   ipAddress?: string
+  isClient?: boolean
+  sourceFile?: string // Allow manual override for client-side
+  sourceLine?: number | null
+  functionName?: string | null
 }
 
 export interface TraceLogEntry {
@@ -34,6 +38,7 @@ export interface TraceLogEntry {
   environment: string
   user_agent: string | null
   ip_address: string | null
+  is_client: boolean
 }
 
 export interface TraceSettings {
@@ -103,6 +108,13 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
       // Clean up source file path - remove webpack internals and get relative path
       sourceFile = sourceFile
         .replace(/^webpack-internal:\/\/\//, "")
+        .replace(/^\(app-pages-browser\)\//, "")
+        .replace(/^\(rsc\)\//, "")
+        .replace(/^\(ssr\)\//, "")
+        .replace(/^\(sc_client\)\//, "")
+        .replace(/^\(sc_server\)\//, "")
+        .replace(/^\(action-browser\)\//, "")
+        .replace(/^\.\//, "")
         .replace(/\(.*\)$/, "")
         .replace(/^\(/, "")
         .trim()
@@ -159,7 +171,12 @@ async function writeTrace(
   message: string,
   options: TraceOptions = {}
 ): Promise<void> {
-  const { sourceFile, sourceLine, functionName } = parseStackTrace()
+  // Use provided source info (from client) or parse from stack trace (server)
+  const parsedSource = parseStackTrace()
+  const sourceFile = options.sourceFile || parsedSource.sourceFile
+  const sourceLine = options.sourceLine !== undefined ? options.sourceLine : parsedSource.sourceLine
+  const functionName = options.functionName !== undefined ? options.functionName : parsedSource.functionName
+  const isClient = options.isClient ?? false
   const environment = getEnvironment()
   
   // Always log to console in development
@@ -195,6 +212,7 @@ async function writeTrace(
       environment,
       user_agent: options.userAgent || null,
       ip_address: options.ipAddress || null,
+      is_client: isClient,
     })
     
     if (error) {

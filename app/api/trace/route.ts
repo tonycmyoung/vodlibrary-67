@@ -40,13 +40,14 @@ interface TraceRequestBody {
   sourceFile: string
   sourceLine: number | null
   functionName: string | null
+  isClient?: boolean
   options?: TraceOptions
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: TraceRequestBody = await request.json()
-    const { level, message, sourceFile, sourceLine, functionName, options = {} } = body
+    const { level, message, sourceFile, sourceLine, functionName, isClient = true, options = {} } = body
 
     // Validate required fields
     if (!level || !message || !sourceFile) {
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       environment: getEnvironment(),
       user_agent: options.userAgent || userAgent || null,
       ip_address: options.ipAddress || ipAddress || null,
+      is_client: isClient,
     })
 
     if (error) {

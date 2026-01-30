@@ -37,9 +37,16 @@ function parseStackTrace(): { sourceFile: string; sourceLine: number | null; fun
         functionName = functionName.replace(/^Object\./, "").replace(/^async\s+/, "")
       }
       
-      // Clean up source file path
+      // Clean up source file path - remove webpack internals
       sourceFile = sourceFile
         .replace(/^webpack-internal:\/\/\//, "")
+        .replace(/^\(app-pages-browser\)\//, "")
+        .replace(/^\(rsc\)\//, "")
+        .replace(/^\(ssr\)\//, "")
+        .replace(/^\(sc_client\)\//, "")
+        .replace(/^\(sc_server\)\//, "")
+        .replace(/^\(action-browser\)\//, "")
+        .replace(/^\.\//, "")
         .replace(/\(.*\)$/, "")
         .replace(/^\(/, "")
         .trim()
@@ -91,6 +98,7 @@ async function clientTrace(
         sourceFile,
         sourceLine,
         functionName,
+        isClient: true,
         options,
       }),
     }).catch(() => {

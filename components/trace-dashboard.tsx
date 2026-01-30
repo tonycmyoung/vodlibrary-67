@@ -394,7 +394,7 @@ export default function TraceDashboard() {
                 <th className="text-left p-3 text-sm font-medium text-gray-300 w-8"></th>
                 <th className="text-left p-3 text-sm font-medium text-gray-300">Time</th>
                 <th className="text-left p-3 text-sm font-medium text-gray-300">Level</th>
-                <th className="text-left p-3 text-sm font-medium text-gray-300">Source</th>
+                <th className="text-left p-3 text-sm font-medium text-gray-300">Source File</th>
                 <th className="text-left p-3 text-sm font-medium text-gray-300">Message</th>
                 <th className="text-left p-3 text-sm font-medium text-gray-300">Category</th>
               </tr>
@@ -429,12 +429,20 @@ export default function TraceDashboard() {
                       </div>
                     </td>
                     <td className="p-3">
-                      <div className="text-sm text-gray-300 font-mono truncate max-w-xs">
-                        {log.source_file}
-                        {log.source_line && <span className="text-gray-500">:{log.source_line}</span>}
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${log.is_client ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" : "bg-orange-500/20 text-orange-400 border-orange-500/30"}`}
+                        >
+                          {log.is_client ? "Client" : "Server"}
+                        </Badge>
+                        <div className="text-sm text-gray-300 font-mono truncate max-w-xs">
+                          {log.source_file}
+                          {log.source_line && <span className="text-gray-500">:{log.source_line}</span>}
+                        </div>
                       </div>
                       {log.function_name && (
-                        <div className="text-xs text-gray-500 font-mono">
+                        <div className="text-xs text-gray-500 font-mono ml-16">
                           {log.function_name}()
                         </div>
                       )}
