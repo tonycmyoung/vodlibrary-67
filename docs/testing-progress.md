@@ -29,7 +29,7 @@ Located in `tests/unit/`:
 
 ## Running Tests
 
-```bash
+\`\`\`bash
 # Run all tests
 npm test
 
@@ -41,7 +41,7 @@ npm run test:coverage
 
 # Run with UI
 npm run test:ui
-```
+\`\`\`
 
 ## CI/CD Integration
 
