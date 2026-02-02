@@ -12,6 +12,7 @@
 9. [Key Features](#key-features)
 10. [Development Setup](#development-setup)
 11. [Security Considerations](#security-considerations)
+12. [AI-Assisted Development](#ai-assisted-development)
 
 ## System Overview
 
@@ -578,6 +579,27 @@ npm run dev
 - Performance monitoring
 - Security event logging
 - Database query monitoring
+
+---
+
+## AI-Assisted Development
+
+This project uses AI assistants (v0, Claude, etc.) for development. To ensure consistency and avoid common mistakes:
+
+### Context File
+
+**`/AI_CONTEXT.md`** contains project-specific rules, patterns, and learnings for AI agents. This file should be referenced at the start of each AI conversation.
+
+### Key Points
+
+- **Shared utilities exist** — Check `/lib/` before creating new patterns
+- **TraceLogger for debugging** — Use `/lib/trace-logger.ts` instead of console.log
+- **Supabase helpers** — Always use `createServerClient()` from `/lib/supabase/server.ts`
+- **MCP tools available** — 29 Supabase tools accessible via ToolSearch
+
+### Maintaining AI Context
+
+The `AI_CONTEXT.md` file is updated only when the user explicitly requests it (e.g., after identifying a recurring mistake). This keeps the file curated and high-signal.
 
 ---
 
