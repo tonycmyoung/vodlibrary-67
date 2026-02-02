@@ -162,9 +162,17 @@ console.log("[v0] Description:", variable)
 
 ---
 
+## Maintaining This File
+
+**Do not auto-update.** Only update when the user explicitly requests it (e.g., "add this to AI_CONTEXT.md" or "document this learning").
+
+This keeps the file curated and high-signal, avoiding bloat from one-off issues.
+
+---
+
 ## Recent Learnings
 
-*Update this section with patterns learned from mistakes:*
+*Update this section when user identifies recurring patterns or significant mistakes:*
 
 - **2025-02:** Server actions must use `await createServerClient()` from `/lib/supabase/server.ts`, never inline client creation
 - **2025-02:** TraceLogger exists for debugging — prefer it over console.log for traceability
