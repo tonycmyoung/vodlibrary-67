@@ -1,34 +1,17 @@
 "use server"
 
 import { cookies } from "next/headers"
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
 import { sendEmail } from "./email"
 import { logAuditEvent } from "./audit"
+import { createServerClient } from "../supabase/server"
 
 export async function inviteUser(email: string) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
@@ -133,7 +116,7 @@ export async function inviteUser(email: string) {
 export async function approveUserServerAction(userId: string, role = "Student") {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const supabase = createSupabaseServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -376,25 +359,7 @@ export async function updateStudentForHeadTeacher(
   currentBeltId?: string | null,
 ) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // Ignore
-            }
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     // Get the current user (Head Teacher)
     const { data: currentUser } = await supabase.auth.getUser()
@@ -487,23 +452,7 @@ export async function deleteUserCompletely(userId: string) {
       .eq("id", userId)
       .single()
 
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
 
@@ -591,23 +540,7 @@ export async function updateProfile(params: {
 
 export async function updateUserBelt(userId: string, beltId: string | null) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
@@ -737,7 +670,7 @@ export async function fetchUnconfirmedEmailUsers() {
 export async function resendConfirmationEmail(email: string) {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const supabase = createSupabaseServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -854,23 +787,7 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
 
 export async function adminResetUserPassword(userId: string, newPassword: string) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     // Verify the current user is an admin
     const { data: currentUser } = await supabase.auth.getUser()
