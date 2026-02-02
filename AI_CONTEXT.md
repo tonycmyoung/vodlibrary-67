@@ -145,6 +145,17 @@ console.log("[v0] Description:", variable)
 
 ---
 
+## Connected Integrations
+
+| Integration | Purpose | Notes |
+|-------------|---------|-------|
+| Supabase | Database, Auth, Storage | Use `GetOrRequestIntegration` for schema |
+| Blob | File storage | Vercel Blob storage |
+
+**Supabase MCP Tools:** 29 tools available via `ToolSearch` including `supabase_search_docs`, `supabase_list_tables`, `supabase_run_query`, etc.
+
+---
+
 ## Environment Variables
 
 - `NEXT_PUBLIC_*` — Available client + server
