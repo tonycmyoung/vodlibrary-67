@@ -48,6 +48,21 @@ vi.mock("@/lib/actions/audit", () => ({
   logAuditEvent: vi.fn(),
 }))
 
+// Mock the supabase server helpers used by updateStudentForHeadTeacher
+const mockAuthClient = {
+  auth: {
+    getUser: vi.fn(),
+  },
+  from: vi.fn(),
+}
+const mockServiceClientHelper = {
+  from: vi.fn(),
+}
+vi.mock("@/lib/supabase/server", () => ({
+  createServerClient: vi.fn(() => Promise.resolve(mockAuthClient)),
+  createServiceClient: vi.fn(() => mockServiceClientHelper),
+}))
+
 vi.mock("@/lib/utils/helpers", () => ({
   sanitizeHtml: vi.fn((str: string) => str),
   siteTitle: "Test Site",
@@ -1347,13 +1362,18 @@ describe("User Actions", () => {
   })
 
   describe("updateStudentForHeadTeacher", () => {
+    beforeEach(() => {
+      // Reset the mocks for each test
+      mockAuthClient.auth.getUser = vi.fn()
+      mockAuthClient.from = vi.fn()
+      mockServiceClientHelper.from = vi.fn()
+    })
+
     it("should return error when not authenticated", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: null },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: null,
+      })
 
       const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Teacher", "BBMA Gosford")
 
@@ -1361,14 +1381,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when user profile not found", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -1380,14 +1398,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when caller is not a Head Teacher", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1402,14 +1418,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when Head Teacher school not configured", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1424,14 +1438,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when student not found", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1440,7 +1452,7 @@ describe("User Actions", () => {
         }),
       })
 
-      mockServiceClient.from.mockReturnValue({
+      mockServiceClientHelper.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -1452,14 +1464,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when student belongs to different school", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1468,7 +1478,7 @@ describe("User Actions", () => {
         }),
       })
 
-      mockServiceClient.from.mockReturnValue({
+      mockServiceClientHelper.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1483,14 +1493,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when trying to reassign student to different school organization", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1500,7 +1508,7 @@ describe("User Actions", () => {
       })
 
       let serviceFromCallCount = 0
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1521,14 +1529,12 @@ describe("User Actions", () => {
     })
 
     it("should return error when trying subtle prefix manipulation (BBMA to BBMA2)", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1538,7 +1544,7 @@ describe("User Actions", () => {
       })
 
       let serviceFromCallCount = 0
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1560,14 +1566,12 @@ describe("User Actions", () => {
     })
 
     it("should successfully update student within same school prefix", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1578,7 +1582,7 @@ describe("User Actions", () => {
 
       let serviceFromCallCount = 0
       const mockUpdate = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1607,14 +1611,12 @@ describe("User Actions", () => {
     })
 
     it("should successfully update student to root school (remove suffix)", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1625,7 +1627,7 @@ describe("User Actions", () => {
 
       let serviceFromCallCount = 0
       const mockUpdate = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1654,14 +1656,12 @@ describe("User Actions", () => {
     })
 
     it("should include belt ID in update when provided", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1672,7 +1672,7 @@ describe("User Actions", () => {
 
       let serviceFromCallCount = 0
       const mockUpdate = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1702,14 +1702,12 @@ describe("User Actions", () => {
     })
 
     it("should handle database errors during update", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1719,7 +1717,7 @@ describe("User Actions", () => {
       })
 
       let serviceFromCallCount = 0
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {
@@ -1743,14 +1741,12 @@ describe("User Actions", () => {
     })
 
     it("should trim whitespace from input fields", async () => {
-      mockSupabaseClient.auth = {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "head-teacher-123" } },
-          error: null,
-        }),
-      } as any
+      mockAuthClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "head-teacher-123" } },
+        error: null,
+      })
 
-      mockSupabaseClient.from.mockReturnValue({
+      mockAuthClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
@@ -1761,7 +1757,7 @@ describe("User Actions", () => {
 
       let serviceFromCallCount = 0
       const mockUpdate = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockImplementation(() => {
+      mockServiceClientHelper.from.mockImplementation(() => {
         serviceFromCallCount++
         if (serviceFromCallCount === 1) {
           return {

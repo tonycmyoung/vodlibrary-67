@@ -1,4 +1,5 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
@@ -50,3 +51,9 @@ export const createServerClient = async () => {
 export const createClient = cache(async () => {
   return createServerClient()
 })
+
+// Create a service client with admin privileges (bypasses RLS)
+// Use only in server actions where elevated permissions are required
+export const createServiceClient = () => {
+  return createSupabaseClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+}
