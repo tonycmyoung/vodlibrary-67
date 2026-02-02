@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import StudentManagement from "@/components/student-management"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
-import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher } from "@/lib/actions/users"
 import { deleteUserCompletely } from "@/lib/actions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { within } from "@testing-library/react"
@@ -14,7 +14,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 vi.mock("@/lib/actions/users", () => ({
   fetchStudentsForHeadTeacher: vi.fn(),
-  updateUserFields: vi.fn(),
+  updateStudentForHeadTeacher: vi.fn(),
 }))
 
 vi.mock("@/lib/actions", () => ({
@@ -313,7 +313,7 @@ describe("StudentManagement", () => {
 
   it("should save edited user fields when save button is clicked", async () => {
     const user = userEvent.setup()
-    vi.mocked(updateUserFields).mockResolvedValue({ success: true })
+    vi.mocked(updateStudentForHeadTeacher).mockResolvedValue({ success: "Student updated successfully" })
 
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
@@ -339,7 +339,7 @@ describe("StudentManagement", () => {
     await user.click(saveButton)
 
     await waitFor(() => {
-      expect(updateUserFields).toHaveBeenCalledWith("student-1", "John Smith", "Sensei Bob", "Test Dojo", "belt-1")
+      expect(updateStudentForHeadTeacher).toHaveBeenCalledWith("student-1", "John Smith", "Sensei Bob", "Test Dojo", "belt-1")
     })
   })
 
