@@ -435,13 +435,20 @@ export async function updateStudentForHeadTeacher(
     }
 
     // Verify student belongs to this Head Teacher's school (prefix match)
-    if (!studentProfile.school?.startsWith(headTeacherProfile.school)) {
+    // Must equal prefix exactly OR start with prefix + space (to prevent "BBMA" matching "BBMA2")
+    const studentSchool = studentProfile.school || ""
+    const isStudentInSchool =
+      studentSchool === headTeacherProfile.school || studentSchool.startsWith(headTeacherProfile.school + " ")
+    if (!isStudentInSchool) {
       return { error: "Cannot edit students from other schools" }
     }
 
     // Verify new school value maintains the Head Teacher's school prefix
+    // Must equal prefix exactly OR start with prefix + space (to prevent "BBMA" -> "BBMA2")
     const newSchool = school.trim()
-    if (!newSchool.startsWith(headTeacherProfile.school)) {
+    const isValidSchoolPrefix =
+      newSchool === headTeacherProfile.school || newSchool.startsWith(headTeacherProfile.school + " ")
+    if (!isValidSchoolPrefix) {
       return { error: "Cannot reassign student to a different school organization" }
     }
 
