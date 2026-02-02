@@ -15,14 +15,14 @@ Thank you for your interest in contributing to the TY Kobudo Library project.
 
 1. Fork and clone the repository
 2. Install dependencies:
-   ```bash
+   \`\`\`bash
    npm install
-   ```
+   \`\`\`
 3. Set up environment variables (see README.md for required variables)
 4. Run the development server:
-   ```bash
+   \`\`\`bash
    npm run dev
-   ```
+   \`\`\`
 
 ## Development Workflow
 

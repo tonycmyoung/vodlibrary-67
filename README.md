@@ -43,7 +43,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 ## Available Scripts
 
-```bash
+\`\`\`bash
 npm run dev          # Start development server
 npm run build        # Build for production
 npm test             # Run tests
@@ -51,13 +51,13 @@ npm run test:coverage # Run tests with coverage report
 npm run lint         # Run ESLint
 npm run format       # Format code with Prettier
 npm run type-check   # Run TypeScript type checking
-```
+\`\`\`
 
 ## Environment Variables
 
 The application requires the following environment variables:
 
-```bash
+\`\`\`bash
 # Supabase Configuration
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
@@ -75,7 +75,7 @@ BLOB_READ_WRITE_TOKEN=
 # Application URLs
 NEXT_PUBLIC_FULL_SITE_URL=
 NEXT_PUBLIC_SITE_URL=
-```
+\`\`\`
 
 ## Documentation
 
