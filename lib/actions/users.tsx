@@ -368,6 +368,108 @@ export async function updateUserFields(
   }
 }
 
+export async function updateStudentForHeadTeacher(
+  userId: string,
+  fullName: string,
+  teacher: string,
+  school: string,
+  currentBeltId?: string | null,
+) {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // Ignore
+            }
+          },
+        },
+      },
+    )
+
+    // Get the current user (Head Teacher)
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    // Get Head Teacher's profile to verify role and get their school
+    const { data: headTeacherProfile } = await supabase
+      .from("users")
+      .select("role, school")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!headTeacherProfile) {
+      return { error: "User profile not found" }
+    }
+
+    if (headTeacherProfile.role !== "Head Teacher") {
+      return { error: "Only Head Teachers can update student records" }
+    }
+
+    if (!headTeacherProfile.school) {
+      return { error: "Head Teacher school not configured" }
+    }
+
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Get the student's current school to verify they belong to this Head Teacher
+    const { data: studentProfile } = await serviceSupabase
+      .from("users")
+      .select("school")
+      .eq("id", userId)
+      .single()
+
+    if (!studentProfile) {
+      return { error: "Student not found" }
+    }
+
+    // Verify student belongs to this Head Teacher's school (prefix match)
+    if (!studentProfile.school?.startsWith(headTeacherProfile.school)) {
+      return { error: "Cannot edit students from other schools" }
+    }
+
+    // Verify new school value maintains the Head Teacher's school prefix
+    const newSchool = school.trim()
+    if (!newSchool.startsWith(headTeacherProfile.school)) {
+      return { error: "Cannot reassign student to a different school organization" }
+    }
+
+    const updateData: Record<string, string | null | undefined> = {
+      full_name: fullName.trim(),
+      teacher: teacher.trim(),
+      school: newSchool,
+    }
+
+    if (currentBeltId !== undefined) {
+      updateData.current_belt_id = currentBeltId
+    }
+
+    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", userId)
+
+    if (error) {
+      console.error("Error updating student fields:", error)
+      return { error: "Failed to update student fields" }
+    }
+
+    revalidatePath("/students")
+    return { success: "Student updated successfully" }
+  } catch (error) {
+    console.error("Error in updateStudentForHeadTeacher:", error)
+    return { error: "Failed to update student" }
+  }
+}
+
 export async function deleteUserCompletely(userId: string) {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)

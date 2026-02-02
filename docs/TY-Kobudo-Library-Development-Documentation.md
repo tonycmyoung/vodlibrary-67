@@ -48,22 +48,25 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ## Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **UI Library**: React 18
+- **Framework**: Next.js 15 (App Router)
+- **UI Library**: React 19
 - **Styling**: Tailwind CSS v4
 - **Component Library**: shadcn/ui
 - **Icons**: Lucide React
-- **Fonts**: Geist (sans-serif), Manrope (serif)
+- **Fonts**: Geist (sans-serif)
 
 ### Backend
 - **Runtime**: Node.js (Vercel serverless functions)
-- **Database**: PostgreSQL (Supabase)
+- **Database**: PostgreSQL (Supabase) with Row Level Security
 - **Authentication**: Supabase Auth
 - **Email Service**: Resend
 - **File Storage**: Vercel Blob
 
-### Development Tools
+### Development & Quality Tools
 - **Language**: TypeScript
+- **Testing**: Vitest, React Testing Library
+- **Code Quality**: ESLint, Prettier, SonarCloud
+- **CI/CD**: GitHub Actions
 - **Package Manager**: npm
 - **Deployment**: Vercel
 - **Version Control**: Git

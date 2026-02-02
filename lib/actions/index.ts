@@ -4,6 +4,7 @@ export {
   approveUserServerAction,
   rejectUserServerAction,
   updateUserFields,
+  updateStudentForHeadTeacher,
   updatePendingUserFields,
   deleteUserCompletely,
   updateProfile,

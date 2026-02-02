@@ -32,7 +32,7 @@ import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
 
@@ -452,7 +452,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     setProcessingUsers((prev) => new Set(prev).add(editingUser))
 
     try {
-      const result = await updateUserFields(
+      const result = await updateStudentForHeadTeacher(
         editingUser,
         editValues.full_name,
         editValues.teacher,
