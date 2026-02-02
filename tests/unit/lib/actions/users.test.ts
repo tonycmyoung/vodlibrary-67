@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import {
   updatePendingUserFields,
   updateUserFields,
+  updateStudentForHeadTeacher,
   updateProfile,
   inviteUser,
   approveUserServerAction,
@@ -518,7 +519,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: [
@@ -565,7 +566,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: null,
@@ -587,7 +588,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: [],
@@ -1342,6 +1343,449 @@ describe("User Actions", () => {
       const result = await updateUserBelt("user-123", "belt-456")
 
       expect(result).toEqual({ error: "Failed to update belt", success: false })
+    })
+  })
+
+  describe("updateStudentForHeadTeacher", () => {
+    it("should return error when not authenticated", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: null,
+        }),
+      } as any
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Teacher", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "Not authenticated" })
+    })
+
+    it("should return error when user profile not found", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Teacher", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "User profile not found" })
+    })
+
+    it("should return error when caller is not a Head Teacher", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "Only Head Teachers can update student records" })
+    })
+
+    it("should return error when Head Teacher school not configured", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: null },
+          error: null,
+        }),
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "Head Teacher school not configured" })
+    })
+
+    it("should return error when student not found", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "Student not found" })
+    })
+
+    it("should return error when student belongs to different school", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { school: "HVMA Sydney" },
+          error: null,
+        }),
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Gosford")
+
+      expect(result).toEqual({ error: "Cannot edit students from other schools" })
+    })
+
+    it("should return error when trying to reassign student to different school organization", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {}
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "HVMA Sydney")
+
+      expect(result).toEqual({ error: "Cannot reassign student to a different school organization" })
+    })
+
+    it("should return error when trying subtle prefix manipulation (BBMA to BBMA2)", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {}
+      })
+
+      // Trying to change to BBMA2 (subtle manipulation - different org)
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA2 Gosford")
+
+      expect(result).toEqual({ error: "Cannot reassign student to a different school organization" })
+    })
+
+    it("should successfully update student within same school prefix", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      const mockUpdate = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {
+          update: mockUpdate,
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Kincumber")
+
+      expect(result).toEqual({ success: "Student updated successfully" })
+      expect(mockUpdate).toHaveBeenCalledWith({
+        full_name: "John Doe",
+        teacher: "Sensei",
+        school: "BBMA Kincumber",
+      })
+    })
+
+    it("should successfully update student to root school (remove suffix)", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      const mockUpdate = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {
+          update: mockUpdate,
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA")
+
+      expect(result).toEqual({ success: "Student updated successfully" })
+      expect(mockUpdate).toHaveBeenCalledWith({
+        full_name: "John Doe",
+        teacher: "Sensei",
+        school: "BBMA",
+      })
+    })
+
+    it("should include belt ID in update when provided", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      const mockUpdate = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {
+          update: mockUpdate,
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Gosford", "belt-456")
+
+      expect(result).toEqual({ success: "Student updated successfully" })
+      expect(mockUpdate).toHaveBeenCalledWith({
+        full_name: "John Doe",
+        teacher: "Sensei",
+        school: "BBMA Gosford",
+        current_belt_id: "belt-456",
+      })
+    })
+
+    it("should handle database errors during update", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+        }
+      })
+
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA Kincumber")
+
+      expect(result).toEqual({ error: "Failed to update student fields" })
+    })
+
+    it("should trim whitespace from input fields", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      const mockUpdate = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {
+          update: mockUpdate,
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }
+      })
+
+      await updateStudentForHeadTeacher("student-123", "  John Doe  ", "  Sensei  ", "  BBMA Kincumber  ")
+
+      expect(mockUpdate).toHaveBeenCalledWith({
+        full_name: "John Doe",
+        teacher: "Sensei",
+        school: "BBMA Kincumber",
+      })
     })
   })
 })

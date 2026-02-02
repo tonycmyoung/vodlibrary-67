@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import StudentManagement from "@/components/student-management"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
-import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher } from "@/lib/actions/users"
 import { deleteUserCompletely } from "@/lib/actions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { within } from "@testing-library/react"
@@ -14,7 +14,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 vi.mock("@/lib/actions/users", () => ({
   fetchStudentsForHeadTeacher: vi.fn(),
-  updateUserFields: vi.fn(),
+  updateStudentForHeadTeacher: vi.fn(),
 }))
 
 vi.mock("@/lib/actions", () => ({
@@ -313,7 +313,7 @@ describe("StudentManagement", () => {
 
   it("should save edited user fields when save button is clicked", async () => {
     const user = userEvent.setup()
-    vi.mocked(updateUserFields).mockResolvedValue({ success: true })
+    vi.mocked(updateStudentForHeadTeacher).mockResolvedValue({ success: "Student updated successfully" })
 
     render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
 
@@ -339,7 +339,7 @@ describe("StudentManagement", () => {
     await user.click(saveButton)
 
     await waitFor(() => {
-      expect(updateUserFields).toHaveBeenCalledWith("student-1", "John Smith", "Sensei Bob", "Test Dojo", "belt-1")
+      expect(updateStudentForHeadTeacher).toHaveBeenCalledWith("student-1", "John Smith", "Sensei Bob", "Test Dojo", "belt-1")
     })
   })
 
@@ -454,6 +454,186 @@ describe("StudentManagement", () => {
 
     await waitFor(() => {
       expect(screen.getByText("No students found for your school.")).toBeTruthy()
+    })
+  })
+
+  it("should display school prefix as fixed text when editing student with branch suffix", async () => {
+    const studentWithBranch = [
+      {
+        id: "student-1",
+        email: "john@example.com",
+        full_name: "John Doe",
+        teacher: "Sensei Bob",
+        school: "Test Dojo Central",
+        role: "Student",
+        created_at: "2024-01-01T00:00:00Z",
+        is_approved: true,
+        approved_at: "2024-01-02T00:00:00Z",
+        profile_image_url: null,
+        last_login: "2024-01-15T00:00:00Z",
+        login_count: 5,
+        last_view: "2024-01-16T00:00:00Z",
+        view_count: 10,
+        current_belt_id: "belt-1",
+        current_belt: {
+          id: "belt-1",
+          name: "White Belt",
+          color: "#ffffff",
+          display_order: 1,
+        },
+        inviter: {
+          full_name: "Admin User",
+        },
+      },
+    ]
+    vi.mocked(fetchStudentsForHeadTeacher).mockResolvedValue({ data: studentWithBranch, error: null })
+
+    const user = userEvent.setup()
+    render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeTruthy()
+    })
+
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
+
+    await waitFor(() => {
+      // Should show the fixed prefix
+      expect(screen.getByText("Test Dojo")).toBeTruthy()
+      // Should have input with the suffix
+      const suffixInput = screen.getByPlaceholderText("(suffix)")
+      expect(suffixInput).toBeTruthy()
+      expect((suffixInput as HTMLInputElement).value).toBe("Central")
+    })
+  })
+
+  it("should reconstruct full school name when saving edited suffix", async () => {
+    const studentWithBranch = [
+      {
+        id: "student-1",
+        email: "john@example.com",
+        full_name: "John Doe",
+        teacher: "Sensei Bob",
+        school: "Test Dojo Central",
+        role: "Student",
+        created_at: "2024-01-01T00:00:00Z",
+        is_approved: true,
+        approved_at: "2024-01-02T00:00:00Z",
+        profile_image_url: null,
+        last_login: "2024-01-15T00:00:00Z",
+        login_count: 5,
+        last_view: "2024-01-16T00:00:00Z",
+        view_count: 10,
+        current_belt_id: "belt-1",
+        current_belt: {
+          id: "belt-1",
+          name: "White Belt",
+          color: "#ffffff",
+          display_order: 1,
+        },
+        inviter: null,
+      },
+    ]
+    vi.mocked(fetchStudentsForHeadTeacher).mockResolvedValue({ data: studentWithBranch, error: null })
+    vi.mocked(updateStudentForHeadTeacher).mockResolvedValue({ success: "Student updated successfully" })
+
+    const user = userEvent.setup()
+    render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeTruthy()
+    })
+
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("(suffix)")).toBeTruthy()
+    })
+
+    const suffixInput = screen.getByPlaceholderText("(suffix)")
+    await user.clear(suffixInput)
+    await user.type(suffixInput, "North")
+
+    const saveButton = screen.getByLabelText("Save changes")
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      // Should be called with the reconstructed full school name
+      expect(updateStudentForHeadTeacher).toHaveBeenCalledWith(
+        "student-1",
+        "John Doe",
+        "Sensei Bob",
+        "Test Dojo North",
+        "belt-1"
+      )
+    })
+  })
+
+  it("should allow removing suffix to set school to just the prefix", async () => {
+    const studentWithBranch = [
+      {
+        id: "student-1",
+        email: "john@example.com",
+        full_name: "John Doe",
+        teacher: "Sensei Bob",
+        school: "Test Dojo Central",
+        role: "Student",
+        created_at: "2024-01-01T00:00:00Z",
+        is_approved: true,
+        approved_at: "2024-01-02T00:00:00Z",
+        profile_image_url: null,
+        last_login: "2024-01-15T00:00:00Z",
+        login_count: 5,
+        last_view: "2024-01-16T00:00:00Z",
+        view_count: 10,
+        current_belt_id: null,
+        current_belt: null,
+        inviter: null,
+      },
+    ]
+    vi.mocked(fetchStudentsForHeadTeacher).mockResolvedValue({ data: studentWithBranch, error: null })
+    vi.mocked(updateStudentForHeadTeacher).mockResolvedValue({ success: "Student updated successfully" })
+
+    const user = userEvent.setup()
+    render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeTruthy()
+    })
+
+    const johnDoeText = screen.getByText("John Doe")
+    const johnDoeCard = johnDoeText.closest(".flex.flex-col")
+    const editButton = johnDoeCard?.querySelector('button[aria-label="Edit user"]') as HTMLButtonElement
+
+    await user.click(editButton)
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("(suffix)")).toBeTruthy()
+    })
+
+    const suffixInput = screen.getByPlaceholderText("(suffix)")
+    await user.clear(suffixInput)
+
+    const saveButton = screen.getByLabelText("Save changes")
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      // Should be called with just the prefix when suffix is empty
+      expect(updateStudentForHeadTeacher).toHaveBeenCalledWith(
+        "student-1",
+        "John Doe",
+        "Sensei Bob",
+        "Test Dojo",
+        null
+      )
     })
   })
 })

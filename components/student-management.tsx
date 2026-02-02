@@ -32,7 +32,7 @@ import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { fetchStudentsForHeadTeacher, updateUserFields } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
 
@@ -428,10 +428,15 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
 
   const startEditing = (user: UserInterface) => {
     setEditingUser(user.id)
+    // Extract suffix: if school starts with headTeacherSchool, get the remainder
+    const schoolSuffix =
+      user.school?.startsWith(headTeacherSchool) && user.school.length > headTeacherSchool.length
+        ? user.school.slice(headTeacherSchool.length).trimStart()
+        : ""
     setEditValues({
       full_name: user.full_name || "",
       teacher: user.teacher || "",
-      school: user.school || "",
+      school: schoolSuffix,
       current_belt_id: user.current_belt_id,
     })
   }
@@ -451,12 +456,17 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
 
     setProcessingUsers((prev) => new Set(prev).add(editingUser))
 
+    // Reconstruct full school name: prefix + suffix
+    const fullSchool = editValues.school.trim()
+      ? `${headTeacherSchool} ${editValues.school.trim()}`
+      : headTeacherSchool
+
     try {
-      const result = await updateUserFields(
+      const result = await updateStudentForHeadTeacher(
         editingUser,
         editValues.full_name,
         editValues.teacher,
-        editValues.school,
+        fullSchool,
         editValues.current_belt_id,
       )
 
@@ -471,7 +481,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                 ...user,
                 full_name: editValues.full_name.trim(),
                 teacher: editValues.teacher.trim(),
-                school: editValues.school.trim(),
+                school: fullSchool,
                 current_belt_id: editValues.current_belt_id,
               }
             : user,
@@ -750,12 +760,17 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         </div>
                         <div className="flex items-center space-x-1 min-w-0">
                           {isEditing ? (
-                            <Input
-                              value={editValues.school}
-                              onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
-                              className="h-5 text-xs bg-gray-800 border-gray-600 text-white"
-                              placeholder="School name"
-                            />
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
+                                {headTeacherSchool}
+                              </span>
+                              <Input
+                                value={editValues.school}
+                                onChange={(e) => setEditValues({ ...editValues, school: e.target.value })}
+                                className="h-5 text-xs bg-gray-800 border-gray-600 text-white w-24"
+                                placeholder="(suffix)"
+                              />
+                            </div>
                           ) : (
                             <>
                               <Building className="w-3 h-3 flex-shrink-0" />

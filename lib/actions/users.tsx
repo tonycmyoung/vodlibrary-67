@@ -1,34 +1,17 @@
 "use server"
 
 import { cookies } from "next/headers"
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
 import { createClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
 import { sendEmail } from "./email"
 import { logAuditEvent } from "./audit"
+import { createServerClient } from "../supabase/server"
 
 export async function inviteUser(email: string) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
@@ -133,7 +116,7 @@ export async function inviteUser(email: string) {
 export async function approveUserServerAction(userId: string, role = "Student") {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const supabase = createSupabaseServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -368,6 +351,97 @@ export async function updateUserFields(
   }
 }
 
+export async function updateStudentForHeadTeacher(
+  userId: string,
+  fullName: string,
+  teacher: string,
+  school: string,
+  currentBeltId?: string | null,
+) {
+  try {
+    const supabase = await createServerClient()
+
+    // Get the current user (Head Teacher)
+    const { data: currentUser } = await supabase.auth.getUser()
+    if (!currentUser.user) {
+      return { error: "Not authenticated" }
+    }
+
+    // Get Head Teacher's profile to verify role and get their school
+    const { data: headTeacherProfile } = await supabase
+      .from("users")
+      .select("role, school")
+      .eq("id", currentUser.user.id)
+      .single()
+
+    if (!headTeacherProfile) {
+      return { error: "User profile not found" }
+    }
+
+    if (headTeacherProfile.role !== "Head Teacher") {
+      return { error: "Only Head Teachers can update student records" }
+    }
+
+    if (!headTeacherProfile.school) {
+      return { error: "Head Teacher school not configured" }
+    }
+
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Get the student's current school to verify they belong to this Head Teacher
+    const { data: studentProfile } = await serviceSupabase
+      .from("users")
+      .select("school")
+      .eq("id", userId)
+      .single()
+
+    if (!studentProfile) {
+      return { error: "Student not found" }
+    }
+
+    // Verify student belongs to this Head Teacher's school (prefix match)
+    // Must equal prefix exactly OR start with prefix + space (to prevent "BBMA" matching "BBMA2")
+    const studentSchool = studentProfile.school || ""
+    const isStudentInSchool =
+      studentSchool === headTeacherProfile.school || studentSchool.startsWith(headTeacherProfile.school + " ")
+    if (!isStudentInSchool) {
+      return { error: "Cannot edit students from other schools" }
+    }
+
+    // Verify new school value maintains the Head Teacher's school prefix
+    // Must equal prefix exactly OR start with prefix + space (to prevent "BBMA" -> "BBMA2")
+    const newSchool = school.trim()
+    const isValidSchoolPrefix =
+      newSchool === headTeacherProfile.school || newSchool.startsWith(headTeacherProfile.school + " ")
+    if (!isValidSchoolPrefix) {
+      return { error: "Cannot reassign student to a different school organization" }
+    }
+
+    const updateData: Record<string, string | null | undefined> = {
+      full_name: fullName.trim(),
+      teacher: teacher.trim(),
+      school: newSchool,
+    }
+
+    if (currentBeltId !== undefined) {
+      updateData.current_belt_id = currentBeltId
+    }
+
+    const { error } = await serviceSupabase.from("users").update(updateData).eq("id", userId)
+
+    if (error) {
+      console.error("Error updating student fields:", error)
+      return { error: "Failed to update student fields" }
+    }
+
+    revalidatePath("/students")
+    return { success: "Student updated successfully" }
+  } catch (error) {
+    console.error("Error in updateStudentForHeadTeacher:", error)
+    return { error: "Failed to update student" }
+  }
+}
+
 export async function deleteUserCompletely(userId: string) {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -378,23 +452,7 @@ export async function deleteUserCompletely(userId: string) {
       .eq("id", userId)
       .single()
 
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
 
@@ -482,23 +540,7 @@ export async function updateProfile(params: {
 
 export async function updateUserBelt(userId: string, beltId: string | null) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     const { data: currentUser } = await supabase.auth.getUser()
     if (!currentUser.user) {
@@ -628,7 +670,7 @@ export async function fetchUnconfirmedEmailUsers() {
 export async function resendConfirmationEmail(email: string) {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const supabase = createSupabaseServerClient(process.env.SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -684,6 +726,8 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    // Use OR filter to match: exact school OR school starting with prefix + space
+    // This prevents "BBMA" from matching "BBMA2" (must be "BBMA" or "BBMA ...")
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
       .select(`
@@ -692,7 +736,7 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
         current_belt:curriculums!current_belt_id(id, name, color, display_order)
       `)
       .eq("is_approved", true)
-      .ilike("school", `${headTeacherSchool}%`)
+      .or(`school.eq.${headTeacherSchool},school.ilike.${headTeacherSchool} %`)
       .neq("id", headTeacherId)
       .order("full_name", { ascending: true })
 
@@ -743,23 +787,7 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
 
 export async function adminResetUserPassword(userId: string, newPassword: string) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-            } catch {}
-          },
-        },
-      },
-    )
+    const supabase = await createServerClient()
 
     // Verify the current user is an admin
     const { data: currentUser } = await supabase.auth.getUser()
