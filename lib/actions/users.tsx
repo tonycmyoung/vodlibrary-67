@@ -793,6 +793,8 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    // Use OR filter to match: exact school OR school starting with prefix + space
+    // This prevents "BBMA" from matching "BBMA2" (must be "BBMA" or "BBMA ...")
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
       .select(`
@@ -801,7 +803,7 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
         current_belt:curriculums!current_belt_id(id, name, color, display_order)
       `)
       .eq("is_approved", true)
-      .ilike("school", `${headTeacherSchool}%`)
+      .or(`school.eq.${headTeacherSchool},school.ilike.${headTeacherSchool} %`)
       .neq("id", headTeacherId)
       .order("full_name", { ascending: true })
 
