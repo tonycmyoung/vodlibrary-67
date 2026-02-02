@@ -519,7 +519,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: [
@@ -566,7 +566,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: null,
@@ -588,7 +588,7 @@ describe("User Actions", () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            ilike: vi.fn().mockReturnThis(),
+            or: vi.fn().mockReturnThis(),
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: [],
