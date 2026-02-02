@@ -7,7 +7,6 @@ import { revalidatePath } from "next/cache"
 import { generateUUID, sanitizeHtml, siteTitle } from "../utils/helpers"
 import { sendEmail } from "./email"
 import { logAuditEvent } from "./audit"
-import { createServerClient as createAuthClient, createServiceClient } from "../supabase/server"
 
 export async function inviteUser(email: string) {
   try {
@@ -377,7 +376,25 @@ export async function updateStudentForHeadTeacher(
   currentBeltId?: string | null,
 ) {
   try {
-    const supabase = await createAuthClient()
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            } catch {
+              // Ignore
+            }
+          },
+        },
+      },
+    )
 
     // Get the current user (Head Teacher)
     const { data: currentUser } = await supabase.auth.getUser()
@@ -404,7 +421,7 @@ export async function updateStudentForHeadTeacher(
       return { error: "Head Teacher school not configured" }
     }
 
-    const serviceSupabase = createServiceClient()
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Get the student's current school to verify they belong to this Head Teacher
     const { data: studentProfile } = await serviceSupabase
