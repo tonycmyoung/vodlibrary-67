@@ -1520,6 +1520,45 @@ describe("User Actions", () => {
       expect(result).toEqual({ error: "Cannot reassign student to a different school organization" })
     })
 
+    it("should return error when trying subtle prefix manipulation (BBMA to BBMA2)", async () => {
+      mockSupabaseClient.auth = {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "head-teacher-123" } },
+          error: null,
+        }),
+      } as any
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { role: "Head Teacher", school: "BBMA" },
+          error: null,
+        }),
+      })
+
+      let serviceFromCallCount = 0
+      mockServiceClient.from.mockImplementation(() => {
+        serviceFromCallCount++
+        if (serviceFromCallCount === 1) {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { school: "BBMA Gosford" },
+              error: null,
+            }),
+          }
+        }
+        return {}
+      })
+
+      // Trying to change to BBMA2 (subtle manipulation - different org)
+      const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Sensei", "BBMA2 Gosford")
+
+      expect(result).toEqual({ error: "Cannot reassign student to a different school organization" })
+    })
+
     it("should successfully update student within same school prefix", async () => {
       mockSupabaseClient.auth = {
         getUser: vi.fn().mockResolvedValue({
