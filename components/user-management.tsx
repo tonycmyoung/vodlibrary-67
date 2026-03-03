@@ -1358,7 +1358,7 @@ export default function UserManagement() {
               key={user.id}
               user={user}
               isProcessing={processingUsers.has(user.id)}
-              isAdmin={user.email === "acmyma@gmail.com"}
+              isAdmin={user.role === "Admin"}
               isEditing={editingUser === user.id}
               editValues={editValues}
               setEditValues={setEditValues}

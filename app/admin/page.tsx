@@ -13,18 +13,19 @@ export default async function AdminDashboard() {
     redirect("/auth/login")
   }
 
-  if (user.email !== "acmyma@gmail.com") {
-    redirect("/")
-  }
-
-  // Get or create admin user profile
+  // Get admin user profile
   let { data: userProfile } = await supabase
     .from("users")
-    .select("is_approved, full_name, email, profile_image_url")
+    .select("is_approved, full_name, email, profile_image_url, role")
     .eq("id", user.id)
     .single()
 
-  if (!userProfile?.is_approved) {
+  // Only allow admin users
+  if (!userProfile?.is_approved || userProfile.role !== "Admin") {
+    redirect("/")
+  }
+
+  if (!userProfile) {
     const { data: updatedProfile } = await supabase
       .from("users")
       .upsert({

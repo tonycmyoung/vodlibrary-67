@@ -454,10 +454,10 @@ describe("UserManagement", () => {
     })
   })
 
-  it("should display administrator badge for admin email", async () => {
+  it("should display administrator badge for admin role", async () => {
     const adminUser = {
       ...mockUsers[0],
-      email: "acmyma@gmail.com",
+      role: "Admin",
     }
 
     mockFrom.mockImplementation((table: string) => {

@@ -50,7 +50,7 @@ interface HeaderProps {
 export default function Header({ user }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const isAdmin = user.email === "acmyma@gmail.com"
+  const isAdmin = user.role === "Admin"
   const isStudentView = pathname === "/student-view"
   const isProfilePage = pathname === "/profile"
   const showAdminView = isAdmin && (isStudentView || isProfilePage)
