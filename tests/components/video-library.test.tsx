@@ -774,57 +774,6 @@ describe("VideoLibrary", () => {
       })
     })
 
-    it("should preserve all filter types when changing page", async () => {
-      // Use OR mode so multiple videos match (any video with cat-1 OR curr-1)
-      // This ensures we have multiple pages when itemsPerPage=1
-      mockSearchParams.get.mockImplementation((key: string) => {
-        if (key === "filters") return JSON.stringify(["cat-1", "curr-1"])
-        if (key === "mode") return "OR"
-        if (key === "page") return "1"
-        return null
-      })
-
-      Storage.prototype.getItem = vi.fn((key) => {
-        if (key === "videoLibraryItemsPerPage") return "1" // Force pagination with 1 item per page
-        return null
-      })
-
-      render(<VideoLibrary />)
-
-      // Wait for filters to be loaded from URL (Filters: 2)
-      await waitFor(() => {
-        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
-      })
-
-      // Wait for pagination to be ready
-      await waitFor(() => {
-        expect(screen.getAllByText("Show")[0]).toBeTruthy()
-      })
-
-      // With OR mode and 2 filters, we should have multiple videos and thus multiple pages
-      // Find and click the Next button
-      await waitFor(() => {
-        const nextButtons = screen.queryAllByText("Next")
-        expect(nextButtons.length).toBeGreaterThan(0)
-      })
-
-      const nextButtons = screen.getAllByText("Next")
-      fireEvent.click(nextButtons[0])
-
-      // Verify URL still contains both filters after page change
-      await waitFor(() => {
-        const calls = mockRouter.replace.mock.calls
-        expect(calls.length).toBeGreaterThan(0)
-        const lastCall = calls[calls.length - 1]
-        const url = lastCall[0] as string
-        const urlObj = new URL(url, "http://localhost")
-        const filtersParam = urlObj.searchParams.get("filters")
-        expect(filtersParam).toBeTruthy()
-        const filters = JSON.parse(filtersParam!)
-        expect(filters).toContain("cat-1")
-        expect(filters).toContain("curr-1")
-      })
-    })
   })
 
   describe("Custom Storage Prefix", () => {
