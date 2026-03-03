@@ -13,6 +13,25 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(),
 }))
 
+// Mock useVideoLibraryUrl hook
+const mockUpdateUrl = vi.fn()
+vi.mock("@/hooks/use-video-library-url", () => ({
+  useVideoLibraryUrl: () => ({
+    urlState: {
+      filters: [],
+      search: "",
+      mode: "AND" as const,
+      page: 1,
+    },
+    setFilters: vi.fn(),
+    setSearch: vi.fn(),
+    setMode: vi.fn(),
+    setPage: vi.fn(),
+    updateUrl: mockUpdateUrl,
+    buildUrlString: vi.fn(),
+  }),
+}))
+
 // Mock Supabase client
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -199,6 +218,7 @@ describe("VideoLibrary", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUpdateUrl.mockClear()
     ;(useRouter as any).mockReturnValue(mockRouter)
     ;(useSearchParams as any).mockReturnValue(mockSearchParams)
     ;(createClient as any).mockReturnValue(mockSupabase)
@@ -329,9 +349,9 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(mockRouter.replace).toHaveBeenCalledWith(
-          expect.stringContaining("filters="),
-          expect.objectContaining({ scroll: false }),
+        // Now uses the centralized URL hook instead of direct router.replace
+        expect(mockUpdateUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ filters: expect.any(Array), page: 1 }),
         )
       })
     })
@@ -719,19 +739,14 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
       })
 
-      // Verify router.replace was called with both filters
+      // Verify updateUrl was called with both filters
       await waitFor(() => {
-        const calls = mockRouter.replace.mock.calls
+        const calls = mockUpdateUrl.mock.calls
         expect(calls.length).toBeGreaterThan(0)
-        const lastCall = calls[calls.length - 1]
-        const url = lastCall[0] as string
-        expect(url).toContain("filters")
-        const urlObj = new URL(url, "http://localhost")
-        const filtersParam = urlObj.searchParams.get("filters")
-        expect(filtersParam).toBeTruthy()
-        const filters = JSON.parse(filtersParam!)
-        expect(filters).toContain("cat-1")
-        expect(filters).toContain("curr-1")
+        const lastCall = calls[calls.length - 1][0]
+        expect(lastCall.filters).toContain("cat-1")
+        expect(lastCall.filters).toContain("curr-1")
+        expect(lastCall.page).toBe(1)
       })
     })
 
@@ -758,19 +773,14 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
       })
 
-      // Verify router.replace was called with both filters
+      // Verify updateUrl was called with both filters
       await waitFor(() => {
-        const calls = mockRouter.replace.mock.calls
+        const calls = mockUpdateUrl.mock.calls
         expect(calls.length).toBeGreaterThan(0)
-        const lastCall = calls[calls.length - 1]
-        const url = lastCall[0] as string
-        expect(url).toContain("filters")
-        const urlObj = new URL(url, "http://localhost")
-        const filtersParam = urlObj.searchParams.get("filters")
-        expect(filtersParam).toBeTruthy()
-        const filters = JSON.parse(filtersParam!)
-        expect(filters).toContain("cat-1")
-        expect(filters).toContain("curr-1")
+        const lastCall = calls[calls.length - 1][0]
+        expect(lastCall.filters).toContain("cat-1")
+        expect(lastCall.filters).toContain("curr-1")
+        expect(lastCall.page).toBe(1)
       })
     })
 

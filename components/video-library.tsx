@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
+import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
 import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
@@ -433,28 +434,11 @@ export default function VideoLibrary({
   nextBeltName, // Destructure new prop
   userProfile, // Destructure userProfile
 }: VideoLibraryProps) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
 
-  const [urlState] = useState(() => {
-    const filters = searchParams.get("filters")
-    const search = searchParams.get("search") || ""
-    const mode = (searchParams.get("mode") as "AND" | "OR") || "AND"
-    const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10))
-
-    let parsedFilters: string[] = []
-    if (filters) {
-      try {
-        // searchParams.get() already decodes URL parameters, so just parse JSON directly
-        parsedFilters = JSON.parse(filters)
-      } catch (e) {
-        console.error("Error parsing URL filters:", e)
-      }
-    }
-
-    return { filters: parsedFilters, search, mode, page }
-  })
+  // Use the centralized URL state hook
+  const { urlState, updateUrl } = useVideoLibraryUrl()
 
   const [videos, setVideos] = useState<Video[]>([])
   const [allVideos, setAllVideos] = useState<Video[]>([])
@@ -719,37 +703,8 @@ export default function VideoLibrary({
 
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
-const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", page: number) => {
-  const params = new URLSearchParams()
-  
-  if (filters.length > 0) {
-  // URLSearchParams.set() already URL-encodes, so don't double-encode
-  params.set("filters", JSON.stringify(filters))
-  }
-
-    if (search.trim()) {
-      params.set("search", search)
-    }
-
-    if (mode !== "AND") {
-      params.set("mode", mode)
-    }
-
-    if (page > 1) {
-      params.set("page", page.toString())
-    }
-
-    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
-
-    const currentSearch = window.location.search
-    const newSearch = params.toString() ? `?${params.toString()}` : ""
-
-    if (currentSearch !== newSearch) {
-      router.replace(newURL, { scroll: false })
-    }
-  }
-
-  const handleCurriculumToggle = (curriculumId: string) => {
+  // Handler for curriculum filter toggle - uses centralized URL hook
+  const handleCurriculumToggle = useCallback((curriculumId: string) => {
     const newSelectedCurriculums = selectedCurriculums.includes(curriculumId)
       ? selectedCurriculums.filter((id) => id !== curriculumId)
       : [...selectedCurriculums, curriculumId]
@@ -757,57 +712,62 @@ const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", p
     setSelectedCurriculums(newSelectedCurriculums)
     setCurrentPage(1)
     const allFilters = [...selectedCategories, ...newSelectedCurriculums]
-    reconstructURL(allFilters, searchQuery, filterMode, 1)
-  }
+    updateUrl({ filters: allFilters, page: 1 })
+  }, [selectedCurriculums, selectedCategories, updateUrl])
 
-  const handleCategoryToggle = (categoryId: string) => {
+  // Handler for category filter toggle - uses centralized URL hook
+  const handleCategoryToggle = useCallback((categoryId: string) => {
     const newSelectedCategories = selectedCategories.includes(categoryId)
       ? selectedCategories.filter((id) => id !== categoryId)
       : [...selectedCategories, categoryId]
 
     setSelectedCategories(newSelectedCategories)
+    setCurrentPage(1)
     const allFilters = [...newSelectedCategories, ...selectedCurriculums]
-    reconstructURL(allFilters, searchQuery, filterMode, 1)
-  }
+    updateUrl({ filters: allFilters, page: 1 })
+  }, [selectedCategories, selectedCurriculums, updateUrl])
 
-  const handleViewChange = (newView: "grid" | "list") => {
+  // Handler for view change - only updates localStorage, no URL
+  const handleViewChange = useCallback((newView: "grid" | "list") => {
     setView(newView)
     const storageKey = `${storagePrefix}View`
     localStorage.setItem(storageKey, newView)
-  }
+  }, [storagePrefix])
 
-  const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
+  // Handler for sort change - only updates localStorage, no URL
+  const handleSortChange = useCallback((newSortBy: string, newSortOrder: "asc" | "desc") => {
     setSortBy(newSortBy as VideoLibrarySortBy)
     setSortOrder(newSortOrder)
-
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
     localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
-  }
+  }, [storagePrefix])
 
-  const handleFilterModeChange = (newMode: "AND" | "OR") => {
+  // Handler for filter mode change - uses centralized URL hook
+  const handleFilterModeChange = useCallback((newMode: "AND" | "OR") => {
     setFilterMode(newMode)
-    const allFilters = [...selectedCategories, ...selectedCurriculums]
+    setCurrentPage(1)
+    updateUrl({ mode: newMode, page: 1 })
+  }, [updateUrl])
 
-    reconstructURL(allFilters, searchQuery, newMode, 1) // Reset to page 1 when filter mode changes
-  }
-
-  const handleItemsPerPageChange = (value: string) => {
+  // Handler for items per page change - uses centralized URL hook
+  const handleItemsPerPageChange = useCallback((value: string) => {
     const newItemsPerPage = Number.parseInt(value, 10)
     setItemsPerPage(newItemsPerPage)
     localStorage.setItem(`${storagePrefix}ItemsPerPage`, value)
-    const allFilters = [...selectedCategories, ...selectedCurriculums]
-    reconstructURL(allFilters, searchQuery, filterMode, 1)
-  }
+    setCurrentPage(1)
+    updateUrl({ page: 1 })
+  }, [storagePrefix, updateUrl])
 
-  const handlePageChange = (newPage: number) => {
+  // Handler for page change - uses centralized URL hook
+  const handlePageChange = useCallback((newPage: number) => {
     const boundedPage = Math.max(1, Math.min(newPage, totalPages || 1))
     setCurrentPage(boundedPage)
-    const allFilters = [...selectedCategories, ...selectedCurriculums]
-    reconstructURL(allFilters, searchQuery, filterMode, boundedPage)
-  }
+    updateUrl({ page: boundedPage })
+  }, [totalPages, updateUrl])
 
+  // Debounced search effect - uses centralized URL hook
   useEffect(() => {
-    // Skip on initial mount - don't reconstruct URL if we're just loading from URL params
+    // Skip on initial mount - don't update URL if we're just loading from URL params
     if (searchQuery === urlState.search) {
       setDebouncedSearchQuery(searchQuery)
       return
@@ -816,12 +776,12 @@ const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", p
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
       // Reset to page 1 only when search actually changes
-      const allFilters = [...selectedCategories, ...selectedCurriculums]
-      reconstructURL(allFilters, searchQuery, filterMode, 1)
+      setCurrentPage(1)
+      updateUrl({ search: searchQuery, page: 1 })
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, urlState.search, updateUrl])
 
   const handleFavoriteToggle = (videoId: string, isFavorited: boolean) => {
     setUserFavorites((prev) => {
