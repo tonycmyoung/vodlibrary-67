@@ -101,49 +101,15 @@ vi.mock("@/components/mobile-filter-dialog", () => ({
   default: () => <div data-testid="mobile-filter-dialog" />,
 }))
 
-// Mock extracted FilterSection - passes through to already-mocked CategoryFilter
-vi.mock("@/components/filter-section", () => ({
-  default: (props: any) => (
-    <div data-testid="filter-section">
-      <button onClick={() => props.onCategoryToggle("cat-1")}>Toggle Category</button>
-      {props.onCurriculumToggle && <button onClick={() => props.onCurriculumToggle("curr-1")}>Toggle Curriculum</button>}
-    </div>
-  ),
-}))
+// FilterSection is NOT mocked - it uses the real component which wraps CategoryFilter
+// This allows the CategoryFilter mock above to be used through FilterSection
 
-// Mock extracted FilterModeToggle
-vi.mock("@/components/filter-mode-toggle", () => ({
-  default: ({ filterMode, onFilterModeChange }: any) => (
-    <div data-testid="filter-mode-toggle">
-      <button onClick={() => onFilterModeChange(filterMode === "AND" ? "OR" : "AND")}>
-        Toggle Mode ({filterMode})
-      </button>
-    </div>
-  ),
-}))
+// FilterModeToggle is NOT mocked - we use the real component for better test coverage
 
-// Mock extracted PaginationControls
-vi.mock("@/components/pagination-controls", () => ({
-  default: ({ totalPages, currentPage, onPageChange, itemsPerPage, onItemsPerPageChange }: any) => (
-    <div data-testid="pagination-controls">
-      <span data-testid="page-info">Page {currentPage} of {totalPages}</span>
-      <span data-testid="items-per-page">{itemsPerPage} per page</span>
-      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}>Next</button>
-      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}>Prev</button>
-      <button onClick={() => onItemsPerPageChange("24")}>Set 24</button>
-    </div>
-  ),
-}))
+// PaginationControls is NOT mocked - we use the real component for better test coverage
+// This ensures pagination tests accurately reflect the real component behavior
 
-// Mock extracted TrainingBanner components
-vi.mock("@/components/training-banner", () => ({
-  MobileTrainingBanner: ({ nextBeltName }: any) => (
-    <div data-testid="mobile-training-banner">{nextBeltName}</div>
-  ),
-  DesktopTrainingBanner: ({ nextBeltName }: any) => (
-    <div data-testid="desktop-training-banner">{nextBeltName}</div>
-  ),
-}))
+// TrainingBanner is NOT mocked - we use the real components for better test coverage
 
 describe("VideoLibrary", () => {
   const mockRouter = {
