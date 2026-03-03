@@ -1,7 +1,9 @@
+import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Header from "@/components/header"
 import VideoLibrary from "@/components/video-library"
+import VideoLibrarySkeleton from "@/components/video-library-skeleton"
 
 export default async function FavoritesPage() {
   // If Supabase is not configured, show setup message directly
@@ -13,18 +15,19 @@ export default async function FavoritesPage() {
     )
   }
 
-  // Get the user from the server
+  // Use getSession instead of getUser - middleware already validated the session
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
-  // If no user, redirect to login
+  // If no user, redirect to login (middleware should have caught this)
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Check if user is approved
+  // Fetch user profile data for display
   const { data: userProfile } = await supabase
     .from("users")
     .select(
@@ -33,12 +36,13 @@ export default async function FavoritesPage() {
     .eq("id", user.id)
     .single()
 
+  // Safety fallback for approval check
   if (!userProfile?.is_approved) {
     redirect("/pending-approval")
   }
 
   const userWithEmail = {
-    id: user.id, // Always use the authenticated user's ID
+    id: user.id,
     email: user.email,
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
@@ -55,7 +59,9 @@ export default async function FavoritesPage() {
           <h1 className="text-3xl font-bold text-white mb-2">My Favorites</h1>
           <p className="text-gray-300">Videos you've saved for later</p>
         </div>
-        <VideoLibrary favoritesOnly={true} />
+        <Suspense fallback={<VideoLibrarySkeleton />}>
+          <VideoLibrary favoritesOnly={true} />
+        </Suspense>
       </div>
     </div>
   )

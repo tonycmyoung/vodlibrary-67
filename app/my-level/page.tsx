@@ -1,7 +1,9 @@
+import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
+import VideoLibrarySkeleton from "@/components/video-library-skeleton"
 
 export default async function MyLevelPage() {
   // If Supabase is not configured, show setup message directly
@@ -13,18 +15,19 @@ export default async function MyLevelPage() {
     )
   }
 
-  // Get the user from the server
+  // Use getSession instead of getUser - middleware already validated the session
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
-  // If no user, redirect to login
+  // If no user, redirect to login (middleware should have caught this)
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Check if user is approved and get belt info
+  // Fetch user profile data and belt info for display
   const { data: userProfile } = await supabase
     .from("users")
     .select(`
@@ -38,13 +41,9 @@ export default async function MyLevelPage() {
     .eq("id", user.id)
     .single()
 
+  // Safety fallback for approval check
   if (!userProfile?.is_approved) {
     redirect("/pending-approval")
-  }
-
-  const isAdminEmail = user.email === "acmyma@gmail.com"
-  if (userProfile?.role === "Admin" || isAdminEmail) {
-    redirect("/admin")
   }
 
   const userWithEmail = {
@@ -79,7 +78,9 @@ export default async function MyLevelPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" nextBeltName={nextBeltName} />
+      <Suspense fallback={<VideoLibrarySkeleton />}>
+        <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" nextBeltName={nextBeltName} />
+      </Suspense>
     </div>
   )
 }

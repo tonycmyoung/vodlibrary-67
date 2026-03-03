@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
 import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
@@ -12,8 +13,24 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2, X, Heart, Filter, Ribbon } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
+
+// Lazy load MobileFilterDialog to reduce initial bundle size
+// The dialog content is only needed when user clicks "Filters" button on mobile
+const MobileFilterDialog = dynamic(() => import("@/components/mobile-filter-dialog"), {
+  ssr: false,
+  loading: () => (
+    <Button
+      variant="outline"
+      size="sm"
+      className="lg:hidden bg-black/50 border-gray-700 text-white"
+      disabled
+    >
+      <Filter className="h-4 w-4 mr-2" />
+      Filters
+    </Button>
+  ),
+})
 import {
   compareVideos,
   videoMatchesSearch,
@@ -350,82 +367,6 @@ const SearchInput = ({
       </Button>
     )}
   </div>
-)
-
-// Mobile filter dialog component - extracted to reduce cognitive complexity
-const MobileFilterDialog = ({
-  showMobileFilters,
-  setShowMobileFilters,
-  categories,
-  recordedValues,
-  performers,
-  selectedCategories,
-  onCategoryToggle,
-  videoCount,
-  curriculums,
-  selectedCurriculums,
-  onCurriculumToggle,
-  filterMode,
-  onFilterModeChange,
-}: {
-  showMobileFilters: boolean
-  setShowMobileFilters: (show: boolean) => void
-  categories: Category[]
-  recordedValues: string[]
-  performers: Performer[]
-  selectedCategories: string[]
-  onCategoryToggle: (id: string) => void
-  videoCount: number
-  curriculums: Curriculum[]
-  selectedCurriculums: string[]
-  onCurriculumToggle: (id: string) => void
-  filterMode: "AND" | "OR"
-  onFilterModeChange: (mode: "AND" | "OR") => void
-}) => (
-  <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
-    <DialogTrigger asChild>
-      <Button
-        variant="outline"
-        size="sm"
-        className="lg:hidden bg-black/50 border-gray-700 text-white hover:bg-gray-700 hover:text-white"
-      >
-        <Filter className="h-4 w-4 mr-2" />
-        Filters
-        {(selectedCategories.length > 0 || selectedCurriculums.length > 0) && (
-          <span className="ml-2 bg-red-600 text-white text-xs rounded-full px-2 py-0.5">
-            {selectedCategories.length + selectedCurriculums.length}
-          </span>
-        )}
-      </Button>
-    </DialogTrigger>
-    <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-sm max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="text-white">Filter Videos</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
-        <FilterSection
-          categories={categories}
-          recordedValues={recordedValues}
-          performers={performers}
-          selectedCategories={selectedCategories}
-          onCategoryToggle={onCategoryToggle}
-          videoCount={videoCount}
-          curriculums={curriculums}
-          selectedCurriculums={selectedCurriculums}
-          onCurriculumToggle={onCurriculumToggle}
-        />
-        {selectedCategories.length + selectedCurriculums.length > 1 && (
-          <FilterModeToggle filterMode={filterMode} onFilterModeChange={onFilterModeChange} />
-        )}
-        <Button
-          onClick={() => setShowMobileFilters(false)}
-          className="w-full bg-red-600 hover:bg-red-700 text-white"
-        >
-          Apply Filters
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
 )
 
 // Desktop filter section component - extracted to reduce cognitive complexity
