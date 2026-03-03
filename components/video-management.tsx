@@ -493,6 +493,8 @@ export default function VideoManagement() {
                   <img
                     src={video.thumbnail_url || "/placeholder.svg"}
                     alt={video.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-32 h-20 object-cover rounded"
                   />
                 </div>
