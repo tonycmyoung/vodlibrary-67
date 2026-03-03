@@ -12,9 +12,30 @@ import ViewToggle from "@/components/view-toggle"
 import SortControl from "@/components/sort-control"
 import SearchInput from "@/components/search-input"
 import PaginationControls from "@/components/pagination-controls"
-import FilterSection from "@/components/filter-section"
+// Lazy load FilterSection - only needed on desktop sidebar (hidden on mobile)
+const FilterSection = dynamic(() => import("@/components/filter-section"), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-6 bg-gray-700 rounded w-24" />
+      <div className="flex flex-wrap gap-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-6 bg-gray-700 rounded w-16" />
+        ))}
+      </div>
+    </div>
+  ),
+})
 import FilterModeToggle from "@/components/filter-mode-toggle"
-import { MobileTrainingBanner, DesktopTrainingBanner } from "@/components/training-banner"
+// Lazy load TrainingBanner - only shown conditionally for My Level page
+const MobileTrainingBanner = dynamic(
+  () => import("@/components/training-banner").then((mod) => ({ default: mod.MobileTrainingBanner })),
+  { ssr: false }
+)
+const DesktopTrainingBanner = dynamic(
+  () => import("@/components/training-banner").then((mod) => ({ default: mod.DesktopTrainingBanner })),
+  { ssr: false }
+)
 import { Button } from "@/components/ui/button"
 import { Loader2, Heart, Filter } from "lucide-react"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
