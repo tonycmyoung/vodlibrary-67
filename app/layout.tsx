@@ -53,7 +53,7 @@ export default function RootLayout({
           <LegalFooter />
         </LoadingProvider>
         <Analytics />
-        <SpeedInsights />
+        <SpeedInsights sampleRate={1} />
 
       </body>
     </html>
