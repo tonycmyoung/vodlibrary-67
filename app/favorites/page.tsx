@@ -1,9 +1,7 @@
-import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Header from "@/components/header"
 import VideoLibrary from "@/components/video-library"
-import VideoLibrarySkeleton from "@/components/video-library-skeleton"
 
 export default async function FavoritesPage() {
   // If Supabase is not configured, show setup message directly
@@ -59,9 +57,7 @@ export default async function FavoritesPage() {
           <h1 className="text-3xl font-bold text-white mb-2">My Favorites</h1>
           <p className="text-gray-300">Videos you've saved for later</p>
         </div>
-        <Suspense fallback={<VideoLibrarySkeleton />}>
-          <VideoLibrary favoritesOnly={true} />
-        </Suspense>
+        <VideoLibrary favoritesOnly={true} />
       </div>
     </div>
   )

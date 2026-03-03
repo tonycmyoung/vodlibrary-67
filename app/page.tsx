@@ -1,9 +1,7 @@
-import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
-import VideoLibrarySkeleton from "@/components/video-library-skeleton"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -60,9 +58,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <Suspense fallback={<VideoLibrarySkeleton />}>
-        <VideoLibrary />
-      </Suspense>
+      <VideoLibrary />
     </div>
   )
 }
