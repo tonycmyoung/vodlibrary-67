@@ -1,7 +1,7 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import { createClient } from "@/lib/supabase/client"
@@ -96,16 +96,9 @@ vi.mock("@/components/search-input", () => ({
 }))
 
 // Mock dynamically imported MobileFilterDialog
+// Keep it simple - we're not testing mobile filter dialog behavior here
 vi.mock("@/components/mobile-filter-dialog", () => ({
-  default: ({ selectedCategories, selectedCurriculums, onCategoryToggle, onCurriculumToggle }: any) => (
-    <div data-testid="mobile-filter-dialog">
-      <span data-testid="mobile-filter-count">
-        Mobile Filters: {(selectedCategories?.length || 0) + (selectedCurriculums?.length || 0)}
-      </span>
-      <button onClick={() => onCategoryToggle("cat-1")}>Mobile Toggle Category</button>
-      <button onClick={() => onCurriculumToggle("curr-1")}>Mobile Toggle Curriculum</button>
-    </div>
-  ),
+  default: () => <div data-testid="mobile-filter-dialog" />,
 }))
 
 describe("VideoLibrary", () => {
@@ -884,7 +877,9 @@ describe("VideoLibrary", () => {
 
       // Toggle curriculum to have multiple filters
       const curriculumToggle = screen.getByText("Toggle Curriculum")
-      fireEvent.click(curriculumToggle)
+      await act(async () => {
+        fireEvent.click(curriculumToggle)
+      })
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
