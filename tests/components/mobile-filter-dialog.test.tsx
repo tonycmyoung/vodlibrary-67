@@ -80,6 +80,7 @@ describe("MobileFilterDialog", () => {
     onCurriculumToggle: vi.fn(),
     filterMode: "OR" as const,
     onFilterModeChange: vi.fn(),
+    onApplyFilters: vi.fn(),
   }
 
   beforeEach(() => {
@@ -169,6 +170,15 @@ describe("MobileFilterDialog", () => {
       fireEvent.click(applyButton)
 
       expect(defaultProps.setShowMobileFilters).toHaveBeenCalledWith(false)
+    })
+
+    it("should call onApplyFilters when Apply Filters button is clicked", () => {
+      render(<MobileFilterDialog {...defaultProps} />)
+
+      const applyButton = screen.getByText("Apply Filters")
+      fireEvent.click(applyButton)
+
+      expect(defaultProps.onApplyFilters).toHaveBeenCalled()
     })
   })
 

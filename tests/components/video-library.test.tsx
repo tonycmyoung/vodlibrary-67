@@ -15,6 +15,8 @@ vi.mock("next/navigation", () => ({
 
 // Mock useVideoLibraryUrl hook - needs to read from mockSearchParams dynamically
 const mockUpdateUrl = vi.fn()
+const mockUpdateUrlImmediate = vi.fn()
+const mockCommitUrl = vi.fn()
 vi.mock("@/hooks/use-video-library-url", () => ({
   useVideoLibraryUrl: () => {
     // Get the current mockSearchParams from the mocked useSearchParams
@@ -47,6 +49,8 @@ vi.mock("@/hooks/use-video-library-url", () => ({
       setMode: vi.fn(),
       setPage: vi.fn(),
       updateUrl: mockUpdateUrl,
+      updateUrlImmediate: mockUpdateUrlImmediate,
+      commitUrl: mockCommitUrl,
       buildUrlString: vi.fn(),
     }
   },

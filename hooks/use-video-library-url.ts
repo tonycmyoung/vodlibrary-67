@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import type { FilterMode } from "@/types/video"
 
@@ -22,11 +22,18 @@ export interface UseVideoLibraryUrlReturn {
   setMode: (mode: FilterMode) => void
   /** Update page number in URL */
   setPage: (page: number) => void
-  /** Update multiple URL parameters at once */
+  /** Update multiple URL parameters at once (debounced by default) */
   updateUrl: (updates: Partial<VideoLibraryUrlState>) => void
+  /** Update URL immediately without debouncing */
+  updateUrlImmediate: (updates: Partial<VideoLibraryUrlState>) => void
+  /** Commit any pending URL updates immediately */
+  commitUrl: () => void
   /** Build URL string from state (for external use) */
   buildUrlString: (state: Partial<VideoLibraryUrlState>) => string
 }
+
+/** Debounce delay for URL updates (ms) */
+const URL_UPDATE_DEBOUNCE = 500
 
 /**
  * Custom hook for managing VideoLibrary URL state
@@ -59,6 +66,19 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
   // Track current state (allows for optimistic updates)
   const [currentState, setCurrentState] = useState<VideoLibraryUrlState>(initialState)
 
+  // Refs for debouncing
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingUpdatesRef = useRef<Partial<VideoLibraryUrlState> | null>(null)
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [])
+
   /**
    * Build URL string from state
    */
@@ -87,13 +107,10 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
   }, [currentState])
 
   /**
-   * Update URL with new state
+   * Apply URL update to browser (internal helper)
    */
-  const updateUrl = useCallback((updates: Partial<VideoLibraryUrlState>) => {
-    const newState = { ...currentState, ...updates }
-    setCurrentState(newState)
-
-    const newSearch = buildUrlString(updates)
+  const applyUrlUpdate = useCallback((newState: VideoLibraryUrlState) => {
+    const newSearch = buildUrlString(newState)
     const currentSearch = typeof window !== "undefined" ? window.location.search : ""
 
     // Only update if URL actually changed
@@ -102,7 +119,67 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
       const newURL = newSearch ? `${pathname}${newSearch}` : pathname
       router.replace(newURL, { scroll: false })
     }
-  }, [currentState, buildUrlString, router])
+  }, [buildUrlString, router])
+
+  /**
+   * Update URL immediately without debouncing
+   * Use for explicit user actions like clicking "Apply" or pagination
+   */
+  const updateUrlImmediate = useCallback((updates: Partial<VideoLibraryUrlState>) => {
+    // Clear any pending debounced updates
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+    pendingUpdatesRef.current = null
+
+    const newState = { ...currentState, ...updates }
+    setCurrentState(newState)
+    applyUrlUpdate(newState)
+  }, [currentState, applyUrlUpdate])
+
+  /**
+   * Commit any pending URL updates immediately
+   * Call this when user explicitly wants to apply filters (e.g., mobile "Apply" button)
+   */
+  const commitUrl = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+
+    if (pendingUpdatesRef.current) {
+      const newState = { ...currentState, ...pendingUpdatesRef.current }
+      pendingUpdatesRef.current = null
+      applyUrlUpdate(newState)
+    }
+  }, [currentState, applyUrlUpdate])
+
+  /**
+   * Update URL with new state (debounced for filter changes)
+   * State updates immediately for UI responsiveness, URL updates after delay
+   */
+  const updateUrl = useCallback((updates: Partial<VideoLibraryUrlState>) => {
+    const newState = { ...currentState, ...updates }
+    setCurrentState(newState)
+
+    // Accumulate updates for debouncing
+    pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates }
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    // Set new debounced timer
+    debounceTimerRef.current = setTimeout(() => {
+      if (pendingUpdatesRef.current) {
+        applyUrlUpdate({ ...currentState, ...pendingUpdatesRef.current })
+        pendingUpdatesRef.current = null
+      }
+      debounceTimerRef.current = null
+    }, URL_UPDATE_DEBOUNCE)
+  }, [currentState, applyUrlUpdate])
 
   /**
    * Set filters (replaces all existing filters)
@@ -139,6 +216,8 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
     setMode,
     setPage,
     updateUrl,
+    updateUrlImmediate,
+    commitUrl,
     buildUrlString,
   }
 }
