@@ -187,6 +187,7 @@ This keeps the file curated and high-signal, avoiding bloat from one-off issues.
 
 - **2025-02:** Server actions must use `await createServerClient()` from `/lib/supabase/server.ts`, never inline client creation
 - **2025-02:** TraceLogger exists for debugging — prefer it over console.log for traceability
+- **2025-03:** Admin authorization uses role-based checks (`role === "Admin"`), not hardcoded emails. The `ADMIN_USER` env var provides bootstrap/fallback access in middleware only.
 
 ---
 

@@ -18,16 +18,30 @@ The application is deployed to Vercel with automatic deployments on push to the 
 Required environment variables (configure in Vercel dashboard):
 
 \`\`\`
+# Supabase
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 SUPABASE_ANON_KEY
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Email (Resend)
 RESEND_API_KEY
 FROM_EMAIL
+ADMIN_EMAIL                    # Admin notification recipient email
+
+# Storage
 BLOB_READ_WRITE_TOKEN
+
+# Site URLs
 NEXT_PUBLIC_FULL_SITE_URL
 NEXT_PUBLIC_SITE_URL
+
+# Admin & Authorization
+ADMIN_USER                     # Super admin email for bootstrap/fallback access
+
+# Donations
+NEXT_PUBLIC_DONATE_PAYID       # PayID displayed in donation modal
 \`\`\`
 
 ### Supabase Configuration

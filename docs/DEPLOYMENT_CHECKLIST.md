@@ -3,15 +3,30 @@
 ## Pre-Deployment
 
 ### Environment Variables
+
+**Supabase:**
 - [ ] `SUPABASE_URL` configured
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` configured
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` configured
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` configured
+
+**Email:**
 - [ ] `RESEND_API_KEY` configured
 - [ ] `FROM_EMAIL` configured (use verified domain)
+- [ ] `ADMIN_EMAIL` configured (admin notification recipient)
+
+**Storage:**
 - [ ] `BLOB_READ_WRITE_TOKEN` configured
+
+**Site URLs:**
 - [ ] `NEXT_PUBLIC_FULL_SITE_URL` configured
 - [ ] `NEXT_PUBLIC_SITE_URL` configured
+
+**Admin & Authorization:**
+- [ ] `ADMIN_USER` configured (super admin email for fallback access)
+
+**Donations:**
+- [ ] `NEXT_PUBLIC_DONATE_PAYID` configured (PayID for donations)
 
 ### Supabase Configuration
 - [ ] Site URL set to production domain
