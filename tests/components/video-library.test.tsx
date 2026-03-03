@@ -83,12 +83,12 @@ vi.mock("@/components/sort-control", () => ({
 }))
 
 vi.mock("@/components/search-input", () => ({
-  default: ({ searchQuery, onSearchChange }: any) => (
+  default: ({ value, onChange }: any) => (
     <div data-testid="search-input">
       <input
         type="text"
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder="Search videos"
       />
     </div>
@@ -100,6 +100,16 @@ vi.mock("@/components/search-input", () => ({
 vi.mock("@/components/mobile-filter-dialog", () => ({
   default: () => <div data-testid="mobile-filter-dialog" />,
 }))
+
+// FilterSection is NOT mocked - it uses the real component which wraps CategoryFilter
+// This allows the CategoryFilter mock above to be used through FilterSection
+
+// FilterModeToggle is NOT mocked - we use the real component for better test coverage
+
+// PaginationControls is NOT mocked - we use the real component for better test coverage
+// This ensures pagination tests accurately reflect the real component behavior
+
+// TrainingBanner is NOT mocked - we use the real components for better test coverage
 
 describe("VideoLibrary", () => {
   const mockRouter = {
@@ -665,6 +675,105 @@ describe("VideoLibrary", () => {
         expect(videos.length).toBe(3)
       })
     })
+
+    it("should persist both category and curriculum filters in URL", async () => {
+      // Start with both category and curriculum filters in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1", "curr-1"])
+        if (key === "mode") return "OR"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Verify both filters are displayed as selected
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+    })
+
+    it("should include curriculum filters when toggling category filter", async () => {
+      // Start with curriculum filter in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["curr-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      // Wait for the URL filter to be loaded and applied (Filters: 1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
+      })
+
+      // Toggle a category filter (adding cat-1 to existing curr-1)
+      const toggleCategoryButton = screen.getByText("Toggle Category")
+      fireEvent.click(toggleCategoryButton)
+
+      // After click, filters should show 2 (curr-1 + cat-1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+
+      // Verify router.replace was called with both filters
+      await waitFor(() => {
+        const calls = mockRouter.replace.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const lastCall = calls[calls.length - 1]
+        const url = lastCall[0] as string
+        expect(url).toContain("filters")
+        const urlObj = new URL(url, "http://localhost")
+        const filtersParam = urlObj.searchParams.get("filters")
+        expect(filtersParam).toBeTruthy()
+        const filters = JSON.parse(filtersParam!)
+        expect(filters).toContain("cat-1")
+        expect(filters).toContain("curr-1")
+      })
+    })
+
+    it("should include category filters when toggling curriculum filter", async () => {
+      // Start with category filter in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      // Wait for the URL filter to be loaded and applied (Filters: 1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
+      })
+
+      // Toggle a curriculum filter (adding curr-1 to existing cat-1)
+      const toggleCurriculumButton = screen.getByText("Toggle Curriculum")
+      fireEvent.click(toggleCurriculumButton)
+
+      // After click, filters should show 2 (cat-1 + curr-1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+
+      // Verify router.replace was called with both filters
+      await waitFor(() => {
+        const calls = mockRouter.replace.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const lastCall = calls[calls.length - 1]
+        const url = lastCall[0] as string
+        expect(url).toContain("filters")
+        const urlObj = new URL(url, "http://localhost")
+        const filtersParam = urlObj.searchParams.get("filters")
+        expect(filtersParam).toBeTruthy()
+        const filters = JSON.parse(filtersParam!)
+        expect(filters).toContain("cat-1")
+        expect(filters).toContain("curr-1")
+      })
+    })
+
   })
 
   describe("Custom Storage Prefix", () => {
