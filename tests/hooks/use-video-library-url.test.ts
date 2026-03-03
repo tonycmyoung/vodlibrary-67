@@ -2,16 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
 
-// Mock next/navigation
-const mockReplace = vi.fn()
+// Mock for window.history.replaceState (shallow routing)
+const mockHistoryReplaceState = vi.fn()
 const mockSearchParams = new Map<string, string>()
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: vi.fn(),
-    back: vi.fn(),
-  }),
   useSearchParams: () => ({
     get: (key: string) => mockSearchParams.get(key) || null,
     toString: () => {
@@ -30,6 +25,14 @@ describe("useVideoLibraryUrl", () => {
     // Mock window.location
     Object.defineProperty(window, "location", {
       value: { pathname: "/", search: "" },
+      writable: true,
+    })
+    // Mock window.history.replaceState for shallow routing
+    Object.defineProperty(window, "history", {
+      value: {
+        state: {},
+        replaceState: mockHistoryReplaceState,
+      },
       writable: true,
     })
   })
@@ -110,15 +113,15 @@ describe("useVideoLibraryUrl", () => {
       // State should update immediately
       expect(result.current.urlState.filters).toEqual(["cat-1"])
       // URL should not be updated yet (debounced)
-      expect(mockReplace).not.toHaveBeenCalled()
+      expect(mockHistoryReplaceState).not.toHaveBeenCalled()
 
       // Fast forward debounce timer
       act(() => {
         vi.advanceTimersByTime(500)
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).toContain("filters")
     })
 
@@ -137,16 +140,16 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrl({ filters: ["cat-1", "cat-2", "cat-3"] })
       })
 
-      // Should not have called replace yet
-      expect(mockReplace).not.toHaveBeenCalled()
+      // Should not have called replaceState yet
+      expect(mockHistoryReplaceState).not.toHaveBeenCalled()
 
       // Fast forward debounce timer
       act(() => {
         vi.advanceTimersByTime(500)
       })
 
-      // Should only call replace once with final state
-      expect(mockReplace).toHaveBeenCalledTimes(1)
+      // Should only call replaceState once with final state
+      expect(mockHistoryReplaceState).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -158,8 +161,8 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrlImmediate({ filters: ["cat-1"], page: 1 })
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).toContain("filters")
     })
 
@@ -170,8 +173,8 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrlImmediate({ search: "test", page: 1 })
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).toContain("search=test")
     })
 
@@ -182,8 +185,8 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrlImmediate({ mode: "OR", page: 1 })
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).toContain("mode=OR")
     })
 
@@ -194,8 +197,8 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrlImmediate({ page: 5 })
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).toContain("page=5")
     })
 
@@ -207,8 +210,8 @@ describe("useVideoLibraryUrl", () => {
       })
 
       // Should not include mode=AND since it's the default
-      if (mockReplace.mock.calls.length > 0) {
-        const callArg = mockReplace.mock.calls[0][0]
+      if (mockHistoryReplaceState.mock.calls.length > 0) {
+        const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
         expect(callArg).not.toContain("mode=AND")
       }
     })
@@ -220,8 +223,8 @@ describe("useVideoLibraryUrl", () => {
         result.current.updateUrlImmediate({ filters: ["cat-1"], page: 1 })
       })
 
-      expect(mockReplace).toHaveBeenCalled()
-      const callArg = mockReplace.mock.calls[0][0]
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
+      const callArg = mockHistoryReplaceState.mock.calls[0][2] // Third arg is the URL
       expect(callArg).not.toContain("page=1")
     })
   })
@@ -235,14 +238,14 @@ describe("useVideoLibraryUrl", () => {
       })
 
       // URL should not be updated yet
-      expect(mockReplace).not.toHaveBeenCalled()
+      expect(mockHistoryReplaceState).not.toHaveBeenCalled()
 
       act(() => {
         result.current.commitUrl()
       })
 
       // Now URL should be updated
-      expect(mockReplace).toHaveBeenCalled()
+      expect(mockHistoryReplaceState).toHaveBeenCalled()
     })
   })
 
@@ -291,6 +294,32 @@ describe("useVideoLibraryUrl", () => {
       })
 
       expect(result.current.urlState.page).toBe(3)
+    })
+  })
+
+  describe("browser navigation sync", () => {
+    it("should sync state when URL changes externally (browser back/forward)", () => {
+      // Start with filters in URL
+      mockSearchParams.set("filters", JSON.stringify(["cat-1", "cat-2"]))
+      mockSearchParams.set("page", "2")
+
+      const { result, rerender } = renderHook(() => useVideoLibraryUrl())
+
+      // Verify initial state
+      expect(result.current.urlState.filters).toEqual(["cat-1", "cat-2"])
+      expect(result.current.urlState.page).toBe(2)
+
+      // Simulate browser back navigation by changing searchParams
+      mockSearchParams.clear()
+      mockSearchParams.set("filters", JSON.stringify(["cat-3"]))
+      mockSearchParams.set("page", "1")
+
+      // Re-render to trigger useSearchParams update
+      rerender()
+
+      // State should sync to new URL
+      expect(result.current.urlState.filters).toEqual(["cat-3"])
+      expect(result.current.urlState.page).toBe(1)
     })
   })
 
