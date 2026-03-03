@@ -13,23 +13,43 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(),
 }))
 
-// Mock useVideoLibraryUrl hook
+// Mock useVideoLibraryUrl hook - needs to read from mockSearchParams dynamically
 const mockUpdateUrl = vi.fn()
 vi.mock("@/hooks/use-video-library-url", () => ({
-  useVideoLibraryUrl: () => ({
-    urlState: {
-      filters: [],
-      search: "",
-      mode: "AND" as const,
-      page: 1,
-    },
-    setFilters: vi.fn(),
-    setSearch: vi.fn(),
-    setMode: vi.fn(),
-    setPage: vi.fn(),
-    updateUrl: mockUpdateUrl,
-    buildUrlString: vi.fn(),
-  }),
+  useVideoLibraryUrl: () => {
+    // Get the current mockSearchParams from the mocked useSearchParams
+    const searchParams = (useSearchParams as any)()
+    
+    // Parse URL state the same way the real hook does
+    const filtersParam = searchParams?.get?.("filters")
+    const searchParam = searchParams?.get?.("search") || ""
+    const modeParam = (searchParams?.get?.("mode") as "AND" | "OR") || "AND"
+    const pageParam = Math.max(1, Number.parseInt(searchParams?.get?.("page") || "1", 10))
+    
+    let parsedFilters: string[] = []
+    if (filtersParam) {
+      try {
+        parsedFilters = JSON.parse(filtersParam)
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    
+    return {
+      urlState: {
+        filters: parsedFilters,
+        search: searchParam,
+        mode: modeParam,
+        page: pageParam,
+      },
+      setFilters: vi.fn(),
+      setSearch: vi.fn(),
+      setMode: vi.fn(),
+      setPage: vi.fn(),
+      updateUrl: mockUpdateUrl,
+      buildUrlString: vi.fn(),
+    }
+  },
 }))
 
 // Mock Supabase client
