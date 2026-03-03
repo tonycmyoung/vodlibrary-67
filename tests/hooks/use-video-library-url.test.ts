@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
 
@@ -25,12 +25,17 @@ vi.mock("next/navigation", () => ({
 describe("useVideoLibraryUrl", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
     mockSearchParams.clear()
     // Mock window.location
     Object.defineProperty(window, "location", {
       value: { pathname: "/", search: "" },
       writable: true,
     })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe("initial state parsing", () => {
@@ -94,12 +99,22 @@ describe("useVideoLibraryUrl", () => {
     })
   })
 
-  describe("updateUrl", () => {
-    it("should update filters and reset page to 1", () => {
+  describe("updateUrl (debounced)", () => {
+    it("should update state immediately but debounce URL update", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
         result.current.updateUrl({ filters: ["cat-1"], page: 1 })
+      })
+
+      // State should update immediately
+      expect(result.current.urlState.filters).toEqual(["cat-1"])
+      // URL should not be updated yet (debounced)
+      expect(mockReplace).not.toHaveBeenCalled()
+
+      // Fast forward debounce timer
+      act(() => {
+        vi.advanceTimersByTime(500)
       })
 
       expect(mockReplace).toHaveBeenCalled()
@@ -107,11 +122,52 @@ describe("useVideoLibraryUrl", () => {
       expect(callArg).toContain("filters")
     })
 
-    it("should update search query", () => {
+    it("should batch multiple updates within debounce window", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
-        result.current.updateUrl({ search: "test", page: 1 })
+        result.current.updateUrl({ filters: ["cat-1"] })
+      })
+
+      act(() => {
+        result.current.updateUrl({ filters: ["cat-1", "cat-2"] })
+      })
+
+      act(() => {
+        result.current.updateUrl({ filters: ["cat-1", "cat-2", "cat-3"] })
+      })
+
+      // Should not have called replace yet
+      expect(mockReplace).not.toHaveBeenCalled()
+
+      // Fast forward debounce timer
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+
+      // Should only call replace once with final state
+      expect(mockReplace).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("updateUrlImmediate", () => {
+    it("should update URL immediately without debounce", () => {
+      const { result } = renderHook(() => useVideoLibraryUrl())
+
+      act(() => {
+        result.current.updateUrlImmediate({ filters: ["cat-1"], page: 1 })
+      })
+
+      expect(mockReplace).toHaveBeenCalled()
+      const callArg = mockReplace.mock.calls[0][0]
+      expect(callArg).toContain("filters")
+    })
+
+    it("should update search query immediately", () => {
+      const { result } = renderHook(() => useVideoLibraryUrl())
+
+      act(() => {
+        result.current.updateUrlImmediate({ search: "test", page: 1 })
       })
 
       expect(mockReplace).toHaveBeenCalled()
@@ -119,11 +175,11 @@ describe("useVideoLibraryUrl", () => {
       expect(callArg).toContain("search=test")
     })
 
-    it("should update mode", () => {
+    it("should update mode immediately", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
-        result.current.updateUrl({ mode: "OR", page: 1 })
+        result.current.updateUrlImmediate({ mode: "OR", page: 1 })
       })
 
       expect(mockReplace).toHaveBeenCalled()
@@ -131,11 +187,11 @@ describe("useVideoLibraryUrl", () => {
       expect(callArg).toContain("mode=OR")
     })
 
-    it("should update page", () => {
+    it("should update page immediately", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
-        result.current.updateUrl({ page: 5 })
+        result.current.updateUrlImmediate({ page: 5 })
       })
 
       expect(mockReplace).toHaveBeenCalled()
@@ -147,7 +203,7 @@ describe("useVideoLibraryUrl", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
-        result.current.updateUrl({ mode: "AND", page: 1 })
+        result.current.updateUrlImmediate({ mode: "AND", page: 1 })
       })
 
       // Should not include mode=AND since it's the default
@@ -161,12 +217,32 @@ describe("useVideoLibraryUrl", () => {
       const { result } = renderHook(() => useVideoLibraryUrl())
 
       act(() => {
-        result.current.updateUrl({ filters: ["cat-1"], page: 1 })
+        result.current.updateUrlImmediate({ filters: ["cat-1"], page: 1 })
       })
 
       expect(mockReplace).toHaveBeenCalled()
       const callArg = mockReplace.mock.calls[0][0]
       expect(callArg).not.toContain("page=1")
+    })
+  })
+
+  describe("commitUrl", () => {
+    it("should commit pending debounced updates immediately", () => {
+      const { result } = renderHook(() => useVideoLibraryUrl())
+
+      act(() => {
+        result.current.updateUrl({ filters: ["cat-1"], page: 1 })
+      })
+
+      // URL should not be updated yet
+      expect(mockReplace).not.toHaveBeenCalled()
+
+      act(() => {
+        result.current.commitUrl()
+      })
+
+      // Now URL should be updated
+      expect(mockReplace).toHaveBeenCalled()
     })
   })
 

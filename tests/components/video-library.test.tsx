@@ -15,6 +15,8 @@ vi.mock("next/navigation", () => ({
 
 // Mock useVideoLibraryUrl hook - needs to read from mockSearchParams dynamically
 const mockUpdateUrl = vi.fn()
+const mockUpdateUrlImmediate = vi.fn()
+const mockCommitUrl = vi.fn()
 vi.mock("@/hooks/use-video-library-url", () => ({
   useVideoLibraryUrl: () => {
     // Get the current mockSearchParams from the mocked useSearchParams
@@ -47,6 +49,8 @@ vi.mock("@/hooks/use-video-library-url", () => ({
       setMode: vi.fn(),
       setPage: vi.fn(),
       updateUrl: mockUpdateUrl,
+      updateUrlImmediate: mockUpdateUrlImmediate,
+      commitUrl: mockCommitUrl,
       buildUrlString: vi.fn(),
     }
   },
@@ -89,6 +93,8 @@ vi.mock("@/components/view-toggle", () => ({
   ),
 }))
 
+// CategoryFilter mock is kept for any direct usage, but FilterSection mock below
+// provides the same testid for tests that access category-filter through FilterSection
 vi.mock("@/components/category-filter", () => ({
   default: ({ onCategoryToggle, onCurriculumToggle, videoCount, selectedCategories, selectedCurriculums }: any) => (
     <div data-testid="category-filter">
@@ -140,15 +146,38 @@ vi.mock("@/components/mobile-filter-dialog", () => ({
   default: () => <div data-testid="mobile-filter-dialog" />,
 }))
 
-// FilterSection is NOT mocked - it uses the real component which wraps CategoryFilter
-// This allows the CategoryFilter mock above to be used through FilterSection
+// Mock dynamically imported FilterSection
+// Since it's now lazy loaded, we need to mock it like MobileFilterDialog
+vi.mock("@/components/filter-section", () => ({
+  default: (props: any) => (
+    <div data-testid="filter-section">
+      {/* Render the mocked CategoryFilter through the props */}
+      <div data-testid="category-filter">
+        <span data-testid="video-count">Videos: {props.videoCount}</span>
+        <button onClick={() => props.onCategoryToggle("cat-1")}>Toggle Category</button>
+        {props.onCurriculumToggle && <button onClick={() => props.onCurriculumToggle("curr-1")}>Toggle Curriculum</button>}
+        <span data-testid="selected-filters">
+          Filters: {props.selectedCategories.length + (props.selectedCurriculums?.length || 0)}
+        </span>
+      </div>
+    </div>
+  ),
+}))
 
 // FilterModeToggle is NOT mocked - we use the real component for better test coverage
 
 // PaginationControls is NOT mocked - we use the real component for better test coverage
 // This ensures pagination tests accurately reflect the real component behavior
 
-// TrainingBanner is NOT mocked - we use the real components for better test coverage
+// Mock dynamically imported TrainingBanner components
+vi.mock("@/components/training-banner", () => ({
+  MobileTrainingBanner: ({ nextBeltName }: any) => (
+    <div data-testid="mobile-training-banner">Next: {nextBeltName}</div>
+  ),
+  DesktopTrainingBanner: ({ nextBeltName }: any) => (
+    <div data-testid="desktop-training-banner">Next: {nextBeltName}</div>
+  ),
+}))
 
 describe("VideoLibrary", () => {
   const mockRouter = {

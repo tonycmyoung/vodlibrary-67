@@ -12,9 +12,30 @@ import ViewToggle from "@/components/view-toggle"
 import SortControl from "@/components/sort-control"
 import SearchInput from "@/components/search-input"
 import PaginationControls from "@/components/pagination-controls"
-import FilterSection from "@/components/filter-section"
+// Lazy load FilterSection - only needed on desktop sidebar (hidden on mobile)
+const FilterSection = dynamic(() => import("@/components/filter-section"), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-6 bg-gray-700 rounded w-24" />
+      <div className="flex flex-wrap gap-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-6 bg-gray-700 rounded w-16" />
+        ))}
+      </div>
+    </div>
+  ),
+})
 import FilterModeToggle from "@/components/filter-mode-toggle"
-import { MobileTrainingBanner, DesktopTrainingBanner } from "@/components/training-banner"
+// Lazy load TrainingBanner - only shown conditionally for My Level page
+const MobileTrainingBanner = dynamic(
+  () => import("@/components/training-banner").then((mod) => ({ default: mod.MobileTrainingBanner })),
+  { ssr: false }
+)
+const DesktopTrainingBanner = dynamic(
+  () => import("@/components/training-banner").then((mod) => ({ default: mod.DesktopTrainingBanner })),
+  { ssr: false }
+)
 import { Button } from "@/components/ui/button"
 import { Loader2, Heart, Filter } from "lucide-react"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
@@ -434,7 +455,7 @@ export default function VideoLibrary({
   const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
 
   // Use the centralized URL state hook
-  const { urlState, updateUrl } = useVideoLibraryUrl()
+  const { urlState, updateUrl, updateUrlImmediate, commitUrl } = useVideoLibraryUrl()
 
   const [videos, setVideos] = useState<Video[]>([])
   const [allVideos, setAllVideos] = useState<Video[]>([])
@@ -717,30 +738,30 @@ export default function VideoLibrary({
     localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
   }, [storagePrefix])
 
-  // Handler for filter mode change - uses centralized URL hook
+  // Handler for filter mode change - uses debounced URL update
   const handleFilterModeChange = useCallback((newMode: "AND" | "OR") => {
     setFilterMode(newMode)
     setCurrentPage(1)
     updateUrl({ mode: newMode, page: 1 })
   }, [updateUrl])
 
-  // Handler for items per page change - uses centralized URL hook
+  // Handler for items per page change - uses immediate URL update
   const handleItemsPerPageChange = useCallback((value: string) => {
     const newItemsPerPage = Number.parseInt(value, 10)
     setItemsPerPage(newItemsPerPage)
     localStorage.setItem(`${storagePrefix}ItemsPerPage`, value)
     setCurrentPage(1)
-    updateUrl({ page: 1 })
-  }, [storagePrefix, updateUrl])
+    updateUrlImmediate({ page: 1 })
+  }, [storagePrefix, updateUrlImmediate])
 
-  // Handler for page change - uses centralized URL hook
+  // Handler for page change - uses immediate URL update
   const handlePageChange = useCallback((newPage: number) => {
     const boundedPage = Math.max(1, Math.min(newPage, totalPages || 1))
     setCurrentPage(boundedPage)
-    updateUrl({ page: boundedPage })
-  }, [totalPages, updateUrl])
+    updateUrlImmediate({ page: boundedPage })
+  }, [totalPages, updateUrlImmediate])
 
-  // Debounced search effect - uses centralized URL hook
+  // Debounced search effect - uses debounced URL update
   useEffect(() => {
     // Skip on initial mount - don't update URL if we're just loading from URL params
     if (searchQuery === urlState.search) {
@@ -819,6 +840,7 @@ export default function VideoLibrary({
                 onCurriculumToggle={handleCurriculumToggle}
                 filterMode={filterMode}
                 onFilterModeChange={handleFilterModeChange}
+                onApplyFilters={commitUrl}
               />
               <div className="flex-1 sm:hidden">
                 <SortControl sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} />

@@ -21,6 +21,8 @@ export interface MobileFilterDialogProps {
   onCurriculumToggle: (id: string) => void
   filterMode: FilterMode
   onFilterModeChange: (mode: FilterMode) => void
+  /** Called when user clicks Apply to commit pending URL changes */
+  onApplyFilters?: () => void
 }
 
 export default function MobileFilterDialog({
@@ -37,7 +39,13 @@ export default function MobileFilterDialog({
   onCurriculumToggle,
   filterMode,
   onFilterModeChange,
+  onApplyFilters,
 }: MobileFilterDialogProps) {
+  const handleApply = () => {
+    // Commit any pending URL changes before closing
+    onApplyFilters?.()
+    setShowMobileFilters(false)
+  }
   return (
     <Dialog open={showMobileFilters} onOpenChange={setShowMobileFilters}>
       <DialogTrigger asChild data-testid="dialog-trigger">
@@ -75,7 +83,7 @@ export default function MobileFilterDialog({
             <FilterModeToggle filterMode={filterMode} onFilterModeChange={onFilterModeChange} />
           )}
           <Button
-            onClick={() => setShowMobileFilters(false)}
+            onClick={handleApply}
             className="w-full bg-red-600 hover:bg-red-700 text-white"
           >
             Apply Filters
