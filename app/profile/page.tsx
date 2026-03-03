@@ -56,7 +56,7 @@ export default async function ProfilePage() {
     .select("id, name, color, display_order")
     .order("display_order", { ascending: true })
 
-  const isAdmin = user.email === "acmyma@gmail.com"
+  const isAdmin = userProfile?.role === "Admin"
 
   const userWithStats = {
     ...userProfile,

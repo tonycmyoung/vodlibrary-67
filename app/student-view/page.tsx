@@ -36,7 +36,7 @@ export default async function StudentView() {
   }
 
   // Only allow admin users to access student view
-  if (user.email !== "acmyma@gmail.com") {
+  if (userProfile?.role !== "Admin") {
     redirect("/")
   }
 

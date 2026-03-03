@@ -124,7 +124,7 @@ export default function AdminNotificationManagement() {
         .from("users")
         .select("id, full_name, email, profile_image_url, is_approved, role")
         .eq("is_approved", true)
-        .neq("email", "acmyma@gmail.com")
+        .neq("role", "Admin")
         .order("full_name", { ascending: true })
 
       if (error) {

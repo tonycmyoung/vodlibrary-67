@@ -53,6 +53,7 @@ describe("Middleware: updateSession", () => {
     originalEnv = { ...process.env }
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co"
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key"
+    process.env.ADMIN_USER = "admin@example.com"
 
     mockSupabaseClient = {
       auth: {
@@ -420,11 +421,11 @@ describe("Middleware: updateSession", () => {
       })
     })
 
-    it("should allow admin email through to admin routes", async () => {
+    it("should allow ADMIN_USER email through to admin routes", async () => {
       const request = createMockRequest("/admin")
 
       const mockSession = {
-        user: { id: "user-123", email: "acmyma@gmail.com" },
+        user: { id: "user-123", email: "admin@example.com" },
         access_token: "token",
       }
 

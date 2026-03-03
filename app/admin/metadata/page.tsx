@@ -20,7 +20,7 @@ export default async function AdminMetadataPage() {
     .eq("id", user.id)
     .single()
 
-  if (!userProfile?.is_approved || userProfile.email !== "acmyma@gmail.com") {
+  if (!userProfile?.is_approved || userProfile.role !== "Admin") {
     redirect("/")
   }
 

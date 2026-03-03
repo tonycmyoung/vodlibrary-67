@@ -17,7 +17,11 @@ const PUBLIC_ROUTES = new Set([
   "/auth/confirm/callback",
   "/auth/reset-password",
 ])
-const ADMIN_EMAIL = "acmyma@gmail.com"
+// Super admin email from environment variable - used for bootstrap/fallback admin access
+// Using a getter function to read env var at runtime (for testability)
+function getAdminUser() {
+  return process.env.ADMIN_USER
+}
 
 function getCachedUserApproval(userId: string) {
   const cached = userApprovalCache.get(userId)
@@ -127,7 +131,8 @@ async function handleUserApprovalCheck(
       return NextResponse.redirect(new URL("/pending-approval", request.url))
     }
 
-    const isAdminEmail = session.user.email === ADMIN_EMAIL
+    const adminUser = getAdminUser()
+    const isAdminEmail = adminUser && session.user.email === adminUser
     const shouldRedirectToAdmin =
       (user.role === "Admin" || isAdminEmail) &&
       request.nextUrl.pathname === "/" &&
@@ -151,7 +156,8 @@ async function handleAdminRouteAuth(
   request: NextRequest,
   supabaseResponse: NextResponse
 ): Promise<NextResponse> {
-  const isAdminEmail = session.user.email === ADMIN_EMAIL
+  const adminUser = getAdminUser()
+    const isAdminEmail = adminUser && session.user.email === adminUser
   if (isAdminEmail) {
     return supabaseResponse
   }
