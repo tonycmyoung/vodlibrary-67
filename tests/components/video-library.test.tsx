@@ -1,7 +1,7 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import { createClient } from "@/lib/supabase/client"
@@ -93,6 +93,12 @@ vi.mock("@/components/search-input", () => ({
       />
     </div>
   ),
+}))
+
+// Mock dynamically imported MobileFilterDialog
+// Keep it simple - we're not testing mobile filter dialog behavior here
+vi.mock("@/components/mobile-filter-dialog", () => ({
+  default: () => <div data-testid="mobile-filter-dialog" />,
 }))
 
 describe("VideoLibrary", () => {
@@ -863,13 +869,17 @@ describe("VideoLibrary", () => {
 
       render(<VideoLibrary />)
 
+      // Wait for initial filter to be applied from URL params
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
       })
 
       // Toggle curriculum to have multiple filters
       const curriculumToggle = screen.getByText("Toggle Curriculum")
-      fireEvent.click(curriculumToggle)
+      await act(async () => {
+        fireEvent.click(curriculumToggle)
+      })
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")

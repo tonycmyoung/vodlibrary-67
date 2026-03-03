@@ -13,18 +13,21 @@ export default async function Home() {
     )
   }
 
-  // Get the user from the server
+  // Use getSession instead of getUser - middleware already validated the session
+  // This avoids a redundant server validation call, saving ~500-1000ms
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
-  // If no user, redirect to login
+  // If no user, redirect to login (middleware should have caught this, but safety check)
   if (!user) {
     redirect("/auth/login")
   }
 
-  // Check if user is approved
+  // Fetch user profile data for display
+  // Note: Middleware already handles approval check and admin redirect
   const { data: userProfile } = await supabase
     .from("users")
     .select(`
@@ -37,23 +40,19 @@ export default async function Home() {
     .eq("id", user.id)
     .single()
 
+  // Safety fallback: if somehow middleware didn't catch unapproved user
   if (!userProfile?.is_approved) {
     redirect("/pending-approval")
   }
 
-  const isAdminEmail = user.email === "acmyma@gmail.com"
-  if (userProfile?.role === "Admin" || isAdminEmail) {
-    redirect("/admin")
-  }
-
   const userWithEmail = {
-    id: user.id, // Always use the authenticated user's ID
+    id: user.id,
     email: user.email,
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null, // Pass belt info to header
+    current_belt: userProfile?.current_belt || null,
   }
 
   return (
