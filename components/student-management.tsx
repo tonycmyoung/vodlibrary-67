@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useUserManagementUrl } from "@/hooks/use-user-management-url"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -70,22 +70,25 @@ interface StudentManagementProps {
 }
 
 export default function StudentManagement({ headTeacherSchool, headTeacherId, userRole }: StudentManagementProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const storagePrefix = "studentManagement"
+
+  // Use shared URL state hook for filters (no router.replace re-renders)
+  const {
+    urlState,
+    setRole: setUrlRole,
+    setSchool: setUrlSchool,
+    setBelt: setUrlBelt,
+    setSearch: setUrlSearch,
+    setSort: setUrlSort,
+  } = useUserManagementUrl({
+    basePath: "/students",
+    defaultSortBy: "full_name",
+    defaultSortOrder: "asc",
+    persistSort: true, // Student management persists sort to URL
+  })
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
-
-  const [urlState] = useState(() => {
-    const role = searchParams.get("role") || "all"
-    const school = searchParams.get("school") || "all"
-    const search = searchParams.get("search") || ""
-    const belt = searchParams.get("belt") || "all"
-    const sortBy = searchParams.get("sortBy") || "full_name"
-    const sortOrder = searchParams.get("sortOrder") || "asc"
-    return { role, school, search, belt, sortBy, sortOrder }
-  })
 
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
@@ -107,11 +110,12 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     current_belt_id: null,
   })
 
-  const [selectedRole, setSelectedRole] = useState(urlState.role)
-  const [selectedSchool, setSelectedSchool] = useState(urlState.school)
-  const [selectedBelt, setSelectedBelt] = useState(urlState.belt)
-  const [sortBy, setSortBy] = useState(urlState.sortBy)
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(urlState.sortOrder)
+  // Use URL state for filters (state is managed by hook)
+  const selectedRole = urlState.role
+  const selectedSchool = urlState.school
+  const selectedBelt = urlState.belt
+  const sortBy = urlState.sortBy
+  const sortOrder = urlState.sortOrder as "asc" | "desc"
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
@@ -221,71 +225,38 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     setFilteredUsers(processedUsers)
   }, [processedUsers])
 
-  const reconstructURL = (
-    role: string,
-    school: string,
-    search: string,
-    belt: string,
-    sortBy: string,
-    sortOrder: "asc" | "desc",
-  ) => {
-    const params = new URLSearchParams()
-
-    if (role.trim() && role !== "all") {
-      params.set("role", role)
-    }
-
-    if (school.trim() && school !== "all") {
-      params.set("school", school)
-    }
-
-    if (search.trim()) {
-      params.set("search", search)
-    }
-
-    if (belt.trim() && belt !== "all") {
-      params.set("belt", belt)
-    }
-
-    params.set("sortBy", sortBy)
-    params.set("sortOrder", sortOrder)
-
-    const currentPath = "/students"
-    const newURL = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
-    router.replace(newURL, { scroll: false })
-  }
-
+  // Filter handlers - use URL hook (debounced, no re-renders)
   const handleRoleChange = (role: string) => {
-    setSelectedRole(role)
-    reconstructURL(role, selectedSchool, searchQuery, selectedBelt, sortBy, sortOrder)
+    setUrlRole(role)
   }
 
   const handleSchoolChange = (school: string) => {
-    setSelectedSchool(school)
-    reconstructURL(selectedRole, school, searchQuery, selectedBelt, sortBy, sortOrder)
+    setUrlSchool(school)
   }
 
   const handleBeltChange = (belt: string) => {
-    setSelectedBelt(belt)
-    reconstructURL(selectedRole, selectedSchool, searchQuery, belt, sortBy, sortOrder)
+    setUrlBelt(belt)
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy)
-    setSortOrder(newSortOrder)
-
+    setUrlSort(newSortBy, newSortOrder)
     localStorage.setItem(`${storagePrefix}SortBy`, newSortBy)
     localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
   }
 
+  // Debounce search for filtering (URL update is handled by hook)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
-      reconstructURL(selectedRole, selectedSchool, searchQuery, selectedBelt, sortBy, sortOrder)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedRole, selectedSchool, selectedBelt, sortBy, sortOrder])
+  }, [searchQuery])
+
+  // Sync search to URL (debounced via hook)
+  useEffect(() => {
+    setUrlSearch(searchQuery)
+  }, [searchQuery, setUrlSearch])
 
   useEffect(() => {
     fetchStudents()

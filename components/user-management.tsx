@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useUserManagementUrl } from "@/hooks/use-user-management-url"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -739,16 +739,19 @@ const UserRow = ({
 )
 
 export default function UserManagement() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const storagePrefix = "userManagement"
 
-  const urlState = {
-    role: searchParams.get("role") || "all",
-    school: searchParams.get("school") || "all",
-    search: searchParams.get("search") || "",
-    belt: searchParams.get("belt") || "all",
-  }
+  // Use shared URL state hook for filters (no router.replace re-renders)
+  const {
+    urlState,
+    setRole: setUrlRole,
+    setSchool: setUrlSchool,
+    setBelt: setUrlBelt,
+    setSearch: setUrlSearch,
+  } = useUserManagementUrl({
+    basePath: "/admin/users",
+    persistSort: false, // User management doesn't persist sort to URL
+  })
 
   const [users, setUsers] = useState<UserInterface[]>([])
   const [filteredUsers, setFilteredUsers] = useState<UserInterface[]>([])
@@ -774,9 +777,10 @@ export default function UserManagement() {
     current_belt_id: null,
   })
 
-  const [selectedRole, setSelectedRole] = useState(urlState.role)
-  const [selectedSchool, setSelectedSchool] = useState(urlState.school)
-  const [selectedBelt, setSelectedBelt] = useState(urlState.belt)
+  // Use URL state for filters (state is managed by hook)
+  const selectedRole = urlState.role
+  const selectedSchool = urlState.school
+  const selectedBelt = urlState.belt
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const [sortBy, setSortBy] = useState<UserSortBy>(() => {
@@ -905,43 +909,17 @@ export default function UserManagement() {
     setFilteredUsers(processedUsers)
   }, [processedUsers])
 
-  const reconstructURL = (role: string, school: string, belt: string, search: string) => {
-    const params = new URLSearchParams()
-
-    if (role.trim() && role !== "all") {
-      params.set("role", role)
-    }
-
-    if (school.trim() && school !== "all") {
-      params.set("school", school)
-    }
-
-    if (belt.trim() && belt !== "all") {
-      params.set("belt", belt)
-    }
-
-    if (search.trim()) {
-      params.set("search", search)
-    }
-
-    const currentPath = "/admin/users"
-    const newURL = params.toString() ? `${currentPath}?${params.toString()}` : currentPath
-    router.replace(newURL, { scroll: false })
-  }
-
+  // Filter handlers - use URL hook (debounced, no re-renders)
   const handleRoleChange = (role: string) => {
-    setSelectedRole(role)
-    reconstructURL(role, selectedSchool, selectedBelt, searchQuery)
+    setUrlRole(role)
   }
 
   const handleSchoolChange = (school: string) => {
-    setSelectedSchool(school)
-    reconstructURL(selectedRole, school, selectedBelt, searchQuery)
+    setUrlSchool(school)
   }
 
   const handleBeltChange = (belt: string) => {
-    setSelectedBelt(belt)
-    reconstructURL(selectedRole, selectedSchool, belt, searchQuery)
+    setUrlBelt(belt)
   }
 
   const handleSortChange = (newSortBy: string, newSortOrder: "asc" | "desc") => {
@@ -952,14 +930,19 @@ export default function UserManagement() {
     localStorage.setItem(`${storagePrefix}SortOrder`, newSortOrder)
   }
 
+  // Debounce search for filtering (URL update is handled by hook)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
-      reconstructURL(selectedRole, selectedSchool, selectedBelt, searchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
+
+  // Sync search to URL (debounced via hook)
+  useEffect(() => {
+    setUrlSearch(searchQuery)
+  }, [searchQuery, setUrlSearch])
 
   useEffect(() => {
     fetchUsers()
