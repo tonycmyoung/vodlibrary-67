@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
 import { useFilteredVideos } from "@/hooks/use-filtered-videos"
@@ -451,7 +450,6 @@ export default function VideoLibrary({
   nextBeltName, // Destructure new prop
   userProfile, // Destructure userProfile
 }: VideoLibraryProps) {
-  const searchParams = useSearchParams()
   const storagePrefix = customStoragePrefix || (favoritesOnly ? "favoritesLibrary" : "videoLibrary")
 
   // Use the centralized URL state hook

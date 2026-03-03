@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import VideoPlayer from "@/components/video-player"
@@ -9,9 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getVideoViewCount } from "@/lib/actions/videos"
 
 interface VideoPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 interface User {
@@ -52,6 +52,9 @@ interface Video {
 }
 
 export default function VideoPage({ params }: VideoPageProps) {
+  // Unwrap the params promise (Next.js 15+)
+  const { id: videoId } = use(params)
+  
   const [user, setUser] = useState<User | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
   const router = useRouter()
@@ -98,14 +101,14 @@ export default function VideoPage({ params }: VideoPageProps) {
 
     async function loadVideo() {
       const [videoResult, favoriteResult, curriculumsResult, categoriesResult, performersResult] = await Promise.all([
-        supabase.from("videos").select("*").eq("id", params.id).eq("is_published", true).single(),
-        supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", params.id).maybeSingle(),
+        supabase.from("videos").select("*").eq("id", videoId).eq("is_published", true).single(),
+        supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", videoId).maybeSingle(),
         supabase
           .from("video_curriculums")
           .select("curriculums(id, name, color, display_order)")
-          .eq("video_id", params.id),
-        supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", params.id),
-        supabase.from("video_performers").select("performers(id, name)").eq("video_id", params.id),
+          .eq("video_id", videoId),
+        supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", videoId),
+        supabase.from("video_performers").select("performers(id, name)").eq("video_id", videoId),
       ])
 
       const { data: videoData, error } = videoResult
@@ -115,11 +118,12 @@ export default function VideoPage({ params }: VideoPageProps) {
       const { data: videoPerformers } = performersResult
 
       if (error || !videoData) {
-        router.push("/404")
+        // Video not found - redirect to library
+        router.push("/library")
         return
       }
 
-      const viewCount = await getVideoViewCount(params.id)
+      const viewCount = await getVideoViewCount(videoId)
 
       const videoWithCategories: Video = {
         ...videoData,
@@ -138,7 +142,7 @@ export default function VideoPage({ params }: VideoPageProps) {
     }
 
     loadVideo()
-  }, [user, params.id, router, supabase])
+  }, [user, videoId, router, supabase])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">

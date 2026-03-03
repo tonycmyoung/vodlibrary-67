@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import type { FilterMode } from "@/types/video"
 
 export interface VideoLibraryUrlState {
@@ -36,32 +36,41 @@ export interface UseVideoLibraryUrlReturn {
 const URL_UPDATE_DEBOUNCE = 500
 
 /**
+ * Parse URL search params into VideoLibraryUrlState
+ * Extracted for reuse in both initial parse and browser navigation sync
+ */
+function parseUrlState(searchParams: URLSearchParams): VideoLibraryUrlState {
+  const filtersParam = searchParams.get("filters")
+  const search = searchParams.get("search") || ""
+  const mode = (searchParams.get("mode") as FilterMode) || "AND"
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10))
+
+  let filters: string[] = []
+  if (filtersParam) {
+    try {
+      // searchParams.get() already decodes URL parameters, so just parse JSON directly
+      filters = JSON.parse(filtersParam)
+    } catch (e) {
+      console.error("Error parsing URL filters:", e)
+    }
+  }
+
+  return { filters, search, mode, page }
+}
+
+/**
  * Custom hook for managing VideoLibrary URL state
  * Centralizes URL parsing, reconstruction, and updates
+ * Uses shallow routing (window.history) for performance - no Next.js navigation re-renders
  */
 export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   // Parse initial URL state once
-  const initialState = useMemo((): VideoLibraryUrlState => {
-    const filtersParam = searchParams.get("filters")
-    const search = searchParams.get("search") || ""
-    const mode = (searchParams.get("mode") as FilterMode) || "AND"
-    const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10))
-
-    let filters: string[] = []
-    if (filtersParam) {
-      try {
-        // searchParams.get() already decodes URL parameters, so just parse JSON directly
-        filters = JSON.parse(filtersParam)
-      } catch (e) {
-        console.error("Error parsing URL filters:", e)
-      }
-    }
-
-    return { filters, search, mode, page }
-  }, [searchParams])
+  const initialState = useMemo(
+    (): VideoLibraryUrlState => parseUrlState(searchParams),
+    [searchParams]
+  )
 
   // Track current state (allows for optimistic updates)
   const [currentState, setCurrentState] = useState<VideoLibraryUrlState>(initialState)
@@ -69,6 +78,20 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
   // Refs for debouncing
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pendingUpdatesRef = useRef<Partial<VideoLibraryUrlState> | null>(null)
+
+  // Sync state when URL changes externally (browser back/forward navigation)
+  // Uses popstate event listener to detect actual browser navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      // Parse state from actual URL on browser navigation
+      const params = new URLSearchParams(window.location.search)
+      const newState = parseUrlState(params)
+      setCurrentState(newState)
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -107,19 +130,28 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
   }, [currentState])
 
   /**
-   * Apply URL update to browser (internal helper)
+   * Apply URL update to browser using shallow routing (internal helper)
+   * Uses window.history.replaceState for better performance - avoids Next.js router
+   * re-renders and provides a lighter-weight URL update
    */
   const applyUrlUpdate = useCallback((newState: VideoLibraryUrlState) => {
+    if (typeof window === "undefined") return
+
     const newSearch = buildUrlString(newState)
-    const currentSearch = typeof window !== "undefined" ? window.location.search : ""
+    const currentSearch = window.location.search
 
     // Only update if URL actually changed
     if (currentSearch !== newSearch) {
-      const pathname = typeof window !== "undefined" ? window.location.pathname : "/"
+      const pathname = window.location.pathname
       const newURL = newSearch ? `${pathname}${newSearch}` : pathname
-      router.replace(newURL, { scroll: false })
+      // Use shallow routing via history API - doesn't trigger Next.js navigation
+      window.history.replaceState(
+        { ...window.history.state, as: newURL, url: newURL },
+        "",
+        newURL
+      )
     }
-  }, [buildUrlString, router])
+  }, [buildUrlString])
 
   /**
    * Update URL immediately without debouncing
