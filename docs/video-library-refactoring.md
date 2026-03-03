@@ -35,44 +35,50 @@ Refactoring the `video-library.tsx` component (1,247 lines) into smaller, testab
 ## Refactoring Phases
 
 ### Phase 1: Extract Shared Components & Types
-**Status**: Not Started
+**Status**: IN PROGRESS
 
 #### 1.1 Create shared types file
-- [ ] Create `/types/video.ts`
-- [ ] Move: `Video`, `Category`, `Curriculum`, `Performer`, `FilterMode` interfaces
-- [ ] Update imports in all consuming files
+- [x] Create `/types/video.ts`
+- [x] Move: `Video`, `Category`, `Curriculum`, `Performer`, `FilterMode` interfaces
+- [x] Update imports in all consuming files
 
 #### 1.2 Extract FilterModeToggle
-- [ ] Create `/components/filter-mode-toggle.tsx`
-- [ ] Remove from `video-library.tsx`
-- [ ] Remove from `mobile-filter-dialog.tsx`
-- [ ] Update imports
+- [x] Create `/components/filter-mode-toggle.tsx`
+- [x] Remove from `video-library.tsx`
+- [x] Remove from `mobile-filter-dialog.tsx`
+- [x] Update imports
 
 #### 1.3 Extract FilterSection
-- [ ] Create `/components/filter-section.tsx`
-- [ ] Remove duplicates
-- [ ] Update imports
+- [x] Create `/components/filter-section.tsx`
+- [x] Remove duplicates
+- [x] Update imports
 
 #### 1.4 Extract PaginationControls
-- [ ] Create `/components/pagination-controls.tsx`
-- [ ] Remove from `video-library.tsx`
-- [ ] Update imports
+- [x] Create `/components/pagination-controls.tsx`
+- [x] Remove from `video-library.tsx`
+- [x] Update imports
 
 #### 1.5 Extract SearchInput
-- [ ] Create `/components/search-input.tsx`
-- [ ] Remove from `video-library.tsx`
-- [ ] Update imports
+- [x] Create `/components/search-input.tsx`
+- [x] Remove from `video-library.tsx`
+- [x] Update imports
 
 #### 1.6 Extract TrainingBanner
-- [ ] Create `/components/training-banner.tsx`
-- [ ] Includes both mobile and desktop variants
-- [ ] Remove from `video-library.tsx`
-- [ ] Update imports
+- [x] Create `/components/training-banner.tsx`
+- [x] Includes both mobile and desktop variants
+- [x] Remove from `video-library.tsx`
+- [x] Update imports
 
 #### 1.7 Run tests and verify
 - [ ] All existing tests pass
 - [ ] Manual verification on desktop
 - [ ] Manual verification on mobile
+
+**Progress Notes (Phase 1)**:
+- video-library.tsx reduced from 1,247 to ~802 lines (36% reduction)
+- Updated test mocks for new component structure
+- SearchInput props renamed: `searchQuery`→`value`, `onSearchChange`→`onChange`
+- PaginationControls props renamed: `handleItemsPerPageChange`→`onItemsPerPageChange`, `handlePageChange`→`onPageChange`
 
 ---
 
