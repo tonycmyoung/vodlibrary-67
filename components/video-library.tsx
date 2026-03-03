@@ -446,7 +446,8 @@ export default function VideoLibrary({
     let parsedFilters: string[] = []
     if (filters) {
       try {
-        parsedFilters = JSON.parse(decodeURIComponent(filters))
+        // searchParams.get() already decodes URL parameters, so just parse JSON directly
+        parsedFilters = JSON.parse(filters)
       } catch (e) {
         console.error("Error parsing URL filters:", e)
       }
@@ -718,12 +719,13 @@ export default function VideoLibrary({
 
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
-  const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", page: number) => {
-    const params = new URLSearchParams()
-
-    if (filters.length > 0) {
-      params.set("filters", encodeURIComponent(JSON.stringify(filters)))
-    }
+const reconstructURL = (filters: string[], search: string, mode: "AND" | "OR", page: number) => {
+  const params = new URLSearchParams()
+  
+  if (filters.length > 0) {
+  // URLSearchParams.set() already URL-encodes, so don't double-encode
+  params.set("filters", JSON.stringify(filters))
+  }
 
     if (search.trim()) {
       params.set("search", search)

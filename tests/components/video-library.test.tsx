@@ -717,12 +717,14 @@ describe("VideoLibrary", () => {
       await waitFor(() => {
         const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
         expect(lastCall).toBeDefined()
-        const url = lastCall[0]
+        const url = lastCall[0] as string
         // URL should contain both cat-1 and curr-1
         expect(url).toContain("filters")
-        const filtersMatch = url.match(/filters=([^&]+)/)
-        if (filtersMatch) {
-          const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+        // URLSearchParams encodes the value, so we need to decode it first
+        const urlObj = new URL(url, "http://localhost")
+        const filtersParam = urlObj.searchParams.get("filters")
+        if (filtersParam) {
+          const filters = JSON.parse(filtersParam)
           expect(filters).toContain("cat-1")
           expect(filters).toContain("curr-1")
         }
@@ -750,12 +752,14 @@ describe("VideoLibrary", () => {
       await waitFor(() => {
         const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
         expect(lastCall).toBeDefined()
-        const url = lastCall[0]
+        const url = lastCall[0] as string
         // URL should contain both cat-1 and curr-1
         expect(url).toContain("filters")
-        const filtersMatch = url.match(/filters=([^&]+)/)
-        if (filtersMatch) {
-          const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+        // URLSearchParams encodes the value, so we need to decode it first
+        const urlObj = new URL(url, "http://localhost")
+        const filtersParam = urlObj.searchParams.get("filters")
+        if (filtersParam) {
+          const filters = JSON.parse(filtersParam)
           expect(filters).toContain("cat-1")
           expect(filters).toContain("curr-1")
         }
@@ -791,10 +795,12 @@ describe("VideoLibrary", () => {
           const calls = mockRouter.replace.mock.calls
           if (calls.length > 0) {
             const lastCall = calls[calls.length - 1]
-            const url = lastCall[0]
-            const filtersMatch = url.match(/filters=([^&]+)/)
-            if (filtersMatch) {
-              const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+            const url = lastCall[0] as string
+            // URLSearchParams encodes the value, so we need to decode it first
+            const urlObj = new URL(url, "http://localhost")
+            const filtersParam = urlObj.searchParams.get("filters")
+            if (filtersParam) {
+              const filters = JSON.parse(filtersParam)
               expect(filters).toContain("cat-1")
               expect(filters).toContain("curr-1")
             }
