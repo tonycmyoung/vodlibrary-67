@@ -17,9 +17,12 @@ vi.mock("@/components/ui/dialog", () => ({
 
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
+  const testPayId = "test-payid@example.com"
 
   beforeEach(() => {
     mockOnClose.mockClear()
+    // Set up environment variable
+    process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
     // Mock navigator.clipboard
@@ -62,9 +65,9 @@ describe("DonationModal", () => {
     expect(globalThis.open).toHaveBeenCalledWith("https://paypal.me/TonyYoung1", "_blank")
   })
 
-  it("should display PayID email address", () => {
+  it("should display PayID from environment variable", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    const emailElement = screen.getByText("acmyma@gmail.com")
+    const emailElement = screen.getByText(testPayId)
     expect(emailElement).toBeTruthy()
     // Verify it has the font-mono class
     expect(emailElement.className).toContain("font-mono")
@@ -77,7 +80,7 @@ describe("DonationModal", () => {
     fireEvent.click(copyButton)
 
     await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith("acmyma@gmail.com")
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testPayId)
     })
   })
 

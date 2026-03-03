@@ -12,6 +12,7 @@ interface DonationModalProps {
 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
+  const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   const handleDonateClick = () => {
     globalThis.open("https://paypal.me/TonyYoung1", "_blank")
@@ -19,7 +20,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
   const handleCopyPayID = async () => {
     try {
-      await navigator.clipboard.writeText("acmyma@gmail.com")
+      await navigator.clipboard.writeText(payId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000) // Reset after 2 seconds
     } catch (err) {
@@ -72,7 +73,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5">
-                    acmyma@gmail.com
+                    {payId}
                   </span>
                   <button
                     onClick={handleCopyPayID}
