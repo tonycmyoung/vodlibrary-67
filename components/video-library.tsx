@@ -7,13 +7,16 @@ import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
 import ViewToggle from "@/components/view-toggle"
-import CategoryFilter from "@/components/category-filter"
 import SortControl from "@/components/sort-control"
-import { Input } from "@/components/ui/input"
+import SearchInput from "@/components/search-input"
+import PaginationControls from "@/components/pagination-controls"
+import FilterSection from "@/components/filter-section"
+import FilterModeToggle from "@/components/filter-mode-toggle"
+import { MobileTrainingBanner, DesktopTrainingBanner } from "@/components/training-banner"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, X, Heart, Filter, Ribbon } from "lucide-react"
+import { Loader2, Heart, Filter } from "lucide-react"
 import { getBatchVideoViewCounts } from "@/lib/actions/videos"
+import type { Video, Category, Curriculum, Performer, FilterMode } from "@/types/video"
 
 // Lazy load MobileFilterDialog to reduce initial bundle size
 // The dialog content is only needed when user clicks "Filters" button on mobile
@@ -38,55 +41,6 @@ import {
   type VideoLibrarySortBy,
 } from "@/lib/video-sorting"
 
-interface Video {
-  id: string
-  title: string
-  description: string | null
-  video_url: string
-  thumbnail_url: string | null
-  duration_seconds: number | null
-  created_at: string
-  recorded: string | null
-  views: number | null
-  categories: Array<{
-    id: string
-    name: string
-    color: string
-    description: string | null
-  }>
-  curriculums: Array<{
-    id: string
-    name: string
-    color: string
-    display_order: number
-    description: string | null
-  }>
-  performers: Array<{
-    id: string
-    name: string
-  }>
-}
-
-interface Category {
-  id: string
-  name: string
-  color: string
-  description: string | null
-}
-
-interface Curriculum {
-  id: string
-  name: string
-  color: string
-  display_order: number
-  description: string | null
-}
-
-interface Performer {
-  id: string
-  name: string
-}
-
 interface VideoLibraryProps {
   favoritesOnly?: boolean
   maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
@@ -95,156 +49,7 @@ interface VideoLibraryProps {
   userProfile?: any // Added prop for user profile
 }
 
-const PaginationControls = ({
-  totalPages,
-  itemsPerPage,
-  handleItemsPerPageChange,
-  currentPage,
-  handlePageChange,
-}: {
-  totalPages: number
-  itemsPerPage: number
-  handleItemsPerPageChange: (value: string) => void
-  currentPage: number
-  handlePageChange: (page: number) => void
-}) => {
-  const showNavigation = totalPages > 1
 
-  return (
-    <div className="flex flex-col gap-2 py-2 sm:gap-3 sm:py-3">
-      <div className="flex flex-col flex-row items-start items-center justify-between gap-2 gap-3">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-sm text-gray-400">Show</span>
-          <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-            <SelectTrigger className="w-20 bg-black/50 border-gray-700 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700">
-              <SelectItem value="12">12</SelectItem>
-              <SelectItem value="24">24</SelectItem>
-              <SelectItem value="48">48</SelectItem>
-              <SelectItem value="96">96</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-gray-400">per page</span>
-        </div>
-
-        {showNavigation && (
-          <div className="flex items-center gap-1 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
-              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              First
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              Previous
-            </Button>
-
-            {(() => {
-              const pages = []
-              const maxVisible = 5
-              let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-              const endPage = Math.min(totalPages, startPage + maxVisible - 1)
-
-              if (endPage - startPage + 1 < maxVisible) {
-                startPage = Math.max(1, endPage - maxVisible + 1)
-              }
-
-              if (startPage > 1) {
-                pages.push(
-                  <Button
-                    key={1}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(1)}
-                    className="h-8 w-8 p-0 text-white hover:bg-gray-800"
-                  >
-                    1
-                  </Button>,
-                )
-                if (startPage > 2) {
-                  pages.push(
-                    <span key={`ellipsis-${currentPage}-start`} className="px-2 text-gray-400">
-                      ...
-                    </span>,
-                  )
-                }
-              }
-
-              for (let i = startPage; i <= endPage; i++) {
-                pages.push(
-                  <Button
-                    key={i}
-                    variant={currentPage === i ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handlePageChange(i)}
-                    className={`h-8 w-8 p-0 ${
-                      currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "text-white hover:bg-gray-800"
-                    }`}
-                  >
-                    {i}
-                  </Button>,
-                )
-              }
-
-              if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                  pages.push(
-                    <span key={`ellipsis-${currentPage}-end`} className="px-2 text-gray-400">
-                      ...
-                    </span>,
-                  )
-                }
-                pages.push(
-                  <Button
-                    key={totalPages}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePageChange(totalPages)}
-                    className="h-8 w-8 p-0 text-white hover:bg-gray-800"
-                  >
-                    {totalPages}
-                  </Button>,
-                )
-              }
-
-              return pages
-            })()}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              Next
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-              className="h-8 px-2 text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              Last
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // Loading state component
 const LoadingState = ({ favoritesOnly }: { favoritesOnly: boolean }) => (
@@ -271,101 +76,12 @@ const EmptyFavoritesState = () => (
   </div>
 )
 
-// Training banner component - mobile version
-const MobileTrainingBanner = ({ nextBeltName }: { nextBeltName?: string }) => (
-  <div className="mb-3 sm:mb-0 flex items-center gap-2 px-4 py-2 bg-black/30 border border-red-800/30 rounded-lg sm:hidden">
-    <Ribbon className="w-4 h-4 text-red-500" />
-    <span className="text-sm text-gray-300">
-      Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-    </span>
-  </div>
-)
-
-// Training banner component - desktop version
-const DesktopTrainingBanner = ({ nextBeltName }: { nextBeltName?: string }) => (
-  <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-black/30 border border-red-800/30 rounded-lg whitespace-nowrap">
-    <Ribbon className="w-4 h-4 text-red-500 flex-shrink-0" />
-    <span className="text-sm text-gray-300">
-      Training for: <span className="font-semibold text-white">{nextBeltName || "Next Level"}</span>
-    </span>
-  </div>
-)
-
-const FilterSection = ({
-  categories,
-  recordedValues,
-  performers,
-  selectedCategories,
-  onCategoryToggle,
-  videoCount,
-  curriculums,
-  selectedCurriculums,
-  onCurriculumToggle,
-}: {
-  categories: any[]
-  recordedValues: any[]
-  performers: any[]
-  selectedCategories: string[]
-  onCategoryToggle: (id: string) => void
-  videoCount: number
-  curriculums: any[]
-  selectedCurriculums: string[]
-  onCurriculumToggle: (id: string) => void
-}) => (
-  <div className="space-y-6">
-    <CategoryFilter
-      categories={categories}
-      recordedValues={recordedValues}
-      performers={performers}
-      selectedCategories={selectedCategories}
-      onCategoryToggle={onCategoryToggle}
-      videoCount={videoCount}
-      curriculums={curriculums}
-      selectedCurriculums={selectedCurriculums}
-      onCurriculumToggle={onCurriculumToggle}
-    />
-  </div>
-)
-
 // No videos state component - extracted to reduce cognitive complexity
 const NoVideosState = ({ favoritesOnly }: { favoritesOnly: boolean }) => (
   <div className="text-center py-12">
     <p className="text-gray-400 text-lg">
       {favoritesOnly ? "No favorites found matching your criteria." : "No videos found matching your criteria."}
     </p>
-  </div>
-)
-
-// Search input component - extracted to reduce cognitive complexity
-const SearchInput = ({
-  searchQuery,
-  onSearchChange,
-  onClear,
-  placeholder,
-}: {
-  searchQuery: string
-  onSearchChange: (value: string) => void
-  onClear: () => void
-  placeholder: string
-}) => (
-  <div className="relative flex-1 max-w-md w-full">
-    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-    <Input
-      placeholder={placeholder}
-      value={searchQuery}
-      onChange={(e) => onSearchChange(e.target.value)}
-      className="pl-10 pr-10 bg-black/50 border-gray-700 text-white placeholder:text-gray-400 focus:border-red-500"
-    />
-    {searchQuery && (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onClear}
-        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-      >
-        <X className="h-4 w-4" />
-      </Button>
-    )}
   </div>
 )
 
@@ -392,8 +108,8 @@ const DesktopFilterSection = ({
   curriculums: Curriculum[]
   selectedCurriculums: string[]
   onCurriculumToggle: (id: string) => void
-  filterMode: "AND" | "OR"
-  onFilterModeChange: (mode: "AND" | "OR") => void
+  filterMode: FilterMode
+  onFilterModeChange: (mode: FilterMode) => void
 }) => (
   <div className="hidden lg:block">
     <FilterSection
@@ -419,9 +135,9 @@ const VideoContentSection = ({
   paginatedVideos,
   totalPages,
   itemsPerPage,
-  handleItemsPerPageChange,
+  onItemsPerPageChange,
   currentPage,
-  handlePageChange,
+  onPageChange,
   view,
   userFavorites,
   onFavoriteToggle,
@@ -431,9 +147,9 @@ const VideoContentSection = ({
   paginatedVideos: Video[]
   totalPages: number
   itemsPerPage: number
-  handleItemsPerPageChange: (value: string) => void
+  onItemsPerPageChange: (value: string) => void
   currentPage: number
-  handlePageChange: (page: number) => void
+  onPageChange: (page: number) => void
   view: "grid" | "list"
   userFavorites: Set<string>
   onFavoriteToggle: (videoId: string, isFavorited: boolean) => void
@@ -448,9 +164,9 @@ const VideoContentSection = ({
       <PaginationControls
         totalPages={totalPages}
         itemsPerPage={itemsPerPage}
-        handleItemsPerPageChange={handleItemsPerPageChange}
+        onItemsPerPageChange={onItemsPerPageChange}
         currentPage={currentPage}
-        handlePageChange={handlePageChange}
+        onPageChange={onPageChange}
       />
       <VideoDisplay
         view={view}
@@ -461,9 +177,9 @@ const VideoContentSection = ({
       <PaginationControls
         totalPages={totalPages}
         itemsPerPage={itemsPerPage}
-        handleItemsPerPageChange={handleItemsPerPageChange}
+        onItemsPerPageChange={onItemsPerPageChange}
         currentPage={currentPage}
-        handlePageChange={handlePageChange}
+        onPageChange={onPageChange}
       />
     </>
   )
@@ -509,55 +225,6 @@ const VideoDisplay = ({
     </div>
   )
 }
-
-// Filter mode toggle component - extracted to reduce cognitive complexity
-const FilterModeToggle = ({
-  filterMode,
-  onFilterModeChange,
-  showDescription = false,
-}: {
-  filterMode: "AND" | "OR"
-  onFilterModeChange: (mode: "AND" | "OR") => void
-  showDescription?: boolean
-}) => (
-  <div className={`flex items-center gap-2 ${showDescription ? "mt-4" : ""}`}>
-    {showDescription && <span className="text-sm text-gray-400">Filter mode:</span>}
-    {!showDescription && <span className="text-sm text-gray-400">Filter mode:</span>}
-    <div className="flex bg-black/50 rounded-lg p-1 border border-gray-700">
-      <Button
-        variant={filterMode === "AND" ? "default" : "ghost"}
-        size="sm"
-        onClick={() => onFilterModeChange("AND")}
-        className={`text-xs px-3 py-1 ${showDescription ? "" : "flex-1"} ${
-          filterMode === "AND"
-            ? "bg-red-600 text-white hover:bg-red-700"
-            : "text-gray-400 hover:text-white hover:bg-gray-800"
-        }`}
-      >
-        AND
-      </Button>
-      <Button
-        variant={filterMode === "OR" ? "default" : "ghost"}
-        size="sm"
-        onClick={() => onFilterModeChange("OR")}
-        className={`text-xs px-3 py-1 ${showDescription ? "" : "flex-1"} ${
-          filterMode === "OR"
-            ? "bg-red-600 text-white hover:bg-red-700"
-            : "text-gray-400 hover:text-white hover:bg-gray-800"
-        }`}
-      >
-        OR
-      </Button>
-    </div>
-    {showDescription && (
-      <span className="text-xs text-gray-500">
-        {filterMode === "AND"
-          ? "Videos must have ALL selected categories/curriculums"
-          : "Videos can have ANY selected categories/curriculums"}
-      </span>
-    )}
-  </div>
-)
 
 let lastFailureTime = 0
 let failureCount = 0
@@ -808,7 +475,7 @@ export default function VideoLibrary({
   const [searchQuery, setSearchQuery] = useState(urlState.search)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
-  const [filterMode, setFilterMode] = useState<"AND" | "OR">(urlState.mode)
+  const [filterMode, setFilterMode] = useState<FilterMode>(urlState.mode)
   const [currentPage, setCurrentPage] = useState(urlState.page)
 
   const [itemsPerPage, setItemsPerPage] = useState(() => {
@@ -1178,12 +845,12 @@ export default function VideoLibrary({
         <div className="space-y-2 sm:space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {maxCurriculumOrder && <DesktopTrainingBanner nextBeltName={nextBeltName} />}
-            <SearchInput
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onClear={clearSearch}
-              placeholder={searchPlaceholder}
-            />
+<SearchInput
+  value={searchQuery}
+  onChange={setSearchQuery}
+  onClear={clearSearch}
+  placeholder={searchPlaceholder}
+  />
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <ViewToggle view={view} onViewChange={handleViewChange} />
               <div className="hidden sm:block">
@@ -1227,17 +894,17 @@ export default function VideoLibrary({
           filterMode={filterMode}
           onFilterModeChange={handleFilterModeChange}
         />
-        <VideoContentSection
-          videos={videos}
-          paginatedVideos={paginatedVideos}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          handleItemsPerPageChange={handleItemsPerPageChange}
-          currentPage={currentPage}
-          handlePageChange={handlePageChange}
-          view={view}
-          userFavorites={userFavorites}
-          onFavoriteToggle={handleFavoriteToggle}
+<VideoContentSection
+  videos={videos}
+  paginatedVideos={paginatedVideos}
+  totalPages={totalPages}
+  itemsPerPage={itemsPerPage}
+  onItemsPerPageChange={handleItemsPerPageChange}
+  currentPage={currentPage}
+  onPageChange={handlePageChange}
+  view={view}
+  userFavorites={userFavorites}
+  onFavoriteToggle={handleFavoriteToggle}
           favoritesOnly={favoritesOnly}
         />
       </div>
