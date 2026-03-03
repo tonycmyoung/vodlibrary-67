@@ -13,6 +13,45 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(),
 }))
 
+// Mock useVideoLibraryUrl hook - needs to read from mockSearchParams dynamically
+const mockUpdateUrl = vi.fn()
+vi.mock("@/hooks/use-video-library-url", () => ({
+  useVideoLibraryUrl: () => {
+    // Get the current mockSearchParams from the mocked useSearchParams
+    const searchParams = (useSearchParams as any)()
+    
+    // Parse URL state the same way the real hook does
+    const filtersParam = searchParams?.get?.("filters")
+    const searchParam = searchParams?.get?.("search") || ""
+    const modeParam = (searchParams?.get?.("mode") as "AND" | "OR") || "AND"
+    const pageParam = Math.max(1, Number.parseInt(searchParams?.get?.("page") || "1", 10))
+    
+    let parsedFilters: string[] = []
+    if (filtersParam) {
+      try {
+        parsedFilters = JSON.parse(filtersParam)
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    
+    return {
+      urlState: {
+        filters: parsedFilters,
+        search: searchParam,
+        mode: modeParam,
+        page: pageParam,
+      },
+      setFilters: vi.fn(),
+      setSearch: vi.fn(),
+      setMode: vi.fn(),
+      setPage: vi.fn(),
+      updateUrl: mockUpdateUrl,
+      buildUrlString: vi.fn(),
+    }
+  },
+}))
+
 // Mock Supabase client
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -199,6 +238,7 @@ describe("VideoLibrary", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUpdateUrl.mockClear()
     ;(useRouter as any).mockReturnValue(mockRouter)
     ;(useSearchParams as any).mockReturnValue(mockSearchParams)
     ;(createClient as any).mockReturnValue(mockSupabase)
@@ -329,9 +369,9 @@ describe("VideoLibrary", () => {
       })
 
       await waitFor(() => {
-        expect(mockRouter.replace).toHaveBeenCalledWith(
-          expect.stringContaining("filters="),
-          expect.objectContaining({ scroll: false }),
+        // Now uses the centralized URL hook instead of direct router.replace
+        expect(mockUpdateUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ filters: expect.any(Array), page: 1 }),
         )
       })
     })
@@ -719,19 +759,14 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
       })
 
-      // Verify router.replace was called with both filters
+      // Verify updateUrl was called with both filters
       await waitFor(() => {
-        const calls = mockRouter.replace.mock.calls
+        const calls = mockUpdateUrl.mock.calls
         expect(calls.length).toBeGreaterThan(0)
-        const lastCall = calls[calls.length - 1]
-        const url = lastCall[0] as string
-        expect(url).toContain("filters")
-        const urlObj = new URL(url, "http://localhost")
-        const filtersParam = urlObj.searchParams.get("filters")
-        expect(filtersParam).toBeTruthy()
-        const filters = JSON.parse(filtersParam!)
-        expect(filters).toContain("cat-1")
-        expect(filters).toContain("curr-1")
+        const lastCall = calls[calls.length - 1][0]
+        expect(lastCall.filters).toContain("cat-1")
+        expect(lastCall.filters).toContain("curr-1")
+        expect(lastCall.page).toBe(1)
       })
     })
 
@@ -758,19 +793,14 @@ describe("VideoLibrary", () => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
       })
 
-      // Verify router.replace was called with both filters
+      // Verify updateUrl was called with both filters
       await waitFor(() => {
-        const calls = mockRouter.replace.mock.calls
+        const calls = mockUpdateUrl.mock.calls
         expect(calls.length).toBeGreaterThan(0)
-        const lastCall = calls[calls.length - 1]
-        const url = lastCall[0] as string
-        expect(url).toContain("filters")
-        const urlObj = new URL(url, "http://localhost")
-        const filtersParam = urlObj.searchParams.get("filters")
-        expect(filtersParam).toBeTruthy()
-        const filters = JSON.parse(filtersParam!)
-        expect(filters).toContain("cat-1")
-        expect(filters).toContain("curr-1")
+        const lastCall = calls[calls.length - 1][0]
+        expect(lastCall.filters).toContain("cat-1")
+        expect(lastCall.filters).toContain("curr-1")
+        expect(lastCall.page).toBe(1)
       })
     })
 
