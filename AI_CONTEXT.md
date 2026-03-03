@@ -58,7 +58,7 @@ Before creating a new file:
 
 ## Architecture
 
-```
+\`\`\`
 /app                    # Next.js App Router pages & API routes
 /components             # React components
   /ui                   # shadcn/ui base components
@@ -69,7 +69,7 @@ Before creating a new file:
 /tests                  # Vitest tests (mirrors source structure)
 /docs                   # Project documentation
 /scripts                # Database migration scripts
-```
+\`\`\`
 
 ### Authentication & Authorization
 
@@ -84,7 +84,7 @@ Before creating a new file:
 
 ### Server Actions
 
-```typescript
+\`\`\`typescript
 // CORRECT - Always use the shared helper
 import { createServerClient } from '@/lib/supabase/server'
 
@@ -92,23 +92,23 @@ export async function myServerAction() {
   const supabase = await createServerClient()
   // ...
 }
-```
+\`\`\`
 
 ### Debugging with Trace Logger
 
-```typescript
+\`\`\`typescript
 // PREFERRED - Use trace logger for persistent, viewable logs
 import { TraceLogger } from '@/lib/trace-logger'
 
 const trace = new TraceLogger('ComponentName')
 trace.log('Operation description', { relevantData })
-```
+\`\`\`
 
-```typescript
+\`\`\`typescript
 // ACCEPTABLE - For quick temporary debugging only
 console.log("[v0] Description:", variable)
 // Remove these after debugging is complete
-```
+\`\`\`
 
 ### Component Structure
 
