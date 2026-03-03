@@ -100,7 +100,7 @@ vi.mock("@/components/mobile-filter-dialog", () => ({
   default: ({ selectedCategories, selectedCurriculums, onCategoryToggle, onCurriculumToggle }: any) => (
     <div data-testid="mobile-filter-dialog">
       <span data-testid="mobile-filter-count">
-        Mobile Filters: {selectedCategories.length + selectedCurriculums.length}
+        Mobile Filters: {(selectedCategories?.length || 0) + (selectedCurriculums?.length || 0)}
       </span>
       <button onClick={() => onCategoryToggle("cat-1")}>Mobile Toggle Category</button>
       <button onClick={() => onCurriculumToggle("curr-1")}>Mobile Toggle Curriculum</button>
@@ -876,8 +876,10 @@ describe("VideoLibrary", () => {
 
       render(<VideoLibrary />)
 
+      // Wait for initial filter to be applied from URL params
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
       })
 
       // Toggle curriculum to have multiple filters

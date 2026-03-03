@@ -1,16 +1,19 @@
-"use client"
-
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import MobileFilterDialog from "@/components/mobile-filter-dialog"
 
 // Mock Dialog components from shadcn/ui
+// Dialog always renders trigger, but content is conditional on `open`
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  Dialog: ({ children, open }: any) => (
+    <div data-testid="dialog" data-open={open}>
+      {children}
+    </div>
+  ),
   DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
   DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
   DialogTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
-  DialogTrigger: ({ children, asChild }: any) => <div data-testid="dialog-trigger">{children}</div>,
+  DialogTrigger: ({ children }: any) => <div data-testid="dialog-trigger">{children}</div>,
 }))
 
 // Mock Button component
@@ -19,15 +22,6 @@ vi.mock("@/components/ui/button", () => ({
     <button onClick={onClick} disabled={disabled} className={className} data-testid="button">
       {children}
     </button>
-  ),
-}))
-
-// Mock Badge component
-vi.mock("@/components/ui/badge", () => ({
-  Badge: ({ children, className }: any) => (
-    <span className={className} data-testid="badge">
-      {children}
-    </span>
   ),
 }))
 
@@ -118,7 +112,7 @@ describe("MobileFilterDialog", () => {
       expect(screen.queryByTestId("dialog")).toBeNull()
     })
 
-    it("should display filter count badge when filters are selected", () => {
+    it("should display filter count in button when filters are selected", () => {
       render(
         <MobileFilterDialog
           {...defaultProps}
@@ -128,15 +122,18 @@ describe("MobileFilterDialog", () => {
         />,
       )
 
-      const badge = screen.getByTestId("badge")
-      expect(badge).toBeTruthy()
-      expect(badge).toHaveTextContent("2")
+      // The component shows filter count as a span inside the button
+      const button = screen.getByTestId("button")
+      expect(button).toHaveTextContent("2")
     })
 
-    it("should not display filter count badge when no filters are selected", () => {
+    it("should not display filter count when no filters are selected", () => {
       render(<MobileFilterDialog {...defaultProps} showMobileFilters={false} />)
 
-      expect(screen.queryByTestId("badge")).toBeNull()
+      // Button should just show "Filters" without a count
+      const button = screen.getByTestId("button")
+      expect(button).toHaveTextContent("Filters")
+      expect(button.textContent).not.toMatch(/\d/)
     })
   })
 
