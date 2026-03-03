@@ -705,29 +705,33 @@ describe("VideoLibrary", () => {
 
       render(<VideoLibrary />)
 
+      // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
-        expect(screen.getByTestId("category-filter")).toBeTruthy()
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
       })
 
-      // Toggle a category filter
+      // Toggle a category filter (adding cat-1 to existing curr-1)
       const toggleCategoryButton = screen.getByText("Toggle Category")
       fireEvent.click(toggleCategoryButton)
 
+      // After click, filters should show 2 (curr-1 + cat-1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+
       // Verify router.replace was called with both filters
       await waitFor(() => {
-        const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
-        expect(lastCall).toBeDefined()
+        const calls = mockRouter.replace.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const lastCall = calls[calls.length - 1]
         const url = lastCall[0] as string
-        // URL should contain both cat-1 and curr-1
         expect(url).toContain("filters")
-        // URLSearchParams encodes the value, so we need to decode it first
         const urlObj = new URL(url, "http://localhost")
         const filtersParam = urlObj.searchParams.get("filters")
-        if (filtersParam) {
-          const filters = JSON.parse(filtersParam)
-          expect(filters).toContain("cat-1")
-          expect(filters).toContain("curr-1")
-        }
+        expect(filtersParam).toBeTruthy()
+        const filters = JSON.parse(filtersParam!)
+        expect(filters).toContain("cat-1")
+        expect(filters).toContain("curr-1")
       })
     })
 
@@ -740,29 +744,33 @@ describe("VideoLibrary", () => {
 
       render(<VideoLibrary />)
 
+      // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
-        expect(screen.getByTestId("category-filter")).toBeTruthy()
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
       })
 
-      // Toggle a curriculum filter
+      // Toggle a curriculum filter (adding curr-1 to existing cat-1)
       const toggleCurriculumButton = screen.getByText("Toggle Curriculum")
       fireEvent.click(toggleCurriculumButton)
 
+      // After click, filters should show 2 (cat-1 + curr-1)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+
       // Verify router.replace was called with both filters
       await waitFor(() => {
-        const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
-        expect(lastCall).toBeDefined()
+        const calls = mockRouter.replace.mock.calls
+        expect(calls.length).toBeGreaterThan(0)
+        const lastCall = calls[calls.length - 1]
         const url = lastCall[0] as string
-        // URL should contain both cat-1 and curr-1
         expect(url).toContain("filters")
-        // URLSearchParams encodes the value, so we need to decode it first
         const urlObj = new URL(url, "http://localhost")
         const filtersParam = urlObj.searchParams.get("filters")
-        if (filtersParam) {
-          const filters = JSON.parse(filtersParam)
-          expect(filters).toContain("cat-1")
-          expect(filters).toContain("curr-1")
-        }
+        expect(filtersParam).toBeTruthy()
+        const filters = JSON.parse(filtersParam!)
+        expect(filters).toContain("cat-1")
+        expect(filters).toContain("curr-1")
       })
     })
 
@@ -781,6 +789,12 @@ describe("VideoLibrary", () => {
 
       render(<VideoLibrary />)
 
+      // Wait for filters to be loaded from URL (Filters: 2)
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+
+      // Wait for pagination to be ready
       await waitFor(() => {
         expect(screen.getAllByText("Show")[0]).toBeTruthy()
       })
@@ -793,17 +807,15 @@ describe("VideoLibrary", () => {
         // Verify URL still contains both filters
         await waitFor(() => {
           const calls = mockRouter.replace.mock.calls
-          if (calls.length > 0) {
-            const lastCall = calls[calls.length - 1]
-            const url = lastCall[0] as string
-            // URLSearchParams encodes the value, so we need to decode it first
-            const urlObj = new URL(url, "http://localhost")
-            const filtersParam = urlObj.searchParams.get("filters")
-            if (filtersParam) {
-              const filters = JSON.parse(filtersParam)
-              expect(filters).toContain("cat-1")
-              expect(filters).toContain("curr-1")
-            }
+          expect(calls.length).toBeGreaterThan(0)
+          const lastCall = calls[calls.length - 1]
+          const url = lastCall[0] as string
+          const urlObj = new URL(url, "http://localhost")
+          const filtersParam = urlObj.searchParams.get("filters")
+          if (filtersParam) {
+            const filters = JSON.parse(filtersParam)
+            expect(filters).toContain("cat-1")
+            expect(filters).toContain("curr-1")
           }
         })
       }
