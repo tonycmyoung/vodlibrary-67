@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, within } from "@testing-library/react"
 import MobileFilterDialog from "@/components/mobile-filter-dialog"
 
 // Mock Dialog components from shadcn/ui
@@ -114,16 +114,18 @@ describe("MobileFilterDialog", () => {
         />,
       )
 
-      // The trigger button shows "Filters" text and a count badge
-      const triggerButton = screen.getByRole("button", { name: /Filters.*2/i })
-      expect(triggerButton).toBeTruthy()
+      // Query within dialog-trigger to get the trigger button specifically
+      const dialogTrigger = screen.getByTestId("dialog-trigger")
+      const triggerButton = within(dialogTrigger).getByRole("button")
+      expect(triggerButton).toHaveTextContent("2")
     })
 
     it("should not display filter count when no filters are selected", () => {
       render(<MobileFilterDialog {...defaultProps} showMobileFilters={false} />)
 
-      // Trigger button should show "Filters" without a number
-      const triggerButton = screen.getByRole("button", { name: /Filters/i })
+      // Query within dialog-trigger to avoid matching "Apply Filters" button
+      const dialogTrigger = screen.getByTestId("dialog-trigger")
+      const triggerButton = within(dialogTrigger).getByRole("button")
       expect(triggerButton).toBeTruthy()
       expect(triggerButton.textContent).not.toMatch(/\d/)
     })
