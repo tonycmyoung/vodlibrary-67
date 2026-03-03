@@ -163,7 +163,7 @@ describe("MobileFilterDialog", () => {
         />,
       )
 
-      const andButton = screen.getByText("ALL")
+      const andButton = screen.getByText("AND")
       fireEvent.click(andButton)
 
       expect(defaultProps.onFilterModeChange).toHaveBeenCalledWith("AND")
