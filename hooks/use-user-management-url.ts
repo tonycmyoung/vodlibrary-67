@@ -94,6 +94,10 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
   // Track current state (allows for optimistic updates)
   const [currentState, setCurrentState] = useState<UserManagementUrlState>(initialState)
 
+  // Ref to track current state for use in callbacks (avoids stale closures and infinite loops)
+  const currentStateRef = useRef<UserManagementUrlState>(currentState)
+  currentStateRef.current = currentState
+
   // Refs for debouncing
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pendingUpdatesRef = useRef<Partial<UserManagementUrlState> | null>(null)
@@ -121,9 +125,10 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
 
   /**
    * Build URL string from state
+   * Uses ref to avoid dependency on currentState (prevents infinite loops)
    */
   const buildUrlString = useCallback((state: Partial<UserManagementUrlState>): string => {
-    const mergedState = { ...currentState, ...state }
+    const mergedState = { ...currentStateRef.current, ...state }
     const params = new URLSearchParams()
 
     if (mergedState.role && mergedState.role !== "all") {
@@ -153,7 +158,7 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
     }
 
     return params.toString() ? `?${params.toString()}` : ""
-  }, [currentState, defaultSortBy, defaultSortOrder, persistSort])
+  }, [defaultSortBy, defaultSortOrder, persistSort])
 
   /**
    * Apply URL update to browser using shallow routing
@@ -178,6 +183,7 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
 
   /**
    * Update URL immediately without debouncing
+   * Uses ref to avoid dependency on currentState (prevents infinite loops)
    */
   const updateUrlImmediate = useCallback((updates: Partial<UserManagementUrlState>) => {
     if (debounceTimerRef.current) {
@@ -186,13 +192,14 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
     }
     pendingUpdatesRef.current = null
 
-    const newState = { ...currentState, ...updates }
+    const newState = { ...currentStateRef.current, ...updates }
     setCurrentState(newState)
     applyUrlUpdate(newState)
-  }, [currentState, applyUrlUpdate])
+  }, [applyUrlUpdate])
 
   /**
    * Commit any pending URL updates immediately
+   * Uses ref to avoid dependency on currentState (prevents infinite loops)
    */
   const commitUrl = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -201,18 +208,19 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
     }
 
     if (pendingUpdatesRef.current) {
-      const newState = { ...currentState, ...pendingUpdatesRef.current }
+      const newState = { ...currentStateRef.current, ...pendingUpdatesRef.current }
       pendingUpdatesRef.current = null
       applyUrlUpdate(newState)
     }
-  }, [currentState, applyUrlUpdate])
+  }, [applyUrlUpdate])
 
   /**
    * Update URL with new state (debounced for filter changes)
    * State updates immediately for UI responsiveness, URL updates after delay
+   * Uses ref to avoid dependency on currentState (prevents infinite loops)
    */
   const updateUrl = useCallback((updates: Partial<UserManagementUrlState>) => {
-    const newState = { ...currentState, ...updates }
+    const newState = { ...currentStateRef.current, ...updates }
     setCurrentState(newState)
 
     // Accumulate updates for debouncing
@@ -226,12 +234,12 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
     // Set new debounced timer
     debounceTimerRef.current = setTimeout(() => {
       if (pendingUpdatesRef.current) {
-        applyUrlUpdate({ ...currentState, ...pendingUpdatesRef.current })
+        applyUrlUpdate({ ...currentStateRef.current, ...pendingUpdatesRef.current })
         pendingUpdatesRef.current = null
       }
       debounceTimerRef.current = null
     }, URL_UPDATE_DEBOUNCE)
-  }, [currentState, applyUrlUpdate])
+  }, [applyUrlUpdate])
 
   /**
    * Set role filter
