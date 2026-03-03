@@ -95,6 +95,19 @@ vi.mock("@/components/search-input", () => ({
   ),
 }))
 
+// Mock dynamically imported MobileFilterDialog
+vi.mock("@/components/mobile-filter-dialog", () => ({
+  default: ({ selectedCategories, selectedCurriculums, onCategoryToggle, onCurriculumToggle }: any) => (
+    <div data-testid="mobile-filter-dialog">
+      <span data-testid="mobile-filter-count">
+        Mobile Filters: {selectedCategories.length + selectedCurriculums.length}
+      </span>
+      <button onClick={() => onCategoryToggle("cat-1")}>Mobile Toggle Category</button>
+      <button onClick={() => onCurriculumToggle("curr-1")}>Mobile Toggle Curriculum</button>
+    </div>
+  ),
+}))
+
 describe("VideoLibrary", () => {
   const mockRouter = {
     push: vi.fn(),
