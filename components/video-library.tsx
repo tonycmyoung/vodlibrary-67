@@ -748,10 +748,14 @@ export default function VideoLibrary({
   }
 
   const handleCurriculumToggle = (curriculumId: string) => {
-    setSelectedCurriculums((prev) =>
-      prev.includes(curriculumId) ? prev.filter((id) => id !== curriculumId) : [...prev, curriculumId],
-    )
-    setCurrentPage(1) // Reset to page 1 when filters change
+    const newSelectedCurriculums = selectedCurriculums.includes(curriculumId)
+      ? selectedCurriculums.filter((id) => id !== curriculumId)
+      : [...selectedCurriculums, curriculumId]
+
+    setSelectedCurriculums(newSelectedCurriculums)
+    setCurrentPage(1)
+    const allFilters = [...selectedCategories, ...newSelectedCurriculums]
+    reconstructURL(allFilters, searchQuery, filterMode, 1)
   }
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -760,7 +764,8 @@ export default function VideoLibrary({
       : [...selectedCategories, categoryId]
 
     setSelectedCategories(newSelectedCategories)
-    reconstructURL(newSelectedCategories, searchQuery, filterMode, 1) // Reset to page 1 when filters change
+    const allFilters = [...newSelectedCategories, ...selectedCurriculums]
+    reconstructURL(allFilters, searchQuery, filterMode, 1)
   }
 
   const handleViewChange = (newView: "grid" | "list") => {
@@ -788,13 +793,15 @@ export default function VideoLibrary({
     const newItemsPerPage = Number.parseInt(value, 10)
     setItemsPerPage(newItemsPerPage)
     localStorage.setItem(`${storagePrefix}ItemsPerPage`, value)
-    reconstructURL(selectedCategories, searchQuery, filterMode, 1) // Reset to page 1 when items per page changes
+    const allFilters = [...selectedCategories, ...selectedCurriculums]
+    reconstructURL(allFilters, searchQuery, filterMode, 1)
   }
 
   const handlePageChange = (newPage: number) => {
     const boundedPage = Math.max(1, Math.min(newPage, totalPages || 1))
     setCurrentPage(boundedPage)
-    reconstructURL(selectedCategories, searchQuery, filterMode, boundedPage)
+    const allFilters = [...selectedCategories, ...selectedCurriculums]
+    reconstructURL(allFilters, searchQuery, filterMode, boundedPage)
   }
 
   useEffect(() => {
@@ -807,7 +814,8 @@ export default function VideoLibrary({
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
       // Reset to page 1 only when search actually changes
-      reconstructURL(selectedCategories, searchQuery, filterMode, 1)
+      const allFilters = [...selectedCategories, ...selectedCurriculums]
+      reconstructURL(allFilters, searchQuery, filterMode, 1)
     }, 300)
 
     return () => clearTimeout(timer)

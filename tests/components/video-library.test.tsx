@@ -675,6 +675,133 @@ describe("VideoLibrary", () => {
         expect(videos.length).toBe(3)
       })
     })
+
+    it("should persist both category and curriculum filters in URL", async () => {
+      // Start with both category and curriculum filters in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1", "curr-1"])
+        if (key === "mode") return "OR"
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Verify both filters are displayed as selected
+      await waitFor(() => {
+        expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
+      })
+    })
+
+    it("should include curriculum filters when toggling category filter", async () => {
+      // Start with curriculum filter in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["curr-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Toggle a category filter
+      const toggleCategoryButton = screen.getByText("Toggle Category")
+      fireEvent.click(toggleCategoryButton)
+
+      // Verify router.replace was called with both filters
+      await waitFor(() => {
+        const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
+        expect(lastCall).toBeDefined()
+        const url = lastCall[0]
+        // URL should contain both cat-1 and curr-1
+        expect(url).toContain("filters")
+        const filtersMatch = url.match(/filters=([^&]+)/)
+        if (filtersMatch) {
+          const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+          expect(filters).toContain("cat-1")
+          expect(filters).toContain("curr-1")
+        }
+      })
+    })
+
+    it("should include category filters when toggling curriculum filter", async () => {
+      // Start with category filter in URL
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1"])
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("category-filter")).toBeTruthy()
+      })
+
+      // Toggle a curriculum filter
+      const toggleCurriculumButton = screen.getByText("Toggle Curriculum")
+      fireEvent.click(toggleCurriculumButton)
+
+      // Verify router.replace was called with both filters
+      await waitFor(() => {
+        const lastCall = mockRouter.replace.mock.calls[mockRouter.replace.mock.calls.length - 1]
+        expect(lastCall).toBeDefined()
+        const url = lastCall[0]
+        // URL should contain both cat-1 and curr-1
+        expect(url).toContain("filters")
+        const filtersMatch = url.match(/filters=([^&]+)/)
+        if (filtersMatch) {
+          const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+          expect(filters).toContain("cat-1")
+          expect(filters).toContain("curr-1")
+        }
+      })
+    })
+
+    it("should preserve all filter types when changing page", async () => {
+      // Start with both filters and multiple pages worth of items
+      mockSearchParams.get.mockImplementation((key: string) => {
+        if (key === "filters") return JSON.stringify(["cat-1", "curr-1"])
+        if (key === "page") return "1"
+        return null
+      })
+
+      Storage.prototype.getItem = vi.fn((key) => {
+        if (key === "videoLibraryItemsPerPage") return "1" // Force pagination
+        return null
+      })
+
+      render(<VideoLibrary />)
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Show")[0]).toBeTruthy()
+      })
+
+      // Find and click the Next button if available
+      const nextButtons = screen.getAllByText("Next")
+      if (nextButtons.length > 0) {
+        fireEvent.click(nextButtons[0])
+
+        // Verify URL still contains both filters
+        await waitFor(() => {
+          const calls = mockRouter.replace.mock.calls
+          if (calls.length > 0) {
+            const lastCall = calls[calls.length - 1]
+            const url = lastCall[0]
+            const filtersMatch = url.match(/filters=([^&]+)/)
+            if (filtersMatch) {
+              const filters = JSON.parse(decodeURIComponent(filtersMatch[1]))
+              expect(filters).toContain("cat-1")
+              expect(filters).toContain("curr-1")
+            }
+          }
+        })
+      }
+    })
   })
 
   describe("Custom Storage Prefix", () => {

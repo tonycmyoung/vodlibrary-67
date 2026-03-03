@@ -80,6 +80,12 @@ Refactoring the `video-library.tsx` component (1,247 lines) into smaller, testab
 - SearchInput props renamed: `searchQuery`→`value`, `onSearchChange`→`onChange`
 - PaginationControls props renamed: `handleItemsPerPageChange`→`onItemsPerPageChange`, `handlePageChange`→`onPageChange`
 
+**Bug Fix (URL Filter Persistence)**:
+- Fixed bug where curriculum filters were not persisted in URL when category filters changed
+- Root cause: `reconstructURL()` was only passed `selectedCategories`, not `[...selectedCategories, ...selectedCurriculums]`
+- Fixed in: `handleCategoryToggle`, `handleCurriculumToggle`, `handleItemsPerPageChange`, `handlePageChange`, and search debounce useEffect
+- Added 5 new tests for multi-filter URL persistence scenarios
+
 ---
 
 ### Phase 2: Extract State Management Hooks
