@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
+import { useFilteredVideos } from "@/hooks/use-filtered-videos"
 import { createClient } from "@/lib/supabase/client"
 import VideoCard from "@/components/video-card"
 import VideoCardList from "@/components/video-card-list"
@@ -35,12 +36,7 @@ const MobileFilterDialog = dynamic(() => import("@/components/mobile-filter-dial
     </Button>
   ),
 })
-import {
-  compareVideos,
-  videoMatchesSearch,
-  videoMatchesFilters,
-  type VideoLibrarySortBy,
-} from "@/lib/video-sorting"
+import { type VideoLibrarySortBy } from "@/lib/video-sorting"
 
 interface VideoLibraryProps {
   favoritesOnly?: boolean
@@ -653,49 +649,28 @@ export default function VideoLibrary({
     return "asc"
   })
 
-  const processedVideos = useMemo(() => {
-    let result = maxCurriculumOrder ? [...filteredByLevel] : [...allVideos]
-
-    if (favoritesOnly) {
-      result = result.filter((video) => userFavorites.has(video.id))
-    }
-
-    if (debouncedSearchQuery) {
-      result = result.filter((video) => videoMatchesSearch(video, debouncedSearchQuery))
-    }
-
-    if (selectedCategories.length > 0 || selectedCurriculums.length > 0) {
-      result = result.filter((video) =>
-        videoMatchesFilters(video, selectedCategories, selectedCurriculums, filterMode)
-      )
-    }
-
-    result.sort((a, b) => compareVideos(a, b, sortBy, sortOrder))
-
-    return result
-  }, [
-    allVideos,
-    debouncedSearchQuery,
+  // Use the consolidated filtering, sorting, and pagination hook
+  const videosToFilter = maxCurriculumOrder ? filteredByLevel : allVideos
+  const {
+    filteredVideos: processedVideos,
+    paginatedVideos: paginatedResult,
+    totalPages,
+    hasActiveFilters,
+  } = useFilteredVideos({
+    videos: videosToFilter,
+    searchQuery: debouncedSearchQuery,
     selectedCategories,
     selectedCurriculums,
     filterMode,
     sortBy,
     sortOrder,
-    favoritesOnly,
     userFavorites,
-    filteredByLevel,
-    maxCurriculumOrder,
-  ])
+    favoritesOnly,
+    currentPage,
+    itemsPerPage,
+  })
 
-  const totalPages = Math.ceil(processedVideos.length / itemsPerPage)
-  const validCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1))
-
-  const paginatedResult = useMemo(() => {
-    const startIndex = (validCurrentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return processedVideos.slice(startIndex, endIndex)
-  }, [processedVideos, validCurrentPage, itemsPerPage])
-
+  // Sync processed videos to state for components that need them
   useEffect(() => {
     setVideos(processedVideos)
     setPaginatedVideos(paginatedResult)
@@ -800,8 +775,8 @@ export default function VideoLibrary({
     return <LoadingState favoritesOnly={favoritesOnly} />
   }
 
-  const hasNoFiltersApplied = !debouncedSearchQuery && selectedCategories.length === 0 && selectedCurriculums.length === 0
-  if (videos.length === 0 && hasNoFiltersApplied && favoritesOnly) {
+  // Use hasActiveFilters from the filtering hook (inverted for this check)
+  if (videos.length === 0 && !hasActiveFilters && favoritesOnly) {
     return <EmptyFavoritesState />
   }
 
