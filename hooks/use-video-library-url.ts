@@ -80,13 +80,18 @@ export function useVideoLibraryUrl(): UseVideoLibraryUrlReturn {
   const pendingUpdatesRef = useRef<Partial<VideoLibraryUrlState> | null>(null)
 
   // Sync state when URL changes externally (browser back/forward navigation)
+  // Uses popstate event listener to detect actual browser navigation
   useEffect(() => {
-    const newState = parseUrlState(searchParams)
-    // Only update if the URL actually changed (compare stringified to handle array comparison)
-    if (JSON.stringify(newState) !== JSON.stringify(currentState)) {
+    const handlePopState = () => {
+      // Parse state from actual URL on browser navigation
+      const params = new URLSearchParams(window.location.search)
+      const newState = parseUrlState(params)
       setCurrentState(newState)
     }
-  }, [searchParams]) // Note: intentionally not including currentState to avoid loops
+
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
 
   // Cleanup debounce timer on unmount
   useEffect(() => {

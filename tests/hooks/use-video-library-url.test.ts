@@ -298,24 +298,27 @@ describe("useVideoLibraryUrl", () => {
   })
 
   describe("browser navigation sync", () => {
-    it("should sync state when URL changes externally (browser back/forward)", () => {
+    it("should sync state when URL changes externally (browser back/forward via popstate)", () => {
       // Start with filters in URL
       mockSearchParams.set("filters", JSON.stringify(["cat-1", "cat-2"]))
       mockSearchParams.set("page", "2")
 
-      const { result, rerender } = renderHook(() => useVideoLibraryUrl())
+      const { result } = renderHook(() => useVideoLibraryUrl())
 
       // Verify initial state
       expect(result.current.urlState.filters).toEqual(["cat-1", "cat-2"])
       expect(result.current.urlState.page).toBe(2)
 
-      // Simulate browser back navigation by changing searchParams
-      mockSearchParams.clear()
-      mockSearchParams.set("filters", JSON.stringify(["cat-3"]))
-      mockSearchParams.set("page", "1")
+      // Simulate browser back navigation by changing window.location.search and firing popstate
+      Object.defineProperty(window, "location", {
+        value: { pathname: "/", search: "?filters=%5B%22cat-3%22%5D&page=1" },
+        writable: true,
+      })
 
-      // Re-render to trigger useSearchParams update
-      rerender()
+      // Fire popstate event to simulate browser navigation
+      act(() => {
+        window.dispatchEvent(new PopStateEvent("popstate"))
+      })
 
       // State should sync to new URL
       expect(result.current.urlState.filters).toEqual(["cat-3"])
