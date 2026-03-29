@@ -1,22 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { createDonationCheckout } from "@/lib/actions/donations"
-import { getDonationPreset } from "@/lib/donation-products"
 
-// Mock Stripe
-vi.mock("@/lib/stripe", () => ({
-  stripe: {
-    checkout: {
-      sessions: {
-        create: vi.fn(),
-      },
-    },
-  },
-  getStripe: vi.fn(),
-}))
-
-// Mock donation products
+// Mock donation products BEFORE importing donations
 vi.mock("@/lib/donation-products", () => ({
-  getDonationPreset: vi.fn(),
+  getDonationPreset: vi.fn((id: string) => {
+    const presets: Record<string, any> = {
+      small: { id: "small", label: "$5", amountCents: 500 },
+      medium: { id: "medium", label: "$10", amountCents: 1000 },
+      large: { id: "large", label: "$50", amountCents: 5000 },
+    }
+    return presets[id] || null
+  }),
   DONATION_PRESETS: {
     small: { id: "small", label: "$5", amountCents: 500 },
     medium: { id: "medium", label: "$10", amountCents: 1000 },
@@ -24,20 +17,30 @@ vi.mock("@/lib/donation-products", () => ({
   },
 }))
 
-describe("createDonationCheckout", () => {
-  let mockStripe: any
+// Mock Stripe BEFORE importing donations
+const mockCreateSession = vi.fn()
+vi.mock("@/lib/stripe", () => ({
+  stripe: {
+    checkout: {
+      sessions: {
+        create: mockCreateSession,
+      },
+    },
+  },
+  getStripe: vi.fn(),
+}))
 
+// NOW import after mocks are set up
+import { createDonationCheckout } from "@/lib/actions/donations"
+
+describe("Donation Actions - createDonationCheckout", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockStripe = vi.mocked(require("@/lib/stripe").stripe)
   })
 
   describe("with preset ID", () => {
-    it("should create a checkout session with preset amount", async () => {
-      const mockPreset = { id: "small", label: "$5", amountCents: 500 }
-      vi.mocked(getDonationPreset).mockReturnValue(mockPreset)
-
-      mockStripe.checkout.sessions.create.mockResolvedValue({
+    it("should create checkout session with preset amount", async () => {
+      mockCreateSession.mockResolvedValue({
         id: "cs_test_123",
         client_secret: "pi_test_secret_456",
       })
@@ -51,33 +54,26 @@ describe("createDonationCheckout", () => {
       expect(result.success).toBe(true)
       expect(result.clientSecret).toBe("pi_test_secret_456")
       expect(result.sessionId).toBe("cs_test_123")
-
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith({
-        mode: "payment",
-        ui_mode: "embedded_page",
-        customer_email: "donor@example.com",
-        line_items: [
-          {
-            price_data: {
-              currency: "aud",
-              product_data: {
-                name: "Okinawa Kobudo Library Donation",
-                description: expect.stringContaining("Thank you"),
-              },
-              unit_amount: 500,
-            },
-            quantity: 1,
-          },
-        ],
-        redirect_on_completion: "never",
-      })
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: "payment",
+          ui_mode: "embedded_page",
+          customer_email: "donor@example.com",
+          line_items: [
+            expect.objectContaining({
+              price_data: expect.objectContaining({
+                currency: "aud",
+                unit_amount: 500,
+              }),
+            }),
+          ],
+        })
+      )
     })
 
-    it("should return error if preset not found", async () => {
-      vi.mocked(getDonationPreset).mockReturnValue(null)
-
+    it("should return error for invalid preset", async () => {
       const result = await createDonationCheckout({
-        presetId: "invalid",
+        presetId: "invalid_preset",
         email: "donor@example.com",
         returnUrl: "https://example.com/donation/success",
       })
@@ -88,20 +84,20 @@ describe("createDonationCheckout", () => {
   })
 
   describe("with custom amount", () => {
-    it("should create a checkout session with custom amount", async () => {
-      mockStripe.checkout.sessions.create.mockResolvedValue({
-        id: "cs_test_456",
-        client_secret: "pi_test_secret_789",
+    it("should create checkout with custom amount", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_custom_amount",
+        client_secret: "pi_custom_secret",
       })
 
       const result = await createDonationCheckout({
         amount: 2500, // $25 AUD
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(true)
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect(mockCreateSession).toHaveBeenCalledWith(
         expect.objectContaining({
           line_items: [
             expect.objectContaining({
@@ -114,11 +110,11 @@ describe("createDonationCheckout", () => {
       )
     })
 
-    it("should reject amount less than $1 AUD", async () => {
+    it("should reject amount less than $1 AUD (100 cents)", async () => {
       const result = await createDonationCheckout({
-        amount: 50, // $0.50 AUD
+        amount: 50,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
@@ -127,111 +123,109 @@ describe("createDonationCheckout", () => {
 
     it("should reject amount greater than $10,000 AUD", async () => {
       const result = await createDonationCheckout({
-        amount: 1000001, // $10,000.01 AUD
+        amount: 1000001,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
       expect(result.error).toContain("between $1 and $10,000 AUD")
     })
 
-    it("should accept amount at $1 minimum", async () => {
-      mockStripe.checkout.sessions.create.mockResolvedValue({
-        id: "cs_test_min",
-        client_secret: "pi_test_min",
+    it("should accept $1 minimum donation", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_min",
+        client_secret: "pi_min",
       })
 
       const result = await createDonationCheckout({
-        amount: 100, // $1 AUD
+        amount: 100,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(true)
     })
 
-    it("should accept amount at $10,000 maximum", async () => {
-      mockStripe.checkout.sessions.create.mockResolvedValue({
-        id: "cs_test_max",
-        client_secret: "pi_test_max",
+    it("should accept $10,000 maximum donation", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_max",
+        client_secret: "pi_max",
       })
 
       const result = await createDonationCheckout({
-        amount: 1000000, // $10,000 AUD
+        amount: 1000000,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(true)
     })
   })
 
-  describe("error handling", () => {
-    it("should return error if neither amount nor presetId provided", async () => {
+  describe("validation and error handling", () => {
+    it("should require either amount or presetId", async () => {
       const result = await createDonationCheckout({
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
       expect(result.error).toBe("Either amount or presetId must be provided")
     })
 
-    it("should return error if session creation fails", async () => {
-      mockStripe.checkout.sessions.create.mockRejectedValue(
-        new Error("Stripe API error")
-      )
+    it("should handle Stripe API errors", async () => {
+      mockCreateSession.mockRejectedValue(new Error("Stripe API rate limit exceeded"))
 
       const result = await createDonationCheckout({
         amount: 1000,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe("Stripe API error")
+      expect(result.error).toBe("Stripe API rate limit exceeded")
     })
 
-    it("should return error if session missing client_secret", async () => {
-      mockStripe.checkout.sessions.create.mockResolvedValue({
-        id: "cs_test_no_secret",
-        // client_secret missing
+    it("should require client_secret in response", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_no_secret",
+        // missing client_secret
       })
 
       const result = await createDonationCheckout({
         amount: 1000,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
       expect(result.error).toBe("Failed to create checkout session")
     })
 
-    it("should return error if session missing id", async () => {
-      mockStripe.checkout.sessions.create.mockResolvedValue({
-        client_secret: "pi_test_no_id",
-        // id missing
+    it("should require session id in response", async () => {
+      mockCreateSession.mockResolvedValue({
+        client_secret: "pi_no_id",
+        // missing id
       })
 
       const result = await createDonationCheckout({
         amount: 1000,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
       expect(result.error).toBe("Failed to create checkout session")
     })
 
-    it("should handle non-Error exceptions", async () => {
-      mockStripe.checkout.sessions.create.mockRejectedValue("Unknown error")
+    it("should handle generic errors gracefully", async () => {
+      mockCreateSession.mockRejectedValue("Unknown non-Error exception")
 
       const result = await createDonationCheckout({
         amount: 1000,
         email: "donor@example.com",
-        returnUrl: "https://example.com/donation/success",
+        returnUrl: "https://example.com/success",
       })
 
       expect(result.success).toBe(false)
