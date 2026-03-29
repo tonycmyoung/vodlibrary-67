@@ -158,7 +158,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
                     <Button
                       onClick={handleStripeClick}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0"
                     >
                       <CreditCard className="h-4 w-4" />
                       Donate with Card
