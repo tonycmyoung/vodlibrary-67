@@ -70,7 +70,10 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-          <EmbeddedCheckout onComplete={() => onSuccess?.()} />
+          <EmbeddedCheckout onComplete={() => {
+            console.log("[v0] Payment completed, calling onSuccess")
+            onSuccess?.()
+          }} />
         </EmbeddedCheckoutProvider>
       </div>
     )

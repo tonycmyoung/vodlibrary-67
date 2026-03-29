@@ -56,7 +56,7 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
           quantity: 1,
         },
       ],
-      return_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: returnUrl,
     })
 
     console.log("[v0] Checkout session created:", {

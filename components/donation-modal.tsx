@@ -69,6 +69,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutSuccess = () => {
+    console.log("[v0] handleCheckoutSuccess called")
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
