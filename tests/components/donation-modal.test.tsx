@@ -77,14 +77,16 @@ describe("DonationModal", () => {
     })
 
     const user = userEvent.setup()
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    })
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    await user.click(copyButton)
-
-    await waitFor(() => {
-      expect(writeTextMock).toHaveBeenCalledWith(testPayId)
+    await act(async () => {
+      await user.click(copyButton)
     })
+
+    expect(writeTextMock).toHaveBeenCalledWith(testPayId)
 
     // Restore original clipboard
     Object.defineProperty(navigator, "clipboard", {
@@ -104,10 +106,14 @@ describe("DonationModal", () => {
     })
 
     const user = userEvent.setup()
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    })
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    await user.click(copyButton)
+    await act(async () => {
+      await user.click(copyButton)
+    })
 
     await waitFor(() => {
       expect(screen.getByTitle("Copied!")).toBeTruthy()
