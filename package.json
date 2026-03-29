@@ -23,6 +23,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@babel/core": "latest",
+    "@babel/plugin-transform-runtime": "latest",
+    "@babel/runtime": "latest",
     "@edge-runtime/vm": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@opentelemetry/api": "latest",
@@ -94,6 +97,7 @@
     "react-toastify": "11.0.5",
     "recharts": "2.15.4",
     "resend": "latest",
+    "rolldown": "latest",
     "sass": "latest",
     "sass-embedded": "latest",
     "sonner": "^1.7.4",

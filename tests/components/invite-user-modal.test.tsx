@@ -1,7 +1,8 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import InviteUserModal from "@/components/invite-user-modal"
 import { inviteUser } from "@/lib/actions"
 
@@ -62,21 +63,23 @@ describe("InviteUserModal", () => {
     expect(submitButton).toHaveAttribute("type", "submit")
   })
 
-  it("should update email input value on change", () => {
+  it("should update email input value on change", async () => {
+    const user = userEvent.setup()
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     expect(emailInput.value).toBe("test@example.com")
   })
 
   it("should show error when submitting empty email", async () => {
+    const user = userEvent.setup()
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const form = screen.getByRole("button", { name: /send invitation/i }).closest("form")
     if (form) {
-      fireEvent.submit(form)
+      await user.pointer({ keys: "[Enter]", target: form })
     }
 
     await waitFor(() => {
@@ -90,15 +93,16 @@ describe("InviteUserModal", () => {
   })
 
   it("should call inviteUser action on form submit", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockResolvedValue({ success: "Invitation sent!" })
 
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i)
-    fireEvent.change(emailInput, { target: { value: "newuser@example.com" } })
+    await user.type(emailInput, "newuser@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(inviteUser).toHaveBeenCalledWith("newuser@example.com")
@@ -106,15 +110,16 @@ describe("InviteUserModal", () => {
   })
 
   it("should show success message on successful invite", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockResolvedValue({ success: "Invitation sent successfully!" })
 
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i)
-    fireEvent.change(emailInput, { target: { value: "newuser@example.com" } })
+    await user.type(emailInput, "newuser@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       const successMessage = screen.getByText(/invitation sent successfully!/i)
@@ -125,15 +130,16 @@ describe("InviteUserModal", () => {
   })
 
   it("should show error message on failed invite", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockResolvedValue({ error: "User already exists" })
 
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i)
-    fireEvent.change(emailInput, { target: { value: "existing@example.com" } })
+    await user.type(emailInput, "existing@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       const errorMessage = screen.getByText(/user already exists/i)
@@ -144,15 +150,16 @@ describe("InviteUserModal", () => {
   })
 
   it("should clear email and auto-close modal after successful invite", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockResolvedValue({ success: "Invitation sent!" })
 
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       const successMessage = screen.getByText(/invitation sent!/i)
@@ -171,6 +178,7 @@ describe("InviteUserModal", () => {
   }, 5000)
 
   it("should show loading state during invite", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve({ success: "Done" }), 100)),
     )
@@ -178,47 +186,50 @@ describe("InviteUserModal", () => {
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i)
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     const loadingButton = screen.getByRole("button", { name: /sending.../i })
     expect(loadingButton).toBeDisabled()
     expect(loadingButton).toHaveAttribute("type", "submit")
   })
 
-  it("should call onClose when Cancel button is clicked", () => {
+  it("should call onClose when Cancel button is clicked", async () => {
+    const user = userEvent.setup()
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i })
-    fireEvent.click(cancelButton)
+    await user.click(cancelButton)
 
     expect(mockOnClose).toHaveBeenCalled()
   })
 
-  it("should clear form when modal is closed", () => {
+  it("should clear form when modal is closed", async () => {
+    const user = userEvent.setup()
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i })
-    fireEvent.click(cancelButton)
+    await user.click(cancelButton)
 
     expect(mockOnClose).toHaveBeenCalled()
   })
 
   it("should handle unexpected errors gracefully", async () => {
+    const user = userEvent.setup()
     vi.mocked(inviteUser).mockRejectedValue(new Error("Network error"))
 
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
     const emailInput = screen.getByLabelText(/email address/i)
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       const errorMessage = screen.getByText(/failed to send invitation/i)

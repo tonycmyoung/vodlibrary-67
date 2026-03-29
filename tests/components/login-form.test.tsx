@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import LoginForm from "@/components/login-form"
 import { createClient } from "@/lib/supabase/client"
 
@@ -55,56 +56,60 @@ describe("LoginForm", () => {
     expect(resetLink).toBeTruthy()
   })
 
-  it("should show password reset input when forgot password is clicked", () => {
+  it("should show password reset input when forgot password is clicked", async () => {
+    const user = userEvent.setup()
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     expect(screen.getByPlaceholderText("Enter email for reset")).toBeTruthy()
     expect(screen.getByRole("button", { name: /Send Reset/i })).toBeTruthy()
     expect(screen.getByRole("button", { name: /Cancel/i })).toBeTruthy()
   })
 
-  it("should hide password reset input when cancel is clicked", () => {
+  it("should hide password reset input when cancel is clicked", async () => {
+    const user = userEvent.setup()
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     const cancelButton = screen.getByRole("button", { name: /Cancel/i })
-    fireEvent.click(cancelButton)
+    await user.click(cancelButton)
 
     expect(screen.queryByPlaceholderText("Enter email for reset")).toBeNull()
   })
 
-  it("should toggle password visibility", () => {
+  it("should toggle password visibility", async () => {
+    const user = userEvent.setup()
     render(<LoginForm />)
 
     const passwordInput = screen.getByLabelText("Password")
     expect(passwordInput).toHaveAttribute("type", "password")
 
     const toggleButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(toggleButton)
+    await user.click(toggleButton)
 
     expect(passwordInput).toHaveAttribute("type", "text")
 
-    fireEvent.click(toggleButton)
+    await user.click(toggleButton)
     expect(passwordInput).toHaveAttribute("type", "password")
   })
 
   it("should call resetPasswordForEmail when reset form is submitted", async () => {
+    const user = userEvent.setup()
     mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     const emailInput = screen.getByPlaceholderText("Enter email for reset")
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("test@example.com", {
@@ -114,17 +119,18 @@ describe("LoginForm", () => {
   })
 
   it("should show success message after successful password reset", async () => {
+    const user = userEvent.setup()
     mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     const emailInput = screen.getByPlaceholderText("Enter email for reset")
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("test@example.com", {
@@ -135,17 +141,18 @@ describe("LoginForm", () => {
   })
 
   it("should show error message when password reset fails", async () => {
+    const user = userEvent.setup()
     mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: { message: "Error" } })
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     const emailInput = screen.getByPlaceholderText("Enter email for reset")
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } })
+    await user.type(emailInput, "test@example.com")
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(screen.getByText(/Failed to send reset email/i)).toBeTruthy()

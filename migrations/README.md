@@ -6,18 +6,18 @@ This folder contains ordered, idempotent database migration scripts for setting 
 
 Migrations are meant to be applied in numerical order:
 
-```bash
+\`\`\`bash
 psql -d your_database < 0001-initial_schema.sql
 psql -d your_database < 0002-add_performers.sql
 psql -d your_database < 0003-add_notifications.sql
 # ... and so on
-```
+\`\`\`
 
 Or run all migrations in sequence:
 
-```bash
+\`\`\`bash
 for file in *.sql; do psql -d your_database < "$file"; done
-```
+\`\`\`
 
 ## Migration Files
 

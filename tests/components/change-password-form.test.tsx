@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import ChangePasswordForm from "@/components/change-password-form"
 import { createClient } from "@/lib/supabase/client"
 
@@ -36,7 +37,8 @@ describe("ChangePasswordForm", () => {
     expect(screen.getByRole("button", { name: /Update Password/i })).toBeTruthy()
   })
 
-  it("should toggle current password visibility", () => {
+  it("should toggle current password visibility", async () => {
+    const user = userEvent.setup()
     render(<ChangePasswordForm />)
 
     const currentPasswordInput = screen.getByLabelText("Current Password") as HTMLInputElement
@@ -44,18 +46,19 @@ describe("ChangePasswordForm", () => {
 
     expect(currentPasswordInput.type).toBe("password")
 
-    fireEvent.click(toggleButton)
+    await user.click(toggleButton)
     expect(currentPasswordInput.type).toBe("text")
 
-    fireEvent.click(toggleButton)
+    await user.click(toggleButton)
     expect(currentPasswordInput.type).toBe("password")
   })
 
   it("should show error when fields are empty", async () => {
+    const user = userEvent.setup()
     render(<ChangePasswordForm />)
 
     const form = screen.getByRole("button", { name: /Update Password/i }).closest("form")!
-    fireEvent.submit(form)
+    await user.pointer({ keys: "[Enter]", target: form })
 
     await waitFor(() => {
       expect(screen.getByText("All fields are required")).toBeTruthy()
@@ -63,18 +66,19 @@ describe("ChangePasswordForm", () => {
   })
 
   it("should show error when new passwords don't match", async () => {
+    const user = userEvent.setup()
     render(<ChangePasswordForm />)
 
     const currentPasswordInput = screen.getByLabelText("Current Password")
     const newPasswordInput = screen.getByLabelText("New Password")
     const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    fireEvent.change(currentPasswordInput, { target: { value: "oldpass123" } })
-    fireEvent.change(newPasswordInput, { target: { value: "newpass123" } })
-    fireEvent.change(confirmPasswordInput, { target: { value: "differentpass" } })
+    await user.type(currentPasswordInput, "oldpass123")
+    await user.type(newPasswordInput, "newpass123")
+    await user.type(confirmPasswordInput, "differentpass")
 
     const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("New passwords do not match")).toBeTruthy()
@@ -82,18 +86,19 @@ describe("ChangePasswordForm", () => {
   })
 
   it("should show error when password is too short", async () => {
+    const user = userEvent.setup()
     render(<ChangePasswordForm />)
 
     const currentPasswordInput = screen.getByLabelText("Current Password")
     const newPasswordInput = screen.getByLabelText("New Password")
     const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    fireEvent.change(currentPasswordInput, { target: { value: "oldpass" } })
-    fireEvent.change(newPasswordInput, { target: { value: "short" } })
-    fireEvent.change(confirmPasswordInput, { target: { value: "short" } })
+    await user.type(currentPasswordInput, "oldpass")
+    await user.type(newPasswordInput, "short")
+    await user.type(confirmPasswordInput, "short")
 
     const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("Password must be at least 6 characters long")).toBeTruthy()

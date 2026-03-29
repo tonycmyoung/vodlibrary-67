@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import SignUpForm from "@/components/sign-up-form"
 
 // Mock dependencies
@@ -55,14 +56,15 @@ describe("SignUpForm", () => {
     expect(submitButton).toBeDisabled()
   })
 
-  it("should enable submit button when both legal agreements are checked", () => {
+  it("should enable submit button when both legal agreements are checked", async () => {
+    const user = userEvent.setup()
     render(<SignUpForm />)
 
     const eulaCheckbox = screen.getByLabelText(/End User License Agreement/i)
     const privacyCheckbox = screen.getByLabelText(/Privacy Policy/i)
 
-    fireEvent.click(eulaCheckbox)
-    fireEvent.click(privacyCheckbox)
+    await user.click(eulaCheckbox)
+    await user.click(privacyCheckbox)
 
     const submitButton = screen.getByRole("button", { name: /Create Account/i })
     expect(submitButton).not.toBeDisabled()
@@ -74,19 +76,21 @@ describe("SignUpForm", () => {
     expect(screen.getByText(/You must accept both the EULA and Privacy Policy/i)).toBeTruthy()
   })
 
-  it("should hide warning when legal agreements are accepted", () => {
+  it("should hide warning when legal agreements are accepted", async () => {
+    const user = userEvent.setup()
     render(<SignUpForm />)
 
     const eulaCheckbox = screen.getByLabelText(/End User License Agreement/i)
     const privacyCheckbox = screen.getByLabelText(/Privacy Policy/i)
 
-    fireEvent.click(eulaCheckbox)
-    fireEvent.click(privacyCheckbox)
+    await user.click(eulaCheckbox)
+    await user.click(privacyCheckbox)
 
     expect(screen.queryByText(/You must accept both the EULA and Privacy Policy/i)).toBeNull()
   })
 
-  it("should toggle password visibility", () => {
+  it("should toggle password visibility", async () => {
+    const user = userEvent.setup()
     render(<SignUpForm />)
 
     const passwordInput = screen.getByLabelText("Password")
@@ -96,15 +100,16 @@ describe("SignUpForm", () => {
     const toggleButton = toggleButtons.find((btn) => btn.querySelector("svg"))
 
     if (toggleButton) {
-      fireEvent.click(toggleButton)
+      await user.click(toggleButton)
       expect(passwordInput).toHaveAttribute("type", "text")
 
-      fireEvent.click(toggleButton)
+      await user.click(toggleButton)
       expect(passwordInput).toHaveAttribute("type", "password")
     }
   })
 
-  it("should update form data when inputs change", () => {
+  it("should update form data when inputs change", async () => {
+    const user = userEvent.setup()
     render(<SignUpForm />)
 
     const fullNameInput = screen.getByLabelText("Full Name")
@@ -113,11 +118,11 @@ describe("SignUpForm", () => {
     const schoolInput = screen.getByLabelText("School")
     const passwordInput = screen.getByLabelText("Password")
 
-    fireEvent.change(fullNameInput, { target: { value: "John Doe" } })
-    fireEvent.change(emailInput, { target: { value: "john@example.com" } })
-    fireEvent.change(teacherInput, { target: { value: "Sensei Smith" } })
-    fireEvent.change(schoolInput, { target: { value: "Dojo ABC" } })
-    fireEvent.change(passwordInput, { target: { value: "Password123!" } })
+    await user.type(fullNameInput, "John Doe")
+    await user.type(emailInput, "john@example.com")
+    await user.type(teacherInput, "Sensei Smith")
+    await user.type(schoolInput, "Dojo ABC")
+    await user.type(passwordInput, "Password123!")
 
     expect(fullNameInput).toHaveValue("John Doe")
     expect(emailInput).toHaveValue("john@example.com")

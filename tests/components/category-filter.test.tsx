@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import CategoryFilter from "@/components/category-filter"
 
 describe("CategoryFilter", () => {
@@ -69,32 +70,35 @@ describe("CategoryFilter", () => {
     expect(recordedBadges[2]).toHaveTextContent("DVD")
   })
 
-  it("should call onCategoryToggle when category is clicked", () => {
+  it("should call onCategoryToggle when category is clicked", async () => {
+    const user = userEvent.setup()
     const onCategoryToggle = vi.fn()
     render(<CategoryFilter {...defaultProps} onCategoryToggle={onCategoryToggle} />)
 
     const categoryBadge = screen.getByText("Bo")
-    fireEvent.click(categoryBadge)
+    await user.click(categoryBadge)
 
     expect(onCategoryToggle).toHaveBeenCalledWith("cat-1")
   })
 
-  it("should call onCategoryToggle when performer is clicked", () => {
+  it("should call onCategoryToggle when performer is clicked", async () => {
+    const user = userEvent.setup()
     const onCategoryToggle = vi.fn()
     render(<CategoryFilter {...defaultProps} onCategoryToggle={onCategoryToggle} />)
 
     const performerBadge = screen.getByText("John Doe")
-    fireEvent.click(performerBadge)
+    await user.click(performerBadge)
 
     expect(onCategoryToggle).toHaveBeenCalledWith("performer:perf-1")
   })
 
-  it("should call onCategoryToggle when recorded value is clicked", () => {
+  it("should call onCategoryToggle when recorded value is clicked", async () => {
+    const user = userEvent.setup()
     const onCategoryToggle = vi.fn()
     render(<CategoryFilter {...defaultProps} onCategoryToggle={onCategoryToggle} />)
 
     const recordedBadge = screen.getByText("2023")
-    fireEvent.click(recordedBadge)
+    await user.click(recordedBadge)
 
     expect(onCategoryToggle).toHaveBeenCalledWith("recorded:2023")
   })
@@ -130,7 +134,8 @@ describe("CategoryFilter", () => {
     expect(screen.queryByText("Clear All")).toBeNull()
   })
 
-  it("should clear all filters when Clear All is clicked", () => {
+  it("should clear all filters when Clear All is clicked", async () => {
+    const user = userEvent.setup()
     const onCategoryToggle = vi.fn()
     const onCurriculumToggle = vi.fn()
 
@@ -146,7 +151,7 @@ describe("CategoryFilter", () => {
     )
 
     const clearButton = screen.getByText("Clear All")
-    fireEvent.click(clearButton)
+    await user.click(clearButton)
 
     expect(onCategoryToggle).toHaveBeenCalledTimes(2)
     expect(onCurriculumToggle).toHaveBeenCalledTimes(1)

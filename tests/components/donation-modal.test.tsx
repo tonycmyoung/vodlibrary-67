@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import DonationModal from "@/components/donation-modal"
 
 // Mock the Dialog component
@@ -56,11 +57,12 @@ describe("DonationModal", () => {
     expect(paypalButton).toBeTruthy()
   })
 
-  it("should open PayPal link in new tab when donate button is clicked", () => {
+  it("should open PayPal link in new tab when donate button is clicked", async () => {
+    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const paypalButton = screen.getByRole("button", { name: /donate via paypal/i })
 
-    fireEvent.click(paypalButton)
+    await user.click(paypalButton)
 
     expect(globalThis.open).toHaveBeenCalledWith("https://paypal.me/TonyYoung1", "_blank")
   })
@@ -74,10 +76,11 @@ describe("DonationModal", () => {
   })
 
   it("should copy PayID to clipboard when copy button is clicked", async () => {
+    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    fireEvent.click(copyButton)
+    await user.click(copyButton)
 
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testPayId)
@@ -85,21 +88,23 @@ describe("DonationModal", () => {
   })
 
   it("should show check icon after copying", async () => {
+    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    fireEvent.click(copyButton)
+    await user.click(copyButton)
 
     await waitFor(() => {
       expect(screen.getByTitle("Copied!")).toBeTruthy()
     })
   })
 
-  it("should call onClose when Maybe Later button is clicked", () => {
+  it("should call onClose when Maybe Later button is clicked", async () => {
+    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const maybeLaterButton = screen.getByRole("button", { name: /maybe later/i })
 
-    fireEvent.click(maybeLaterButton)
+    await user.click(maybeLaterButton)
 
     expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
