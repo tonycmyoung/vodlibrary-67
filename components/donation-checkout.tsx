@@ -8,6 +8,7 @@ import { DONATION_PRESETS } from "@/lib/donation-products"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { trace } from "@/lib/trace"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
@@ -60,7 +61,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
 
       setClientSecret(result.clientSecret)
     } catch (err) {
-      console.error("[v0] Checkout error:", err)
+      trace.error("Checkout error", { payload: { error: err instanceof Error ? err.message : String(err) } })
       setError(err instanceof Error ? err.message : "An error occurred")
       setIsLoading(false)
     }
@@ -71,7 +72,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
           <EmbeddedCheckout onComplete={() => {
-            console.log("[v0] Payment completed, calling onSuccess")
+            trace.info("EmbeddedCheckout.onComplete fired")
             onSuccess?.()
           }} />
         </EmbeddedCheckoutProvider>

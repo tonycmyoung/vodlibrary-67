@@ -6,6 +6,7 @@ import { Heart, ExternalLink, CreditCard, Copy, Check } from "lucide-react"
 import { useState, useEffect } from "react"
 import { DonationCheckout } from "@/components/donation-checkout"
 import { createClient } from "@/lib/supabase/client"
+import { trace } from "@/lib/trace"
 
 interface DonationModalProps {
   isOpen: boolean
@@ -29,7 +30,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           setUserEmail(user.email)
         }
       } catch (error) {
-        console.error("[v0] Failed to fetch user email:", error)
+        trace.error("Failed to fetch user email", { payload: { error: String(error) } })
       }
     }
 
@@ -69,7 +70,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutSuccess = () => {
-    console.log("[v0] handleCheckoutSuccess called")
+    trace.info("handleCheckoutSuccess called")
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
