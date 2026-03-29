@@ -1,24 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-// Mock donation products BEFORE importing donations
-vi.mock("@/lib/donation-products", () => ({
-  getDonationPreset: vi.fn((id: string) => {
-    const presets: Record<string, any> = {
-      small: { id: "small", label: "$5", amountCents: 500 },
-      medium: { id: "medium", label: "$10", amountCents: 1000 },
-      large: { id: "large", label: "$50", amountCents: 5000 },
-    }
-    return presets[id] || null
-  }),
-  DONATION_PRESETS: {
-    small: { id: "small", label: "$5", amountCents: 500 },
-    medium: { id: "medium", label: "$10", amountCents: 1000 },
-    large: { id: "large", label: "$50", amountCents: 5000 },
-  },
+// Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
+const { mockCreateSession, mockGetDonationPreset } = vi.hoisted(() => ({
+  mockCreateSession: vi.fn(),
+  mockGetDonationPreset: vi.fn(),
 }))
 
-// Mock Stripe BEFORE importing donations
-const mockCreateSession = vi.fn()
+// Mock Stripe module
 vi.mock("@/lib/stripe", () => ({
   stripe: {
     checkout: {
@@ -30,12 +18,33 @@ vi.mock("@/lib/stripe", () => ({
   getStripe: vi.fn(),
 }))
 
-// NOW import after mocks are set up
+// Mock donation products module
+vi.mock("@/lib/donation-products", () => ({
+  getDonationPreset: mockGetDonationPreset,
+  DONATION_PRESETS: [
+    { id: "donation-5", name: "$5", amountCents: 500 },
+    { id: "donation-10", name: "$10", amountCents: 1000 },
+    { id: "donation-25", name: "$25", amountCents: 2500 },
+    { id: "donation-50", name: "$50", amountCents: 5000 },
+  ],
+}))
+
+// Import after mocks are set up
 import { createDonationCheckout } from "@/lib/actions/donations"
 
 describe("Donation Actions - createDonationCheckout", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset default mock behavior
+    mockGetDonationPreset.mockImplementation((id: string) => {
+      const presets: Record<string, { id: string; name: string; amountCents: number }> = {
+        "donation-5": { id: "donation-5", name: "$5", amountCents: 500 },
+        "donation-10": { id: "donation-10", name: "$10", amountCents: 1000 },
+        "donation-25": { id: "donation-25", name: "$25", amountCents: 2500 },
+        "donation-50": { id: "donation-50", name: "$50", amountCents: 5000 },
+      }
+      return presets[id] || undefined
+    })
   })
 
   describe("with preset ID", () => {
@@ -46,7 +55,7 @@ describe("Donation Actions - createDonationCheckout", () => {
       })
 
       const result = await createDonationCheckout({
-        presetId: "small",
+        presetId: "donation-5",
         email: "donor@example.com",
         returnUrl: "https://example.com/donation/success",
       })
@@ -72,6 +81,8 @@ describe("Donation Actions - createDonationCheckout", () => {
     })
 
     it("should return error for invalid preset", async () => {
+      mockGetDonationPreset.mockReturnValue(undefined)
+
       const result = await createDonationCheckout({
         presetId: "invalid_preset",
         email: "donor@example.com",
