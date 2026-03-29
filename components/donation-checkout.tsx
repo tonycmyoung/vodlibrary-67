@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { loadStripe, Stripe as StripeLib } from "@stripe/js"
+import { loadStripe } from "@stripe/stripe-js"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { createDonationCheckout } from "@/lib/actions/donations"
 import { DONATION_PRESETS } from "@/lib/donation-products"
