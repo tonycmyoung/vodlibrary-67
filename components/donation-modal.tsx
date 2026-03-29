@@ -22,7 +22,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
-    const fetchUserEmail = async () => {
+    if (showSuccess) {
+      trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email: userEmail } })
+    }
+  }, [showSuccess])
       try {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -72,10 +75,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     setShowAmountSelect(true)
   }
 
-  const handleCheckoutSuccess = async () => {
-    trace.info("Payment success - showing thank you screen", { category: "donation" })
-    // Small delay to allow trace fetch to initiate before state changes
-    await new Promise((resolve) => setTimeout(resolve, 100))
+  const handleCheckoutSuccess = () => {
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
