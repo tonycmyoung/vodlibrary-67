@@ -33,8 +33,15 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       throw new Error("Either amount or presetId must be provided")
     }
 
+    console.log("[v0] Creating checkout session with:", {
+      amountInCents,
+      email,
+      returnUrl,
+    })
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      ui_mode: "embedded",
       customer_email: email,
       line_items: [
         {
@@ -43,15 +50,19 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
             product_data: {
               name: "Okinawa Kobudo Library Donation",
               description: `Thank you for supporting the Okinawa Kobudo Library`,
-              images: ["https://images.unsplash.com/photo-1469903622937-723ae69e6d4f?w=400"],
             },
             unit_amount: amountInCents,
           },
           quantity: 1,
         },
       ],
-      success_url: `${returnUrl}?status=success`,
-      cancel_url: `${returnUrl}?status=cancelled`,
+      return_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
+    })
+
+    console.log("[v0] Checkout session created:", {
+      id: session.id,
+      hasClientSecret: !!session.client_secret,
+      url: session.url,
     })
 
     if (!session.client_secret || !session.id) {
