@@ -1,5 +1,5 @@
 -- Diagnostic script to check user record existence and RLS policy issues
--- for acmyau@gmail.com login problem
+-- for a user login problem
 
 -- 1. Check if the user record exists in public.users table
 SELECT 
@@ -11,7 +11,7 @@ SELECT
     created_at
 FROM public.users 
 WHERE id = '92550655-7b39-4b2e-99c8-40b2c1256873'::uuid
-   OR email = 'acmyau@gmail.com';
+   OR email = 'admin@example.com';
 
 -- 2. Check if the user exists in auth.users (system table)
 SELECT 
@@ -21,8 +21,7 @@ SELECT
     email_confirmed_at,
     created_at
 FROM auth.users 
-WHERE id = '92550655-7b39-4b2e-99c8-40b2c1256873'::uuid
-   OR email = 'acmyau@gmail.com';
+WHERE email = 'admin@example.com';
 
 -- 3. Check current RLS policies on users table
 SELECT 

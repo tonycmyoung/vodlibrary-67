@@ -4,9 +4,9 @@
 UPDATE users 
 SET role = 'Admin', 
     updated_at = NOW()
-WHERE email = 'acmyma@gmail.com';
+WHERE email = 'admin@example.com';
 
 -- Verify the update
 SELECT email, role, full_name, is_approved 
 FROM users 
-WHERE email = 'acmyma@gmail.com';
+WHERE email = 'admin@example.com';

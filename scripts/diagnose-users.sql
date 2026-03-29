@@ -9,7 +9,7 @@ SELECT
 FROM users
 ORDER BY created_at DESC;
 
--- Specifically check for the acmyau user
+-- Specifically check for an admin user
 SELECT 
     id,
     email,
@@ -18,7 +18,7 @@ SELECT
     is_approved,
     created_at
 FROM users 
-WHERE email = 'acmyau@gmail.com';
+WHERE email = 'admin@example.com';
 
 -- Check users that should appear in dropdown (approved, not admin)
 SELECT 
@@ -29,4 +29,4 @@ SELECT
     is_approved
 FROM users 
 WHERE is_approved = true 
-AND email != 'acmyma@gmail.com';
+AND role != 'Admin';
