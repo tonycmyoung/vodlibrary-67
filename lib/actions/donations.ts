@@ -33,12 +33,6 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       throw new Error("Either amount or presetId must be provided")
     }
 
-    console.log("[v0] Creating checkout session with:", {
-      amountInCents,
-      email,
-      returnUrl,
-    })
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       ui_mode: "embedded_page",
@@ -57,12 +51,6 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
         },
       ],
       redirect_on_completion: "never",
-    })
-
-    console.log("[v0] Checkout session created:", {
-      id: session.id,
-      hasClientSecret: !!session.client_secret,
-      url: session.url,
     })
 
     if (!session.client_secret || !session.id) {
