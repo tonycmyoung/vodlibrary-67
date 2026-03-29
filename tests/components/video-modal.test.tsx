@@ -164,7 +164,8 @@ describe("VideoModal", () => {
     expect(screen.getByText("Jane Smith")).toBeTruthy()
   })
 
-  it("should update form data when inputs change", () => {
+  it("should update form data when inputs change", async () => {
+    const user = userEvent.setup()
     render(
       <VideoModal
         isOpen={true}

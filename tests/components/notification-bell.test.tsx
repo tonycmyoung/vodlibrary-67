@@ -5,6 +5,7 @@ import NotificationBell from "@/components/notification-bell"
 import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { useRouter } from "next/navigation"
+import { traceError } from "@/lib/trace-logger"
 
 vi.mock("@/lib/supabase/client")
 vi.mock("@/lib/actions")
@@ -12,9 +13,8 @@ vi.mock("next/navigation")
 vi.mock("@/lib/utils/date", () => ({
   formatTimeAgo: (date: string) => "2 hours ago",
 }))
-const mockTraceError = vi.fn()
 vi.mock("@/lib/trace-logger", () => ({
-  traceError: mockTraceError,
+  traceError: vi.fn(),
 }))
 
 const mockPush = vi.fn()
@@ -294,7 +294,7 @@ describe("NotificationBell", () => {
     render(<NotificationBell userId="" />)
 
     await waitFor(() => {
-      expect(mockTraceError).toHaveBeenCalledWith(
+      expect(traceError).toHaveBeenCalledWith(
         expect.stringContaining("Invalid userId"),
         expect.objectContaining({ category: "notifications" })
       )

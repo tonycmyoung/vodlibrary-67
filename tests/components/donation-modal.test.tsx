@@ -14,26 +14,18 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }))
 
-// Create clipboard mock at module level so it can be referenced in tests
-const mockWriteText = vi.fn().mockResolvedValue(undefined)
-const mockClipboard = { writeText: mockWriteText }
-
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
   const testPayId = "test-payid@example.com"
 
   beforeEach(() => {
     mockOnClose.mockClear()
-    mockWriteText.mockClear()
+    // Clear the clipboard mock from setup.ts
+    vi.mocked(navigator.clipboard.writeText).mockClear()
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
-    // Mock navigator.clipboard using stubGlobal
-    vi.stubGlobal("navigator", {
-      ...navigator,
-      clipboard: mockClipboard,
-    })
   })
 
   it("should not render when isOpen is false", () => {
@@ -85,7 +77,7 @@ describe("DonationModal", () => {
     await user.click(copyButton)
 
     await waitFor(() => {
-      expect(mockWriteText).toHaveBeenCalledWith(testPayId)
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testPayId)
     })
   })
 
