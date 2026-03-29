@@ -88,9 +88,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     setShowCheckout(false)
   }
 
+  // Determine modal width based on state
+  const modalWidth = showCheckout || showSuccess ? "sm:max-w-4xl" : "sm:max-w-md"
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${modalWidth} bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />
