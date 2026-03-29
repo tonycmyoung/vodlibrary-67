@@ -1,7 +1,7 @@
 import type React from "react"
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import DonationModal from "@/components/donation-modal"
 
@@ -70,55 +70,67 @@ describe("DonationModal", () => {
   it("should copy PayID to clipboard when copy button is clicked", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
     const originalClipboard = navigator.clipboard
+    
+    // Set up clipboard mock BEFORE render
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
       writable: true,
       configurable: true,
     })
 
-    const user = userEvent.setup()
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    const copyButton = screen.getByTitle(/copy payid/i)
+    try {
+      const user = userEvent.setup()
+      await act(async () => {
+        render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+      })
+      
+      const copyButton = screen.getByTitle(/copy payid/i)
+      await user.click(copyButton)
 
-    await user.click(copyButton)
-
-    await waitFor(() => {
-      expect(writeTextMock).toHaveBeenCalledWith(testPayId)
-    })
-
-    // Restore original clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: originalClipboard,
-      writable: true,
-      configurable: true,
-    })
+      await waitFor(() => {
+        expect(writeTextMock).toHaveBeenCalledWith(testPayId)
+      })
+    } finally {
+      // Restore original clipboard
+      Object.defineProperty(navigator, "clipboard", {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      })
+    }
   })
 
   it("should show check icon after copying", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
     const originalClipboard = navigator.clipboard
+    
+    // Set up clipboard mock BEFORE render
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
       writable: true,
       configurable: true,
     })
 
-    const user = userEvent.setup()
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    const copyButton = screen.getByTitle(/copy payid/i)
+    try {
+      const user = userEvent.setup()
+      await act(async () => {
+        render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+      })
+      
+      const copyButton = screen.getByTitle(/copy payid/i)
+      await user.click(copyButton)
 
-    await user.click(copyButton)
-
-    await waitFor(() => {
-      expect(screen.getByTitle("Copied!")).toBeTruthy()
-    })
-
-    // Restore original clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: originalClipboard,
-      writable: true,
-      configurable: true,
-    })
+      await waitFor(() => {
+        expect(screen.getByTitle("Copied!")).toBeTruthy()
+      })
+    } finally {
+      // Restore original clipboard
+      Object.defineProperty(navigator, "clipboard", {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      })
+    }
   })
 
   it("should call onClose when Maybe Later button is clicked", async () => {
