@@ -16,7 +16,7 @@
     "sonar": "sonar-scanner",
     "start": "next start",
     "test": "vitest",
-    "test:ci": "vitest run --reporter=verbose --coverage",
+    "test:ci": "vitest run --reporter=verbose --coverage 2>&1",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
