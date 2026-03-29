@@ -39,9 +39,10 @@ describe("UnconfirmedEmailUsers", () => {
     })
   })
 
-  it("should render loading state initially", () => {
-    render(<UnconfirmedEmailUsers />)
+  it("should render loading state initially", async () => {
+    const { unmount } = render(<UnconfirmedEmailUsers />)
     expect(screen.getByText("Loading unconfirmed users...")).toBeTruthy()
+    unmount()
   })
 
   it("should render unconfirmed users list after loading", async () => {

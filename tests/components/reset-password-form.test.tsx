@@ -50,7 +50,7 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    render(<ResetPasswordForm />)
+    const { unmount } = render(<ResetPasswordForm />)
 
     // Trigger PASSWORD_RECOVERY event
     if (authStateCallback) {
@@ -64,6 +64,7 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 2000 },
     )
+    unmount()
   })
 
   it("should show form when SIGNED_IN event is triggered with session", async () => {
@@ -76,7 +77,7 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    render(<ResetPasswordForm />)
+    const { unmount } = render(<ResetPasswordForm />)
 
     // Trigger SIGNED_IN event with session
     if (authStateCallback) {
@@ -90,14 +91,16 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 2000 },
     )
+    unmount()
   })
 
-  it("should show loading state initially", () => {
+  it("should show loading state initially", async () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 
-    render(<ResetPasswordForm />)
+    const { unmount } = render(<ResetPasswordForm />)
 
     expect(screen.getByText(/verifying password reset link/i)).toBeTruthy()
+    unmount()
   })
 
   it("should show form when session exists", async () => {

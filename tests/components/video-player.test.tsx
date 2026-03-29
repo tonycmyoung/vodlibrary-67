@@ -61,20 +61,22 @@ describe("VideoPlayer", () => {
     vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any)
   })
 
-  it("should render video title and description", () => {
-    render(<VideoPlayer video={mockVideo} />)
+  it("should render video title and description", async () => {
+    const { unmount } = render(<VideoPlayer video={mockVideo} />)
 
     expect(screen.getByText("Test Video")).toBeTruthy()
     expect(screen.getByText("Test description for video")).toBeTruthy()
+    unmount()
   })
 
-  it("should render video information badges", () => {
-    render(<VideoPlayer video={mockVideo} />)
+  it("should render video information badges", async () => {
+    const { unmount } = render(<VideoPlayer video={mockVideo} />)
 
     expect(screen.getByText("White Belt")).toBeTruthy()
     expect(screen.getByText("Bo")).toBeTruthy()
     expect(screen.getByText("John Doe")).toBeTruthy()
     expect(screen.getByText("Recorded 2023")).toBeTruthy()
+    unmount()
   })
 
   it("should display view count", async () => {
@@ -93,18 +95,20 @@ describe("VideoPlayer", () => {
     })
   })
 
-  it("should convert Google Drive URL to embeddable format", () => {
-    render(<VideoPlayer video={mockVideo} />)
+  it("should convert Google Drive URL to embeddable format", async () => {
+    const { unmount } = render(<VideoPlayer video={mockVideo} />)
 
     const iframe = screen.getByTitle("Test Video")
     expect(iframe).toHaveAttribute("src", expect.stringContaining("drive.google.com/file/d/abc123/preview"))
+    unmount()
   })
 
-  it("should show Back to Library button", () => {
-    render(<VideoPlayer video={mockVideo} />)
+  it("should show Back to Library button", async () => {
+    const { unmount } = render(<VideoPlayer video={mockVideo} />)
 
     const backButton = screen.getByText("Back to Library")
     expect(backButton).toBeTruthy()
+    unmount()
   })
 
   it("should call window.history.back when Back button is clicked", async () => {
@@ -165,30 +169,34 @@ describe("VideoPlayer", () => {
     })
   })
 
-  it("should show No Video Available when video_url is missing", () => {
+  it("should show No Video Available when video_url is missing", async () => {
     const videoWithoutUrl = { ...mockVideo, video_url: "" }
-    render(<VideoPlayer video={videoWithoutUrl} />)
+    const { unmount } = render(<VideoPlayer video={videoWithoutUrl} />)
 
     expect(screen.getByText("No Video Available")).toBeTruthy()
+    unmount()
   })
 
-  it("should render legal notice", () => {
-    render(<VideoPlayer video={mockVideo} />)
+  it("should render legal notice", async () => {
+    const { unmount } = render(<VideoPlayer video={mockVideo} />)
 
     expect(screen.getByText(/Videos are for personal study only/i)).toBeTruthy()
+    unmount()
   })
 
-  it("should not render recorded year when it's null", () => {
+  it("should not render recorded year when it's null", async () => {
     const videoWithoutRecorded = { ...mockVideo, recorded: null }
-    render(<VideoPlayer video={videoWithoutRecorded} />)
+    const { unmount } = render(<VideoPlayer video={videoWithoutRecorded} />)
 
     expect(screen.queryByText("2023")).toBeNull()
+    unmount()
   })
 
-  it("should not render recorded year when it's Unset", () => {
+  it("should not render recorded year when it's Unset", async () => {
     const videoWithUnsetRecorded = { ...mockVideo, recorded: "Unset" }
-    render(<VideoPlayer video={videoWithUnsetRecorded} />)
+    const { unmount } = render(<VideoPlayer video={videoWithUnsetRecorded} />)
 
     expect(screen.queryByText("Unset")).toBeNull()
+    unmount()
   })
 })
