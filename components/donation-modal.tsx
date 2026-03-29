@@ -25,7 +25,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     if (showSuccess) {
       trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email: userEmail } })
     }
-  }, [showSuccess])
+  }, [showSuccess, userEmail])
+
+  useEffect(() => {
+    const fetchUserEmail = async () => {
       try {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
