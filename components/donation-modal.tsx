@@ -14,7 +14,8 @@ interface DonationModalProps {
 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
-  const [showCheckout, setShowCheckout] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)  // true = Stripe form embedded
+  const [showAmountSelect, setShowAmountSelect] = useState(false) // true = amount picker shown
   const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
@@ -53,11 +54,9 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleStripeClick = () => {
-    // If email is already filled from auth, go straight to checkout
     if (userEmail.trim()) {
-      setShowCheckout(true)
+      setShowAmountSelect(true)
     } else {
-      // Otherwise show email input
       setShowEmailInput(true)
     }
   }
@@ -67,18 +66,20 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
       alert("Please enter a valid email address")
       return
     }
-    setShowCheckout(true)
+    setShowAmountSelect(true)
   }
 
   const handleCheckoutSuccess = () => {
     setShowSuccess(true)
     setShowCheckout(false)
+    setShowAmountSelect(false)
     setShowEmailInput(false)
   }
 
   const resetModal = () => {
     setShowSuccess(false)
     setShowCheckout(false)
+    setShowAmountSelect(false)
     setShowEmailInput(false)
     setUserEmail("")
     onClose()
@@ -86,10 +87,11 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
   const handleCheckoutCancel = () => {
     setShowCheckout(false)
+    setShowAmountSelect(false)
   }
 
-  // Determine modal width based on state
-  const modalWidth = showCheckout || showSuccess ? "sm:max-w-4xl" : "sm:max-w-md"
+  // Only go wide when the Stripe form is actually embedded
+  const modalWidth = showCheckout || showSuccess ? "sm:max-w-3xl" : "sm:max-w-md"
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -123,7 +125,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         ) : (
           <>
             {/* Initial options view - single column */}
-            {!showCheckout && !showEmailInput && !showSuccess && (
+            {!showAmountSelect && !showEmailInput && !showSuccess && (
               <div className="space-y-4 py-4">
                 <div className="text-center space-y-4">
                   <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
@@ -227,17 +229,40 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
               </div>
             )}
 
-            {/* Checkout view - two column */}
-            {showCheckout && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4">
-                <div className="flex items-center justify-center text-center">
-                  <p className="text-gray-400">Finalizing payment details...</p>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-4">
+            {/* Amount select + Stripe form: single DonationCheckout instance throughout.
+                When showCheckout=false it shows the amount picker (narrow).
+                When showCheckout=true the modal goes wide and the donation text appears
+                on the left while the same component instance shows the embedded form on the right. */}
+            {showAmountSelect && (
+              <div className={showCheckout ? "grid grid-cols-1 lg:grid-cols-2 gap-6 py-4" : "py-4"}>
+                {/* Left context panel - only visible once Stripe form is embedded */}
+                {showCheckout && (
+                  <div className="flex flex-col justify-center space-y-6">
+                    <div className="text-center space-y-3">
+                      <Heart className="h-10 w-10 text-red-500 mx-auto" />
+                      <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
+                      <p className="text-gray-300 leading-relaxed">
+                        Creating and running this site comes with yearly costs for domains, maintenance and hosting.
+                      </p>
+                      <p className="text-gray-300 leading-relaxed">Anything you&apos;d be willing to donate is appreciated.</p>
+                      <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={handleCheckoutCancel}
+                      className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+                    >
+                      Back
+                    </Button>
+                  </div>
+                )}
+                {/* Single DonationCheckout instance - persists through amount select and embedded form */}
+                <div className={showCheckout ? "rounded-lg overflow-hidden" : ""}>
                   <DonationCheckout
                     email={userEmail}
                     onSuccess={handleCheckoutSuccess}
                     onCancel={handleCheckoutCancel}
+                    onCheckoutReady={() => setShowCheckout(true)}
                   />
                 </div>
               </div>

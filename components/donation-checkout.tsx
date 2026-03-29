@@ -15,9 +15,10 @@ interface DonationCheckoutProps {
   email: string
   onSuccess?: () => void
   onCancel?: () => void
+  onCheckoutReady?: () => void
 }
 
-export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckoutProps) {
+export function DonationCheckout({ email, onSuccess, onCancel, onCheckoutReady }: DonationCheckoutProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>("donation-10")
   const [customAmount, setCustomAmount] = useState<string>("")
   const [useCustom, setUseCustom] = useState(false)
@@ -59,6 +60,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       }
 
       setClientSecret(result.clientSecret)
+      onCheckoutReady?.()
     } catch (err) {
       console.error("[v0] Checkout error:", err)
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -68,7 +70,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
 
   if (clientSecret) {
     return (
-      <div className="space-y-4">
+      <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
           <EmbeddedCheckout onComplete={() => onSuccess?.()} />
         </EmbeddedCheckoutProvider>
