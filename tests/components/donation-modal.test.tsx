@@ -69,62 +69,44 @@ describe("DonationModal", () => {
 
   it("should copy PayID to clipboard when copy button is clicked", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
-    const originalClipboard = navigator.clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText: writeTextMock },
-      writable: true,
-      configurable: true,
+    
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: writeTextMock },
     })
 
     const user = userEvent.setup()
-    await act(async () => {
-      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    })
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    await act(async () => {
-      await user.click(copyButton)
+    await user.click(copyButton)
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledWith(testPayId)
     })
 
-    expect(writeTextMock).toHaveBeenCalledWith(testPayId)
-
-    // Restore original clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: originalClipboard,
-      writable: true,
-      configurable: true,
-    })
+    vi.unstubAllGlobals()
   })
 
   it("should show check icon after copying", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined)
-    const originalClipboard = navigator.clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText: writeTextMock },
-      writable: true,
-      configurable: true,
+    
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: writeTextMock },
     })
 
     const user = userEvent.setup()
-    await act(async () => {
-      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    })
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
 
-    await act(async () => {
-      await user.click(copyButton)
-    })
+    await user.click(copyButton)
 
     await waitFor(() => {
       expect(screen.getByTitle("Copied!")).toBeTruthy()
     })
 
-    // Restore original clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: originalClipboard,
-      writable: true,
-      configurable: true,
-    })
+    vi.unstubAllGlobals()
   })
 
   it("should call onClose when Maybe Later button is clicked", async () => {
