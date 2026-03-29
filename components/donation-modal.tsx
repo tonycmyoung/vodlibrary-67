@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Heart, ExternalLink, CreditCard, Copy, Check } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { DonationCheckout } from "@/components/donation-checkout"
 import { createClient } from "@/lib/supabase/client"
 import { trace } from "@/lib/trace"
@@ -13,20 +13,43 @@ interface DonationModalProps {
   onClose: () => void
 }
 
+// Separate component that traces on mount - guaranteed to fire when rendered
+function SuccessScreen({ email, onClose }: { email: string; onClose: () => void }) {
+  useEffect(() => {
+    trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email } })
+  }, [email])
+
+  return (
+    <div className="py-8 text-center space-y-4">
+      <div className="flex justify-center mb-6">
+        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+          <Check className="w-8 h-8 text-green-500" />
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-white">Thank You!</h2>
+      <p className="text-gray-300 leading-relaxed">
+        Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library.
+      </p>
+      <p className="text-gray-400 text-sm">
+        A receipt has been sent to {email}
+      </p>
+      <Button
+        onClick={onClose}
+        className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+      >
+        Close
+      </Button>
+    </div>
+  )
+}
+
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
   const [showAmountSelect, setShowAmountSelect] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
-  const userEmailRef = useRef("")
   const [showEmailInput, setShowEmailInput] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
-
-  useEffect(() => {
-    if (showSuccess) {
-      trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email: userEmailRef.current } })
-    }
-  }, [showSuccess])
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -35,7 +58,6 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.email) {
           setUserEmail(user.email)
-          userEmailRef.current = user.email
         }
       } catch (error) {
         trace.error("Failed to fetch user email", { category: "donation", payload: { error: String(error) } })
@@ -113,26 +135,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {showSuccess ? (
-            <div className="py-8 text-center space-y-4">
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Check className="w-8 h-8 text-green-500" />
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold text-white">Thank You!</h2>
-              <p className="text-gray-300 leading-relaxed">
-                Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library.
-              </p>
-              <p className="text-gray-400 text-sm">
-                A receipt has been sent to {userEmail}
-              </p>
-              <Button
-                onClick={resetModal}
-                className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                Close
-              </Button>
-            </div>
+            <SuccessScreen email={userEmail} onClose={resetModal} />
           ) : (
             <>
               {/* Initial options view */}
