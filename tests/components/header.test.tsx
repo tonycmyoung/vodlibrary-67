@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import Header from "@/components/header"
 
@@ -245,22 +245,24 @@ describe("Header", () => {
     }
   })
 
-  it("should toggle mobile menu when hamburger is clicked", () => {
+  it("should toggle mobile menu when hamburger is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Mobile menu should now be visible with navigation links
     const mobileNav = screen.getAllByText("Library")
     expect(mobileNav.length).toBeGreaterThan(1) // Both desktop and mobile versions
   })
 
-  it("should close mobile menu after clicking a link", () => {
+  it("should close mobile menu after clicking a link", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Verify mobile menu is open
     const mobileLinks = screen.getAllByText("Library")
@@ -268,7 +270,7 @@ describe("Header", () => {
 
     // Click a mobile link
     const libraryLink = mobileLinks[mobileLinks.length - 1] // Get the mobile version
-    fireEvent.click(libraryLink)
+    await user.click(libraryLink)
 
     // Mobile menu should close - verify we're back to just the desktop link
     const linksAfterClose = screen.getAllByText("Library")
@@ -318,19 +320,20 @@ describe("Header", () => {
     expect(notificationBell).toBeTruthy()
   })
 
-  it("should close mobile menu when clicking mobile menu links", () => {
+  it("should close mobile menu when clicking mobile menu links", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     // Open mobile menu
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Verify mobile menu is visible
     const libraryLinks = screen.getAllByText("Library")
     expect(libraryLinks.length).toBeGreaterThan(1)
 
     // Click a mobile link (the last one is the mobile version)
-    fireEvent.click(libraryLinks[libraryLinks.length - 1])
+    await user.click(libraryLinks[libraryLinks.length - 1])
 
     // Mobile menu should close
     const linksAfterClose = screen.getAllByText("Library")
@@ -384,113 +387,121 @@ describe("Header", () => {
   })
 
   describe("Mobile Menu Navigation Links", () => {
-    it("should show My Level in mobile menu when user has belt", () => {
+    it("should show My Level in mobile menu when user has belt", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       const myLevelLinks = screen.getAllByText("My Level")
       expect(myLevelLinks.length).toBe(2) // Desktop and mobile versions
     })
 
-    it("should not show My Level in mobile menu when user has no belt", () => {
+    it("should not show My Level in mobile menu when user has no belt", async () => {
+      const user = userEvent.setup()
       const userWithoutBelt = { ...mockUser, current_belt: null }
       render(<Header user={userWithoutBelt} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       expect(screen.queryByText("My Level")).toBeNull()
     })
 
-    it("should show Students link in mobile menu for teachers", () => {
+    it("should show Students link in mobile menu for teachers", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       const studentsLinks = screen.getAllByText("Students")
       expect(studentsLinks.length).toBe(2) // Desktop and mobile versions
     })
 
-    it("should show Invite User link in mobile menu for teachers", () => {
+    it("should show Invite User link in mobile menu for teachers", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       // Mobile menu shows "Invite User" as a link
       const inviteLinks = screen.getAllByText("Invite User")
       expect(inviteLinks.length).toBeGreaterThan(0)
     })
 
-    it("should close mobile menu when Favorites link is clicked", () => {
+    it("should close mobile menu when Favorites link is clicked", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       // Get mobile favorites link
       const favoritesLinks = screen.getAllByText("Favorites")
       expect(favoritesLinks.length).toBeGreaterThan(1)
 
       // Click the mobile version (last one)
-      fireEvent.click(favoritesLinks[favoritesLinks.length - 1])
+      await user.click(favoritesLinks[favoritesLinks.length - 1])
 
       // Menu should close
       const linksAfterClose = screen.getAllByText("Favorites")
       expect(linksAfterClose.length).toBe(1)
     })
 
-    it("should close mobile menu when My Level link is clicked", () => {
+    it("should close mobile menu when My Level link is clicked", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       const myLevelLinks = screen.getAllByText("My Level")
       expect(myLevelLinks.length).toBe(2)
 
       // Click the mobile version
-      fireEvent.click(myLevelLinks[myLevelLinks.length - 1])
+      await user.click(myLevelLinks[myLevelLinks.length - 1])
 
       // Menu should close
       const linksAfterClose = screen.getAllByText("My Level")
       expect(linksAfterClose.length).toBe(1)
     })
 
-    it("should close mobile menu when Students link is clicked for teacher", () => {
+    it("should close mobile menu when Students link is clicked for teacher", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       const studentsLinks = screen.getAllByText("Students")
       expect(studentsLinks.length).toBe(2)
 
       // Click the mobile version
-      fireEvent.click(studentsLinks[studentsLinks.length - 1])
+      await user.click(studentsLinks[studentsLinks.length - 1])
 
       // Menu should close
       const linksAfterClose = screen.getAllByText("Students")
       expect(linksAfterClose.length).toBe(1)
     })
 
-    it("should close mobile menu when Sign Out link is clicked", () => {
+    it("should close mobile menu when Sign Out link is clicked", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
-      fireEvent.click(hamburgerButton)
+      await user.click(hamburgerButton)
 
       const signOutLinks = screen.getAllByText("Sign Out")
       expect(signOutLinks.length).toBeGreaterThan(0)
 
       // Click the mobile version
-      fireEvent.click(signOutLinks[signOutLinks.length - 1])
+      await user.click(signOutLinks[signOutLinks.length - 1])
 
       // Menu should close - only dropdown version remains (not visible until opened)
       const linksAfterClose = screen.queryAllByText("Sign Out")

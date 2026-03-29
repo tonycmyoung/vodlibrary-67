@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, act } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import ResetPasswordForm from "@/components/reset-password-form"
 
 // Mock Supabase client
@@ -49,12 +50,18 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     // Trigger PASSWORD_RECOVERY event
-    if (authStateCallback) {
-      authStateCallback("PASSWORD_RECOVERY", null)
-    }
+    await act(async () => {
+      if (authStateCallback) {
+        authStateCallback("PASSWORD_RECOVERY", null)
+      }
+    })
 
     await waitFor(
       () => {
@@ -63,6 +70,7 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 2000 },
     )
+    unmount()
   })
 
   it("should show form when SIGNED_IN event is triggered with session", async () => {
@@ -75,12 +83,18 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     // Trigger SIGNED_IN event with session
-    if (authStateCallback) {
-      authStateCallback("SIGNED_IN", { user: { id: "user-123" } })
-    }
+    await act(async () => {
+      if (authStateCallback) {
+        authStateCallback("SIGNED_IN", { user: { id: "user-123" } })
+      }
+    })
 
     await waitFor(
       () => {
@@ -89,14 +103,20 @@ describe("ResetPasswordForm", () => {
       },
       { timeout: 2000 },
     )
+    unmount()
   })
 
-  it("should show loading state initially", () => {
+  it("should show loading state initially", async () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 
-    render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     expect(screen.getByText(/verifying password reset link/i)).toBeTruthy()
+    unmount!()
   })
 
   it("should show form when session exists", async () => {
@@ -134,6 +154,7 @@ describe("ResetPasswordForm", () => {
   }, 10000) // Add test timeout as parameter to it() function
 
   it("should toggle password visibility", async () => {
+    const user = userEvent.setup()
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "user-123" } } },
       error: null,
@@ -141,13 +162,13 @@ describe("ResetPasswordForm", () => {
 
     render(<ResetPasswordForm />)
 
-    await waitFor(() => {
+    await waitFor(async () => {
       const passwordInput = screen.getByLabelText("New Password") as HTMLInputElement
       expect(passwordInput.type).toBe("password")
 
       const toggleButton = passwordInput.parentElement?.querySelector("button")
       if (toggleButton) {
-        fireEvent.click(toggleButton)
+        await user.click(toggleButton)
         expect(passwordInput.type).toBe("text")
       }
     })
@@ -173,6 +194,7 @@ describe("ResetPasswordForm", () => {
   })
 
   it("should update validation when password is entered", async () => {
+    const user = userEvent.setup()
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "user-123" } } },
       error: null,
@@ -182,7 +204,7 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(async () => {
       const passwordInput = screen.getByLabelText("New Password") as HTMLInputElement
-      fireEvent.change(passwordInput, { target: { value: "password123" } })
+      await user.type(passwordInput, "password123")
 
       const minLengthIndicator = screen.getByText(/at least 8 characters/i)
       // Verify the indicator has the success color class

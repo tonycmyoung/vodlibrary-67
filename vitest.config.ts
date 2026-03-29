@@ -6,8 +6,21 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        resources: "usable",
+      },
+    },
     setupFiles: ["./tests/setup.ts"],
     globals: true,
+    threads: {
+      singleThread: false,
+    },
+    poolOptions: {
+      threads: {
+        singleThread: false,
+      },
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],

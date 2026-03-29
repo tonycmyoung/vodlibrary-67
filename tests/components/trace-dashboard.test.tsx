@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { render, screen, waitFor, within, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import TraceDashboard from "@/components/trace-dashboard"
 import * as traceActions from "@/lib/actions/trace"
@@ -451,10 +451,10 @@ describe("TraceDashboard", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     
-    render(<TraceDashboard />)
+    const { unmount } = render(<TraceDashboard />)
 
-    // Wait for initial load
-    await vi.waitFor(() => {
+    // Wait for initial load using RTL's waitFor (not vi.waitFor)
+    await waitFor(() => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
@@ -465,11 +465,15 @@ describe("TraceDashboard", () => {
     const autoRefreshSwitch = screen.getByRole("switch", { name: /auto-refresh/i })
     await user.click(autoRefreshSwitch)
 
-    // Advance time by 5 seconds and allow timers to run
-    await vi.advanceTimersByTimeAsync(5500)
+    // Advance time by 5 seconds and allow timers to run - wrap in act() for state updates
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5500)
+    })
 
     expect(traceActions.fetchTraceLogs).toHaveBeenCalledTimes(2)
 
+    // Clean up before restoring timers to prevent act() warnings
+    unmount()
     vi.useRealTimers()
   })
 })

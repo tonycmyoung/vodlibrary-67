@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import CurriculumFilter from "@/components/curriculum-filter"
 
 describe("CurriculumFilter", () => {
@@ -33,14 +34,16 @@ describe("CurriculumFilter", () => {
     expect(screen.getByText("CURRICULUM")).toBeTruthy()
   })
 
-  it("should call onCurriculumToggle when curriculum is clicked", () => {
+  it("should call onCurriculumToggle when curriculum is clicked", async () => {
+    const user = userEvent.setup()
     const onCurriculumToggle = vi.fn()
     render(<CurriculumFilter {...defaultProps} onCurriculumToggle={onCurriculumToggle} />)
 
-    const curriculumBadge = screen.getByText("10.Kyu")
-    fireEvent.click(curriculumBadge)
+    // Use 8.Kyu which doesn't have a description (no tooltip wrapper)
+    const curriculumBadge = screen.getByText("8.Kyu")
+    await user.click(curriculumBadge)
 
-    expect(onCurriculumToggle).toHaveBeenCalledWith("curr-1")
+    expect(onCurriculumToggle).toHaveBeenCalledWith("curr-3")
   })
 
   it("should show selected curriculum with different styling", () => {

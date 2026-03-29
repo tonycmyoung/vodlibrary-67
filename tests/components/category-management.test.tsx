@@ -72,9 +72,11 @@ describe("CategoryManagement", () => {
     } as any)
   })
 
-  it("should render loading state initially", () => {
-    render(<CategoryManagement />)
+  it("should render loading state initially", async () => {
+    const { unmount } = render(<CategoryManagement />)
     expect(screen.getByText("Loading categories...")).toBeTruthy()
+    // Unmount to prevent act() warnings from pending async operations
+    unmount()
   })
 
   it("should render categories after loading", async () => {

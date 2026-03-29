@@ -1,7 +1,8 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { useRouter, useSearchParams } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import { createClient } from "@/lib/supabase/client"
@@ -384,6 +385,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle category toggle and update URL", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -391,7 +393,7 @@ describe("VideoLibrary", () => {
       })
 
       const toggleButton = screen.getByText("Toggle Category")
-      fireEvent.click(toggleButton)
+      await user.click(toggleButton)
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")
@@ -475,6 +477,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle sort change", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -483,7 +486,7 @@ describe("VideoLibrary", () => {
       })
 
       const sortButton = screen.getAllByTestId("sort-by-button")[0]
-      fireEvent.click(sortButton)
+      await user.click(sortButton)
 
       await waitFor(() => {
         const currentSort = screen.getAllByTestId("current-sort")[0]
@@ -492,6 +495,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle sort order change", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -500,7 +504,7 @@ describe("VideoLibrary", () => {
       })
 
       const orderButton = screen.getAllByTestId("sort-order-button")[0]
-      fireEvent.click(orderButton)
+      await user.click(orderButton)
 
       // Verify the current sort display updates
       await waitFor(() => {
@@ -598,6 +602,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle view change to list", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -605,7 +610,7 @@ describe("VideoLibrary", () => {
       })
 
       const listButton = screen.getAllByText("List")[0]
-      fireEvent.click(listButton)
+      await user.click(listButton)
 
       await waitFor(() => {
         expect(screen.getByText("Current: list")).toBeTruthy()
@@ -766,6 +771,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should include curriculum filters when toggling category filter", async () => {
+      const user = userEvent.setup()
       // Start with curriculum filter in URL
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["curr-1"])
@@ -781,7 +787,7 @@ describe("VideoLibrary", () => {
 
       // Toggle a category filter (adding cat-1 to existing curr-1)
       const toggleCategoryButton = screen.getByText("Toggle Category")
-      fireEvent.click(toggleCategoryButton)
+      await user.click(toggleCategoryButton)
 
       // After click, filters should show 2 (curr-1 + cat-1)
       await waitFor(() => {
@@ -800,6 +806,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should include category filters when toggling curriculum filter", async () => {
+      const user = userEvent.setup()
       // Start with category filter in URL
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["cat-1"])
@@ -815,7 +822,7 @@ describe("VideoLibrary", () => {
 
       // Toggle a curriculum filter (adding curr-1 to existing cat-1)
       const toggleCurriculumButton = screen.getByText("Toggle Curriculum")
-      fireEvent.click(toggleCurriculumButton)
+      await user.click(toggleCurriculumButton)
 
       // After click, filters should show 2 (cat-1 + curr-1)
       await waitFor(() => {
@@ -837,6 +844,7 @@ describe("VideoLibrary", () => {
 
   describe("Custom Storage Prefix", () => {
     it("should use custom storage prefix when provided", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary storagePrefix="customLibrary" />)
 
       await waitFor(() => {
@@ -844,7 +852,7 @@ describe("VideoLibrary", () => {
       })
 
       const listButton = screen.getAllByText("List")[0]
-      fireEvent.click(listButton)
+      await user.click(listButton)
 
       await waitFor(() => {
         expect(localStorage.setItem).toHaveBeenCalledWith("customLibraryView", "list")
@@ -852,6 +860,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should use favoritesLibrary prefix when favoritesOnly is true", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary favoritesOnly={true} />)
 
       await waitFor(() => {
@@ -859,7 +868,7 @@ describe("VideoLibrary", () => {
       })
 
       const listButton = screen.getAllByText("List")[0]
-      fireEvent.click(listButton)
+      await user.click(listButton)
 
       await waitFor(() => {
         expect(localStorage.setItem).toHaveBeenCalledWith("favoritesLibraryView", "list")
@@ -869,6 +878,7 @@ describe("VideoLibrary", () => {
 
   describe("View Change Handling", () => {
     it("should handle view change to list view", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -876,7 +886,7 @@ describe("VideoLibrary", () => {
       })
 
       const listButton = screen.getAllByText("List")[0]
-      fireEvent.click(listButton)
+      await user.click(listButton)
 
       await waitFor(() => {
         expect(screen.getAllByTestId("video-list").length).toBeGreaterThan(0)
@@ -1029,6 +1039,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle filter mode change from AND to OR", async () => {
+      const user = userEvent.setup()
       // Start with AND mode and multiple filters
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["cat-1"])
@@ -1045,9 +1056,7 @@ describe("VideoLibrary", () => {
 
       // Toggle curriculum to have multiple filters
       const curriculumToggle = screen.getByText("Toggle Curriculum")
-      await act(async () => {
-        fireEvent.click(curriculumToggle)
-      })
+      await user.click(curriculumToggle)
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")
@@ -1212,6 +1221,7 @@ describe("VideoLibrary", () => {
 
   describe("Curriculum Toggle", () => {
     it("should handle curriculum toggle and update selected curriculums", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -1219,7 +1229,7 @@ describe("VideoLibrary", () => {
       })
 
       const toggleButton = screen.getByText("Toggle Curriculum")
-      fireEvent.click(toggleButton)
+      await user.click(toggleButton)
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 1")

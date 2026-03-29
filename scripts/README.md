@@ -20,7 +20,7 @@ This folder contains **working and diagnostic scripts** for development and debu
 
 ## Usage Example
 
-```bash
+\`\`\`bash
 # Temporary work (won't be committed)
 psql -d $DATABASE_URL -f scripts/temp-quick-test.sql
 
@@ -29,7 +29,7 @@ psql -d $DATABASE_URL -f scripts/diagnose-rls-policies.sql
 
 # Performance analysis
 node scripts/analyze-performance.js
-```
+\`\`\`
 
 ## Files in This Folder
 

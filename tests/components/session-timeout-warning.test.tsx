@@ -1,6 +1,7 @@
 import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import SessionTimeoutWarning from "@/components/session-timeout-warning"
 
 // Mock Supabase client
@@ -99,6 +100,7 @@ describe("SessionTimeoutWarning", () => {
   })
 
   it("should call refreshSession when Extend Session is clicked", async () => {
+    const user = userEvent.setup()
     const futureTime = Math.floor(Date.now() / 1000) + 200
     mockGetSession.mockResolvedValue({
       data: { session: { expires_at: futureTime } },
@@ -112,9 +114,9 @@ describe("SessionTimeoutWarning", () => {
     render(<SessionTimeoutWarning userId="user-123" />)
 
     await waitFor(
-      () => {
+      async () => {
         const extendButton = screen.getByRole("button", { name: /extend session/i })
-        fireEvent.click(extendButton)
+        await user.click(extendButton)
 
         expect(mockRefreshSession).toHaveBeenCalled()
       },
@@ -123,6 +125,7 @@ describe("SessionTimeoutWarning", () => {
   })
 
   it("should hide warning after successful refresh", async () => {
+    const user = userEvent.setup()
     const futureTime = Math.floor(Date.now() / 1000) + 200
     mockGetSession
       .mockResolvedValueOnce({
@@ -143,7 +146,7 @@ describe("SessionTimeoutWarning", () => {
     await waitFor(
       async () => {
         const extendButton = screen.getByRole("button", { name: /extend session/i })
-        fireEvent.click(extendButton)
+        await user.click(extendButton)
 
         await waitFor(() => {
           expect(screen.queryByTestId("dialog")).toBeNull()

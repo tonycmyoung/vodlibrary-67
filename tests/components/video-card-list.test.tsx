@@ -1,8 +1,9 @@
 import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import VideoCardList from "@/components/video-card-list"
+import { createClient } from "@/lib/supabase/client"
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -11,8 +12,6 @@ vi.mock("@/lib/supabase/client", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
 }))
-
-const { createClient } = await import("@/lib/supabase/client")
 
 describe("VideoCardList", () => {
   const mockVideo = {
@@ -49,68 +48,88 @@ describe("VideoCardList", () => {
     vi.mocked(createClient).mockReturnValue(mockSupabase as any)
   })
 
-  it("should render video title and description", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render video title and description", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     expect(screen.getByText("Test Video")).toBeTruthy()
     expect(screen.getByText("Test Description")).toBeTruthy()
   })
 
-  it("should render thumbnail image", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render thumbnail image", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     const img = screen.getByAltText("Test Video")
     expect(img).toHaveAttribute("src", "https://example.com/thumb.jpg")
   })
 
-  it("should render duration badge", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render duration badge", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     expect(screen.getByText("5:00")).toBeTruthy()
   })
 
-  it("should render categories and performers", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render categories and performers", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     expect(screen.getByText("Category 1")).toBeTruthy()
     expect(screen.getByText("Performer 1")).toBeTruthy()
   })
 
-  it("should render recorded date when not Unset", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render recorded date when not Unset", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     expect(screen.getByText("2024-01-01")).toBeTruthy()
   })
 
-  it("should not render recorded badge when Unset", () => {
+  it("should not render recorded badge when Unset", async () => {
     const videoWithoutRecorded = { ...mockVideo, recorded: "Unset" }
-    render(<VideoCardList video={videoWithoutRecorded} />)
+    await act(async () => {
+      render(<VideoCardList video={videoWithoutRecorded} />)
+    })
 
     const badges = screen.queryAllByText("Unset")
     expect(badges.length).toBe(0)
   })
 
-  it("should display view count", () => {
-    render(<VideoCardList video={mockVideo} viewCount={150} />)
+  it("should display view count", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} viewCount={150} />)
+    })
 
     expect(screen.getByText("150 views")).toBeTruthy()
   })
 
-  it("should use video.views when viewCount not provided", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should use video.views when viewCount not provided", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     expect(screen.getByText("100 views")).toBeTruthy()
   })
 
-  it("should render favorite button", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render favorite button", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     const favoriteButton = screen.getByRole("button")
     expect(favoriteButton).toBeTruthy()
   })
 
-  it("should show filled heart when favorited", () => {
-    render(<VideoCardList video={mockVideo} isFavorited={true} />)
+  it("should show filled heart when favorited", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} isFavorited={true} />)
+    })
 
     const heart = screen.getByRole("button").querySelector("svg")
     expect(heart).toHaveClass("fill-red-500")
@@ -119,7 +138,9 @@ describe("VideoCardList", () => {
   it("should toggle favorite when button clicked", async () => {
     const user = userEvent.setup()
     const onFavoriteToggle = vi.fn()
-    render(<VideoCardList video={mockVideo} isFavorited={false} onFavoriteToggle={onFavoriteToggle} />)
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} isFavorited={false} onFavoriteToggle={onFavoriteToggle} />)
+    })
 
     const favoriteButton = screen.getByRole("button")
     await user.click(favoriteButton)
@@ -127,16 +148,20 @@ describe("VideoCardList", () => {
     expect(onFavoriteToggle).toHaveBeenCalledWith("video-1", true)
   })
 
-  it("should format duration as Unknown when null", () => {
+  it("should format duration as Unknown when null", async () => {
     const videoWithoutDuration = { ...mockVideo, duration_seconds: null }
-    render(<VideoCardList video={videoWithoutDuration} />)
+    await act(async () => {
+      render(<VideoCardList video={videoWithoutDuration} />)
+    })
 
     // Duration badge should not render when duration is null
     expect(screen.queryByText("Unknown")).toBeNull()
   })
 
-  it("should render link to video page", () => {
-    render(<VideoCardList video={mockVideo} />)
+  it("should render link to video page", async () => {
+    await act(async () => {
+      render(<VideoCardList video={mockVideo} />)
+    })
 
     const link = screen.getByRole("link")
     expect(link).toHaveAttribute("href", "/video/video-1")

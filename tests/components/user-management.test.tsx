@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import UserManagement from "@/components/user-management"
 import { createClient } from "@/lib/supabase/client"
-import { deleteUserCompletely, updateUserFields, adminResetUserPassword } from "@/lib/actions"
+import { deleteUserCompletely, updateUserFields, adminResetUserPassword, fetchUsers } from "@/lib/actions"
 import { useRouter, useSearchParams } from "next/navigation"
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -14,6 +14,7 @@ vi.mock("@/lib/actions", () => ({
   deleteUserCompletely: vi.fn(),
   updateUserFields: vi.fn(),
   adminResetUserPassword: vi.fn(),
+  fetchUsers: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -137,9 +138,15 @@ describe("UserManagement", () => {
     vi.mocked(createClient).mockReturnValue({ from: mockFrom } as any)
   })
 
-  it("should render loading state initially", () => {
-    render(<UserManagement />)
+  it("should render loading state initially", async () => {
+    // Use a never-resolving promise to keep component in loading state
+    vi.mocked(fetchUsers).mockReturnValue(new Promise(() => {}))
+    
+    const { unmount } = render(<UserManagement />)
     expect(screen.getByText("Loading users...")).toBeTruthy()
+    
+    // Unmount before the promise resolves to prevent act() warnings
+    unmount()
   })
 
   it("should render user list after loading", async () => {

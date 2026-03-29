@@ -40,9 +40,11 @@ describe("CurriculumManagement", () => {
     vi.mocked(curriculumActions.getCurriculums).mockResolvedValue(mockCurriculums)
   })
 
-  it("should render loading state initially", () => {
-    render(<CurriculumManagement />)
+  it("should render loading state initially", async () => {
+    const { unmount } = render(<CurriculumManagement />)
     expect(screen.getByText("Loading curriculums...")).toBeTruthy()
+    // Unmount to prevent act() warnings from pending async operations
+    unmount()
   })
 
   it("should render curriculum list after loading", async () => {

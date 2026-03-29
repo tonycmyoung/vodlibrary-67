@@ -129,10 +129,15 @@ describe("StudentManagement", () => {
     vi.mocked(fetchStudentsForHeadTeacher).mockResolvedValue({ data: mockStudents, error: null })
   })
 
-  it("should render loading state initially", () => {
+  it("should render loading state initially", async () => {
+    // Use a never-resolving promise to keep component in loading state
     vi.mocked(fetchStudentsForHeadTeacher).mockReturnValue(new Promise(() => {}))
-    render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+    
+    const { unmount } = render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
     expect(screen.getByText("Loading students...")).toBeTruthy()
+    
+    // Unmount before the promise resolves to prevent act() warnings
+    unmount()
   })
 
   it("should render student list after loading", async () => {

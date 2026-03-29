@@ -5,6 +5,7 @@ import NotificationBell from "@/components/notification-bell"
 import { createClient } from "@/lib/supabase/client"
 import { fetchNotificationsWithSenders } from "@/lib/actions"
 import { useRouter } from "next/navigation"
+import { traceError } from "@/lib/trace-logger"
 
 vi.mock("@/lib/supabase/client")
 vi.mock("@/lib/actions")
@@ -78,9 +79,10 @@ describe("NotificationBell", () => {
     } as any)
   })
 
-  it("should render notification bell button", () => {
-    render(<NotificationBell userId="user-123" />)
+  it("should render notification bell button", async () => {
+    const { unmount } = render(<NotificationBell userId="user-123" />)
     expect(screen.getByRole("button")).toBeTruthy()
+    unmount()
   })
 
   it("should display unread count badge", async () => {
@@ -277,21 +279,21 @@ describe("NotificationBell", () => {
     expect(mockPush).toHaveBeenCalledWith("/contact")
   })
 
-  it("should display purple badge for admin users", () => {
-    render(<NotificationBell userId="user-123" isAdmin={true} />)
+  it("should display purple badge for admin users", async () => {
+    const { unmount } = render(<NotificationBell userId="user-123" isAdmin={true} />)
     const button = screen.getByRole("button")
     expect(button).toHaveClass("hover:ring-purple-500/50")
+    unmount()
   })
 
-  it("should display red badge for regular users", () => {
-    render(<NotificationBell userId="user-123" isAdmin={false} />)
+  it("should display red badge for regular users", async () => {
+    const { unmount } = render(<NotificationBell userId="user-123" isAdmin={false} />)
     const button = screen.getByRole("button")
     expect(button).toHaveClass("hover:ring-yellow-400/50")
+    unmount()
   })
 
   it("should not fetch notifications with invalid userId", async () => {
-    const { traceError } = await import("@/lib/trace-logger")
-
     render(<NotificationBell userId="" />)
 
     await waitFor(() => {

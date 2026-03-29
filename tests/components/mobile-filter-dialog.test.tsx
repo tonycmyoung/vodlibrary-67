@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, within } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import MobileFilterDialog from "@/components/mobile-filter-dialog"
 
 // Mock Dialog components from shadcn/ui
@@ -146,7 +147,8 @@ describe("MobileFilterDialog", () => {
       expect(screen.getByText(/Filter mode/i)).toBeTruthy()
     })
 
-    it("should call onFilterModeChange when toggling filter mode", () => {
+    it("should call onFilterModeChange when toggling filter mode", async () => {
+      const user = userEvent.setup()
       render(
         <MobileFilterDialog
           {...defaultProps}
@@ -156,27 +158,29 @@ describe("MobileFilterDialog", () => {
       )
 
       const andButton = screen.getByText("AND")
-      fireEvent.click(andButton)
+      await user.click(andButton)
 
       expect(defaultProps.onFilterModeChange).toHaveBeenCalledWith("AND")
     })
   })
 
   describe("Apply Filters", () => {
-    it("should call setShowMobileFilters when Apply Filters button is clicked", () => {
+    it("should call setShowMobileFilters when Apply Filters button is clicked", async () => {
+      const user = userEvent.setup()
       render(<MobileFilterDialog {...defaultProps} />)
 
       const applyButton = screen.getByText("Apply Filters")
-      fireEvent.click(applyButton)
+      await user.click(applyButton)
 
       expect(defaultProps.setShowMobileFilters).toHaveBeenCalledWith(false)
     })
 
-    it("should call onApplyFilters when Apply Filters button is clicked", () => {
+    it("should call onApplyFilters when Apply Filters button is clicked", async () => {
+      const user = userEvent.setup()
       render(<MobileFilterDialog {...defaultProps} />)
 
       const applyButton = screen.getByText("Apply Filters")
-      fireEvent.click(applyButton)
+      await user.click(applyButton)
 
       expect(defaultProps.onApplyFilters).toHaveBeenCalled()
     })
@@ -191,11 +195,12 @@ describe("MobileFilterDialog", () => {
       expect(screen.getByText("Sai")).toBeTruthy()
     })
 
-    it("should call onCategoryToggle when category is clicked", () => {
+    it("should call onCategoryToggle when category is clicked", async () => {
+      const user = userEvent.setup()
       render(<MobileFilterDialog {...defaultProps} />)
 
       const categoryButton = screen.getByTestId("category-cat-1")
-      fireEvent.click(categoryButton)
+      await user.click(categoryButton)
 
       expect(defaultProps.onCategoryToggle).toHaveBeenCalledWith("cat-1")
     })
@@ -210,11 +215,12 @@ describe("MobileFilterDialog", () => {
       expect(screen.getByText("9.Kyu")).toBeTruthy()
     })
 
-    it("should call onCurriculumToggle when curriculum is clicked", () => {
+    it("should call onCurriculumToggle when curriculum is clicked", async () => {
+      const user = userEvent.setup()
       render(<MobileFilterDialog {...defaultProps} />)
 
       const curriculumButton = screen.getByTestId("curriculum-curr-1")
-      fireEvent.click(curriculumButton)
+      await user.click(curriculumButton)
 
       expect(defaultProps.onCurriculumToggle).toHaveBeenCalledWith("curr-1")
     })
