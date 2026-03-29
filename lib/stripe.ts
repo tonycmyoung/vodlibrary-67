@@ -1,6 +1,7 @@
 import Stripe from "stripe"
 
 // Server-only Stripe client
-// Don't specify apiVersion - let Stripe use its default supported version
-// This avoids breaking when the npm package updates
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "")
+// Explicitly specify API version for sandbox compatibility
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2026-03-25.dahlia" as any,
+})

@@ -54,7 +54,7 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       cancel_url: `${returnUrl}?status=cancelled`,
     })
 
-    if (!session.client_secret) {
+    if (!session.client_secret || !session.id) {
       throw new Error("Failed to create checkout session")
     }
 
