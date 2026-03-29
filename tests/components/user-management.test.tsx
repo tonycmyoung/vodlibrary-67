@@ -137,9 +137,15 @@ describe("UserManagement", () => {
     vi.mocked(createClient).mockReturnValue({ from: mockFrom } as any)
   })
 
-  it("should render loading state initially", () => {
+  it("should render loading state initially", async () => {
+    const user = userEvent.setup()
     render(<UserManagement />)
     expect(screen.getByText("Loading users...")).toBeTruthy()
+    
+    // Wait for initial data load to complete to avoid act() warnings
+    await waitFor(() => {
+      expect(screen.queryByText("Loading users...")).toBeNull()
+    })
   })
 
   it("should render user list after loading", async () => {
