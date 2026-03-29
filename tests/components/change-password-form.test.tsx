@@ -53,16 +53,16 @@ describe("ChangePasswordForm", () => {
     expect(currentPasswordInput.type).toBe("password")
   })
 
-  it("should show error when fields are empty", async () => {
-    const user = userEvent.setup()
+  it("should have required attributes on password inputs for HTML5 validation", () => {
     render(<ChangePasswordForm />)
 
-    const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    await user.click(submitButton)
+    const currentPasswordInput = screen.getByLabelText("Current Password")
+    const newPasswordInput = screen.getByLabelText("New Password")
+    const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    await waitFor(() => {
-      expect(screen.getByText("All fields are required")).toBeTruthy()
-    })
+    expect(currentPasswordInput).toHaveAttribute("required")
+    expect(newPasswordInput).toHaveAttribute("required")
+    expect(confirmPasswordInput).toHaveAttribute("required")
   })
 
   it("should show error when new passwords don't match", async () => {

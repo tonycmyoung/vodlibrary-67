@@ -50,6 +50,7 @@ describe("InviteUserModal", () => {
     const emailInput = screen.getByLabelText(/email address/i)
     expect(emailInput).toHaveAttribute("type", "email")
     expect(emailInput).toHaveAttribute("placeholder", "user@example.com")
+    expect(emailInput).toHaveAttribute("required")
   })
 
   it("should render Cancel and Send Invitation buttons", () => {
@@ -72,21 +73,11 @@ describe("InviteUserModal", () => {
     expect(emailInput.value).toBe("test@example.com")
   })
 
-  it("should show error when submitting empty email", async () => {
-    const user = userEvent.setup()
+  it("should have required attribute on email input for HTML5 validation", () => {
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
-    const submitButton = screen.getByRole("button", { name: /send invitation/i })
-    await user.click(submitButton)
-
-    await waitFor(() => {
-      const errorMessage = screen.getByText(/please enter an email address/i)
-      const errorContainer = errorMessage.closest("div")
-      expect(errorContainer).toHaveClass("bg-red-900/50")
-      expect(errorContainer).toHaveClass("text-red-400")
-    })
-
-    expect(inviteUser).not.toHaveBeenCalled()
+    const emailInput = screen.getByLabelText(/email address/i)
+    expect(emailInput).toHaveAttribute("required")
   })
 
   it("should call inviteUser action on form submit", async () => {

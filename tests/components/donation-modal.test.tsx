@@ -16,6 +16,7 @@ vi.mock("@/components/ui/dialog", () => ({
 
 // Create clipboard mock at module level so it can be referenced in tests
 const mockWriteText = vi.fn().mockResolvedValue(undefined)
+const mockClipboard = { writeText: mockWriteText }
 
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
@@ -28,13 +29,10 @@ describe("DonationModal", () => {
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
-    // Mock navigator.clipboard using Object.defineProperty
-    Object.defineProperty(navigator, "clipboard", {
-      value: {
-        writeText: mockWriteText,
-      },
-      writable: true,
-      configurable: true,
+    // Mock navigator.clipboard using stubGlobal
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: mockClipboard,
     })
   })
 

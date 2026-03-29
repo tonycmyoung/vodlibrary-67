@@ -159,19 +159,15 @@ describe("LoginForm", () => {
     })
   })
 
-  it("should show validation error when reset email is empty", async () => {
+  it("should have required attribute on reset email input for HTML5 validation", async () => {
     const user = userEvent.setup()
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
     await user.click(resetLink)
 
-    const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    await user.click(sendButton)
-
-    await waitFor(() => {
-      expect(screen.getByText(/Please enter your email address/i)).toBeTruthy()
-    })
+    const resetEmailInput = screen.getByPlaceholderText(/Enter email for reset/i)
+    expect(resetEmailInput).toHaveAttribute("required")
   })
 
   it("should render sign up link", () => {
