@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import ResetPasswordForm from "@/components/reset-password-form"
 
@@ -50,12 +50,18 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    const { unmount } = render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     // Trigger PASSWORD_RECOVERY event
-    if (authStateCallback) {
-      authStateCallback("PASSWORD_RECOVERY", null)
-    }
+    await act(async () => {
+      if (authStateCallback) {
+        authStateCallback("PASSWORD_RECOVERY", null)
+      }
+    })
 
     await waitFor(
       () => {
@@ -77,12 +83,18 @@ describe("ResetPasswordForm", () => {
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
     })
 
-    const { unmount } = render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     // Trigger SIGNED_IN event with session
-    if (authStateCallback) {
-      authStateCallback("SIGNED_IN", { user: { id: "user-123" } })
-    }
+    await act(async () => {
+      if (authStateCallback) {
+        authStateCallback("SIGNED_IN", { user: { id: "user-123" } })
+      }
+    })
 
     await waitFor(
       () => {
@@ -97,10 +109,14 @@ describe("ResetPasswordForm", () => {
   it("should show loading state initially", async () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 
-    const { unmount } = render(<ResetPasswordForm />)
+    let unmount: () => void
+    await act(async () => {
+      const result = render(<ResetPasswordForm />)
+      unmount = result.unmount
+    })
 
     expect(screen.getByText(/verifying password reset link/i)).toBeTruthy()
-    unmount()
+    unmount!()
   })
 
   it("should show form when session exists", async () => {
