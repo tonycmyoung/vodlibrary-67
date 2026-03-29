@@ -72,8 +72,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     setShowAmountSelect(true)
   }
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = async () => {
     trace.info("Payment success - showing thank you screen", { category: "donation" })
+    // Small delay to allow trace fetch to initiate before state changes
+    await new Promise((resolve) => setTimeout(resolve, 100))
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)

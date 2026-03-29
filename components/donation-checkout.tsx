@@ -77,8 +77,12 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-          <EmbeddedCheckout onComplete={() => {
-            trace.info("Payment completed - onComplete callback fired", { category: "donation" })
+          <EmbeddedCheckout onComplete={async () => {
+            // Use setTimeout to ensure trace fires before component unmounts
+            await new Promise<void>((resolve) => {
+              trace.info("Payment completed - onComplete callback fired", { category: "donation" })
+              setTimeout(resolve, 100) // Small delay to allow fetch to initiate
+            })
             onSuccess?.()
           }} />
         </EmbeddedCheckoutProvider>
