@@ -55,6 +55,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleStripeClick = () => {
+    trace.info("Donate with Card clicked", { payload: { hasEmail: !!userEmail.trim() } })
     if (userEmail.trim()) {
       setShowAmountSelect(true)
     } else {
@@ -63,6 +64,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleProceedCheckout = () => {
+    trace.info("Email submitted for checkout", { payload: { email: userEmail } })
     if (!userEmail.trim()) {
       alert("Please enter a valid email address")
       return
@@ -71,13 +73,14 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutSuccess = () => {
-    trace.info("handleCheckoutSuccess called")
+    trace.info("handleCheckoutSuccess called - showing thank you screen")
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
   }
 
   const resetModal = () => {
+    trace.info("Donation modal reset and closed")
     setShowSuccess(false)
     setShowAmountSelect(false)
     setShowEmailInput(false)
@@ -86,6 +89,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutCancel = () => {
+    trace.info("Checkout cancelled by user")
     setShowAmountSelect(false)
   }
 
