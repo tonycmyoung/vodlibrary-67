@@ -451,10 +451,10 @@ describe("TraceDashboard", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     
-    render(<TraceDashboard />)
+    const { unmount } = render(<TraceDashboard />)
 
-    // Wait for initial load
-    await vi.waitFor(() => {
+    // Wait for initial load using RTL's waitFor (not vi.waitFor)
+    await waitFor(() => {
       expect(screen.getByText("User logged in successfully")).toBeTruthy()
     })
 
@@ -470,6 +470,8 @@ describe("TraceDashboard", () => {
 
     expect(traceActions.fetchTraceLogs).toHaveBeenCalledTimes(2)
 
+    // Clean up before restoring timers to prevent act() warnings
+    unmount()
     vi.useRealTimers()
   })
 })

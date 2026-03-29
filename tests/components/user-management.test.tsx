@@ -138,14 +138,14 @@ describe("UserManagement", () => {
   })
 
   it("should render loading state initially", async () => {
-    const user = userEvent.setup()
-    render(<UserManagement />)
+    // Use a never-resolving promise to keep component in loading state
+    vi.mocked(fetchUsers).mockReturnValue(new Promise(() => {}))
+    
+    const { unmount } = render(<UserManagement />)
     expect(screen.getByText("Loading users...")).toBeTruthy()
     
-    // Wait for initial data load to complete to avoid act() warnings
-    await waitFor(() => {
-      expect(screen.queryByText("Loading users...")).toBeNull()
-    })
+    // Unmount before the promise resolves to prevent act() warnings
+    unmount()
   })
 
   it("should render user list after loading", async () => {
