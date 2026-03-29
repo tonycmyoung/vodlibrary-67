@@ -16,6 +16,7 @@ interface DonationModalProps {
 // Separate component that traces on mount - guaranteed to fire when rendered
 function SuccessScreen({ email, onClose }: { email: string; onClose: () => void }) {
   useEffect(() => {
+    console.log("[v0] SuccessScreen mounted, email:", email)
     trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email } })
   }, [email])
 
