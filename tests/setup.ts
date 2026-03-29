@@ -1,9 +1,9 @@
+// Configure React to support act() in tests - MUST be before any React imports
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
+
 import "@testing-library/jest-dom"
 import { afterEach, vi } from "vitest"
 import { cleanup } from "@testing-library/react"
-
-// Configure React to support act() in tests
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 // Cleanup after each test
 afterEach(() => {

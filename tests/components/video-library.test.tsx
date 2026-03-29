@@ -1,7 +1,7 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, waitFor, act } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { useRouter, useSearchParams } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
@@ -1056,9 +1056,7 @@ describe("VideoLibrary", () => {
 
       // Toggle curriculum to have multiple filters
       const curriculumToggle = screen.getByText("Toggle Curriculum")
-      await act(async () => {
-        await user.click(curriculumToggle)
-      })
+      await user.click(curriculumToggle)
 
       await waitFor(() => {
         expect(screen.getByTestId("selected-filters")).toHaveTextContent("Filters: 2")

@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        resources: "usable",
+      },
+    },
     setupFiles: ["./tests/setup.ts"],
     globals: true,
     threads: {
