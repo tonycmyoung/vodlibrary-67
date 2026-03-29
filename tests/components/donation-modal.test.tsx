@@ -1,8 +1,9 @@
+"use client"
+
 import type React from "react"
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import DonationModal from "@/components/donation-modal"
 
 // Mock the Dialog component
@@ -24,6 +25,12 @@ describe("DonationModal", () => {
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
+    // Mock navigator.clipboard
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    })
   })
 
   it("should not render when isOpen is false", () => {
@@ -49,12 +56,11 @@ describe("DonationModal", () => {
     expect(paypalButton).toBeTruthy()
   })
 
-  it("should open PayPal link in new tab when donate button is clicked", async () => {
-    const user = userEvent.setup()
+  it("should open PayPal link in new tab when donate button is clicked", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const paypalButton = screen.getByRole("button", { name: /donate via paypal/i })
 
-    await user.click(paypalButton)
+    fireEvent.click(paypalButton)
 
     expect(globalThis.open).toHaveBeenCalledWith("https://paypal.me/TonyYoung1", "_blank")
   })
@@ -68,36 +74,32 @@ describe("DonationModal", () => {
   })
 
   it("should copy PayID to clipboard when copy button is clicked", async () => {
-    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-
     const copyButton = screen.getByTitle(/copy payid/i)
-    await user.click(copyButton)
 
-    // Just verify the UI updates - if clipboard call fails, button won't change
+    fireEvent.click(copyButton)
+
     await waitFor(() => {
-      expect(screen.getByTitle("Copied!")).toBeTruthy()
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testPayId)
     })
   })
 
   it("should show check icon after copying", async () => {
-    const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-
     const copyButton = screen.getByTitle(/copy payid/i)
-    await user.click(copyButton)
+
+    fireEvent.click(copyButton)
 
     await waitFor(() => {
       expect(screen.getByTitle("Copied!")).toBeTruthy()
     })
   })
 
-  it("should call onClose when Maybe Later button is clicked", async () => {
-    const user = userEvent.setup()
+  it("should call onClose when Maybe Later button is clicked", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const maybeLaterButton = screen.getByRole("button", { name: /maybe later/i })
 
-    await user.click(maybeLaterButton)
+    fireEvent.click(maybeLaterButton)
 
     expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
