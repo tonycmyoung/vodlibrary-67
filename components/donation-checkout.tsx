@@ -98,7 +98,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
             className="w-4 h-4"
           />
           <label htmlFor="preset-donation" className="text-white font-medium cursor-pointer">
-            Choose Amount
+            Choose One-off Amount
           </label>
         </div>
 
@@ -131,7 +131,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
             className="w-4 h-4"
           />
           <label htmlFor="custom-donation" className="text-white font-medium cursor-pointer">
-            Custom Amount
+            Custom One-off Amount
           </label>
         </div>
 

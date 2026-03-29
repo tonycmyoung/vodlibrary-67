@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Heart, ExternalLink, CreditCard, Copy, Check } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DonationCheckout } from "@/components/donation-checkout"
 import { createClient } from "@/lib/supabase/client"
 import { trace } from "@/lib/trace"
@@ -18,14 +18,15 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [showAmountSelect, setShowAmountSelect] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+  const userEmailRef = useRef("")
   const [showEmailInput, setShowEmailInput] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
     if (showSuccess) {
-      trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email: userEmail } })
+      trace.info("Thank you screen displayed - payment confirmed", { category: "donation", payload: { email: userEmailRef.current } })
     }
-  }, [showSuccess, userEmail])
+  }, [showSuccess])
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -34,6 +35,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.email) {
           setUserEmail(user.email)
+          userEmailRef.current = user.email
         }
       } catch (error) {
         trace.error("Failed to fetch user email", { category: "donation", payload: { error: String(error) } })
