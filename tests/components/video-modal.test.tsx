@@ -1,3 +1,4 @@
+import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -12,6 +13,15 @@ vi.mock("@/lib/actions", () => ({
 
 vi.mock("@/lib/video-utils", () => ({
   extractVideoMetadata: vi.fn(),
+}))
+
+// Mock Dialog component to avoid Radix UI portal issues
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+    open ? <div data-testid="dialog">{children}</div> : null,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }))
 
 describe("VideoModal", () => {

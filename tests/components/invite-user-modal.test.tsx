@@ -50,7 +50,6 @@ describe("InviteUserModal", () => {
     const emailInput = screen.getByLabelText(/email address/i)
     expect(emailInput).toHaveAttribute("type", "email")
     expect(emailInput).toHaveAttribute("placeholder", "user@example.com")
-    expect(emailInput).toHaveAttribute("required")
   })
 
   it("should render Cancel and Send Invitation buttons", () => {

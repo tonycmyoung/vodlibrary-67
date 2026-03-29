@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
@@ -16,12 +14,16 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }))
 
+// Create clipboard mock at module level so it can be referenced in tests
+const mockWriteText = vi.fn().mockResolvedValue(undefined)
+
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
   const testPayId = "test-payid@example.com"
 
   beforeEach(() => {
     mockOnClose.mockClear()
+    mockWriteText.mockClear()
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
@@ -29,7 +31,7 @@ describe("DonationModal", () => {
     // Mock navigator.clipboard using Object.defineProperty
     Object.defineProperty(navigator, "clipboard", {
       value: {
-        writeText: vi.fn().mockResolvedValue(undefined),
+        writeText: mockWriteText,
       },
       writable: true,
       configurable: true,
@@ -85,7 +87,7 @@ describe("DonationModal", () => {
     await user.click(copyButton)
 
     await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testPayId)
+      expect(mockWriteText).toHaveBeenCalledWith(testPayId)
     })
   })
 
