@@ -30,12 +30,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           setUserEmail(user.email)
         }
       } catch (error) {
-        trace.error("Failed to fetch user email", { payload: { error: String(error) } })
+        trace.error("Failed to fetch user email", { category: "donation", payload: { error: String(error) } })
       }
     }
 
     if (isOpen) {
-      trace.info("Donation modal opened")
+      trace.info("Donation modal opened", { category: "donation" })
       fetchUserEmail()
     }
   }, [isOpen])
@@ -55,7 +55,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleStripeClick = () => {
-    trace.info("Donate with Card clicked", { payload: { hasEmail: !!userEmail.trim() } })
+    trace.info("Donate with Card clicked", { category: "donation", payload: { hasEmail: !!userEmail.trim() } })
     if (userEmail.trim()) {
       setShowAmountSelect(true)
     } else {
@@ -64,7 +64,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleProceedCheckout = () => {
-    trace.info("Email submitted for checkout", { payload: { email: userEmail } })
+    trace.info("Email submitted for checkout", { category: "donation", payload: { email: userEmail } })
     if (!userEmail.trim()) {
       alert("Please enter a valid email address")
       return
@@ -73,14 +73,14 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutSuccess = () => {
-    trace.info("handleCheckoutSuccess called - showing thank you screen")
+    trace.info("Payment success - showing thank you screen", { category: "donation" })
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
   }
 
   const resetModal = () => {
-    trace.info("Donation modal reset and closed")
+    trace.info("Donation modal closed", { category: "donation" })
     setShowSuccess(false)
     setShowAmountSelect(false)
     setShowEmailInput(false)
@@ -89,7 +89,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutCancel = () => {
-    trace.info("Checkout cancelled by user")
+    trace.info("Checkout cancelled by user", { category: "donation" })
     setShowAmountSelect(false)
   }
 

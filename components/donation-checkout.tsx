@@ -27,7 +27,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
   const [error, setError] = useState<string | null>(null)
 
   const handleCheckout = async () => {
-    trace.info("Proceed to Payment clicked", { payload: { useCustom, selectedPreset, customAmount } })
+    trace.info("Proceed to Payment clicked", { category: "donation", payload: { useCustom, selectedPreset, customAmount } })
     setIsLoading(true)
     setError(null)
 
@@ -38,7 +38,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       if (useCustom) {
         const parsedAmount = parseFloat(customAmount)
         if (!customAmount || isNaN(parsedAmount) || parsedAmount < 1) {
-          trace.warn("Invalid custom amount entered", { payload: { customAmount } })
+          trace.warn("Invalid custom amount entered", { category: "donation", payload: { customAmount } })
           setError("Please enter a valid amount of at least $1")
           setIsLoading(false)
           return
@@ -48,7 +48,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
         presetId = selectedPreset
       }
 
-      trace.info("Creating checkout session", { payload: { amount, presetId, email } })
+      trace.info("Creating checkout session", { category: "donation", payload: { amount, presetId, email } })
 
       const result = await createDonationCheckout({
         amount,
@@ -58,28 +58,27 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       })
 
       if (!result.success) {
-        trace.error("Checkout creation failed", { payload: { error: result.error } })
+        trace.error("Checkout creation failed", { category: "donation", payload: { error: result.error } })
         setError(result.error || "Failed to create checkout")
         setIsLoading(false)
         return
       }
 
-      trace.info("Checkout session created, rendering Stripe form", { payload: { hasClientSecret: !!result.clientSecret } })
+      trace.info("Checkout session created, rendering Stripe form", { category: "donation", payload: { hasClientSecret: !!result.clientSecret } })
       setClientSecret(result.clientSecret)
     } catch (err) {
-      trace.error("Checkout error", { payload: { error: err instanceof Error ? err.message : String(err) } })
+      trace.error("Checkout error", { category: "donation", payload: { error: err instanceof Error ? err.message : String(err) } })
       setError(err instanceof Error ? err.message : "An error occurred")
       setIsLoading(false)
     }
   }
 
   if (clientSecret) {
-    trace.info("Rendering Stripe EmbeddedCheckout")
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
           <EmbeddedCheckout onComplete={() => {
-            trace.info("EmbeddedCheckout.onComplete callback fired - payment successful")
+            trace.info("Payment completed - onComplete callback fired", { category: "donation" })
             onSuccess?.()
           }} />
         </EmbeddedCheckoutProvider>
