@@ -160,15 +160,16 @@ describe("LoginForm", () => {
   })
 
   it("should show validation error when reset email is empty", async () => {
+    const user = userEvent.setup()
     render(<LoginForm />)
 
     const resetLink = screen.getByRole("button", { name: /Forgot your password?/i })
-    fireEvent.click(resetLink)
+    await user.click(resetLink)
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
     const form = sendButton.closest("form")
     if (form) {
-      fireEvent.submit(form)
+      await user.pointer({ keys: "[Enter]", target: form })
     }
 
     await waitFor(() => {

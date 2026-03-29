@@ -112,15 +112,16 @@ describe("SendMessageForm", () => {
   })
 
   it("should show success message after sending", async () => {
+    const user = userEvent.setup()
     vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i)
-    fireEvent.change(textarea, { target: { value: "Test message" } })
+    await user.type(textarea, "Test message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       const successMessage = screen.getByText(/message sent successfully/i)
@@ -130,15 +131,16 @@ describe("SendMessageForm", () => {
   })
 
   it("should clear form after successful send", async () => {
+    const user = userEvent.setup()
     vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i) as HTMLTextAreaElement
-    fireEvent.change(textarea, { target: { value: "Test message" } })
+    await user.type(textarea, "Test message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(textarea.value).toBe("")
@@ -146,15 +148,16 @@ describe("SendMessageForm", () => {
   })
 
   it("should show error message on failure", async () => {
+    const user = userEvent.setup()
     vi.mocked(sendNotificationWithEmail).mockResolvedValue({ error: "Failed to send" })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i)
-    fireEvent.change(textarea, { target: { value: "Test message" } })
+    await user.type(textarea, "Test message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       const errorMessage = screen.getByText(/failed to send message/i)

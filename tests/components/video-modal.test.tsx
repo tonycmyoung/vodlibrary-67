@@ -174,9 +174,9 @@ describe("VideoModal", () => {
     const descriptionInput = screen.getByLabelText("Description")
     const videoUrlInput = screen.getByLabelText("Video URL *")
 
-    fireEvent.change(titleInput, { target: { value: "New Video" } })
-    fireEvent.change(descriptionInput, { target: { value: "New description" } })
-    fireEvent.change(videoUrlInput, { target: { value: "https://example.com/new.mp4" } })
+    await user.type(titleInput, "New Video")
+    await user.type(descriptionInput, "New description")
+    await user.type(videoUrlInput, "https://example.com/new.mp4")
 
     expect(titleInput).toHaveValue("New Video")
     expect(descriptionInput).toHaveValue("New description")

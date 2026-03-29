@@ -175,7 +175,7 @@ describe("VideoCard", () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     const heartButton = screen.getByRole("button")
-    fireEvent.click(heartButton)
+    await user.click(heartButton)
 
     await waitFor(() => {
       expect(mockFrom).toHaveBeenCalledWith("user_favorites")
@@ -197,7 +197,7 @@ describe("VideoCard", () => {
     })
 
     const heartButton = screen.getByRole("button")
-    fireEvent.click(heartButton)
+    await user.click(heartButton)
 
     await waitFor(() => {
       expect(mockFrom).not.toHaveBeenCalled()

@@ -122,12 +122,12 @@ describe("ChangePasswordForm", () => {
     const newPasswordInput = screen.getByLabelText("New Password")
     const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    fireEvent.change(currentPasswordInput, { target: { value: "wrongpass" } })
-    fireEvent.change(newPasswordInput, { target: { value: "newpass123" } })
-    fireEvent.change(confirmPasswordInput, { target: { value: "newpass123" } })
+    await user.type(currentPasswordInput, "wrongpass")
+    await user.type(newPasswordInput, "newpass123")
+    await user.type(confirmPasswordInput, "newpass123")
 
     const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("Current password is incorrect")).toBeTruthy()
@@ -135,6 +135,7 @@ describe("ChangePasswordForm", () => {
   })
 
   it("should successfully change password", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { email: "test@example.com" } },
       error: null,
@@ -156,12 +157,12 @@ describe("ChangePasswordForm", () => {
     const newPasswordInput = screen.getByLabelText("New Password")
     const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    fireEvent.change(currentPasswordInput, { target: { value: "oldpass123" } })
-    fireEvent.change(newPasswordInput, { target: { value: "newpass123" } })
-    fireEvent.change(confirmPasswordInput, { target: { value: "newpass123" } })
+    await user.type(currentPasswordInput, "oldpass123")
+    await user.type(newPasswordInput, "newpass123")
+    await user.type(confirmPasswordInput, "newpass123")
 
     const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("Password changed successfully! Redirecting...")).toBeTruthy()
@@ -178,6 +179,7 @@ describe("ChangePasswordForm", () => {
   })
 
   it("should show loading state during submission", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { email: "test@example.com" } },
       error: null,
@@ -198,12 +200,12 @@ describe("ChangePasswordForm", () => {
     const newPasswordInput = screen.getByLabelText("New Password")
     const confirmPasswordInput = screen.getByLabelText("Confirm New Password")
 
-    fireEvent.change(currentPasswordInput, { target: { value: "oldpass123" } })
-    fireEvent.change(newPasswordInput, { target: { value: "newpass123" } })
-    fireEvent.change(confirmPasswordInput, { target: { value: "newpass123" } })
+    await user.type(currentPasswordInput, "oldpass123")
+    await user.type(newPasswordInput, "newpass123")
+    await user.type(confirmPasswordInput, "newpass123")
 
     const submitButton = screen.getByRole("button", { name: /Update Password/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("Updating password...")).toBeTruthy()
