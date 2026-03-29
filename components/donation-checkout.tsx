@@ -74,12 +74,15 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
   }
 
   if (clientSecret) {
+    const handleComplete = () => {
+      trace.info("Stripe payment completed", { category: "donation", payload: { email } })
+      onSuccess?.()
+    }
+
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-          <EmbeddedCheckout onComplete={() => {
-            onSuccess?.()
-          }} />
+          <EmbeddedCheckout onComplete={handleComplete} />
         </EmbeddedCheckoutProvider>
       </div>
     )
