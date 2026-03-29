@@ -15,6 +15,7 @@ interface DonationModalProps {
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
