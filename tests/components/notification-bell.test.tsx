@@ -290,7 +290,7 @@ describe("NotificationBell", () => {
   })
 
   it("should not fetch notifications with invalid userId", async () => {
-    const { traceError } = await import("@/lib/trace-logger")
+    const { traceError } = vi.mocked(require("@/lib/trace-logger"))
 
     render(<NotificationBell userId="" />)
 
