@@ -3,9 +3,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Heart, ExternalLink, CreditCard, Copy, Check } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DonationCheckout } from "@/components/donation-checkout"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createClient } from "@/lib/supabase/client"
 
 interface DonationModalProps {
   isOpen: boolean
@@ -18,6 +18,24 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
+
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.email) {
+          setUserEmail(user.email)
+        }
+      } catch (error) {
+        console.error("[v0] Failed to fetch user email:", error)
+      }
+    }
+
+    if (isOpen) {
+      fetchUserEmail()
+    }
+  }, [isOpen])
 
   const handleDonateClick = () => {
     globalThis.open("https://paypal.me/TonyYoung1", "_blank")
@@ -34,7 +52,13 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleStripeClick = () => {
-    setShowEmailInput(true)
+    // If email is already filled from auth, go straight to checkout
+    if (userEmail.trim()) {
+      setShowCheckout(true)
+    } else {
+      // Otherwise show email input
+      setShowEmailInput(true)
+    }
   }
 
   const handleProceedCheckout = () => {
