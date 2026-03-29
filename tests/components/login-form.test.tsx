@@ -167,10 +167,7 @@ describe("LoginForm", () => {
     await user.click(resetLink)
 
     const sendButton = screen.getByRole("button", { name: /Send Reset/i })
-    const form = sendButton.closest("form")
-    if (form) {
-      await user.pointer({ keys: "[Enter]", target: form })
-    }
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(screen.getByText(/Please enter your email address/i)).toBeTruthy()

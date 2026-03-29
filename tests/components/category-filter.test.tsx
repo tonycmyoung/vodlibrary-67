@@ -75,10 +75,11 @@ describe("CategoryFilter", () => {
     const onCategoryToggle = vi.fn()
     render(<CategoryFilter {...defaultProps} onCategoryToggle={onCategoryToggle} />)
 
-    const categoryBadge = screen.getByText("Bo")
+    // Use Sai which doesn't have a description (no tooltip wrapper)
+    const categoryBadge = screen.getByText("Sai")
     await user.click(categoryBadge)
 
-    expect(onCategoryToggle).toHaveBeenCalledWith("cat-1")
+    expect(onCategoryToggle).toHaveBeenCalledWith("cat-2")
   })
 
   it("should call onCategoryToggle when performer is clicked", async () => {

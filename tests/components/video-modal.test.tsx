@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import VideoModal from "@/components/video-modal"
+import { saveVideo } from "@/lib/actions"
+import { extractVideoMetadata } from "@/lib/video-utils"
 
 // Mock dependencies
 vi.mock("@/lib/actions", () => ({
@@ -11,9 +13,6 @@ vi.mock("@/lib/actions", () => ({
 vi.mock("@/lib/video-utils", () => ({
   extractVideoMetadata: vi.fn(),
 }))
-
-const { saveVideo } = await import("@/lib/actions")
-const { extractVideoMetadata } = await import("@/lib/video-utils")
 
 describe("VideoModal", () => {
   const mockCurriculums = [

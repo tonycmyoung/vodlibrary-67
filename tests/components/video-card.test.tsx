@@ -160,6 +160,7 @@ describe("VideoCard", () => {
   })
 
   it("should remove favorite when already favorited", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1", email: "test@example.com" } },
       error: null,
@@ -185,6 +186,7 @@ describe("VideoCard", () => {
   })
 
   it("should not toggle favorite when user is not logged in", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: null },
       error: null,

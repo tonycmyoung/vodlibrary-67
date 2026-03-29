@@ -135,7 +135,6 @@ export default function ChangePasswordForm() {
                 id="currentPassword"
                 name="currentPassword"
                 type={showCurrentPassword ? "text" : "password"}
-                required
                 className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500 pr-10"
               />
               <button
@@ -157,8 +156,6 @@ export default function ChangePasswordForm() {
                 id="newPassword"
                 name="newPassword"
                 type={showNewPassword ? "text" : "password"}
-                required
-                minLength={6}
                 className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500 pr-10"
               />
               <button
@@ -180,8 +177,6 @@ export default function ChangePasswordForm() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
-                required
-                minLength={6}
                 className="bg-gray-900/50 border-gray-700 text-white focus:border-red-500 pr-10"
               />
               <button

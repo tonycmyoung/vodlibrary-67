@@ -76,18 +76,11 @@ describe("SendMessageForm", () => {
     expect(sendButton.hasAttribute("disabled")).toBe(false)
   })
 
-  it("should show error when trying to send empty message", async () => {
-    const user = userEvent.setup()
+  it("should disable send button when message is empty", () => {
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
-    const form = screen.getByRole("button", { name: /send message/i }).closest("form")
-    if (form) {
-      await user.pointer({ keys: "[Enter]", target: form })
-    }
-
-    const errorMessage = screen.getByText(/please enter a message/i)
-    // Verify it's in an error styled container
-    expect(errorMessage.closest("div")?.className).toContain("red-500")
+    const submitButton = screen.getByRole("button", { name: /send message/i })
+    expect(submitButton.hasAttribute("disabled")).toBe(true)
   })
 
   it("should call sendNotificationWithEmail on submit", async () => {

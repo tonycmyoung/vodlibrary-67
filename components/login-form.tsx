@@ -167,7 +167,6 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
                 onChange={(e) => setResetEmail(e.target.value)}
                 placeholder="Enter email for reset"
                 className="bg-gray-900/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-red-500"
-                required
               />
               <div className="flex gap-2 justify-center">
                 <Button

@@ -57,8 +57,8 @@ describe("ChangePasswordForm", () => {
     const user = userEvent.setup()
     render(<ChangePasswordForm />)
 
-    const form = screen.getByRole("button", { name: /Update Password/i }).closest("form")!
-    await user.pointer({ keys: "[Enter]", target: form })
+    const submitButton = screen.getByRole("button", { name: /Update Password/i })
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(screen.getByText("All fields are required")).toBeTruthy()
@@ -106,6 +106,7 @@ describe("ChangePasswordForm", () => {
   })
 
   it("should show error when current password is incorrect", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { email: "test@example.com" } },
       error: null,

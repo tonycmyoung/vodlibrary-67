@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import VideoCardList from "@/components/video-card-list"
+import { createClient } from "@/lib/supabase/client"
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -11,8 +12,6 @@ vi.mock("@/lib/supabase/client", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
 }))
-
-const { createClient } = await import("@/lib/supabase/client")
 
 describe("VideoCardList", () => {
   const mockVideo = {

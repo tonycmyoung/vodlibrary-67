@@ -26,11 +26,13 @@ describe("DonationModal", () => {
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
-    // Mock navigator.clipboard
-    Object.assign(navigator, {
-      clipboard: {
+    // Mock navigator.clipboard using Object.defineProperty
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
         writeText: vi.fn().mockResolvedValue(undefined),
       },
+      writable: true,
+      configurable: true,
     })
   })
 

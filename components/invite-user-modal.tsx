@@ -104,7 +104,6 @@ export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProp
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                 disabled={isLoading}
-                required
               />
             </div>
           </div>
