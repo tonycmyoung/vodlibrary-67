@@ -56,7 +56,7 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
           quantity: 1,
         },
       ],
-      return_url: returnUrl,
+      // For embedded_page in a modal context, don't use return_url - rely on onComplete callback instead
     })
 
     console.log("[v0] Checkout session created:", {
