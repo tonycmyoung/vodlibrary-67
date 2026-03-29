@@ -14,26 +14,16 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }))
 
-// Create clipboard mock at module level
-const mockWriteText = vi.fn().mockResolvedValue(undefined)
-
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
   const testPayId = "test-payid@example.com"
 
   beforeEach(() => {
     mockOnClose.mockClear()
-    mockWriteText.mockClear()
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
     vi.stubGlobal("open", vi.fn())
-    // Mock clipboard
-    Object.defineProperty(navigator, "clipboard", {
-      value: { writeText: mockWriteText },
-      writable: true,
-      configurable: true,
-    })
   })
 
   it("should not render when isOpen is false", () => {
@@ -78,6 +68,14 @@ describe("DonationModal", () => {
   })
 
   it("should copy PayID to clipboard when copy button is clicked", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    const originalClipboard = navigator.clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    })
+
     const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
@@ -85,11 +83,26 @@ describe("DonationModal", () => {
     await user.click(copyButton)
 
     await waitFor(() => {
-      expect(mockWriteText).toHaveBeenCalledWith(testPayId)
+      expect(writeTextMock).toHaveBeenCalledWith(testPayId)
+    })
+
+    // Restore original clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: originalClipboard,
+      writable: true,
+      configurable: true,
     })
   })
 
   it("should show check icon after copying", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined)
+    const originalClipboard = navigator.clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    })
+
     const user = userEvent.setup()
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
     const copyButton = screen.getByTitle(/copy payid/i)
@@ -98,6 +111,13 @@ describe("DonationModal", () => {
 
     await waitFor(() => {
       expect(screen.getByTitle("Copied!")).toBeTruthy()
+    })
+
+    // Restore original clipboard
+    Object.defineProperty(navigator, "clipboard", {
+      value: originalClipboard,
+      writable: true,
+      configurable: true,
     })
   })
 
