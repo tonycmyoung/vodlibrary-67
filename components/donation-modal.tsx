@@ -14,8 +14,7 @@ interface DonationModalProps {
 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
-  const [showCheckout, setShowCheckout] = useState(false)  // true = Stripe form embedded
-  const [showAmountSelect, setShowAmountSelect] = useState(false) // true = amount picker shown
+  const [showAmountSelect, setShowAmountSelect] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
@@ -71,14 +70,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
   const handleCheckoutSuccess = () => {
     setShowSuccess(true)
-    setShowCheckout(false)
     setShowAmountSelect(false)
     setShowEmailInput(false)
   }
 
   const resetModal = () => {
     setShowSuccess(false)
-    setShowCheckout(false)
     setShowAmountSelect(false)
     setShowEmailInput(false)
     setUserEmail("")
@@ -86,189 +83,162 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutCancel = () => {
-    setShowCheckout(false)
     setShowAmountSelect(false)
   }
 
-  // Only go wide when the Stripe form is actually embedded
-  const modalWidth = showCheckout || showSuccess ? "sm:max-w-3xl" : "sm:max-w-md"
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${modalWidth} bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] overflow-y-auto`}>
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-white flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />
             Support the Okinawa Kobudo Library
           </DialogTitle>
         </DialogHeader>
 
-        {showSuccess ? (
-          <div className="py-8 text-center space-y-4">
-            <div className="flex justify-center mb-6">
-              <div className="text-6xl">✓</div>
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {showSuccess ? (
+            <div className="py-8 text-center space-y-4">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Check className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-white">Thank You!</h2>
+              <p className="text-gray-300 leading-relaxed">
+                Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library.
+              </p>
+              <p className="text-gray-400 text-sm">
+                A receipt has been sent to {userEmail}
+              </p>
+              <Button
+                onClick={resetModal}
+                className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Close
+              </Button>
             </div>
-            <h2 className="text-2xl font-bold text-white">Thank You!</h2>
-            <p className="text-gray-300 leading-relaxed">
-              Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library.
-            </p>
-            <p className="text-gray-400 text-sm">
-              A receipt has been sent to {userEmail}
-            </p>
-            <Button
-              onClick={resetModal}
-              className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              Close
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Initial options view - single column */}
-            {!showAmountSelect && !showEmailInput && !showSuccess && (
-              <div className="space-y-4 py-4">
-                <div className="text-center space-y-4">
-                  <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
-                  <p className="text-gray-300 leading-relaxed">
-                    Creating and running this site comes with yearly costs for domains, maintenance and hosting.
-                  </p>
-                  <p className="text-gray-300 leading-relaxed">Anything you&apos;d be willing to donate is appreciated.</p>
-                  <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
-                </div>
-
-                <div className="space-y-3 pt-4">
-                  <div className="text-center">
-                    <p className="text-gray-400 text-sm mb-3">Choose your preferred payment method:</p>
-                  </div>
-
-                  <Button
-                    onClick={handleStripeClick}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Donate with Card
-                  </Button>
-
-                  <Button
-                    onClick={handleDonateClick}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
-                  >
-                    <Heart className="h-4 w-4" />
-                    Donate via PayPal
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-
-                  <div className="w-full p-3 border border-gray-600 rounded-md bg-gray-800/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-green-500" />
-                        <span className="text-white font-medium">PayID</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5">
-                          {payId}
-                        </span>
-                        <button
-                          onClick={handleCopyPayID}
-                          className="p-1 hover:bg-gray-600 rounded transition-colors"
-                          title={copied ? "Copied!" : "Copy PayID"}
-                        >
-                          {copied ? (
-                            <Check className="h-4 w-4 text-green-400" />
-                          ) : (
-                            <Copy className="h-4 w-4 text-gray-400 hover:text-white" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-gray-400 text-xs">
-                      Use this PayID in your banking app. Check with your bank for PayID instructions.
+          ) : (
+            <>
+              {/* Initial options view */}
+              {!showAmountSelect && !showEmailInput && (
+                <div className="space-y-4 py-4">
+                  <div className="text-center space-y-4">
+                    <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
+                    <p className="text-gray-300 leading-relaxed">
+                      Creating and running this site comes with yearly costs for domains, maintenance and hosting.
                     </p>
+                    <p className="text-gray-300 leading-relaxed">Anything you&apos;d be willing to donate is appreciated.</p>
+                    <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                    className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-                  >
-                    Maybe Later
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Email input view - single column */}
-            {showEmailInput && !showCheckout && (
-              <div className="space-y-3 py-4">
-                <p className="text-gray-300 text-sm">Enter your email address for the donation receipt:</p>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleProceedCheckout}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    Continue
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowEmailInput(false)
-                      setUserEmail("")
-                    }}
-                    variant="outline"
-                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-                  >
-                    Back
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Amount select + Stripe form: single DonationCheckout instance throughout.
-                When showCheckout=false it shows the amount picker (narrow).
-                When showCheckout=true the modal goes wide and the donation text appears
-                on the left while the same component instance shows the embedded form on the right. */}
-            {showAmountSelect && (
-              <div className={showCheckout ? "grid grid-cols-1 lg:grid-cols-2 gap-6 py-4" : "py-4"}>
-                {/* Left context panel - only visible once Stripe form is embedded */}
-                {showCheckout && (
-                  <div className="flex flex-col justify-center space-y-6">
-                    <div className="text-center space-y-3">
-                      <Heart className="h-10 w-10 text-red-500 mx-auto" />
-                      <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
-                      <p className="text-gray-300 leading-relaxed">
-                        Creating and running this site comes with yearly costs for domains, maintenance and hosting.
-                      </p>
-                      <p className="text-gray-300 leading-relaxed">Anything you&apos;d be willing to donate is appreciated.</p>
-                      <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
+                  <div className="space-y-3 pt-4">
+                    <div className="text-center">
+                      <p className="text-gray-400 text-sm mb-3">Choose your preferred payment method:</p>
                     </div>
+
+                    <Button
+                      onClick={handleStripeClick}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Donate with Card
+                    </Button>
+
+                    <Button
+                      onClick={handleDonateClick}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                    >
+                      <Heart className="h-4 w-4" />
+                      Donate via PayPal
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+
+                    <div className="w-full p-3 border border-gray-600 rounded-md bg-gray-800/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4 text-green-500" />
+                          <span className="text-white font-medium">PayID</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5">
+                            {payId}
+                          </span>
+                          <button
+                            onClick={handleCopyPayID}
+                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            title={copied ? "Copied!" : "Copy PayID"}
+                          >
+                            {copied ? (
+                              <Check className="h-4 w-4 text-green-400" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-gray-400 hover:text-white" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-gray-400 text-xs">
+                        Use this PayID in your banking app. Check with your bank for PayID instructions.
+                      </p>
+                    </div>
+
                     <Button
                       variant="outline"
-                      onClick={handleCheckoutCancel}
+                      onClick={onClose}
                       className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+                    >
+                      Maybe Later
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Email input view */}
+              {showEmailInput && !showAmountSelect && (
+                <div className="space-y-3 py-4">
+                  <p className="text-gray-300 text-sm">Enter your email address for the donation receipt:</p>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleProceedCheckout}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      Continue
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowEmailInput(false)
+                        setUserEmail("")
+                      }}
+                      variant="outline"
+                      className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
                     >
                       Back
                     </Button>
                   </div>
-                )}
-                {/* Single DonationCheckout instance - persists through amount select and embedded form */}
-                <div className={showCheckout ? "rounded-lg overflow-hidden" : ""}>
+                </div>
+              )}
+
+              {/* Amount selection + Stripe form */}
+              {showAmountSelect && (
+                <div className="py-4">
                   <DonationCheckout
                     email={userEmail}
                     onSuccess={handleCheckoutSuccess}
                     onCancel={handleCheckoutCancel}
-                    onCheckoutReady={() => setShowCheckout(true)}
                   />
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
