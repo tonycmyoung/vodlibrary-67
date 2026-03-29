@@ -387,7 +387,8 @@ describe("Header", () => {
   })
 
   describe("Mobile Menu Navigation Links", () => {
-    it("should show My Level in mobile menu when user has belt", () => {
+    it("should show My Level in mobile menu when user has belt", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
@@ -397,7 +398,8 @@ describe("Header", () => {
       expect(myLevelLinks.length).toBe(2) // Desktop and mobile versions
     })
 
-    it("should not show My Level in mobile menu when user has no belt", () => {
+    it("should not show My Level in mobile menu when user has no belt", async () => {
+      const user = userEvent.setup()
       const userWithoutBelt = { ...mockUser, current_belt: null }
       render(<Header user={userWithoutBelt} />)
 
@@ -407,7 +409,8 @@ describe("Header", () => {
       expect(screen.queryByText("My Level")).toBeNull()
     })
 
-    it("should show Students link in mobile menu for teachers", () => {
+    it("should show Students link in mobile menu for teachers", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 
@@ -418,7 +421,8 @@ describe("Header", () => {
       expect(studentsLinks.length).toBe(2) // Desktop and mobile versions
     })
 
-    it("should show Invite User link in mobile menu for teachers", () => {
+    it("should show Invite User link in mobile menu for teachers", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 
@@ -430,7 +434,8 @@ describe("Header", () => {
       expect(inviteLinks.length).toBeGreaterThan(0)
     })
 
-    it("should close mobile menu when Favorites link is clicked", () => {
+    it("should close mobile menu when Favorites link is clicked", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
@@ -448,7 +453,8 @@ describe("Header", () => {
       expect(linksAfterClose.length).toBe(1)
     })
 
-    it("should close mobile menu when My Level link is clicked", () => {
+    it("should close mobile menu when My Level link is clicked", async () => {
+      const user = userEvent.setup()
       render(<Header user={mockUser} />)
 
       const hamburgerButton = screen.getByRole("button", { name: "" })
@@ -465,7 +471,8 @@ describe("Header", () => {
       expect(linksAfterClose.length).toBe(1)
     })
 
-    it("should close mobile menu when Students link is clicked for teacher", () => {
+    it("should close mobile menu when Students link is clicked for teacher", async () => {
+      const user = userEvent.setup()
       const teacherUser = { ...mockUser, role: "Teacher" }
       render(<Header user={teacherUser} />)
 

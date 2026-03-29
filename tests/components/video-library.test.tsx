@@ -385,6 +385,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle category toggle and update URL", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -476,6 +477,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle sort change", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -493,6 +495,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle sort order change", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -599,6 +602,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle view change to list", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -767,6 +771,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should include curriculum filters when toggling category filter", async () => {
+      const user = userEvent.setup()
       // Start with curriculum filter in URL
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["curr-1"])
@@ -801,6 +806,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should include category filters when toggling curriculum filter", async () => {
+      const user = userEvent.setup()
       // Start with category filter in URL
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["cat-1"])
@@ -838,6 +844,7 @@ describe("VideoLibrary", () => {
 
   describe("Custom Storage Prefix", () => {
     it("should use custom storage prefix when provided", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary storagePrefix="customLibrary" />)
 
       await waitFor(() => {
@@ -853,6 +860,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should use favoritesLibrary prefix when favoritesOnly is true", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary favoritesOnly={true} />)
 
       await waitFor(() => {
@@ -870,6 +878,7 @@ describe("VideoLibrary", () => {
 
   describe("View Change Handling", () => {
     it("should handle view change to list view", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {
@@ -1030,6 +1039,7 @@ describe("VideoLibrary", () => {
     })
 
     it("should handle filter mode change from AND to OR", async () => {
+      const user = userEvent.setup()
       // Start with AND mode and multiple filters
       mockSearchParams.get.mockImplementation((key: string) => {
         if (key === "filters") return JSON.stringify(["cat-1"])
@@ -1213,6 +1223,7 @@ describe("VideoLibrary", () => {
 
   describe("Curriculum Toggle", () => {
     it("should handle curriculum toggle and update selected curriculums", async () => {
+      const user = userEvent.setup()
       render(<VideoLibrary />)
 
       await waitFor(() => {

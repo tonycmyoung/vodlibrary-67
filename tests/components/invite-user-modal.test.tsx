@@ -77,10 +77,8 @@ describe("InviteUserModal", () => {
     const user = userEvent.setup()
     render(<InviteUserModal isOpen={true} onClose={mockOnClose} />)
 
-    const form = screen.getByRole("button", { name: /send invitation/i }).closest("form")
-    if (form) {
-      await user.pointer({ keys: "[Enter]", target: form })
-    }
+    const submitButton = screen.getByRole("button", { name: /send invitation/i })
+    await user.click(submitButton)
 
     await waitFor(() => {
       const errorMessage = screen.getByText(/please enter an email address/i)
