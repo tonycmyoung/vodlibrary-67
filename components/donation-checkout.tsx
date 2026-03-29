@@ -68,9 +68,11 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
 
   if (clientSecret) {
     return (
-      <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-        <EmbeddedCheckout onComplete={() => onSuccess?.()} />
-      </EmbeddedCheckoutProvider>
+      <div className="max-h-[70vh] overflow-y-auto -mx-6 px-6">
+        <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
+          <EmbeddedCheckout onComplete={() => onSuccess?.()} />
+        </EmbeddedCheckoutProvider>
+      </div>
     )
   }
 
