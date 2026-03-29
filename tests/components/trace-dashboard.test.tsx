@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { render, screen, waitFor, within, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import TraceDashboard from "@/components/trace-dashboard"
 import * as traceActions from "@/lib/actions/trace"
@@ -465,8 +465,10 @@ describe("TraceDashboard", () => {
     const autoRefreshSwitch = screen.getByRole("switch", { name: /auto-refresh/i })
     await user.click(autoRefreshSwitch)
 
-    // Advance time by 5 seconds and allow timers to run
-    await vi.advanceTimersByTimeAsync(5500)
+    // Advance time by 5 seconds and allow timers to run - wrap in act() for state updates
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5500)
+    })
 
     expect(traceActions.fetchTraceLogs).toHaveBeenCalledTimes(2)
 

@@ -59,9 +59,11 @@ describe("PerformerManagement", () => {
     vi.mocked(deletePerformer).mockResolvedValue({ error: null } as any)
   })
 
-  it("should render loading state initially", () => {
-    render(<PerformerManagement />)
+  it("should render loading state initially", async () => {
+    const { unmount } = render(<PerformerManagement />)
     expect(screen.getByText("Loading performers...")).toBeTruthy()
+    // Unmount to prevent act() warnings from pending async operations
+    unmount()
   })
 
   it("should render performers after loading", async () => {

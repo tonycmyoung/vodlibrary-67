@@ -255,10 +255,11 @@ describe("AdminNotificationManagement", () => {
     expect(screen.getByText("Broadcast message to all")).toBeTruthy()
   })
 
-  it("should show loading state initially", () => {
-    render(<AdminNotificationManagement />)
-
+  it("should show loading state initially", async () => {
+    const { unmount } = render(<AdminNotificationManagement />)
     expect(screen.getByText("Loading notifications...")).toBeTruthy()
+    // Unmount to prevent act() warnings from pending async operations
+    unmount()
   })
 
   it("should show character count for message input", async () => {

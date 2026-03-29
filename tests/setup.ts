@@ -32,13 +32,3 @@ Object.entries(testEnv).forEach(([key, value]) => {
     process.env[key] = value
   }
 })
-
-// Mock navigator.clipboard for all tests
-Object.defineProperty(globalThis.navigator, "clipboard", {
-  value: {
-    writeText: vi.fn().mockResolvedValue(undefined),
-    readText: vi.fn().mockResolvedValue(""),
-  },
-  writable: true,
-  configurable: true,
-})
