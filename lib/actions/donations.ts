@@ -63,7 +63,6 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       sessionId: session.id,
     }
   } catch (error) {
-    console.error("[v0] Error creating donation checkout:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create checkout session",

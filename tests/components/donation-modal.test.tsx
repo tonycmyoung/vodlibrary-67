@@ -6,6 +6,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import DonationModal from "@/components/donation-modal"
 
+// Mock the Stripe library to prevent initialization errors
+vi.mock("@/lib/stripe", () => ({
+  stripe: {},
+  getStripe: vi.fn(),
+}))
+
+// Mock the donations actions
+vi.mock("@/lib/actions/donations", () => ({
+  createDonationCheckout: vi.fn(),
+}))
+
 // Mock the Dialog component
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
