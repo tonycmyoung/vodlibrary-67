@@ -1,7 +1,8 @@
 "use client"
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import VideoModal from "@/components/video-modal"
 
 // Mock dependencies
@@ -182,7 +183,8 @@ describe("VideoModal", () => {
     expect(videoUrlInput).toHaveValue("https://example.com/new.mp4")
   })
 
-  it("should toggle curriculum checkboxes", () => {
+  it("should toggle curriculum checkboxes", async () => {
+    const user = userEvent.setup()
     render(
       <VideoModal
         isOpen={true}
@@ -198,14 +200,15 @@ describe("VideoModal", () => {
     const curriculumCheckbox = screen.getByLabelText("10.Kyu") as HTMLInputElement
     expect(curriculumCheckbox.checked).toBe(false)
 
-    fireEvent.click(curriculumCheckbox)
+    await user.click(curriculumCheckbox)
     expect(curriculumCheckbox.checked).toBe(true)
 
-    fireEvent.click(curriculumCheckbox)
+    await user.click(curriculumCheckbox)
     expect(curriculumCheckbox.checked).toBe(false)
   })
 
   it("should auto-fill metadata when auto-fill button is clicked", async () => {
+    const user = userEvent.setup()
     vi.mocked(extractVideoMetadata).mockResolvedValue({
       thumbnail: "https://example.com/auto-thumb.jpg",
       duration: 130,
@@ -224,10 +227,10 @@ describe("VideoModal", () => {
     )
 
     const videoUrlInput = screen.getByLabelText("Video URL *")
-    fireEvent.change(videoUrlInput, { target: { value: "https://example.com/video.mp4" } })
+    await user.type(videoUrlInput, "https://example.com/video.mp4")
 
     const autoFillButton = screen.getByTitle("Auto-fill metadata")
-    fireEvent.click(autoFillButton)
+    await user.click(autoFillButton)
 
     await waitFor(() => {
       expect(extractVideoMetadata).toHaveBeenCalledWith("https://example.com/video.mp4")
@@ -240,6 +243,7 @@ describe("VideoModal", () => {
   })
 
   it("should show error when auto-fill fails", async () => {
+    const user = userEvent.setup()
     vi.mocked(extractVideoMetadata).mockRejectedValue(new Error("Failed to extract metadata"))
 
     render(
@@ -255,10 +259,10 @@ describe("VideoModal", () => {
     )
 
     const videoUrlInput = screen.getByLabelText("Video URL *")
-    fireEvent.change(videoUrlInput, { target: { value: "https://example.com/video.mp4" } })
+    await user.type(videoUrlInput, "https://example.com/video.mp4")
 
     const autoFillButton = screen.getByTitle("Auto-fill metadata")
-    fireEvent.click(autoFillButton)
+    await user.click(autoFillButton)
 
     await waitFor(() => {
       expect(screen.getByText("Could not extract video metadata. Please fill in manually.")).toBeTruthy()
@@ -266,6 +270,7 @@ describe("VideoModal", () => {
   })
 
   it("should call saveVideo when form is submitted", async () => {
+    const user = userEvent.setup()
     vi.mocked(saveVideo).mockResolvedValue({ success: true })
 
     render(
@@ -283,11 +288,11 @@ describe("VideoModal", () => {
     const titleInput = screen.getByLabelText("Title *")
     const videoUrlInput = screen.getByLabelText("Video URL *")
 
-    fireEvent.change(titleInput, { target: { value: "Test Video" } })
-    fireEvent.change(videoUrlInput, { target: { value: "https://example.com/video.mp4" } })
+    await user.type(titleInput, "Test Video")
+    await user.type(videoUrlInput, "https://example.com/video.mp4")
 
     const submitButton = screen.getByRole("button", { name: /Add Video/i })
-    fireEvent.click(submitButton)
+    await user.click(submitButton)
 
     await waitFor(() => {
       expect(saveVideo).toHaveBeenCalled()
@@ -295,7 +300,8 @@ describe("VideoModal", () => {
     })
   })
 
-  it("should call onClose when Cancel button is clicked", () => {
+  it("should call onClose when Cancel button is clicked", async () => {
+    const user = userEvent.setup()
     render(
       <VideoModal
         isOpen={true}
@@ -309,7 +315,7 @@ describe("VideoModal", () => {
     )
 
     const cancelButton = screen.getByRole("button", { name: /Cancel/i })
-    fireEvent.click(cancelButton)
+    await user.click(cancelButton)
 
     expect(mockOnClose).toHaveBeenCalled()
   })

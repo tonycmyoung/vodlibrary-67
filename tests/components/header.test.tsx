@@ -245,22 +245,24 @@ describe("Header", () => {
     }
   })
 
-  it("should toggle mobile menu when hamburger is clicked", () => {
+  it("should toggle mobile menu when hamburger is clicked", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Mobile menu should now be visible with navigation links
     const mobileNav = screen.getAllByText("Library")
     expect(mobileNav.length).toBeGreaterThan(1) // Both desktop and mobile versions
   })
 
-  it("should close mobile menu after clicking a link", () => {
+  it("should close mobile menu after clicking a link", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Verify mobile menu is open
     const mobileLinks = screen.getAllByText("Library")
@@ -268,7 +270,7 @@ describe("Header", () => {
 
     // Click a mobile link
     const libraryLink = mobileLinks[mobileLinks.length - 1] // Get the mobile version
-    fireEvent.click(libraryLink)
+    await user.click(libraryLink)
 
     // Mobile menu should close - verify we're back to just the desktop link
     const linksAfterClose = screen.getAllByText("Library")
@@ -318,19 +320,20 @@ describe("Header", () => {
     expect(notificationBell).toBeTruthy()
   })
 
-  it("should close mobile menu when clicking mobile menu links", () => {
+  it("should close mobile menu when clicking mobile menu links", async () => {
+    const user = userEvent.setup()
     render(<Header user={mockUser} />)
 
     // Open mobile menu
     const hamburgerButton = screen.getByRole("button", { name: "" })
-    fireEvent.click(hamburgerButton)
+    await user.click(hamburgerButton)
 
     // Verify mobile menu is visible
     const libraryLinks = screen.getAllByText("Library")
     expect(libraryLinks.length).toBeGreaterThan(1)
 
     // Click a mobile link (the last one is the mobile version)
-    fireEvent.click(libraryLinks[libraryLinks.length - 1])
+    await user.click(libraryLinks[libraryLinks.length - 1])
 
     // Mobile menu should close
     const linksAfterClose = screen.getAllByText("Library")

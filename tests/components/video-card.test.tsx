@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import VideoCard from "@/components/video-card"
 import { createClient } from "@/lib/supabase/client"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -132,6 +133,7 @@ describe("VideoCard", () => {
   })
 
   it("should toggle favorite when heart button is clicked", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1", email: "test@example.com" } },
       error: null,
@@ -145,7 +147,7 @@ describe("VideoCard", () => {
     })
 
     const heartButton = screen.getByRole("button")
-    fireEvent.click(heartButton)
+    await user.click(heartButton)
 
     await waitFor(() => {
       expect(mockFrom).toHaveBeenCalledWith("user_favorites")

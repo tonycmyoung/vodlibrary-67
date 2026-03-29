@@ -135,6 +135,7 @@ describe("ResetPasswordForm", () => {
   }, 10000) // Add test timeout as parameter to it() function
 
   it("should toggle password visibility", async () => {
+    const user = userEvent.setup()
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "user-123" } } },
       error: null,
@@ -142,13 +143,13 @@ describe("ResetPasswordForm", () => {
 
     render(<ResetPasswordForm />)
 
-    await waitFor(() => {
+    await waitFor(async () => {
       const passwordInput = screen.getByLabelText("New Password") as HTMLInputElement
       expect(passwordInput.type).toBe("password")
 
       const toggleButton = passwordInput.parentElement?.querySelector("button")
       if (toggleButton) {
-        fireEvent.click(toggleButton)
+        await user.click(toggleButton)
         expect(passwordInput.type).toBe("text")
       }
     })
@@ -174,6 +175,7 @@ describe("ResetPasswordForm", () => {
   })
 
   it("should update validation when password is entered", async () => {
+    const user = userEvent.setup()
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "user-123" } } },
       error: null,
@@ -183,7 +185,7 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(async () => {
       const passwordInput = screen.getByLabelText("New Password") as HTMLInputElement
-      fireEvent.change(passwordInput, { target: { value: "password123" } })
+      await user.type(passwordInput, "password123")
 
       const minLengthIndicator = screen.getByText(/at least 8 characters/i)
       // Verify the indicator has the success color class

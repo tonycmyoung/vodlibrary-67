@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import VideoPlayer from "@/components/video-player"
 import { createClient } from "@/lib/supabase/client"
 import { incrementVideoViews } from "@/lib/actions"
@@ -106,37 +107,41 @@ describe("VideoPlayer", () => {
     expect(backButton).toBeTruthy()
   })
 
-  it("should call window.history.back when Back button is clicked", () => {
+  it("should call window.history.back when Back button is clicked", async () => {
+    const user = userEvent.setup()
     render(<VideoPlayer video={mockVideo} />)
 
     const backButton = screen.getByText("Back to Library")
-    fireEvent.click(backButton)
+    await user.click(backButton)
 
     expect(window.history.back).toHaveBeenCalled()
   })
 
-  it("should toggle fullscreen mode when Fullscreen View button is clicked", () => {
+  it("should toggle fullscreen mode when Fullscreen View button is clicked", async () => {
+    const user = userEvent.setup()
     render(<VideoPlayer video={mockVideo} />)
 
     const fullscreenButton = screen.getByText("Fullscreen View")
-    fireEvent.click(fullscreenButton)
+    await user.click(fullscreenButton)
 
     expect(screen.getByLabelText("Exit fullscreen")).toBeTruthy()
   })
 
-  it("should exit fullscreen mode when close button is clicked", () => {
+  it("should exit fullscreen mode when close button is clicked", async () => {
+    const user = userEvent.setup()
     render(<VideoPlayer video={mockVideo} />)
 
     const fullscreenButton = screen.getByText("Fullscreen View")
-    fireEvent.click(fullscreenButton)
+    await user.click(fullscreenButton)
 
     const exitButton = screen.getByLabelText("Exit fullscreen")
-    fireEvent.click(exitButton)
+    await user.click(exitButton)
 
     expect(screen.getByText("Fullscreen View")).toBeTruthy()
   })
 
   it("should toggle favorite when heart button is clicked", async () => {
+    const user = userEvent.setup()
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1", email: "test@example.com" } },
       error: null,
@@ -149,7 +154,7 @@ describe("VideoPlayer", () => {
 
     expect(heartButton).toBeDefined()
 
-    await fireEvent.click(heartButton!)
+    await user.click(heartButton!)
 
     await waitFor(() => {
       expect(mockFrom).toHaveBeenCalledWith("user_favorites")

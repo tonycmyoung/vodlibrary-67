@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import SendMessageForm from "@/components/send-message-form"
 
 vi.mock("@/lib/actions", () => ({
@@ -46,11 +47,12 @@ describe("SendMessageForm", () => {
     expect(counter.className).toContain("text-xs")
   })
 
-  it("should update character counter when typing", () => {
+  it("should update character counter when typing", async () => {
+    const user = userEvent.setup()
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i)
-    fireEvent.change(textarea, { target: { value: "Hello!" } })
+    await user.type(textarea, "Hello!")
 
     const counter = screen.getByText(/6\/500 characters/i)
     expect(counter).toBeTruthy()
@@ -63,22 +65,24 @@ describe("SendMessageForm", () => {
     expect(sendButton.hasAttribute("disabled")).toBe(true)
   })
 
-  it("should enable send button when message has content", () => {
+  it("should enable send button when message has content", async () => {
+    const user = userEvent.setup()
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i)
-    fireEvent.change(textarea, { target: { value: "Test message" } })
+    await user.type(textarea, "Test message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
     expect(sendButton.hasAttribute("disabled")).toBe(false)
   })
 
-  it("should show error when trying to send empty message", () => {
+  it("should show error when trying to send empty message", async () => {
+    const user = userEvent.setup()
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const form = screen.getByRole("button", { name: /send message/i }).closest("form")
     if (form) {
-      fireEvent.submit(form)
+      await user.pointer({ keys: "[Enter]", target: form })
     }
 
     const errorMessage = screen.getByText(/please enter a message/i)
@@ -87,15 +91,16 @@ describe("SendMessageForm", () => {
   })
 
   it("should call sendNotificationWithEmail on submit", async () => {
+    const user = userEvent.setup()
     vi.mocked(sendNotificationWithEmail).mockResolvedValue({ success: true })
 
     render(<SendMessageForm userId="user-123" userName="John Doe" />)
 
     const textarea = screen.getByPlaceholderText(/type your message here/i)
-    fireEvent.change(textarea, { target: { value: "Test message" } })
+    await user.type(textarea, "Test message")
 
     const sendButton = screen.getByRole("button", { name: /send message/i })
-    fireEvent.click(sendButton)
+    await user.click(sendButton)
 
     await waitFor(() => {
       expect(sendNotificationWithEmail).toHaveBeenCalledWith({
