@@ -35,6 +35,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     }
 
     if (isOpen) {
+      trace.info("Donation modal opened")
       fetchUserEmail()
     }
   }, [isOpen])
