@@ -47,6 +47,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
+    if (showSuccess) {
+      trace.info("Payment completed - thank you screen shown", { category: "donation", payload: { email: userEmail } })
+    }
+  }, [showSuccess, userEmail])
+
+  useEffect(() => {
     const fetchUserEmail = async () => {
       try {
         const supabase = createClient()
@@ -98,7 +104,6 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleCheckoutSuccess = () => {
-    trace.info("Payment completed successfully", { category: "donation", payload: { email: userEmail } })
     setShowSuccess(true)
     setShowAmountSelect(false)
     setShowEmailInput(false)
