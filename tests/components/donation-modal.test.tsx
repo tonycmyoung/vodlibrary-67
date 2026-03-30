@@ -260,7 +260,7 @@ describe("DonationModal", () => {
     fireEvent.click(subscribeButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/You Already Have a Regular Donation/i)).toBeTruthy()
+      expect(screen.getByRole("heading", { name: /You Already Have a Regular Donation/i })).toBeTruthy()
     })
 
     const confirmButton = screen.getByRole("button", { name: /Yes, Set Up Additional Donation/i })
@@ -288,7 +288,7 @@ describe("DonationModal", () => {
     fireEvent.click(subscribeButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/You Already Have a Regular Donation/i)).toBeTruthy()
+      expect(screen.getByRole("heading", { name: /You Already Have a Regular Donation/i })).toBeTruthy()
     })
 
     const cancelButton = screen.getByRole("button", { name: /No, Go Back/i })
