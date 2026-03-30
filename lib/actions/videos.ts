@@ -186,7 +186,7 @@ export async function incrementVideoViews(videoId: string): Promise<{ success?: 
 
       authenticatedUserId = user?.id || null
     } catch (userAuthError) {
-      console.error("[v0] Error getting authenticated user:", userAuthError)
+      // Auth error - continue without tracking user ID
     }
 
     const viewedAt = new Date().toISOString()
@@ -198,7 +198,6 @@ export async function incrementVideoViews(videoId: string): Promise<{ success?: 
     })
 
     if (videoViewError) {
-      console.error("[v0] Error inserting into video_views:", videoViewError)
       return { error: "Failed to track video view" }
     }
 
@@ -210,14 +209,12 @@ export async function incrementVideoViews(videoId: string): Promise<{ success?: 
       })
 
       if (userViewError) {
-        console.error("[v0] Error tracking user view:", userViewError)
         // Don't fail the main operation if user tracking fails
       }
     }
 
     return { success: true }
   } catch (error) {
-    console.error("[v0] Error in incrementVideoViews:", error)
     return { error: "Failed to increment video views" }
   }
 }
