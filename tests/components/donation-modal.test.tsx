@@ -208,9 +208,9 @@ describe("DonationModal", () => {
 
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
 
-    // Wait for email to be fetched
+    // Wait for email to be fetched from Supabase auth
     await waitFor(() => {
-      // The modal is open
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
     })
 
     const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
@@ -229,9 +229,9 @@ describe("DonationModal", () => {
 
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
 
-    // Wait for email to be fetched
+    // Wait for email to be fetched from Supabase auth
     await waitFor(() => {
-      // The modal is open
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
     })
 
     const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
@@ -250,6 +250,11 @@ describe("DonationModal", () => {
     })
 
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched from Supabase auth
+    await waitFor(() => {
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    })
 
     const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
     fireEvent.click(subscribeButton)
@@ -274,6 +279,11 @@ describe("DonationModal", () => {
 
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
 
+    // Wait for email to be fetched from Supabase auth
+    await waitFor(() => {
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    })
+
     const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
     fireEvent.click(subscribeButton)
 
@@ -297,7 +307,8 @@ describe("DonationModal", () => {
     fireEvent.click(manageButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+      // Use getByRole to specifically target the heading element
+      expect(screen.getByRole("heading", { name: /Manage Your Subscription/i })).toBeTruthy()
     })
   })
 
@@ -314,7 +325,8 @@ describe("DonationModal", () => {
     fireEvent.click(manageButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+      // Use getByRole to specifically target the heading element
+      expect(screen.getByRole("heading", { name: /Manage Your Subscription/i })).toBeTruthy()
     })
 
     const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
@@ -338,7 +350,8 @@ describe("DonationModal", () => {
     fireEvent.click(manageButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+      // Use getByRole to specifically target the heading element
+      expect(screen.getByRole("heading", { name: /Manage Your Subscription/i })).toBeTruthy()
     })
 
     const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
@@ -356,7 +369,8 @@ describe("DonationModal", () => {
     fireEvent.click(manageButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+      // Use getByRole to specifically target the heading element
+      expect(screen.getByRole("heading", { name: /Manage Your Subscription/i })).toBeTruthy()
     })
 
     const backButton = screen.getByRole("button", { name: /^Back$/i })
@@ -374,6 +388,11 @@ describe("DonationModal", () => {
     })
 
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched from Supabase auth
+    await waitFor(() => {
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    })
 
     const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
     fireEvent.click(subscribeButton)
