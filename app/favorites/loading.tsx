@@ -28,9 +28,9 @@ export default function Loading() {
 
         {/* Video grid skeleton */}
         <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {[...Array(8)].map((_, i) => (
+          {[...new Array(8)].map((_, i) => (
             <div
-              key={i}
+              key={`skeleton-${i}`}
               className="overflow-hidden rounded-lg bg-black/30"
               style={{ animationDelay: `${i * 50}ms` }}
             >
