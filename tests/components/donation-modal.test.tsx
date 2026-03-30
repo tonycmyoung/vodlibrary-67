@@ -323,7 +323,9 @@ describe("DonationModal", () => {
       error: null,
     })
 
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    })
 
     const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
     fireEvent.click(manageButton)
@@ -348,7 +350,9 @@ describe("DonationModal", () => {
       error: "No active subscription found",
     })
 
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    })
 
     // Navigate to subscription management view
     const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
