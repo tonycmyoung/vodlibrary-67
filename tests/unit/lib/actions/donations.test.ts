@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
-const { mockCreateSession, mockGetDonationPreset } = vi.hoisted(() => ({
+const { mockCreateSession, mockGetDonationPreset, mockGetSubscriptionTier } = vi.hoisted(() => ({
   mockCreateSession: vi.fn(),
   mockGetDonationPreset: vi.fn(),
+  mockGetSubscriptionTier: vi.fn(),
 }))
 
 // Mock Stripe module
@@ -21,16 +22,43 @@ vi.mock("@/lib/stripe", () => ({
 // Mock donation products module
 vi.mock("@/lib/donation-products", () => ({
   getDonationPreset: mockGetDonationPreset,
+  getSubscriptionTier: mockGetSubscriptionTier,
   DONATION_PRESETS: [
     { id: "donation-5", name: "$5", amountCents: 500 },
     { id: "donation-10", name: "$10", amountCents: 1000 },
     { id: "donation-25", name: "$25", amountCents: 2500 },
     { id: "donation-50", name: "$50", amountCents: 5000 },
   ],
+  SUBSCRIPTION_TIERS: [
+    {
+      id: "supporter",
+      name: "Supporter",
+      prices: {
+        monthly: { amount: 200, priceId: "price_1TGTp4BrKQRCXygCJkv72PiL" },
+        annual: { amount: 2000, priceId: "price_1TGTp4BrKQRCXygCE5wJhbWO" },
+      },
+    },
+    {
+      id: "patron",
+      name: "Patron",
+      prices: {
+        monthly: { amount: 500, priceId: "price_1TGTsLBrKQRCXygCRkpnx6Qr" },
+        annual: { amount: 5000, priceId: "price_1TGTt0BrKQRCXygCMb2jpA7P" },
+      },
+    },
+    {
+      id: "champion",
+      name: "Champion",
+      prices: {
+        monthly: { amount: 1000, priceId: "price_1TGTxZBrKQRCXygCvGgrFOyO" },
+        annual: { amount: 10000, priceId: "price_1TGTxZBrKQRCXygCTmxSmQ90" },
+      },
+    },
+  ],
 }))
 
 // Import after mocks are set up
-import { createDonationCheckout } from "@/lib/actions/donations"
+import { createDonationCheckout, createSubscriptionCheckout } from "@/lib/actions/donations"
 
 describe("Donation Actions - createDonationCheckout", () => {
   beforeEach(() => {
@@ -45,6 +73,7 @@ describe("Donation Actions - createDonationCheckout", () => {
       }
       return presets[id] || undefined
     })
+  })
   })
 
   describe("with preset ID", () => {
@@ -241,6 +270,215 @@ describe("Donation Actions - createDonationCheckout", () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe("Failed to create checkout session")
+    })
+  })
+})
+
+describe("Donation Actions - createSubscriptionCheckout", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Reset default mock behavior
+    mockGetSubscriptionTier.mockImplementation((id: string) => {
+      const tiers: Record<
+        string,
+        {
+          id: string
+          name: string
+          prices: {
+            monthly: { amount: number; priceId: string }
+            annual: { amount: number; priceId: string }
+          }
+        }
+      > = {
+        supporter: {
+          id: "supporter",
+          name: "Supporter",
+          prices: {
+            monthly: { amount: 200, priceId: "price_1TGTp4BrKQRCXygCJkv72PiL" },
+            annual: { amount: 2000, priceId: "price_1TGTp4BrKQRCXygCE5wJhbWO" },
+          },
+        },
+        patron: {
+          id: "patron",
+          name: "Patron",
+          prices: {
+            monthly: { amount: 500, priceId: "price_1TGTsLBrKQRCXygCRkpnx6Qr" },
+            annual: { amount: 5000, priceId: "price_1TGTt0BrKQRCXygCMb2jpA7P" },
+          },
+        },
+        champion: {
+          id: "champion",
+          name: "Champion",
+          prices: {
+            monthly: { amount: 1000, priceId: "price_1TGTxZBrKQRCXygCvGgrFOyO" },
+            annual: { amount: 10000, priceId: "price_1TGTxZBrKQRCXygCTmxSmQ90" },
+          },
+        },
+      }
+      return tiers[id] || undefined
+    })
+  })
+
+  describe("with valid subscription tiers", () => {
+    it("should create checkout session for monthly subscription", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_monthly_123",
+        client_secret: "pi_monthly_secret",
+      })
+
+      const result = await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/subscribe/success",
+      })
+
+      expect(result.success).toBe(true)
+      expect(result.clientSecret).toBe("pi_monthly_secret")
+      expect(result.sessionId).toBe("cs_monthly_123")
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: "subscription",
+          ui_mode: "embedded_page",
+          customer_email: "subscriber@example.com",
+          line_items: [
+            expect.objectContaining({
+              price: "price_1TGTp4BrKQRCXygCJkv72PiL",
+              quantity: 1,
+            }),
+          ],
+        })
+      )
+    })
+
+    it("should create checkout session for annual subscription", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_annual_456",
+        client_secret: "pi_annual_secret",
+      })
+
+      const result = await createSubscriptionCheckout({
+        tierId: "patron",
+        interval: "annual",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/subscribe/success",
+      })
+
+      expect(result.success).toBe(true)
+      expect(result.clientSecret).toBe("pi_annual_secret")
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          line_items: [
+            expect.objectContaining({
+              price: "price_1TGTt0BrKQRCXygCMb2jpA7P",
+              quantity: 1,
+            }),
+          ],
+        })
+      )
+    })
+
+    it("should support all three subscription tiers", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_champion",
+        client_secret: "pi_champion",
+      })
+
+      const result = await createSubscriptionCheckout({
+        tierId: "champion",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/subscribe/success",
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          line_items: [
+            expect.objectContaining({
+              price: "price_1TGTxZBrKQRCXygCvGgrFOyO",
+            }),
+          ],
+        })
+      )
+    })
+  })
+
+  describe("validation and error handling", () => {
+    it("should return error for invalid tier ID", async () => {
+      mockGetSubscriptionTier.mockReturnValue(undefined)
+
+      const result = await createSubscriptionCheckout({
+        tierId: "invalid_tier",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Invalid subscription tier")
+    })
+
+    it("should handle Stripe API errors", async () => {
+      mockCreateSession.mockRejectedValue(new Error("Stripe API connection error"))
+
+      const result = await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Stripe API connection error")
+    })
+
+    it("should require client_secret in response", async () => {
+      mockCreateSession.mockResolvedValue({
+        id: "cs_no_secret",
+        // missing client_secret
+      })
+
+      const result = await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to create subscription checkout session")
+    })
+
+    it("should require session id in response", async () => {
+      mockCreateSession.mockResolvedValue({
+        client_secret: "pi_no_id",
+        // missing id
+      })
+
+      const result = await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to create subscription checkout session")
+    })
+
+    it("should handle generic errors gracefully", async () => {
+      mockCreateSession.mockRejectedValue("Unknown error type")
+
+      const result = await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to create subscription checkout session")
     })
   })
 })
