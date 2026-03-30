@@ -1,10 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import DonationModal from "@/components/donation-modal"
+
+// Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
+const { mockCheckExistingSubscription, mockCreateCustomerPortalSession } = vi.hoisted(() => ({
+  mockCheckExistingSubscription: vi.fn(),
+  mockCreateCustomerPortalSession: vi.fn(),
+}))
 
 // Mock the Stripe library to prevent initialization errors
 vi.mock("@/lib/stripe", () => ({
@@ -15,6 +20,8 @@ vi.mock("@/lib/stripe", () => ({
 // Mock the donations actions
 vi.mock("@/lib/actions/donations", () => ({
   createDonationCheckout: vi.fn(),
+  checkExistingSubscription: mockCheckExistingSubscription,
+  createCustomerPortalSession: mockCreateCustomerPortalSession,
 }))
 
 // Mock the Dialog component
@@ -26,12 +33,51 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }))
 
+// Mock DonationCheckout and SubscriptionCheckout
+vi.mock("@/components/donation-checkout", () => ({
+  DonationCheckout: ({ onSuccess, onCancel }: { onSuccess?: () => void; onCancel?: () => void }) => (
+    <div data-testid="donation-checkout">
+      <button onClick={onSuccess}>Complete Donation</button>
+      <button onClick={onCancel}>Cancel Donation</button>
+    </div>
+  ),
+}))
+
+vi.mock("@/components/subscription-checkout", () => ({
+  SubscriptionCheckout: ({ onSuccess, onCancel }: { onSuccess?: () => void; onCancel?: () => void }) => (
+    <div data-testid="subscription-checkout">
+      <button onClick={onSuccess}>Complete Subscription</button>
+      <button onClick={onCancel}>Cancel Subscription</button>
+    </div>
+  ),
+}))
+
+// Mock Supabase client
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { email: "test@example.com" } } }),
+    },
+  })),
+}))
+
+// Mock trace
+vi.mock("@/lib/trace", () => ({
+  trace: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
 describe("DonationModal", () => {
   const mockOnClose = vi.fn()
   const testPayId = "test-payid@example.com"
 
   beforeEach(() => {
     mockOnClose.mockClear()
+    mockCheckExistingSubscription.mockReset()
+    mockCreateCustomerPortalSession.mockReset()
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
@@ -113,5 +159,235 @@ describe("DonationModal", () => {
     fireEvent.click(maybeLaterButton)
 
     expect(mockOnClose).toHaveBeenCalledTimes(1)
+  })
+
+  it("should show stripe checkout when clicking donate with card (with email)", async () => {
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched
+    await waitFor(() => {
+      // The modal is open
+    })
+
+    const stripeButton = screen.getByRole("button", { name: /donate once-off with card/i })
+    fireEvent.click(stripeButton)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("donation-checkout")).toBeTruthy()
+    })
+  })
+
+  it("should show success screen after donation completes", async () => {
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched
+    await waitFor(() => {
+      // The modal is open
+    })
+
+    const stripeButton = screen.getByRole("button", { name: /donate once-off with card/i })
+    fireEvent.click(stripeButton)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("donation-checkout")).toBeTruthy()
+    })
+
+    const completeDonationButton = screen.getByText("Complete Donation")
+    fireEvent.click(completeDonationButton)
+
+    await waitFor(() => {
+      expect(screen.getByText("Thank You!")).toBeTruthy()
+    })
+  })
+
+  it("should show subscription checkout when clicking donate regularly", async () => {
+    mockCheckExistingSubscription.mockResolvedValue({
+      hasSubscription: false,
+      subscriptionCount: 0,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched
+    await waitFor(() => {
+      // The modal is open
+    })
+
+    const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
+    fireEvent.click(subscribeButton)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("subscription-checkout")).toBeTruthy()
+    })
+  })
+
+  it("should show existing subscription warning when user has active subscription", async () => {
+    mockCheckExistingSubscription.mockResolvedValue({
+      hasSubscription: true,
+      subscriptionCount: 1,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    // Wait for email to be fetched
+    await waitFor(() => {
+      // The modal is open
+    })
+
+    const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
+    fireEvent.click(subscribeButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/You Already Have a Regular Donation/i)).toBeTruthy()
+      expect(screen.getByText(/1 active regular donation/i)).toBeTruthy()
+    })
+  })
+
+  it("should proceed to subscription checkout when user confirms additional subscription", async () => {
+    mockCheckExistingSubscription.mockResolvedValue({
+      hasSubscription: true,
+      subscriptionCount: 1,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
+    fireEvent.click(subscribeButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/You Already Have a Regular Donation/i)).toBeTruthy()
+    })
+
+    const confirmButton = screen.getByRole("button", { name: /Yes, Set Up Additional Donation/i })
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("subscription-checkout")).toBeTruthy()
+    })
+  })
+
+  it("should go back when user cancels additional subscription", async () => {
+    mockCheckExistingSubscription.mockResolvedValue({
+      hasSubscription: true,
+      subscriptionCount: 1,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
+    fireEvent.click(subscribeButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/You Already Have a Regular Donation/i)).toBeTruthy()
+    })
+
+    const cancelButton = screen.getByRole("button", { name: /No, Go Back/i })
+    fireEvent.click(cancelButton)
+
+    await waitFor(() => {
+      // Should be back to main view
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    })
+  })
+
+  it("should show manage subscription view when clicking manage link", async () => {
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
+    fireEvent.click(manageButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+    })
+  })
+
+  it("should open portal when user clicks access portal", async () => {
+    mockCreateCustomerPortalSession.mockResolvedValue({
+      success: true,
+      portalUrl: "https://billing.stripe.com/test",
+      error: null,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
+    fireEvent.click(manageButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+    })
+
+    const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
+    fireEvent.click(portalButton)
+
+    await waitFor(() => {
+      expect(globalThis.open).toHaveBeenCalledWith("https://billing.stripe.com/test", "_blank")
+    })
+  })
+
+  it("should show error when portal session fails", async () => {
+    mockCreateCustomerPortalSession.mockResolvedValue({
+      success: false,
+      portalUrl: null,
+      error: "No active subscription found",
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
+    fireEvent.click(manageButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+    })
+
+    const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
+    fireEvent.click(portalButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/No active subscription found/i)).toBeTruthy()
+    })
+  })
+
+  it("should go back from manage view when back button is clicked", async () => {
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
+    fireEvent.click(manageButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Manage Your Subscription/i)).toBeTruthy()
+    })
+
+    const backButton = screen.getByRole("button", { name: /^Back$/i })
+    fireEvent.click(backButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Thanks for considering to donate!/i)).toBeTruthy()
+    })
+  })
+
+  it("should show success message for subscription completion", async () => {
+    mockCheckExistingSubscription.mockResolvedValue({
+      hasSubscription: false,
+      subscriptionCount: 0,
+    })
+
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+
+    const subscribeButton = screen.getByRole("button", { name: /donate regularly with card/i })
+    fireEvent.click(subscribeButton)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("subscription-checkout")).toBeTruthy()
+    })
+
+    const completeButton = screen.getByText("Complete Subscription")
+    fireEvent.click(completeButton)
+
+    await waitFor(() => {
+      expect(screen.getByText("Thank You!")).toBeTruthy()
+      expect(screen.getByText(/subscription has been set up successfully/i)).toBeTruthy()
+    })
   })
 })
