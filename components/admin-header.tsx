@@ -18,13 +18,13 @@ import AboutModal from "@/components/about-modal"
 import { useState } from "react"
 
 interface AdminHeaderProps {
-  user: {
-    id: string
-    full_name: string | null
-    email: string
-    is_approved: boolean
-    profile_image_url?: string | null
-    role: string // Assuming role is added to the user object
+  readonly user: {
+    readonly id: string
+    readonly full_name: string | null
+    readonly email: string
+    readonly is_approved: boolean
+    readonly profile_image_url?: string | null
+    readonly role: string // Assuming role is added to the user object
   }
 }
 

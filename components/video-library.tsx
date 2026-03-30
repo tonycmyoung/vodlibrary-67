@@ -59,11 +59,11 @@ const MobileFilterDialog = dynamic(() => import("@/components/mobile-filter-dial
 import { type VideoLibrarySortBy } from "@/lib/video-sorting"
 
 interface VideoLibraryProps {
-  favoritesOnly?: boolean
-  maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
-  storagePrefix?: string // Allow custom storage prefix for separate UI state
-  nextBeltName?: string // Add prop for next belt name
-  userProfile?: any // Added prop for user profile
+  readonly favoritesOnly?: boolean
+  readonly maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
+  readonly storagePrefix?: string // Allow custom storage prefix for separate UI state
+  readonly nextBeltName?: string // Add prop for next belt name
+  readonly userProfile?: any // Added prop for user profile
 }
 
 

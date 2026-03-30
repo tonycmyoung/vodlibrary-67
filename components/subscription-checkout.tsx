@@ -12,10 +12,10 @@ import { trace } from "@/lib/trace"
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
 interface SubscriptionCheckoutProps {
-  email: string
-  onSuccess?: () => void
-  onCancel?: () => void
-  onBack?: () => void
+  readonly email: string
+  readonly onSuccess?: () => void
+  readonly onCancel?: () => void
+  readonly onBack?: () => void
 }
 
 export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: SubscriptionCheckoutProps) {

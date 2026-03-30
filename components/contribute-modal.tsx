@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Upload, ExternalLink } from "lucide-react"
 
 interface ContributeModalProps {
-  isOpen: boolean
-  onClose: () => void
+  readonly isOpen: boolean
+  readonly onClose: () => void
 }
 
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {

@@ -13,9 +13,9 @@ import { trace } from "@/lib/trace"
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
 interface DonationCheckoutProps {
-  email: string
-  onSuccess?: () => void
-  onCancel?: () => void
+  readonly email: string
+  readonly onSuccess?: () => void
+  readonly onCancel?: () => void
 }
 
 export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckoutProps) {

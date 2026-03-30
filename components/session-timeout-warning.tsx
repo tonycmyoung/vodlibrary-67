@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client"
 import { traceError } from "@/lib/trace-logger"
 
 interface SessionTimeoutWarningProps {
-  userId: string
+  readonly userId: string
 }
 
 export default function SessionTimeoutWarning({ userId }: SessionTimeoutWarningProps) {

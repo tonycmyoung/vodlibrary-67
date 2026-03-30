@@ -30,10 +30,10 @@ interface Video {
 }
 
 interface VideoCardListProps {
-  video: Video
-  isFavorited?: boolean
-  onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
-  viewCount?: number
+  readonly video: Video
+  readonly isFavorited?: boolean
+  readonly onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
+  readonly viewCount?: number
 }
 
 export default function VideoCardList({

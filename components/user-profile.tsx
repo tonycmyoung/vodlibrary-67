@@ -15,30 +15,30 @@ import { formatShortDate } from "@/lib/utils/date"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface UserProfileProps {
-  user: {
-    id: string
-    email: string
-    full_name: string | null
-    teacher: string | null
-    school: string | null
-    role: string | null
-    created_at: string
-    profile_image_url: string | null
-    favorite_count: number
-    isAdmin?: boolean
-    current_belt_id: string | null
-    current_belt?: {
-      id: string
-      name: string
-      color: string
-      display_order: number
+  readonly user: {
+    readonly id: string
+    readonly email: string
+    readonly full_name: string | null
+    readonly teacher: string | null
+    readonly school: string | null
+    readonly role: string | null
+    readonly created_at: string
+    readonly profile_image_url: string | null
+    readonly favorite_count: number
+    readonly isAdmin?: boolean
+    readonly current_belt_id: string | null
+    readonly current_belt?: {
+      readonly id: string
+      readonly name: string
+      readonly color: string
+      readonly display_order: number
     } | null
   }
-  curriculums: Array<{
-    id: string
-    name: string
-    color: string
-    display_order: number
+  readonly curriculums: Array<{
+    readonly id: string
+    readonly name: string
+    readonly color: string
+    readonly display_order: number
   }>
 }
 

@@ -25,10 +25,10 @@ interface Notification {
 }
 
 interface NotificationBellProps {
-  userId: string
-  isAdmin?: boolean
-  userRole?: string | null
-  userEmail?: string
+  readonly userId: string
+  readonly isAdmin?: boolean
+  readonly userRole?: string | null
+  readonly userEmail?: string
 }
 
 export default function NotificationBell({ userId, isAdmin = false, userRole, userEmail }: NotificationBellProps) {

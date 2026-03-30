@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import type { FilterMode } from "@/types/video"
 
 export interface FilterModeToggleProps {
-  filterMode: FilterMode
-  onFilterModeChange: (mode: FilterMode) => void
-  showDescription?: boolean
+  readonly filterMode: FilterMode
+  readonly onFilterModeChange: (mode: FilterMode) => void
+  readonly showDescription?: boolean
 }
 
 /**

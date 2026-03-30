@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export interface PaginationControlsProps {
-  totalPages: number
-  itemsPerPage: number
-  onItemsPerPageChange: (value: string) => void
-  currentPage: number
-  onPageChange: (page: number) => void
+  readonly totalPages: number
+  readonly itemsPerPage: number
+  readonly onItemsPerPageChange: (value: string) => void
+  readonly currentPage: number
+  readonly onPageChange: (page: number) => void
 }
 
 /**

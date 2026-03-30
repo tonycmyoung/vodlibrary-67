@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink, FileText, Award } from "lucide-react"
 
 interface CurriculumModalProps {
-  isOpen: boolean
-  onClose: () => void
+  readonly isOpen: boolean
+  readonly onClose: () => void
 }
 
 export default function CurriculumModal({ isOpen, onClose }: CurriculumModalProps) {

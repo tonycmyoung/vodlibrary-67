@@ -4,9 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUpDown } from "lucide-react"
 
 interface SortControlProps {
-  sortBy: string
-  sortOrder: "asc" | "desc"
-  onSortChange: (sortBy: string, sortOrder: "asc" | "desc") => void
+  readonly sortBy: string
+  readonly sortOrder: "asc" | "desc"
+  readonly onSortChange: (sortBy: string, sortOrder: "asc" | "desc") => void
 }
 
 export default function SortControl({ sortBy, sortOrder, onSortChange }: SortControlProps) {

@@ -33,8 +33,8 @@ function SubmitButton() {
 }
 
 interface LoginFormProps {
-  returnTo?: string | null
-  error?: string | null
+  readonly returnTo?: string | null
+  readonly error?: string | null
 }
 
 export default function LoginForm({ returnTo, error }: LoginFormProps) {

@@ -3,7 +3,7 @@
 import { Ribbon } from "lucide-react"
 
 export interface TrainingBannerProps {
-  nextBeltName?: string
+  readonly nextBeltName?: string
 }
 
 /**

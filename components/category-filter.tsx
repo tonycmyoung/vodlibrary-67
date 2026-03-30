@@ -51,15 +51,15 @@ interface FilterItem {
 }
 
 interface CategoryFilterProps {
-  categories: Category[]
-  recordedValues: string[]
-  performers: Performer[]
-  selectedCategories: string[]
-  onCategoryToggle: (categoryId: string) => void
-  videoCount: number
-  curriculums?: Array<{ id: string; name: string; color: string; display_order: number; description?: string | null }>
-  selectedCurriculums?: string[]
-  onCurriculumToggle?: (curriculumId: string) => void
+  readonly categories: Category[]
+  readonly recordedValues: string[]
+  readonly performers: Performer[]
+  readonly selectedCategories: string[]
+  readonly onCategoryToggle: (categoryId: string) => void
+  readonly videoCount: number
+  readonly curriculums?: Array<{ id: string; name: string; color: string; display_order: number; description?: string | null }>
+  readonly selectedCurriculums?: string[]
+  readonly onCurriculumToggle?: (curriculumId: string) => void
 }
 
 export default function CategoryFilter({

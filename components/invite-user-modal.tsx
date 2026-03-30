@@ -18,8 +18,8 @@ import { Mail, UserPlus } from "lucide-react"
 import { inviteUser } from "@/lib/actions"
 
 interface InviteUserModalProps {
-  isOpen: boolean
-  onClose: () => void
+  readonly isOpen: boolean
+  readonly onClose: () => void
 }
 
 export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {

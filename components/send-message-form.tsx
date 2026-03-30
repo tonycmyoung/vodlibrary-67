@@ -10,8 +10,8 @@ import { MessageSquare, Send } from "lucide-react"
 import { sendNotificationWithEmail } from "@/lib/actions"
 
 interface SendMessageFormProps {
-  userId: string
-  userName: string | null
+  readonly userId: string
+  readonly userName: string | null
 }
 
 export default function SendMessageForm({ userId, userName }: SendMessageFormProps) {

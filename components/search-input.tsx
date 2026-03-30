@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Search, X } from "lucide-react"
 
 export interface SearchInputProps {
-  value: string
-  onChange: (value: string) => void
-  onClear: () => void
-  placeholder?: string
-  className?: string
+  readonly value: string
+  readonly onChange: (value: string) => void
+  readonly onClear: () => void
+  readonly placeholder?: string
+  readonly className?: string
 }
 
 /**
