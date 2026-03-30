@@ -134,26 +134,13 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Sub
         )}
       </Button>
 
-      <div className="flex gap-2">
-        {onBack && (
-          <Button
-            onClick={onBack}
-            variant="outline"
-            className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-          >
-            Back
-          </Button>
-        )}
-        {onCancel && (
-          <Button
-            onClick={onCancel}
-            variant="outline"
-            className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
-          >
-            Cancel
-          </Button>
-        )}
-      </div>
+      <Button
+        onClick={onBack || onCancel}
+        variant="outline"
+        className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+      >
+        Back
+      </Button>
     </div>
   )
 }
