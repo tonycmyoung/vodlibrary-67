@@ -314,10 +314,13 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
                   </div>
 
-                  <div className="space-y-3 pt-4">
+                  <div className="space-y-2 pt-4">
                     <div className="text-center">
                       <p className="text-gray-400 text-sm mb-3">Choose your preferred payment method:</p>
                     </div>
+
+                    {/* One-time group */}
+                    <p className="text-xs text-gray-500 uppercase tracking-wider px-1">One-time</p>
 
                     <Button
                       onClick={handleStripeClick}
@@ -325,15 +328,6 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     >
                       <CreditCard className="h-4 w-4" />
                       Donate once-off with Card
-                    </Button>
-
-                    <Button
-                      onClick={handleSubscribeClick}
-                      disabled={isCheckingSubscription}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      {isCheckingSubscription ? "Checking..." : "Donate regularly with Card"}
                     </Button>
 
                     <Button
@@ -347,15 +341,16 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
                     <button
                       onClick={handleCopyPayID}
-                      className="w-full p-3 border border-gray-600 rounded-md bg-gray-800/50 hover:bg-gray-800 transition-colors flex items-center justify-between group"
+                      className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-800/50 hover:bg-gray-800 transition-colors flex items-center gap-3 group"
                       title={copied ? "Copied!" : "Click to copy PayID"}
                     >
-                      <div className="flex items-center gap-2 flex-1">
-                        <CreditCard className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span className="text-white font-medium">PayID</span>
+                      <CreditCard className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <div className="flex flex-col items-start flex-1 min-w-0">
+                        <span className="text-white font-medium text-sm leading-tight">PayID</span>
+                        <span className="text-gray-400 text-xs leading-tight">Use in your banking app</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5 group-hover:bg-gray-600 transition-colors">
+                        <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5 group-hover:bg-gray-600 transition-colors truncate max-w-[140px]">
                           {payId}
                         </span>
                         {copied ? (
@@ -366,16 +361,26 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       </div>
                     </button>
 
+                    {/* Recurring group */}
+                    <p className="text-xs text-gray-500 uppercase tracking-wider px-1 pt-1">Regular</p>
+
                     <Button
-                      variant="outline"
-                      onClick={onClose}
-                      className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+                      onClick={handleSubscribeClick}
+                      disabled={isCheckingSubscription}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50"
                     >
-                      Maybe Later
+                      <CreditCard className="h-4 w-4" />
+                      {isCheckingSubscription ? "Checking..." : "Donate regularly with Card"}
                     </Button>
 
-                    {/* Manage subscription link at bottom */}
-                    <div className="pt-1 border-t border-gray-700 text-center">
+                    {/* Footer actions */}
+                    <div className="pt-2 border-t border-gray-700 flex items-center justify-between">
+                      <button
+                        onClick={onClose}
+                        className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                      >
+                        Maybe Later
+                      </button>
                       <button
                         onClick={handleOpenManagePortal}
                         className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
