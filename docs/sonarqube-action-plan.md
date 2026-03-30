@@ -27,7 +27,7 @@ The remaining ~35 issues are likely:
 
 ### Verification Steps
 
-```bash
+\`\`\`bash
 # Run tests for donations module
 npm test -- donation-modal.test.tsx
 npm test -- donation-checkout.test.tsx
@@ -39,7 +39,7 @@ npm run sonar
 # Check coverage
 npm test -- --coverage -- tests/components/donation*
 npm test -- --coverage -- tests/components/subscription*
-```
+\`\`\`
 
 ### Expected Improvements
 

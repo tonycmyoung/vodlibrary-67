@@ -65,7 +65,7 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Sub
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="subscription-checkout">
       {/* Interval Toggle */}
       <div className="flex gap-2 justify-center">
         <button
