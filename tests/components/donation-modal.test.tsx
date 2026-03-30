@@ -63,13 +63,13 @@ describe("DonationModal", () => {
 
   it("should have PayPal donate button", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    const paypalButton = screen.getByRole("button", { name: /donate via paypal/i })
+    const paypalButton = screen.getByRole("button", { name: /donate once-off via paypal/i })
     expect(paypalButton).toBeTruthy()
   })
 
   it("should open PayPal link in new tab when donate button is clicked", () => {
     render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    const paypalButton = screen.getByRole("button", { name: /donate via paypal/i })
+    const paypalButton = screen.getByRole("button", { name: /donate once-off via paypal/i })
 
     fireEvent.click(paypalButton)
 
