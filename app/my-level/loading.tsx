@@ -31,9 +31,9 @@ export default function Loading() {
 
         {/* Category filter skeleton */}
         <div className="mb-6 flex flex-wrap gap-2">
-          {[...Array(6)].map((_, i) => (
+          {[...new Array(6)].map((_, i) => (
             <div
-              key={i}
+              key={`filter-${i}`}
               className="h-8 w-20 animate-pulse rounded-full bg-black/30"
               style={{ animationDelay: `${i * 50}ms` }}
             />
@@ -42,9 +42,9 @@ export default function Loading() {
 
         {/* Video grid skeleton */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {[...Array(12)].map((_, i) => (
+          {[...new Array(12)].map((_, i) => (
             <div
-              key={i}
+              key={`video-${i}`}
               className="overflow-hidden rounded-lg bg-black/30"
               style={{ animationDelay: `${i * 50}ms` }}
             >
