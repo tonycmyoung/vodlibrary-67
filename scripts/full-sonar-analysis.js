@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const data = JSON.parse(fs.readFileSync('/temp/sonar-all-issues.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync('/temp/sonar-issues.json', 'utf8'));
 
 // Group issues by rule
 const byRule = {};
