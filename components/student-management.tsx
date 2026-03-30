@@ -64,9 +64,9 @@ interface UserInterface {
 }
 
 interface StudentManagementProps {
-  headTeacherSchool: string
-  headTeacherId: string
-  userRole: string
+  readonly headTeacherSchool: string
+  readonly headTeacherId: string
+  readonly userRole: string
 }
 
 export default function StudentManagement({ headTeacherSchool, headTeacherId, userRole }: StudentManagementProps) {

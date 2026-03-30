@@ -12,16 +12,16 @@ interface Belt {
 }
 
 interface UserFilterProps {
-  roles: string[]
-  schools: string[]
-  belts?: Belt[]
-  selectedRole: string
-  selectedSchool: string
-  selectedBelt?: string
-  onRoleChange: (role: string) => void
-  onSchoolChange: (school: string) => void
-  onBeltChange?: (belt: string) => void
-  userCount: number
+  readonly roles: string[]
+  readonly schools: string[]
+  readonly belts?: Belt[]
+  readonly selectedRole: string
+  readonly selectedSchool: string
+  readonly selectedBelt?: string
+  readonly onRoleChange: (role: string) => void
+  readonly onSchoolChange: (school: string) => void
+  readonly onBeltChange?: (belt: string) => void
+  readonly userCount: number
 }
 
 // Helper to check if a filter value is active

@@ -28,9 +28,9 @@ interface Curriculum {
 }
 
 interface CurriculumFilterProps {
-  curriculums: Curriculum[]
-  selectedCurriculums: string[]
-  onCurriculumToggle: (curriculumId: string) => void
+  readonly curriculums: Curriculum[]
+  readonly selectedCurriculums: string[]
+  readonly onCurriculumToggle: (curriculumId: string) => void
 }
 
 export default function CurriculumFilter({

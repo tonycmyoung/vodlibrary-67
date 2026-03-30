@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Search, X } from "lucide-react"
 
 export interface SearchInputProps {
-  value: string
-  onChange: (value: string) => void
-  onClear: () => void
-  placeholder?: string
-  className?: string
+  readonly value: string
+  readonly onChange: (value: string) => void
+  readonly onClear: () => void
+  readonly placeholder?: string
+  readonly className?: string
 }
 
 /**
@@ -22,7 +22,7 @@ export default function SearchInput({
   onClear,
   placeholder = "Search videos...",
   className = "",
-}: SearchInputProps) {
+}: Readonly<SearchInputProps>) {
   return (
     <div className={`relative flex-1 max-w-md w-full ${className}`}>
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />

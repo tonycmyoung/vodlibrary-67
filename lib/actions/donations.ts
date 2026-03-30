@@ -1,7 +1,7 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getDonationPreset, DONATION_PRESETS, getSubscriptionTier, SUBSCRIPTION_TIERS } from "@/lib/donation-products"
+import { getDonationPreset, getSubscriptionTier } from "@/lib/donation-products"
 
 // Helper to find existing customer by email or create a new one
 // This ensures all subscriptions for the same email are under one customer
@@ -32,7 +32,7 @@ interface CreateDonationCheckoutParams {
 
 export async function createDonationCheckout(params: CreateDonationCheckoutParams) {
   try {
-    const { amount, presetId, email, returnUrl } = params
+    const { amount, presetId, email } = params
 
     let amountInCents = 0
 
@@ -102,7 +102,7 @@ interface CreateSubscriptionCheckoutParams {
 
 export async function createSubscriptionCheckout(params: CreateSubscriptionCheckoutParams) {
   try {
-    const { tierId, interval, email, returnUrl } = params
+    const { tierId, interval, email } = params
 
     const tier = getSubscriptionTier(tierId)
     if (!tier) {
@@ -185,7 +185,8 @@ export async function checkExistingSubscription(params: CheckExistingSubscriptio
       subscriptionCount: count,
     }
   } catch (error) {
-    // On error, allow user to proceed (don't block the flow)
+    const errorMessage = error instanceof Error ? error.message : "Failed to check existing subscription"
+    console.error("Error checking existing subscription:", errorMessage)
     return { hasSubscription: false, subscriptionCount: 0 }
   }
 }

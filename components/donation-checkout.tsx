@@ -13,9 +13,9 @@ import { trace } from "@/lib/trace"
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
 interface DonationCheckoutProps {
-  email: string
-  onSuccess?: () => void
-  onCancel?: () => void
+  readonly email: string
+  readonly onSuccess?: () => void
+  readonly onCancel?: () => void
 }
 
 export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckoutProps) {
@@ -36,8 +36,8 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       let presetId: string | undefined
 
       if (useCustom) {
-        const parsedAmount = parseFloat(customAmount)
-        if (!customAmount || isNaN(parsedAmount) || parsedAmount < 1) {
+        const parsedAmount = Number.parseFloat(customAmount)
+        if (!customAmount || Number.isNaN(parsedAmount) || parsedAmount < 1) {
           trace.warn("Invalid custom amount entered", { category: "donation", payload: { customAmount } })
           setError("Please enter a valid amount of at least $1")
           setIsLoading(false)
@@ -54,7 +54,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
         amount,
         presetId,
         email,
-        returnUrl: window.location.href,
+        returnUrl: globalThis.location.href,
       })
 
       if (!result.success) {

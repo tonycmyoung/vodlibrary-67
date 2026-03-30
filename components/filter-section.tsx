@@ -4,15 +4,15 @@ import CategoryFilter from "@/components/category-filter"
 import type { Category, Curriculum, Performer } from "@/types/video"
 
 export interface FilterSectionProps {
-  categories: Category[]
-  recordedValues: string[]
-  performers: Performer[]
-  selectedCategories: string[]
-  onCategoryToggle: (id: string) => void
-  videoCount: number
-  curriculums: Curriculum[]
-  selectedCurriculums: string[]
-  onCurriculumToggle: (id: string) => void
+  readonly categories: Category[]
+  readonly recordedValues: string[]
+  readonly performers: Performer[]
+  readonly selectedCategories: string[]
+  readonly onCategoryToggle: (id: string) => void
+  readonly videoCount: number
+  readonly curriculums: Curriculum[]
+  readonly selectedCurriculums: string[]
+  readonly onCurriculumToggle: (id: string) => void
 }
 
 /**

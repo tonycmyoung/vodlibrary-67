@@ -8,21 +8,21 @@ import FilterModeToggle from "@/components/filter-mode-toggle"
 import type { Category, Curriculum, Performer, FilterMode } from "@/types/video"
 
 export interface MobileFilterDialogProps {
-  showMobileFilters: boolean
-  setShowMobileFilters: (show: boolean) => void
-  categories: Category[]
-  recordedValues: string[]
-  performers: Performer[]
-  selectedCategories: string[]
-  onCategoryToggle: (id: string) => void
-  videoCount: number
-  curriculums: Curriculum[]
-  selectedCurriculums: string[]
-  onCurriculumToggle: (id: string) => void
-  filterMode: FilterMode
-  onFilterModeChange: (mode: FilterMode) => void
+  readonly showMobileFilters: boolean
+  readonly setShowMobileFilters: (show: boolean) => void
+  readonly categories: Category[]
+  readonly recordedValues: string[]
+  readonly performers: Performer[]
+  readonly selectedCategories: string[]
+  readonly onCategoryToggle: (id: string) => void
+  readonly videoCount: number
+  readonly curriculums: Curriculum[]
+  readonly selectedCurriculums: string[]
+  readonly onCurriculumToggle: (id: string) => void
+  readonly filterMode: FilterMode
+  readonly onFilterModeChange: (mode: FilterMode) => void
   /** Called when user clicks Apply to commit pending URL changes */
-  onApplyFilters?: () => void
+  readonly onApplyFilters?: () => void
 }
 
 export default function MobileFilterDialog({

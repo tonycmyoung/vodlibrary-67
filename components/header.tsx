@@ -30,19 +30,19 @@ import AboutModal from "@/components/about-modal"
 import { useState } from "react"
 
 interface HeaderProps {
-  user: {
-    id: string
-    full_name: string | null
-    is_approved: boolean
-    email?: string
-    profile_image_url?: string | null
-    role?: string | null
-    current_belt?: {
+  readonly user: {
+    readonly id: string
+    readonly full_name: string | null
+    readonly is_approved: boolean
+    readonly email?: string
+    readonly profile_image_url?: string | null
+    readonly role?: string | null
+    readonly current_belt?: {
       // Added belt info to determine if My Level link should show
-      id: string
-      name: string
-      display_order: number
-      color: string
+      readonly id: string
+      readonly name: string
+      readonly display_order: number
+      readonly color: string
     } | null
   }
 }

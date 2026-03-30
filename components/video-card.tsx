@@ -38,10 +38,10 @@ interface Video {
 }
 
 interface VideoCardProps {
-  video: Video
-  isFavorited?: boolean
-  onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
-  viewCount?: number
+  readonly video: Video
+  readonly isFavorited?: boolean
+  readonly onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
+  readonly viewCount?: number
 }
 
 const VideoCard = memo(function VideoCard({

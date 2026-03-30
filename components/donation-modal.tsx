@@ -11,11 +11,11 @@ import { trace } from "@/lib/trace"
 import { createCustomerPortalSession, checkExistingSubscription } from "@/lib/actions/donations"
 
 interface DonationModalProps {
-  isOpen: boolean
-  onClose: () => void
+  readonly isOpen: boolean
+  readonly onClose: () => void
 }
 
-function SuccessScreen({ email, onClose, isSubscription }: { email: string; onClose: () => void; isSubscription: boolean }) {
+function SuccessScreen({ email, onClose, isSubscription }: Readonly<{ email: string; onClose: () => void; isSubscription: boolean }>) {
   return (
     <div className="py-8 text-center space-y-4">
       <div className="flex justify-center mb-6">
@@ -46,11 +46,11 @@ function ExistingSubWarning({
   existingSubCount,
   onConfirm,
   onCancel,
-}: {
+}: Readonly<{
   existingSubCount: number
   onConfirm: () => void
   onCancel: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 py-4">
       <h2 className="text-xl font-bold text-white">You Already Have a Regular Donation</h2>
@@ -83,12 +83,12 @@ function ManagePortalView({
   isLoadingPortal,
   onManage,
   onClose,
-}: {
+}: Readonly<{
   portalError: string | null
   isLoadingPortal: boolean
   onManage: () => void
   onClose: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 py-4">
       <h2 className="text-xl font-bold text-white">Manage Your Subscription</h2>
@@ -123,12 +123,12 @@ function EmailInputView({
   onEmailChange,
   onProceed,
   onBack,
-}: {
+}: Readonly<{
   userEmail: string
   onEmailChange: (email: string) => void
   onProceed: () => void
   onBack: () => void
-}) {
+}>) {
   return (
     <div className="space-y-3 py-4">
       <p className="text-gray-300 text-sm">Enter your email address for the donation receipt:</p>
@@ -168,7 +168,7 @@ function PaymentOptionsView({
   onSubscribeClick,
   onClose,
   onManagePortal,
-}: {
+}: Readonly<{
   payId: string
   copied: boolean
   isCheckingSubscription: boolean
@@ -178,7 +178,7 @@ function PaymentOptionsView({
   onSubscribeClick: () => void
   onClose: () => void
   onManagePortal: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 pt-4 pb-0">
       <div className="text-center space-y-4">
@@ -355,7 +355,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         setShowSubscriptionSelect(true)
       }
     } catch (error) {
-      // On error, proceed anyway
+      trace.error("Failed to check existing subscription", { category: "subscription", payload: { error: String(error), email: userEmail } })
       setShowSubscriptionSelect(true)
     } finally {
       setIsCheckingSubscription(false)
@@ -428,13 +428,13 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     try {
       const result = await createCustomerPortalSession({
         email: userEmail,
-        returnUrl: window.location.href,
+        returnUrl: globalThis.location.href,
       })
 
       if (result.success && result.portalUrl) {
         trace.info("Portal session created successfully", { category: "subscription", payload: { email: userEmail } })
         // Open portal in new tab
-        window.open(result.portalUrl, "_blank")
+        globalThis.open(result.portalUrl, "_blank")
         setShowManagePortal(false)
       } else {
         trace.warn("No active subscription found", { category: "subscription", payload: { email: userEmail } })
@@ -449,9 +449,88 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleOpenManagePortal = () => {
-    trace.info("Manage subscription view opened", { category: "subscription" })
     setShowManagePortal(true)
     setPortalError(null)
+  }
+
+  const renderModalContent = () => {
+    if (showSuccess) {
+      return <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
+    }
+    
+    if (showExistingSubWarning) {
+      return (
+        <ExistingSubWarning
+          existingSubCount={existingSubCount}
+          onConfirm={handleConfirmAdditionalSubscription}
+          onCancel={handleCancelAdditionalSubscription}
+        />
+      )
+    }
+    
+    if (showManagePortal) {
+      return (
+        <ManagePortalView
+          portalError={portalError}
+          isLoadingPortal={isLoadingPortal}
+          onManage={handleManageSubscription}
+          onClose={handleCloseManagePortal}
+        />
+      )
+    }
+    
+    if (showAmountSelect) {
+      return (
+        <div className="py-4">
+          <DonationCheckout
+            email={userEmail}
+            onSuccess={() => handleCheckoutSuccess(false)}
+            onCancel={handleCheckoutCancel}
+          />
+        </div>
+      )
+    }
+    
+    if (showSubscriptionSelect) {
+      return (
+        <div className="py-4">
+          <SubscriptionCheckout
+            email={userEmail}
+            onSuccess={() => handleCheckoutSuccess(true)}
+            onCancel={handleCheckoutCancel}
+            onBack={handleCheckoutCancel}
+          />
+        </div>
+      )
+    }
+    
+    if (showEmailInput) {
+      return (
+        <EmailInputView
+          userEmail={userEmail}
+          onEmailChange={setUserEmail}
+          onProceed={() => handleProceedCheckout(false)}
+          onBack={() => {
+            setShowEmailInput(false)
+            setUserEmail("")
+          }}
+        />
+      )
+    }
+    
+    return (
+      <PaymentOptionsView
+        payId={payId}
+        copied={copied}
+        isCheckingSubscription={isCheckingSubscription}
+        onStripeClick={handleStripeClick}
+        onPayPalClick={handleDonateClick}
+        onCopyPayID={handleCopyPayID}
+        onSubscribeClick={handleSubscribeClick}
+        onClose={onClose}
+        onManagePortal={handleOpenManagePortal}
+      />
+    )
   }
 
   const handleCloseManagePortal = () => {
@@ -472,61 +551,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          {showSuccess ? (
-            <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
-          ) : showExistingSubWarning ? (
-            <ExistingSubWarning
-              existingSubCount={existingSubCount}
-              onConfirm={handleConfirmAdditionalSubscription}
-              onCancel={handleCancelAdditionalSubscription}
-            />
-          ) : showManagePortal ? (
-            <ManagePortalView
-              portalError={portalError}
-              isLoadingPortal={isLoadingPortal}
-              onManage={handleManageSubscription}
-              onClose={handleCloseManagePortal}
-            />
-          ) : showAmountSelect ? (
-            <div className="py-4">
-              <DonationCheckout
-                email={userEmail}
-                onSuccess={() => handleCheckoutSuccess(false)}
-                onCancel={handleCheckoutCancel}
-              />
-            </div>
-          ) : showSubscriptionSelect ? (
-            <div className="py-4">
-              <SubscriptionCheckout
-                email={userEmail}
-                onSuccess={() => handleCheckoutSuccess(true)}
-                onCancel={handleCheckoutCancel}
-                onBack={handleCheckoutCancel}
-              />
-            </div>
-          ) : showEmailInput ? (
-            <EmailInputView
-              userEmail={userEmail}
-              onEmailChange={setUserEmail}
-              onProceed={() => handleProceedCheckout(false)}
-              onBack={() => {
-                setShowEmailInput(false)
-                setUserEmail("")
-              }}
-            />
-          ) : (
-            <PaymentOptionsView
-              payId={payId}
-              copied={copied}
-              isCheckingSubscription={isCheckingSubscription}
-              onStripeClick={handleStripeClick}
-              onPayPalClick={handleDonateClick}
-              onCopyPayID={handleCopyPayID}
-              onSubscribeClick={handleSubscribeClick}
-              onClose={onClose}
-              onManagePortal={handleOpenManagePortal}
-            />
-          )}
+          {renderModalContent()}
         </div>
       </DialogContent>
     </Dialog>
