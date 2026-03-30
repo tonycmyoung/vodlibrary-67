@@ -428,13 +428,13 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     try {
       const result = await createCustomerPortalSession({
         email: userEmail,
-        returnUrl: window.location.href,
+        returnUrl: globalThis.location.href,
       })
 
       if (result.success && result.portalUrl) {
         trace.info("Portal session created successfully", { category: "subscription", payload: { email: userEmail } })
         // Open portal in new tab
-        window.open(result.portalUrl, "_blank")
+        globalThis.open(result.portalUrl, "_blank")
         setShowManagePortal(false)
       } else {
         trace.warn("No active subscription found", { category: "subscription", payload: { email: userEmail } })
