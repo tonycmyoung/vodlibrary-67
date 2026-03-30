@@ -11,11 +11,11 @@ import { trace } from "@/lib/trace"
 import { createCustomerPortalSession, checkExistingSubscription } from "@/lib/actions/donations"
 
 interface DonationModalProps {
-  isOpen: boolean
-  onClose: () => void
+  readonly isOpen: boolean
+  readonly onClose: () => void
 }
 
-function SuccessScreen({ email, onClose, isSubscription }: { email: string; onClose: () => void; isSubscription: boolean }) {
+function SuccessScreen({ email, onClose, isSubscription }: Readonly<{ email: string; onClose: () => void; isSubscription: boolean }>) {
   return (
     <div className="py-8 text-center space-y-4">
       <div className="flex justify-center mb-6">
@@ -46,11 +46,11 @@ function ExistingSubWarning({
   existingSubCount,
   onConfirm,
   onCancel,
-}: {
+}: Readonly<{
   existingSubCount: number
   onConfirm: () => void
   onCancel: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 py-4">
       <h2 className="text-xl font-bold text-white">You Already Have a Regular Donation</h2>
@@ -83,12 +83,12 @@ function ManagePortalView({
   isLoadingPortal,
   onManage,
   onClose,
-}: {
+}: Readonly<{
   portalError: string | null
   isLoadingPortal: boolean
   onManage: () => void
   onClose: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 py-4">
       <h2 className="text-xl font-bold text-white">Manage Your Subscription</h2>
@@ -123,12 +123,12 @@ function EmailInputView({
   onEmailChange,
   onProceed,
   onBack,
-}: {
+}: Readonly<{
   userEmail: string
   onEmailChange: (email: string) => void
   onProceed: () => void
   onBack: () => void
-}) {
+}>) {
   return (
     <div className="space-y-3 py-4">
       <p className="text-gray-300 text-sm">Enter your email address for the donation receipt:</p>
@@ -168,7 +168,7 @@ function PaymentOptionsView({
   onSubscribeClick,
   onClose,
   onManagePortal,
-}: {
+}: Readonly<{
   payId: string
   copied: boolean
   isCheckingSubscription: boolean
@@ -178,7 +178,7 @@ function PaymentOptionsView({
   onSubscribeClick: () => void
   onClose: () => void
   onManagePortal: () => void
-}) {
+}>) {
   return (
     <div className="space-y-4 pt-4 pb-0">
       <div className="text-center space-y-4">
