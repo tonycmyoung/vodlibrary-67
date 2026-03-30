@@ -84,7 +84,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="donation-checkout">
       <div className="space-y-3">
         <div className="flex items-center gap-2 mb-4">
           <input
