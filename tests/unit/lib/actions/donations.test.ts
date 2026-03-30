@@ -72,7 +72,7 @@ vi.mock("@/lib/donation-products", () => ({
 }))
 
 // Import after mocks are set up
-import { createDonationCheckout, createSubscriptionCheckout, createCustomerPortalSession } from "@/lib/actions/donations"
+import { createDonationCheckout, createSubscriptionCheckout, createCustomerPortalSession, checkExistingSubscription } from "@/lib/actions/donations"
 
 describe("Donation Actions - createDonationCheckout", () => {
   beforeEach(() => {
@@ -527,6 +527,198 @@ describe("Donation Actions - createCustomerPortalSession", () => {
       expect(result.success).toBe(false)
       expect(result.error).toBe("Failed to create portal session")
       expect(result.portalUrl).toBeNull()
+    })
+  })
+})
+
+describe("Donation Actions - checkExistingSubscription", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe("user with active subscriptions", () => {
+    it("should return hasSubscription true when user has one active subscription", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [{ id: "sub_test_456", status: "active" }],
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(true)
+      expect(result.subscriptionCount).toBe(1)
+    })
+
+    it("should return correct count when user has multiple active subscriptions", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [
+          { id: "sub_test_456", status: "active" },
+          { id: "sub_test_789", status: "active" },
+          { id: "sub_test_012", status: "active" },
+        ],
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(true)
+      expect(result.subscriptionCount).toBe(3)
+    })
+
+    it("should only count active subscriptions", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      // Note: API should filter by status=active, so this won't happen in practice
+      // But testing defensive code behavior
+      mockListSubscriptions.mockResolvedValue({
+        data: [{ id: "sub_test_456", status: "active" }],
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(true)
+      expect(result.subscriptionCount).toBe(1)
+      expect(mockListSubscriptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "active",
+        })
+      )
+    })
+  })
+
+  describe("user without active subscriptions", () => {
+    it("should return hasSubscription false when no customer found", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [],
+      })
+
+      const result = await checkExistingSubscription({
+        email: "nonexistent@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+      expect(mockListSubscriptions).not.toHaveBeenCalled()
+    })
+
+    it("should return hasSubscription false when customer has no active subscriptions", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [],
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+    })
+
+    it("should handle null data in subscriptions list", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: null,
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+    })
+
+    it("should handle null data in customers list", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: null,
+      })
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+    })
+  })
+
+  describe("validation and error handling", () => {
+    it("should return no subscription for empty email", async () => {
+      const result = await checkExistingSubscription({
+        email: "",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+      expect(mockListCustomers).not.toHaveBeenCalled()
+    })
+
+    it("should return no subscription for whitespace-only email", async () => {
+      const result = await checkExistingSubscription({
+        email: "   ",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+      expect(mockListCustomers).not.toHaveBeenCalled()
+    })
+
+    it("should handle Stripe API errors gracefully", async () => {
+      mockListCustomers.mockRejectedValue(new Error("Stripe API failed"))
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+    })
+
+    it("should handle errors when listing subscriptions gracefully", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockRejectedValue(new Error("Subscription list failed"))
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
+    })
+
+    it("should handle non-Error exceptions gracefully", async () => {
+      mockListCustomers.mockRejectedValue("String error")
+
+      const result = await checkExistingSubscription({
+        email: "subscriber@example.com",
+      })
+
+      expect(result.hasSubscription).toBe(false)
+      expect(result.subscriptionCount).toBe(0)
     })
   })
 })
