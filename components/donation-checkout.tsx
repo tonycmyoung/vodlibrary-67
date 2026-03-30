@@ -172,7 +172,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
         variant="outline"
         className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
       >
-        Cancel
+        Back
       </Button>
     </div>
   )

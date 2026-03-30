@@ -1,7 +1,27 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getDonationPreset, DONATION_PRESETS } from "@/lib/donation-products"
+import { getDonationPreset, DONATION_PRESETS, getSubscriptionTier, SUBSCRIPTION_TIERS } from "@/lib/donation-products"
+
+// Helper to find existing customer by email or create a new one
+// This ensures all subscriptions for the same email are under one customer
+async function getOrCreateCustomer(email: string): Promise<string> {
+  const customers = await stripe.customers.list({
+    email: email,
+    limit: 1,
+  })
+
+  if (customers.data && customers.data.length > 0) {
+    return customers.data[0].id
+  }
+
+  // Create new customer
+  const newCustomer = await stripe.customers.create({
+    email: email,
+  })
+
+  return newCustomer.id
+}
 
 interface CreateDonationCheckoutParams {
   amount?: number // in AUD cents, for custom amounts
@@ -33,10 +53,13 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       throw new Error("Either amount or presetId must be provided")
     }
 
+    // Get or create customer to consolidate all donations/subscriptions under one customer
+    const customerId = await getOrCreateCustomer(email)
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       ui_mode: "embedded_page",
-      customer_email: email,
+      customer: customerId,
       line_items: [
         {
           price_data: {
@@ -66,6 +89,171 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create checkout session",
+    }
+  }
+}
+
+interface CreateSubscriptionCheckoutParams {
+  tierId: string
+  interval: "monthly" | "annual"
+  email: string
+  returnUrl: string
+}
+
+export async function createSubscriptionCheckout(params: CreateSubscriptionCheckoutParams) {
+  try {
+    const { tierId, interval, email, returnUrl } = params
+
+    const tier = getSubscriptionTier(tierId)
+    if (!tier) {
+      throw new Error("Invalid subscription tier")
+    }
+
+    const priceData = tier.prices[interval]
+    if (!priceData) {
+      throw new Error("Invalid subscription interval")
+    }
+
+    // Get or create customer to consolidate all subscriptions under one customer
+    const customerId = await getOrCreateCustomer(email)
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      ui_mode: "embedded_page",
+      customer: customerId,
+      line_items: [
+        {
+          price: priceData.priceId,
+          quantity: 1,
+        },
+      ],
+      redirect_on_completion: "never",
+    })
+
+    if (!session.client_secret || !session.id) {
+      throw new Error("Failed to create subscription checkout session")
+    }
+
+    return {
+      success: true,
+      clientSecret: session.client_secret,
+      sessionId: session.id,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create subscription checkout session",
+    }
+  }
+}
+
+interface CheckExistingSubscriptionParams {
+  email: string
+}
+
+export async function checkExistingSubscription(params: CheckExistingSubscriptionParams) {
+  try {
+    const { email } = params
+
+    if (!email.trim()) {
+      return { hasSubscription: false, subscriptionCount: 0 }
+    }
+
+    // List customers to find one with matching email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    })
+
+    if (!customers.data || customers.data.length === 0) {
+      return { hasSubscription: false, subscriptionCount: 0 }
+    }
+
+    const customer = customers.data[0]
+
+    // Check if customer has active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 10,
+    })
+
+    const count = subscriptions.data?.length || 0
+
+    return {
+      hasSubscription: count > 0,
+      subscriptionCount: count,
+    }
+  } catch (error) {
+    // On error, allow user to proceed (don't block the flow)
+    return { hasSubscription: false, subscriptionCount: 0 }
+  }
+}
+
+interface CreateCustomerPortalSessionParams {
+  email: string
+  returnUrl: string
+}
+
+export async function createCustomerPortalSession(params: CreateCustomerPortalSessionParams) {
+  try {
+    const { email, returnUrl } = params
+
+    if (!email.trim()) {
+      throw new Error("Email is required")
+    }
+
+    // List customers to find one with matching email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    })
+
+    if (!customers.data || customers.data.length === 0) {
+      return {
+        success: false,
+        error: "No active subscription found for your account.",
+        portalUrl: null,
+      }
+    }
+
+    const customer = customers.data[0]
+
+    // Check if customer has active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 1,
+    })
+
+    if (!subscriptions.data || subscriptions.data.length === 0) {
+      return {
+        success: false,
+        error: "No active subscription found for your account.",
+        portalUrl: null,
+      }
+    }
+
+    // Create portal session
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customer.id,
+      return_url: returnUrl,
+    })
+
+    if (!portalSession.url) {
+      throw new Error("Failed to create portal session")
+    }
+
+    return {
+      success: true,
+      error: null,
+      portalUrl: portalSession.url,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create portal session",
+      portalUrl: null,
     }
   }
 }
