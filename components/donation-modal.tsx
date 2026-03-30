@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Heart, ExternalLink, CreditCard, Copy, Check } from "lucide-react"
 import { useState, useEffect } from "react"
 import { DonationCheckout } from "@/components/donation-checkout"
+import { SubscriptionCheckout } from "@/components/subscription-checkout"
 import { createClient } from "@/lib/supabase/client"
 import { trace } from "@/lib/trace"
 
@@ -13,7 +14,7 @@ interface DonationModalProps {
   onClose: () => void
 }
 
-function SuccessScreen({ email, onClose }: { email: string; onClose: () => void }) {
+function SuccessScreen({ email, onClose, isSubscription }: { email: string; onClose: () => void; isSubscription: boolean }) {
   return (
     <div className="py-8 text-center space-y-4">
       <div className="flex justify-center mb-6">
@@ -23,10 +24,12 @@ function SuccessScreen({ email, onClose }: { email: string; onClose: () => void 
       </div>
       <h2 className="text-2xl font-bold text-white">Thank You!</h2>
       <p className="text-gray-300 leading-relaxed">
-        Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library.
+        {isSubscription
+          ? "Your subscription has been set up successfully. We truly appreciate your ongoing support of the Okinawa Kobudo Library."
+          : "Your donation has been processed successfully. We truly appreciate your support of the Okinawa Kobudo Library."}
       </p>
       <p className="text-gray-400 text-sm">
-        A receipt has been sent to {email}
+        {isSubscription ? "A confirmation email has been sent to" : "A receipt has been sent to"} {email}
       </p>
       <Button
         onClick={onClose}
@@ -41,16 +44,18 @@ function SuccessScreen({ email, onClose }: { email: string; onClose: () => void 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copied, setCopied] = useState(false)
   const [showAmountSelect, setShowAmountSelect] = useState(false)
+  const [showSubscriptionSelect, setShowSubscriptionSelect] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
+  const [isSubscriptionSuccess, setIsSubscriptionSuccess] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
     if (showSuccess) {
-      trace.info("Payment completed - thank you screen shown", { category: "donation", payload: { email: userEmail } })
+      trace.info("Payment/Subscription completed - thank you screen shown", { category: "donation", payload: { email: userEmail, isSubscription: isSubscriptionSuccess } })
     }
-  }, [showSuccess, userEmail])
+  }, [showSuccess, userEmail, isSubscriptionSuccess])
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -86,7 +91,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleStripeClick = () => {
-    trace.info("Donate with Card clicked", { category: "donation", payload: { hasEmail: !!userEmail.trim() } })
+    trace.info("Donate once-off with Card clicked", { category: "donation", payload: { hasEmail: !!userEmail.trim() } })
     if (userEmail.trim()) {
       setShowAmountSelect(true)
     } else {
@@ -94,18 +99,33 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     }
   }
 
-  const handleProceedCheckout = () => {
-    trace.info("Email submitted for checkout", { category: "donation", payload: { email: userEmail } })
+  const handleSubscribeClick = () => {
+    trace.info("Donate regularly with Card clicked", { category: "subscription", payload: { hasEmail: !!userEmail.trim() } })
+    if (userEmail.trim()) {
+      setShowSubscriptionSelect(true)
+    } else {
+      setShowEmailInput(true)
+    }
+  }
+
+  const handleProceedCheckout = (isSubscription: boolean) => {
+    trace.info("Email submitted for checkout", { category: isSubscription ? "subscription" : "donation", payload: { email: userEmail } })
     if (!userEmail.trim()) {
       alert("Please enter a valid email address")
       return
     }
-    setShowAmountSelect(true)
+    if (isSubscription) {
+      setShowSubscriptionSelect(true)
+    } else {
+      setShowAmountSelect(true)
+    }
   }
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = (isSubscription: boolean = false) => {
+    setIsSubscriptionSuccess(isSubscription)
     setShowSuccess(true)
     setShowAmountSelect(false)
+    setShowSubscriptionSelect(false)
     setShowEmailInput(false)
   }
 
@@ -113,14 +133,17 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     trace.info("Donation modal closed", { category: "donation" })
     setShowSuccess(false)
     setShowAmountSelect(false)
+    setShowSubscriptionSelect(false)
     setShowEmailInput(false)
     setUserEmail("")
+    setIsSubscriptionSuccess(false)
     onClose()
   }
 
   const handleCheckoutCancel = () => {
     trace.info("Checkout cancelled by user", { category: "donation" })
     setShowAmountSelect(false)
+    setShowSubscriptionSelect(false)
   }
 
   return (
@@ -136,11 +159,11 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {showSuccess ? (
-            <SuccessScreen email={userEmail} onClose={resetModal} />
+            <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
           ) : (
             <>
               {/* Initial options view */}
-              {!showAmountSelect && !showEmailInput && (
+              {!showAmountSelect && !showEmailInput && !showSubscriptionSelect && (
                 <div className="space-y-4 py-4">
                   <div className="text-center space-y-4">
                     <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
@@ -161,7 +184,15 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0"
                     >
                       <CreditCard className="h-4 w-4" />
-                      Donate with Card
+                      Donate once-off with Card
+                    </Button>
+
+                    <Button
+                      onClick={handleSubscribeClick}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Donate regularly with Card
                     </Button>
 
                     <Button
@@ -213,7 +244,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
               )}
 
               {/* Email input view */}
-              {showEmailInput && !showAmountSelect && (
+              {showEmailInput && !showAmountSelect && !showSubscriptionSelect && (
                 <div className="space-y-3 py-4">
                   <p className="text-gray-300 text-sm">Enter your email address for the donation receipt:</p>
                   <input
@@ -225,7 +256,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                   />
                   <div className="flex gap-2">
                     <Button
-                      onClick={handleProceedCheckout}
+                      onClick={() => handleProceedCheckout(false)}
                       className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       Continue
@@ -249,8 +280,20 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                 <div className="py-4">
                   <DonationCheckout
                     email={userEmail}
-                    onSuccess={handleCheckoutSuccess}
+                    onSuccess={() => handleCheckoutSuccess(false)}
                     onCancel={handleCheckoutCancel}
+                  />
+                </div>
+              )}
+
+              {/* Subscription tier selection + Stripe form */}
+              {showSubscriptionSelect && (
+                <div className="py-4">
+                  <SubscriptionCheckout
+                    email={userEmail}
+                    onSuccess={() => handleCheckoutSuccess(true)}
+                    onCancel={handleCheckoutCancel}
+                    onBack={handleCheckoutCancel}
                   />
                 </div>
               )}

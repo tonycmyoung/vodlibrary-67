@@ -1,7 +1,7 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getDonationPreset, DONATION_PRESETS } from "@/lib/donation-products"
+import { getDonationPreset, DONATION_PRESETS, getSubscriptionTier, SUBSCRIPTION_TIERS } from "@/lib/donation-products"
 
 interface CreateDonationCheckoutParams {
   amount?: number // in AUD cents, for custom amounts
@@ -66,6 +66,57 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create checkout session",
+    }
+  }
+}
+
+interface CreateSubscriptionCheckoutParams {
+  tierId: string
+  interval: "monthly" | "annual"
+  email: string
+  returnUrl: string
+}
+
+export async function createSubscriptionCheckout(params: CreateSubscriptionCheckoutParams) {
+  try {
+    const { tierId, interval, email, returnUrl } = params
+
+    const tier = getSubscriptionTier(tierId)
+    if (!tier) {
+      throw new Error("Invalid subscription tier")
+    }
+
+    const priceData = tier.prices[interval]
+    if (!priceData) {
+      throw new Error("Invalid subscription interval")
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      ui_mode: "embedded_page",
+      customer_email: email,
+      line_items: [
+        {
+          price: priceData.priceId,
+          quantity: 1,
+        },
+      ],
+      redirect_on_completion: "never",
+    })
+
+    if (!session.client_secret || !session.id) {
+      throw new Error("Failed to create subscription checkout session")
+    }
+
+    return {
+      success: true,
+      clientSecret: session.client_secret,
+      sessionId: session.id,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create subscription checkout session",
     }
   }
 }
