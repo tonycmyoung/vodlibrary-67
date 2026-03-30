@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import DonationModal from "@/components/donation-modal"
 
 // Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
@@ -344,10 +344,19 @@ describe("DonationModal", () => {
       error: "No active subscription found",
     })
 
-    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
+    })
+
+    // Wait for the user email to be fetched from Supabase auth useEffect
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
 
     const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
-    fireEvent.click(manageButton)
+    await act(async () => {
+      fireEvent.click(manageButton)
+    })
 
     await waitFor(() => {
       // Use getByRole to specifically target the heading element
@@ -355,7 +364,9 @@ describe("DonationModal", () => {
     })
 
     const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
-    fireEvent.click(portalButton)
+    await act(async () => {
+      fireEvent.click(portalButton)
+    })
 
     await waitFor(() => {
       expect(screen.getByText(/No active subscription found/i)).toBeTruthy()
