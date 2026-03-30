@@ -8,6 +8,7 @@ import { DonationCheckout } from "@/components/donation-checkout"
 import { SubscriptionCheckout } from "@/components/subscription-checkout"
 import { createClient } from "@/lib/supabase/client"
 import { trace } from "@/lib/trace"
+import { createCustomerPortalSession } from "@/lib/actions/donations"
 
 interface DonationModalProps {
   isOpen: boolean
@@ -49,6 +50,9 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [userEmail, setUserEmail] = useState("")
   const [showEmailInput, setShowEmailInput] = useState(false)
   const [isSubscriptionSuccess, setIsSubscriptionSuccess] = useState(false)
+  const [showManagePortal, setShowManagePortal] = useState(false)
+  const [portalError, setPortalError] = useState<string | null>(null)
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
@@ -135,8 +139,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     setShowAmountSelect(false)
     setShowSubscriptionSelect(false)
     setShowEmailInput(false)
+    setShowManagePortal(false)
     setUserEmail("")
     setIsSubscriptionSuccess(false)
+    setPortalError(null)
     onClose()
   }
 
@@ -144,6 +150,50 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     trace.info("Checkout cancelled by user", { category: "donation" })
     setShowAmountSelect(false)
     setShowSubscriptionSelect(false)
+  }
+
+  const handleManageSubscription = async () => {
+    trace.info("Manage existing subscription clicked", { category: "subscription", payload: { email: userEmail } })
+    if (!userEmail.trim()) {
+      setPortalError("Email is missing")
+      return
+    }
+
+    setIsLoadingPortal(true)
+    setPortalError(null)
+
+    try {
+      const result = await createCustomerPortalSession({
+        email: userEmail,
+        returnUrl: window.location.href,
+      })
+
+      if (result.success && result.portalUrl) {
+        trace.info("Portal session created successfully", { category: "subscription", payload: { email: userEmail } })
+        // Redirect to portal
+        window.location.href = result.portalUrl
+      } else {
+        trace.warn("No active subscription found", { category: "subscription", payload: { email: userEmail } })
+        setPortalError(result.error || "Unable to manage subscription")
+      }
+    } catch (error) {
+      trace.error("Failed to create portal session", { category: "subscription", payload: { error: String(error), email: userEmail } })
+      setPortalError("An error occurred. Please try again.")
+    } finally {
+      setIsLoadingPortal(false)
+    }
+  }
+
+  const handleOpenManagePortal = () => {
+    trace.info("Manage subscription view opened", { category: "subscription" })
+    setShowManagePortal(true)
+    setPortalError(null)
+  }
+
+  const handleCloseManagePortal = () => {
+    trace.info("Manage subscription view closed", { category: "subscription" })
+    setShowManagePortal(false)
+    setPortalError(null)
   }
 
   return (
@@ -160,6 +210,36 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <div className="flex-1 overflow-y-auto min-h-0">
           {showSuccess ? (
             <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
+          ) : showManagePortal ? (
+            // Manage subscription portal view
+            <div className="space-y-4 py-4">
+              <h2 className="text-xl font-bold text-white">Manage Your Subscription</h2>
+              <p className="text-gray-300 text-sm">
+                We&apos;ll look up your subscription using your email address and redirect you to Stripe&apos;s portal where you can manage your subscription, update your payment method, or cancel if needed.
+              </p>
+
+              {portalError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm">
+                  {portalError}
+                </div>
+              )}
+
+              <Button
+                onClick={handleManageSubscription}
+                disabled={isLoadingPortal}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingPortal ? "Loading..." : "Access Subscription Portal"}
+              </Button>
+
+              <Button
+                onClick={handleCloseManagePortal}
+                variant="outline"
+                className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+              >
+                Back
+              </Button>
+            </div>
           ) : (
             <>
               {/* Initial options view */}
@@ -239,6 +319,16 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     >
                       Maybe Later
                     </Button>
+
+                    {/* Manage subscription link at bottom */}
+                    <div className="pt-2 border-t border-gray-700">
+                      <button
+                        onClick={handleOpenManagePortal}
+                        className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                      >
+                        Manage existing subscription
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

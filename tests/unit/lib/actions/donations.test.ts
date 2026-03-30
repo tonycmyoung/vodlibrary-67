@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
-const { mockCreateSession, mockGetDonationPreset, mockGetSubscriptionTier } = vi.hoisted(() => ({
+const { mockCreateSession, mockGetDonationPreset, mockGetSubscriptionTier, mockListCustomers, mockListSubscriptions, mockCreatePortalSession } = vi.hoisted(() => ({
   mockCreateSession: vi.fn(),
   mockGetDonationPreset: vi.fn(),
   mockGetSubscriptionTier: vi.fn(),
+  mockListCustomers: vi.fn(),
+  mockListSubscriptions: vi.fn(),
+  mockCreatePortalSession: vi.fn(),
 }))
 
 // Mock Stripe module
@@ -13,6 +16,17 @@ vi.mock("@/lib/stripe", () => ({
     checkout: {
       sessions: {
         create: mockCreateSession,
+      },
+    },
+    customers: {
+      list: mockListCustomers,
+    },
+    subscriptions: {
+      list: mockListSubscriptions,
+    },
+    billingPortal: {
+      sessions: {
+        create: mockCreatePortalSession,
       },
     },
   },
@@ -58,7 +72,7 @@ vi.mock("@/lib/donation-products", () => ({
 }))
 
 // Import after mocks are set up
-import { createDonationCheckout, createSubscriptionCheckout } from "@/lib/actions/donations"
+import { createDonationCheckout, createSubscriptionCheckout, createCustomerPortalSession } from "@/lib/actions/donations"
 
 describe("Donation Actions - createDonationCheckout", () => {
   beforeEach(() => {
@@ -74,7 +88,251 @@ describe("Donation Actions - createDonationCheckout", () => {
       return presets[id] || undefined
     })
   })
+})
+
+describe("Donation Actions - createCustomerPortalSession", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
+
+  describe("with valid customer and subscription", () => {
+    it("should create and return portal session URL", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [
+          {
+            id: "sub_test_456",
+            customer: "cus_test_123",
+            status: "active",
+          },
+        ],
+      })
+
+      mockCreatePortalSession.mockResolvedValue({
+        url: "https://billing.stripe.com/p/session/test_portal_session_url",
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(true)
+      expect(result.portalUrl).toBe("https://billing.stripe.com/p/session/test_portal_session_url")
+      expect(result.error).toBeNull()
+
+      expect(mockListCustomers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "subscriber@example.com",
+        })
+      )
+
+      expect(mockListSubscriptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: "cus_test_123",
+          status: "active",
+        })
+      )
+
+      expect(mockCreatePortalSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: "cus_test_123",
+          return_url: "https://example.com",
+        })
+      )
+    })
+  })
+
+  describe("error handling - no customer found", () => {
+    it("should return error when no customer matches email", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [],
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "nonexistent@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("No active subscription found for your account.")
+      expect(result.portalUrl).toBeNull()
+      expect(mockListSubscriptions).not.toHaveBeenCalled()
+      expect(mockCreatePortalSession).not.toHaveBeenCalled()
+    })
+
+    it("should handle when customers list returns null data", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: null,
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("No active subscription found for your account.")
+      expect(result.portalUrl).toBeNull()
+    })
+  })
+
+  describe("error handling - no active subscriptions", () => {
+    it("should return error when customer has no active subscriptions", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [],
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("No active subscription found for your account.")
+      expect(result.portalUrl).toBeNull()
+      expect(mockCreatePortalSession).not.toHaveBeenCalled()
+    })
+
+    it("should handle when subscriptions list returns null data", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: null,
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("No active subscription found for your account.")
+      expect(result.portalUrl).toBeNull()
+    })
+  })
+
+  describe("validation and error handling", () => {
+    it("should reject empty email", async () => {
+      const result = await createCustomerPortalSession({
+        email: "",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Email is required")
+      expect(result.portalUrl).toBeNull()
+      expect(mockListCustomers).not.toHaveBeenCalled()
+    })
+
+    it("should reject whitespace-only email", async () => {
+      const result = await createCustomerPortalSession({
+        email: "   ",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Email is required")
+      expect(mockListCustomers).not.toHaveBeenCalled()
+    })
+
+    it("should handle Stripe API errors when listing customers", async () => {
+      mockListCustomers.mockRejectedValue(new Error("Stripe API connection failed"))
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Stripe API connection failed")
+      expect(result.portalUrl).toBeNull()
+    })
+
+    it("should handle Stripe API errors when listing subscriptions", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockRejectedValue(new Error("Stripe API rate limit"))
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Stripe API rate limit")
+      expect(result.portalUrl).toBeNull()
+    })
+
+    it("should handle Stripe API errors when creating portal session", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [{ id: "sub_test_456", status: "active" }],
+      })
+
+      mockCreatePortalSession.mockRejectedValue(new Error("Portal session creation failed"))
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Portal session creation failed")
+      expect(result.portalUrl).toBeNull()
+    })
+
+    it("should handle missing portal URL in response", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_test_123", email: "subscriber@example.com" }],
+      })
+
+      mockListSubscriptions.mockResolvedValue({
+        data: [{ id: "sub_test_456", status: "active" }],
+      })
+
+      mockCreatePortalSession.mockResolvedValue({
+        // missing url
+      })
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to create portal session")
+      expect(result.portalUrl).toBeNull()
+    })
+
+    it("should handle non-Error exceptions gracefully", async () => {
+      mockListCustomers.mockRejectedValue("String error thrown")
+
+      const result = await createCustomerPortalSession({
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com",
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe("Failed to create portal session")
+      expect(result.portalUrl).toBeNull()
+    })
+  })
+})
 
   describe("with preset ID", () => {
     it("should create checkout session with preset amount", async () => {

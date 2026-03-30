@@ -120,3 +120,71 @@ export async function createSubscriptionCheckout(params: CreateSubscriptionCheck
     }
   }
 }
+
+interface CreateCustomerPortalSessionParams {
+  email: string
+  returnUrl: string
+}
+
+export async function createCustomerPortalSession(params: CreateCustomerPortalSessionParams) {
+  try {
+    const { email, returnUrl } = params
+
+    if (!email.trim()) {
+      throw new Error("Email is required")
+    }
+
+    // List customers to find one with matching email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    })
+
+    if (!customers.data || customers.data.length === 0) {
+      return {
+        success: false,
+        error: "No active subscription found for your account.",
+        portalUrl: null,
+      }
+    }
+
+    const customer = customers.data[0]
+
+    // Check if customer has active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 1,
+    })
+
+    if (!subscriptions.data || subscriptions.data.length === 0) {
+      return {
+        success: false,
+        error: "No active subscription found for your account.",
+        portalUrl: null,
+      }
+    }
+
+    // Create portal session
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customer.id,
+      return_url: returnUrl,
+    })
+
+    if (!portalSession.url) {
+      throw new Error("Failed to create portal session")
+    }
+
+    return {
+      success: true,
+      error: null,
+      portalUrl: portalSession.url,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create portal session",
+      portalUrl: null,
+    }
+  }
+}
