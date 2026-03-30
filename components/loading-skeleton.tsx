@@ -57,9 +57,9 @@ export function LoadingSkeleton({
 
             {/* Category filter skeleton */}
             <div className="mb-6 flex flex-wrap gap-2">
-              {Array.from({ length: filterCount }).map((_, i) => (
+              {Array.from({ length: filterCount }, (_, i) => `filter-skeleton-${i}`).map((id, i) => (
                 <div
-                  key={`filter-${i}`}
+                  key={id}
                   className="h-8 w-20 animate-pulse rounded-full bg-black/30"
                   style={{ animationDelay: `${i * 50}ms` }}
                 />
@@ -70,9 +70,9 @@ export function LoadingSkeleton({
 
         {/* Video grid skeleton */}
         <div className={showTitle ? "mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}>
-          {Array.from({ length: gridCount }).map((_, i) => (
+          {Array.from({ length: gridCount }, (_, i) => `video-skeleton-${i}`).map((id, i) => (
             <div
-              key={`video-${i}`}
+              key={id}
               className="overflow-hidden rounded-lg bg-black/30"
               style={{ animationDelay: `${i * 50}ms` }}
             >
