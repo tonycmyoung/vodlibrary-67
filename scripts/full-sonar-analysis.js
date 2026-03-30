@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 // Read the file as text and extract using regex since the path might be tricky
-const rawContent = fs.readFileSync('user_read_only_context/text_attachments/sonar-issues-HqGbP.json', 'utf8');
+const rawContent = fs.readFileSync('/user_read_only_context/text_attachments/sonar-issues-HqGbP.json', 'utf8');
 const data = JSON.parse(rawContent);
 
 console.log('TOTAL ISSUES:', data.total);
