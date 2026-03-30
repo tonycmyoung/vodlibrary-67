@@ -304,7 +304,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
             <>
               {/* Initial options view */}
               {!showAmountSelect && !showEmailInput && !showSubscriptionSelect && (
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 pt-4 pb-0">
                   <div className="text-center space-y-4">
                     <p className="text-gray-300 leading-relaxed">Thanks for considering to donate!</p>
                     <p className="text-gray-300 leading-relaxed">
@@ -314,7 +314,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
                   </div>
 
-                  <div className="space-y-2 pt-4 pb-6">
+                  <div className="space-y-2 pt-4 pb-4">
                     <div className="text-center">
                       <p className="text-gray-400 text-sm mb-3">Choose your preferred payment method:</p>
                     </div>
