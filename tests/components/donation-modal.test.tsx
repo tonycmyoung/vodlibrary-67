@@ -6,9 +6,10 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import DonationModal from "@/components/donation-modal"
 
 // Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
-const { mockCheckExistingSubscription, mockCreateCustomerPortalSession } = vi.hoisted(() => ({
+const { mockCheckExistingSubscription, mockCreateCustomerPortalSession, mockGetUser } = vi.hoisted(() => ({
   mockCheckExistingSubscription: vi.fn(),
   mockCreateCustomerPortalSession: vi.fn(),
+  mockGetUser: vi.fn(),
 }))
 
 // Mock the Stripe library to prevent initialization errors
@@ -56,7 +57,7 @@ vi.mock("@/components/subscription-checkout", () => ({
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: { email: "test@example.com" } } }),
+      getUser: mockGetUser,
     },
   })),
 }))
@@ -78,6 +79,9 @@ describe("DonationModal", () => {
     mockOnClose.mockClear()
     mockCheckExistingSubscription.mockReset()
     mockCreateCustomerPortalSession.mockReset()
+    // Set up Supabase getUser mock to return a user with email
+    mockGetUser.mockReset()
+    mockGetUser.mockResolvedValue({ data: { user: { email: "test@example.com" } } })
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId
     // Mock window.open
@@ -344,30 +348,26 @@ describe("DonationModal", () => {
       error: "No active subscription found",
     })
 
-    await act(async () => {
-      render(<DonationModal isOpen={true} onClose={mockOnClose} />)
-    })
+    render(<DonationModal isOpen={true} onClose={mockOnClose} />)
 
-    // Wait for the user email to be fetched from Supabase auth useEffect
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
+    // Navigate to subscription management view
     const manageButton = screen.getByRole("button", { name: /manage a regular donation/i })
-    await act(async () => {
-      fireEvent.click(manageButton)
-    })
+    fireEvent.click(manageButton)
 
     await waitFor(() => {
-      // Use getByRole to specifically target the heading element
       expect(screen.getByRole("heading", { name: /Manage Your Subscription/i })).toBeTruthy()
     })
 
+    // Click portal button and wait for the action to complete
     const portalButton = screen.getByRole("button", { name: /Access Subscription Portal/i })
-    await act(async () => {
-      fireEvent.click(portalButton)
+    fireEvent.click(portalButton)
+
+    // Wait for createCustomerPortalSession to be called (verifies email was fetched)
+    await waitFor(() => {
+      expect(mockCreateCustomerPortalSession).toHaveBeenCalled()
     })
 
+    // Now check for the error message
     await waitFor(() => {
       expect(screen.getByText(/No active subscription found/i)).toBeTruthy()
     })
