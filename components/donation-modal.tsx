@@ -355,7 +355,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         setShowSubscriptionSelect(true)
       }
     } catch (error) {
-      // On error, proceed anyway
+      trace.error("Failed to check existing subscription", { category: "subscription", payload: { error: String(error), email: userEmail } })
       setShowSubscriptionSelect(true)
     } finally {
       setIsCheckingSubscription(false)
@@ -449,9 +449,88 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   }
 
   const handleOpenManagePortal = () => {
-    trace.info("Manage subscription view opened", { category: "subscription" })
     setShowManagePortal(true)
     setPortalError(null)
+  }
+
+  const renderModalContent = () => {
+    if (showSuccess) {
+      return <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
+    }
+    
+    if (showExistingSubWarning) {
+      return (
+        <ExistingSubWarning
+          existingSubCount={existingSubCount}
+          onConfirm={handleConfirmAdditionalSubscription}
+          onCancel={handleCancelAdditionalSubscription}
+        />
+      )
+    }
+    
+    if (showManagePortal) {
+      return (
+        <ManagePortalView
+          portalError={portalError}
+          isLoadingPortal={isLoadingPortal}
+          onManage={handleManageSubscription}
+          onClose={handleCloseManagePortal}
+        />
+      )
+    }
+    
+    if (showAmountSelect) {
+      return (
+        <div className="py-4">
+          <DonationCheckout
+            email={userEmail}
+            onSuccess={() => handleCheckoutSuccess(false)}
+            onCancel={handleCheckoutCancel}
+          />
+        </div>
+      )
+    }
+    
+    if (showSubscriptionSelect) {
+      return (
+        <div className="py-4">
+          <SubscriptionCheckout
+            email={userEmail}
+            onSuccess={() => handleCheckoutSuccess(true)}
+            onCancel={handleCheckoutCancel}
+            onBack={handleCheckoutCancel}
+          />
+        </div>
+      )
+    }
+    
+    if (showEmailInput) {
+      return (
+        <EmailInputView
+          userEmail={userEmail}
+          onEmailChange={setUserEmail}
+          onProceed={() => handleProceedCheckout(false)}
+          onBack={() => {
+            setShowEmailInput(false)
+            setUserEmail("")
+          }}
+        />
+      )
+    }
+    
+    return (
+      <PaymentOptionsView
+        payId={payId}
+        copied={copied}
+        isCheckingSubscription={isCheckingSubscription}
+        onStripeClick={handleStripeClick}
+        onPayPalClick={handleDonateClick}
+        onCopyPayID={handleCopyPayID}
+        onSubscribeClick={handleSubscribeClick}
+        onClose={onClose}
+        onManagePortal={handleOpenManagePortal}
+      />
+    )
   }
 
   const handleCloseManagePortal = () => {
@@ -472,61 +551,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          {showSuccess ? (
-            <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
-          ) : showExistingSubWarning ? (
-            <ExistingSubWarning
-              existingSubCount={existingSubCount}
-              onConfirm={handleConfirmAdditionalSubscription}
-              onCancel={handleCancelAdditionalSubscription}
-            />
-          ) : showManagePortal ? (
-            <ManagePortalView
-              portalError={portalError}
-              isLoadingPortal={isLoadingPortal}
-              onManage={handleManageSubscription}
-              onClose={handleCloseManagePortal}
-            />
-          ) : showAmountSelect ? (
-            <div className="py-4">
-              <DonationCheckout
-                email={userEmail}
-                onSuccess={() => handleCheckoutSuccess(false)}
-                onCancel={handleCheckoutCancel}
-              />
-            </div>
-          ) : showSubscriptionSelect ? (
-            <div className="py-4">
-              <SubscriptionCheckout
-                email={userEmail}
-                onSuccess={() => handleCheckoutSuccess(true)}
-                onCancel={handleCheckoutCancel}
-                onBack={handleCheckoutCancel}
-              />
-            </div>
-          ) : showEmailInput ? (
-            <EmailInputView
-              userEmail={userEmail}
-              onEmailChange={setUserEmail}
-              onProceed={() => handleProceedCheckout(false)}
-              onBack={() => {
-                setShowEmailInput(false)
-                setUserEmail("")
-              }}
-            />
-          ) : (
-            <PaymentOptionsView
-              payId={payId}
-              copied={copied}
-              isCheckingSubscription={isCheckingSubscription}
-              onStripeClick={handleStripeClick}
-              onPayPalClick={handleDonateClick}
-              onCopyPayID={handleCopyPayID}
-              onSubscribeClick={handleSubscribeClick}
-              onClose={onClose}
-              onManagePortal={handleOpenManagePortal}
-            />
-          )}
+          {renderModalContent()}
         </div>
       </DialogContent>
     </Dialog>
