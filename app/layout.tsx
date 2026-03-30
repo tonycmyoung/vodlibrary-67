@@ -54,7 +54,6 @@ export default function RootLayout({
         </LoadingProvider>
         <Analytics />
         <SpeedInsights sampleRate={1} />
-
       </body>
     </html>
   )
