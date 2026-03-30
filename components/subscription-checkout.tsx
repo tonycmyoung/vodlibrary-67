@@ -18,7 +18,7 @@ interface SubscriptionCheckoutProps {
   readonly onBack?: () => void
 }
 
-export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: SubscriptionCheckoutProps) {
+export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Readonly<SubscriptionCheckoutProps>) {
   const [selectedTier, setSelectedTier] = useState<string>("supporter")
   const [interval, setInterval] = useState<"monthly" | "annual">("monthly")
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Sub
         tierId: selectedTier,
         interval,
         email,
-        returnUrl: window.location.href,
+        returnUrl: globalThis.location.href,
       })
 
       if (!result.success) {
@@ -94,7 +94,7 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Sub
       <div className="grid grid-cols-3 gap-3">
         {SUBSCRIPTION_TIERS.map((tier) => {
           const priceData = tier.prices[interval]
-          const displayPrice = interval === "monthly" ? `$${(priceData.amount / 100).toFixed(2)}` : `$${(priceData.amount / 100).toFixed(2)}`
+          const displayPrice = `$${(priceData.amount / 100).toFixed(2)}`
           const billingPeriod = interval === "monthly" ? "/month" : "/year"
 
           return (
