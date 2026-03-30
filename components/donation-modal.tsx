@@ -341,37 +341,30 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
                     >
                       <Heart className="h-4 w-4" />
-                      Donate via PayPal
+                      Donate once-off via PayPal
                       <ExternalLink className="h-4 w-4" />
                     </Button>
 
-                    <div className="w-full p-3 border border-gray-600 rounded-md bg-gray-800/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4 text-green-500" />
-                          <span className="text-white font-medium">PayID</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5">
-                            {payId}
-                          </span>
-                          <button
-                            onClick={handleCopyPayID}
-                            className="p-1 hover:bg-gray-600 rounded transition-colors"
-                            title={copied ? "Copied!" : "Copy PayID"}
-                          >
-                            {copied ? (
-                              <Check className="h-4 w-4 text-green-400" />
-                            ) : (
-                              <Copy className="h-4 w-4 text-gray-400 hover:text-white" />
-                            )}
-                          </button>
-                        </div>
+                    <button
+                      onClick={handleCopyPayID}
+                      className="w-full p-3 border border-gray-600 rounded-md bg-gray-800/50 hover:bg-gray-800 transition-colors flex items-center justify-between group"
+                      title={copied ? "Copied!" : "Click to copy PayID"}
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        <CreditCard className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-white font-medium">PayID</span>
                       </div>
-                      <p className="text-gray-400 text-xs">
-                        Use this PayID in your banking app. Check with your bank for PayID instructions.
-                      </p>
-                    </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-mono bg-gray-700 px-2 py-1 rounded text-green-400 text-sm leading-5 group-hover:bg-gray-600 transition-colors">
+                          {payId}
+                        </span>
+                        {copied ? (
+                          <Check className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-gray-400 group-hover:text-white transition-colors" />
+                        )}
+                      </div>
+                    </button>
 
                     <Button
                       variant="outline"
@@ -382,7 +375,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     </Button>
 
                     {/* Manage subscription link at bottom */}
-                    <div className="pt-2 border-t border-gray-700 text-center">
+                    <div className="pt-1 border-t border-gray-700 text-center">
                       <button
                         onClick={handleOpenManagePortal}
                         className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
