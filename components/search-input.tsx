@@ -22,7 +22,7 @@ export default function SearchInput({
   onClear,
   placeholder = "Search videos...",
   className = "",
-}: SearchInputProps) {
+}: Readonly<SearchInputProps>) {
   return (
     <div className={`relative flex-1 max-w-md w-full ${className}`}>
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />

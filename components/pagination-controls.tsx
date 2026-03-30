@@ -21,7 +21,7 @@ export default function PaginationControls({
   onItemsPerPageChange,
   currentPage,
   onPageChange,
-}: PaginationControlsProps) {
+}: Readonly<PaginationControlsProps>) {
   const showNavigation = totalPages > 1
 
   return (
@@ -102,11 +102,11 @@ function PageNumbers({
   totalPages,
   currentPage,
   onPageChange,
-}: {
-  totalPages: number
-  currentPage: number
-  onPageChange: (page: number) => void
-}) {
+}: Readonly<{
+  readonly totalPages: number
+  readonly currentPage: number
+  readonly onPageChange: (page: number) => void
+}>) {
   const pages = []
   const maxVisible = 5
   let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
