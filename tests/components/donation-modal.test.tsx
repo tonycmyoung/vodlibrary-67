@@ -359,7 +359,10 @@ describe("DonationModal", () => {
     fireEvent.click(portalButton)
 
     await waitFor(() => {
-      expect(createCustomerPortalSession).toHaveBeenCalledWith("test@example.com")
+      expect(createCustomerPortalSession).toHaveBeenCalledWith({
+        email: "test@example.com",
+        returnUrl: expect.any(String),
+      })
     })
 
     await waitFor(() => {
