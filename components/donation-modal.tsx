@@ -231,7 +231,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={resetModal}>
-      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 [&>button]:text-white [&>button]:hover:text-gray-300 max-h-[90vh] flex flex-col pb-0">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-white flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-500" />
@@ -314,13 +314,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     <p className="text-gray-300 leading-relaxed italic">Thanks - Tony</p>
                   </div>
 
-                  <div className="space-y-2 pt-4">
+                  <div className="space-y-2 pt-4 pb-6">
                     <div className="text-center">
                       <p className="text-gray-400 text-sm mb-3">Choose your preferred payment method:</p>
                     </div>
-
-                    {/* One-time group */}
-                    <p className="text-xs text-gray-500 uppercase tracking-wider px-1">One-time</p>
 
                     <Button
                       onClick={handleStripeClick}
@@ -361,8 +358,15 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       </div>
                     </button>
 
-                    {/* Recurring group */}
-                    <p className="text-xs text-gray-500 uppercase tracking-wider px-1 pt-1">Regular</p>
+                    {/* Divider between one-time and regular */}
+                    <div className="relative py-1">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-700" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-gray-900 px-3 text-gray-500">or donate regularly</span>
+                      </div>
+                    </div>
 
                     <Button
                       onClick={handleSubscribeClick}
