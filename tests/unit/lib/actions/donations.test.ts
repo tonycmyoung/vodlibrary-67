@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // Use vi.hoisted() to ensure mock functions are available when vi.mock factories run
-const { mockCreateSession, mockGetDonationPreset, mockGetSubscriptionTier, mockListCustomers, mockListSubscriptions, mockCreatePortalSession } = vi.hoisted(() => ({
+const { mockCreateSession, mockGetDonationPreset, mockGetSubscriptionTier, mockListCustomers, mockCreateCustomer, mockListSubscriptions, mockCreatePortalSession } = vi.hoisted(() => ({
   mockCreateSession: vi.fn(),
   mockGetDonationPreset: vi.fn(),
   mockGetSubscriptionTier: vi.fn(),
   mockListCustomers: vi.fn(),
+  mockCreateCustomer: vi.fn(),
   mockListSubscriptions: vi.fn(),
   mockCreatePortalSession: vi.fn(),
 }))
@@ -20,6 +21,7 @@ vi.mock("@/lib/stripe", () => ({
     },
     customers: {
       list: mockListCustomers,
+      create: mockCreateCustomer,
     },
     subscriptions: {
       list: mockListSubscriptions,
@@ -87,6 +89,10 @@ describe("Donation Actions - createDonationCheckout", () => {
       }
       return presets[id] || undefined
     })
+    // Default: customer exists
+    mockListCustomers.mockResolvedValue({
+      data: [{ id: "cus_existing_123", email: "donor@example.com" }],
+    })
   })
 
   describe("with preset ID", () => {
@@ -109,7 +115,7 @@ describe("Donation Actions - createDonationCheckout", () => {
         expect.objectContaining({
           mode: "payment",
           ui_mode: "embedded_page",
-          customer_email: "donor@example.com",
+          customer: "cus_existing_123",
           line_items: [
             expect.objectContaining({
               price_data: expect.objectContaining({
@@ -766,6 +772,10 @@ describe("Donation Actions - createSubscriptionCheckout", () => {
       }
       return tiers[id] || undefined
     })
+    // Default: customer exists
+    mockListCustomers.mockResolvedValue({
+      data: [{ id: "cus_existing_sub", email: "subscriber@example.com" }],
+    })
   })
 
   describe("with valid subscription tiers", () => {
@@ -789,7 +799,7 @@ describe("Donation Actions - createSubscriptionCheckout", () => {
         expect.objectContaining({
           mode: "subscription",
           ui_mode: "embedded_page",
-          customer_email: "subscriber@example.com",
+          customer: "cus_existing_sub",
           line_items: [
             expect.objectContaining({
               price: "price_1TGTp4BrKQRCXygCJkv72PiL",
@@ -928,6 +938,72 @@ describe("Donation Actions - createSubscriptionCheckout", () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe("Failed to create subscription checkout session")
+    })
+  })
+
+  describe("customer consolidation", () => {
+    it("should reuse existing customer instead of creating new one", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [{ id: "cus_existing_customer", email: "subscriber@example.com" }],
+      })
+
+      mockCreateSession.mockResolvedValue({
+        id: "cs_reuse",
+        client_secret: "pi_reuse",
+      })
+
+      await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "subscriber@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(mockListCustomers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "subscriber@example.com",
+        })
+      )
+      expect(mockCreateCustomer).not.toHaveBeenCalled()
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: "cus_existing_customer",
+        })
+      )
+    })
+
+    it("should create new customer when none exists", async () => {
+      mockListCustomers.mockResolvedValue({
+        data: [],
+      })
+
+      mockCreateCustomer.mockResolvedValue({
+        id: "cus_new_customer",
+        email: "newuser@example.com",
+      })
+
+      mockCreateSession.mockResolvedValue({
+        id: "cs_new",
+        client_secret: "pi_new",
+      })
+
+      await createSubscriptionCheckout({
+        tierId: "supporter",
+        interval: "monthly",
+        email: "newuser@example.com",
+        returnUrl: "https://example.com/success",
+      })
+
+      expect(mockCreateCustomer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "newuser@example.com",
+        })
+      )
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: "cus_new_customer",
+        })
+      )
     })
   })
 })

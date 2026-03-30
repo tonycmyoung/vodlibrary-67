@@ -3,6 +3,26 @@
 import { stripe } from "@/lib/stripe"
 import { getDonationPreset, DONATION_PRESETS, getSubscriptionTier, SUBSCRIPTION_TIERS } from "@/lib/donation-products"
 
+// Helper to find existing customer by email or create a new one
+// This ensures all subscriptions for the same email are under one customer
+async function getOrCreateCustomer(email: string): Promise<string> {
+  const customers = await stripe.customers.list({
+    email: email,
+    limit: 1,
+  })
+
+  if (customers.data && customers.data.length > 0) {
+    return customers.data[0].id
+  }
+
+  // Create new customer
+  const newCustomer = await stripe.customers.create({
+    email: email,
+  })
+
+  return newCustomer.id
+}
+
 interface CreateDonationCheckoutParams {
   amount?: number // in AUD cents, for custom amounts
   presetId?: string // for preset amounts
@@ -33,10 +53,13 @@ export async function createDonationCheckout(params: CreateDonationCheckoutParam
       throw new Error("Either amount or presetId must be provided")
     }
 
+    // Get or create customer to consolidate all donations/subscriptions under one customer
+    const customerId = await getOrCreateCustomer(email)
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       ui_mode: "embedded_page",
-      customer_email: email,
+      customer: customerId,
       line_items: [
         {
           price_data: {
@@ -91,10 +114,13 @@ export async function createSubscriptionCheckout(params: CreateSubscriptionCheck
       throw new Error("Invalid subscription interval")
     }
 
+    // Get or create customer to consolidate all subscriptions under one customer
+    const customerId = await getOrCreateCustomer(email)
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       ui_mode: "embedded_page",
-      customer_email: email,
+      customer: customerId,
       line_items: [
         {
           price: priceData.priceId,
