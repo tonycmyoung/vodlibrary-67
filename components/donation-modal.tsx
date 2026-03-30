@@ -8,7 +8,7 @@ import { DonationCheckout } from "@/components/donation-checkout"
 import { SubscriptionCheckout } from "@/components/subscription-checkout"
 import { createClient } from "@/lib/supabase/client"
 import { trace } from "@/lib/trace"
-import { createCustomerPortalSession } from "@/lib/actions/donations"
+import { createCustomerPortalSession, checkExistingSubscription } from "@/lib/actions/donations"
 
 interface DonationModalProps {
   isOpen: boolean
@@ -53,6 +53,9 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [showManagePortal, setShowManagePortal] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
+  const [showExistingSubWarning, setShowExistingSubWarning] = useState(false)
+  const [existingSubCount, setExistingSubCount] = useState(0)
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false)
   const payId = process.env.NEXT_PUBLIC_DONATE_PAYID || ""
 
   useEffect(() => {
@@ -103,13 +106,40 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     }
   }
 
-  const handleSubscribeClick = () => {
+  const handleSubscribeClick = async () => {
     trace.info("Donate regularly with Card clicked", { category: "subscription", payload: { hasEmail: !!userEmail.trim() } })
-    if (userEmail.trim()) {
-      setShowSubscriptionSelect(true)
-    } else {
+    if (!userEmail.trim()) {
       setShowEmailInput(true)
+      return
     }
+
+    // Check for existing subscriptions
+    setIsCheckingSubscription(true)
+    try {
+      const result = await checkExistingSubscription({ email: userEmail })
+      if (result.hasSubscription) {
+        setExistingSubCount(result.subscriptionCount)
+        setShowExistingSubWarning(true)
+      } else {
+        setShowSubscriptionSelect(true)
+      }
+    } catch (error) {
+      // On error, proceed anyway
+      setShowSubscriptionSelect(true)
+    } finally {
+      setIsCheckingSubscription(false)
+    }
+  }
+
+  const handleConfirmAdditionalSubscription = () => {
+    trace.info("User confirmed additional subscription", { category: "subscription", payload: { existingCount: existingSubCount } })
+    setShowExistingSubWarning(false)
+    setShowSubscriptionSelect(true)
+  }
+
+  const handleCancelAdditionalSubscription = () => {
+    trace.info("User cancelled additional subscription", { category: "subscription" })
+    setShowExistingSubWarning(false)
   }
 
   const handleProceedCheckout = (isSubscription: boolean) => {
@@ -140,6 +170,8 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
     setShowSubscriptionSelect(false)
     setShowEmailInput(false)
     setShowManagePortal(false)
+    setShowExistingSubWarning(false)
+    setExistingSubCount(0)
     setUserEmail("")
     setIsSubscriptionSuccess(false)
     setPortalError(null)
@@ -170,8 +202,9 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
       if (result.success && result.portalUrl) {
         trace.info("Portal session created successfully", { category: "subscription", payload: { email: userEmail } })
-        // Redirect to portal
-        window.location.href = result.portalUrl
+        // Open portal in new tab
+        window.open(result.portalUrl, "_blank")
+        setShowManagePortal(false)
       } else {
         trace.warn("No active subscription found", { category: "subscription", payload: { email: userEmail } })
         setPortalError(result.error || "Unable to manage subscription")
@@ -210,6 +243,33 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <div className="flex-1 overflow-y-auto min-h-0">
           {showSuccess ? (
             <SuccessScreen email={userEmail} onClose={resetModal} isSubscription={isSubscriptionSuccess} />
+          ) : showExistingSubWarning ? (
+            // Existing subscription warning view
+            <div className="space-y-4 py-4">
+              <h2 className="text-xl font-bold text-white">You Already Have a Regular Donation</h2>
+              <p className="text-gray-300 text-sm">
+                You currently have {existingSubCount} active regular donation{existingSubCount > 1 ? "s" : ""}. 
+                Are you sure you want to set up an additional one?
+              </p>
+              <p className="text-gray-400 text-sm">
+                If you&apos;d like to change your existing donation instead, you can use &quot;Manage a regular donation&quot; from the main menu.
+              </p>
+
+              <Button
+                onClick={handleConfirmAdditionalSubscription}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Yes, Set Up Additional Donation
+              </Button>
+
+              <Button
+                onClick={handleCancelAdditionalSubscription}
+                variant="outline"
+                className="w-full border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
+              >
+                No, Go Back
+              </Button>
+            </div>
           ) : showManagePortal ? (
             // Manage subscription portal view
             <div className="space-y-4 py-4">
@@ -269,10 +329,11 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
                     <Button
                       onClick={handleSubscribeClick}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0"
+                      disabled={isCheckingSubscription}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50"
                     >
                       <CreditCard className="h-4 w-4" />
-                      Donate regularly with Card
+                      {isCheckingSubscription ? "Checking..." : "Donate regularly with Card"}
                     </Button>
 
                     <Button
@@ -321,12 +382,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                     </Button>
 
                     {/* Manage subscription link at bottom */}
-                    <div className="pt-2 border-t border-gray-700">
+                    <div className="pt-2 border-t border-gray-700 text-center">
                       <button
                         onClick={handleOpenManagePortal}
                         className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
                       >
-                        Manage existing subscription
+                        Manage a regular donation
                       </button>
                     </div>
                   </div>

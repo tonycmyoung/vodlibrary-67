@@ -121,6 +121,49 @@ export async function createSubscriptionCheckout(params: CreateSubscriptionCheck
   }
 }
 
+interface CheckExistingSubscriptionParams {
+  email: string
+}
+
+export async function checkExistingSubscription(params: CheckExistingSubscriptionParams) {
+  try {
+    const { email } = params
+
+    if (!email.trim()) {
+      return { hasSubscription: false, subscriptionCount: 0 }
+    }
+
+    // List customers to find one with matching email
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    })
+
+    if (!customers.data || customers.data.length === 0) {
+      return { hasSubscription: false, subscriptionCount: 0 }
+    }
+
+    const customer = customers.data[0]
+
+    // Check if customer has active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 10,
+    })
+
+    const count = subscriptions.data?.length || 0
+
+    return {
+      hasSubscription: count > 0,
+      subscriptionCount: count,
+    }
+  } catch (error) {
+    // On error, allow user to proceed (don't block the flow)
+    return { hasSubscription: false, subscriptionCount: 0 }
+  }
+}
+
 interface CreateCustomerPortalSessionParams {
   email: string
   returnUrl: string
