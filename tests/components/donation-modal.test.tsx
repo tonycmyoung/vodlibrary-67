@@ -333,7 +333,7 @@ describe("DonationModal", () => {
     fireEvent.click(portalButton)
 
     await waitFor(() => {
-      expect(globalThis.open).toHaveBeenCalledWith("https://billing.stripe.com/test", "_blank")
+      expect(window.open).toHaveBeenCalledWith("https://billing.stripe.com/test", "_blank")
     })
   })
 
