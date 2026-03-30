@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const data = JSON.parse(fs.readFileSync('./temp/sonar-issues-latest.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync('/temp/sonar-issues-latest.json', 'utf8'));
 
 console.log(`Total issues: ${data.total}`);
 console.log('\n=== Issues by File ===');
