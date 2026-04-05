@@ -73,6 +73,20 @@ export default function CurriculumSetsManagement() {
   const [videoSearch, setVideoSearch] = useState("")
   const [videoSearchLoading, setVideoSearchLoading] = useState(false)
 
+  // Helper to reduce cognitive complexity - handles success/error toasts
+  const handleResult = (
+    result: { success?: string; error?: string },
+    onSuccess?: () => void
+  ): boolean => {
+    if (result.success) {
+      toast({ title: "Success", description: result.success })
+      onSuccess?.()
+      return true
+    }
+    toast({ title: "Error", description: result.error, variant: "destructive" })
+    return false
+  }
+
   useEffect(() => {
     fetchSets()
   }, [])
@@ -107,14 +121,11 @@ export default function CurriculumSetsManagement() {
     setSavingSet(true)
     try {
       const result = await createCurriculumSet(setFormData)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         await fetchSets()
         setSetFormData({ name: "", description: "" })
         setIsAddSetDialogOpen(false)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error adding set:", error)
       toast({ title: "Error", description: "Failed to add curriculum set", variant: "destructive" })
@@ -129,16 +140,13 @@ export default function CurriculumSetsManagement() {
     setSavingSet(true)
     try {
       const result = await updateCurriculumSet(editingSet.id, setFormData)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         await fetchSets()
         await fetchSetDetails(editingSet.id)
         setEditingSet(null)
         setSetFormData({ name: "", description: "" })
         setIsAddSetDialogOpen(false)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error updating set:", error)
       toast({ title: "Error", description: "Failed to update curriculum set", variant: "destructive" })
@@ -151,13 +159,10 @@ export default function CurriculumSetsManagement() {
     if (!globalThis.confirm("Are you sure? This will delete the curriculum set and all its levels.")) return
     try {
       const result = await deleteCurriculumSet(setId)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         await fetchSets()
         setSelectedSet(null)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error deleting set:", error)
       toast({ title: "Error", description: "Failed to delete curriculum set", variant: "destructive" })
@@ -170,14 +175,11 @@ export default function CurriculumSetsManagement() {
     setSavingSet(true)
     try {
       const result = await addLevelToCurriculumSet(selectedSet.id, levelFormData)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         await fetchSetDetails(selectedSet.id)
         setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
         setIsAddLevelDialogOpen(false)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error adding level:", error)
       toast({ title: "Error", description: "Failed to add level", variant: "destructive" })
@@ -192,15 +194,12 @@ export default function CurriculumSetsManagement() {
     setSavingSet(true)
     try {
       const result = await updateLevelInCurriculumSet(editingLevel.id, levelFormData)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         if (selectedSet) await fetchSetDetails(selectedSet.id)
         setEditingLevel(null)
         setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
         setIsAddLevelDialogOpen(false)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error updating level:", error)
       toast({ title: "Error", description: "Failed to update level", variant: "destructive" })
@@ -213,12 +212,9 @@ export default function CurriculumSetsManagement() {
     if (!globalThis.confirm("Are you sure? This level will be deleted.")) return
     try {
       const result = await deleteLevelFromCurriculumSet(levelId)
-      if (result.success) {
-        toast({ title: "Success", description: result.success })
+      handleResult(result, async () => {
         if (selectedSet) await fetchSetDetails(selectedSet.id)
-      } else {
-        toast({ title: "Error", description: result.error, variant: "destructive" })
-      }
+      })
     } catch (error) {
       console.error("Error deleting level:", error)
       toast({ title: "Error", description: "Failed to delete level", variant: "destructive" })
@@ -613,7 +609,7 @@ export default function CurriculumSetsManagement() {
               <h3 className="text-lg font-semibold text-white">
                 Videos for: <span style={{ color: managingVideosForLevel.color }}>{managingVideosForLevel.name}</span>
               </h3>
-              <p className="text-sm text-gray-400">{levelVideos.length} video{levelVideos.length !== 1 ? "s" : ""} assigned to this level</p>
+              <p className="text-sm text-gray-400">{levelVideos.length} video{levelVideos.length === 1 ? "" : "s"} assigned to this level</p>
             </div>
             <Button
               variant="ghost"

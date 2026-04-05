@@ -268,8 +268,9 @@ describe("CurriculumSetsManagement", () => {
       })
 
       await waitFor(() => {
+        // Dropdown triggers have aria-haspopup="menu"
         const dropdownButtons = screen.getAllByRole("button").filter(
-          (btn) => btn.getAttribute("aria-label")?.includes("menu") || btn.className?.includes("dropdown")
+          (btn) => btn.getAttribute("aria-haspopup") === "menu"
         )
         expect(dropdownButtons.length).toBeGreaterThan(0)
       })

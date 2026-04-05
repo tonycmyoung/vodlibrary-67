@@ -992,9 +992,3 @@ describe("Curriculum Actions", () => {
     })
   })
 })
-
-      const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
-      expect(result.error).toBe("Failed to delete level")
-    })
-  })
-})
