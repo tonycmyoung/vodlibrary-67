@@ -130,12 +130,10 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                   key={video.id}
                   className="flex items-center justify-between p-2 rounded bg-gray-800 border border-gray-700"
                 >
-                  <div className="flex-1 min-w-0 mr-2">
-                    <span className="text-sm text-white truncate block">{video.title}</span>
-                    {video.recorded && (
-                      <span className="text-xs text-gray-500">{video.recorded}</span>
-                    )}
-                  </div>
+                  <span className="text-sm text-white truncate flex-1 min-w-0 mr-2">{video.title}</span>
+                  {video.recorded && (
+                    <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{new Date(video.recorded).getFullYear()}</span>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleRemoveVideoFromLevel(video.id)}
@@ -176,12 +174,10 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                     key={video.id}
                     className="flex items-center justify-between p-2 rounded bg-gray-800/50 border border-gray-700 hover:border-purple-500 transition"
                   >
-                    <div className="flex-1 min-w-0 mr-2">
-                      <span className="text-sm text-white truncate block">{video.title}</span>
-                      {video.recorded && (
-                        <span className="text-xs text-gray-500">{video.recorded}</span>
-                      )}
-                    </div>
+                    <span className="text-sm text-white truncate flex-1 min-w-0 mr-2">{video.title}</span>
+                    {video.recorded && (
+                      <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{new Date(video.recorded).getFullYear()}</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleAddVideoToLevel(video.id)}
