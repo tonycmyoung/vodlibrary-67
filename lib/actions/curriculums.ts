@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { trace } from "@/lib/trace"
 
 interface Curriculum {
   id: string
@@ -387,19 +388,22 @@ export async function addLevelToCurriculumSet(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Check for duplicate name within this set only
+    // Check for duplicate name within this set only (case-insensitive)
     const { data: existingLevel, error: checkError } = await serviceSupabase
       .from("curriculums")
       .select("id, name, curriculum_set_id")
       .eq("curriculum_set_id", setId)
-      .ilike("name", levelData.name)
+      .ilike("name", levelData.name.trim())
       .maybeSingle()
 
-    console.log("[v0] addLevelToCurriculumSet - checking duplicate for setId:", setId, "name:", levelData.name)
-    console.log("[v0] addLevelToCurriculumSet - existingLevel:", existingLevel, "checkError:", checkError)
+    trace.debug("addLevelToCurriculumSet - checking duplicate", {
+      payload: { setId, name: levelData.name, existingLevel, checkError: checkError?.message }
+    })
 
     if (existingLevel) {
-      console.log("[v0] addLevelToCurriculumSet - duplicate found, returning error")
+      trace.warn("addLevelToCurriculumSet - duplicate found", {
+        payload: { setId, name: levelData.name, existingLevelId: existingLevel.id }
+      })
       return { error: `A level named "${levelData.name}" already exists in this curriculum set` }
     }
 
@@ -417,7 +421,7 @@ export async function addLevelToCurriculumSet(
       displayOrder = maxOrderData ? maxOrderData.display_order + 1 : 0
     }
 
-    console.log("[v0] addLevelToCurriculumSet - inserting level with display_order:", displayOrder)
+    trace.debug("addLevelToCurriculumSet - inserting", { payload: { setId, displayOrder, name: levelData.name } })
     
     const { data: newLevel, error } = await serviceSupabase.from("curriculums").insert({
       name: levelData.name,
@@ -427,12 +431,12 @@ export async function addLevelToCurriculumSet(
       curriculum_set_id: setId,
     }).select().single()
 
-    console.log("[v0] addLevelToCurriculumSet - insert result:", newLevel, "error:", error)
-
     if (error) {
-      console.error("[v0] Error adding level:", error)
+      trace.error("addLevelToCurriculumSet - insert failed", { payload: { setId, error: error.message } })
       return { error: `Failed to add level: ${error.message}` }
     }
+    
+    trace.info("addLevelToCurriculumSet - success", { payload: { setId, levelId: newLevel?.id } })
 
     return { success: "Level added successfully", id: newLevel?.id }
   } catch (error) {

@@ -622,22 +622,42 @@ describe("Curriculum Actions", () => {
     })
 
     it("should return error on failure", async () => {
+      let fromCallCount = 0
       mockFrom.mockImplementation(() => {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        fromCallCount++
+        if (fromCallCount === 1) {
+          // First call: Check for duplicate name - returns no duplicate
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                ilike: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
                 }),
               }),
             }),
-          }),
-          insert: vi.fn().mockReturnValue({
+          }
+        } else if (fromCallCount === 2) {
+          // Second call: Get max display_order
+          return {
             select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: { message: "Error" } }),
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                  }),
+                }),
+              }),
             }),
-          }),
+          }
+        } else {
+          // Third call: Insert fails
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: null, error: { message: "Insert error" } }),
+              }),
+            }),
+          }
         }
       })
 
@@ -646,7 +666,7 @@ describe("Curriculum Actions", () => {
         color: "#00FF00",
       })
 
-      expect(result.error).toBe("Failed to add level")
+      expect(result.error).toBe("Failed to add level: Insert error")
     })
   })
 

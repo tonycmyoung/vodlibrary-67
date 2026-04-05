@@ -115,6 +115,10 @@ export default function CurriculumSetsManagement() {
   const [setFormData, setSetFormData] = useState({ name: "", description: "" })
   const [managingVideosForLevel, setManagingVideosForLevel] = useState<CurriculumLevel | null>(null)
 
+  const openVideoManagement = (level: CurriculumLevel) => {
+    setManagingVideosForLevel(level)
+  }
+
   const {
     editingLevel,
     setEditingLevel,
