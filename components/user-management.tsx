@@ -27,7 +27,6 @@ import {
   Play,
   User,
   Key,
-  Award,
   EyeOff,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -36,7 +35,6 @@ import { deleteUserCompletely, updateUserFields, adminResetUserPassword } from "
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Curriculum {
   id: string

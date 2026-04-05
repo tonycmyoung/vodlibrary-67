@@ -540,6 +540,19 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     return email[0].toUpperCase()
   }
 
+  const getRoleBadgeClass = (role: string | null): string => {
+    switch (role) {
+      case "Admin":
+        return "bg-red-600 text-white"
+      case "Teacher":
+        return "bg-purple-600 text-white"
+      case "Head Teacher":
+        return "bg-teal-600 text-white"
+      default:
+        return "bg-gray-600 text-white"
+    }
+  }
+
   if (loading) {
     return (
       <Card className="bg-black/60 border-gray-800">
@@ -689,17 +702,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
           {filteredUsers.map((student) => {
             const isProcessing = processingUsers.has(student.id)
             const isEditing = editingUser === student.id
-
-            let roleBadgeClass: string
-            if (student.role === "Admin") {
-              roleBadgeClass = "bg-red-600 text-white"
-            } else if (student.role === "Teacher") {
-              roleBadgeClass = "bg-purple-600 text-white"
-            } else if (student.role === "Head Teacher") {
-              roleBadgeClass = "bg-teal-600 text-white"
-            } else {
-              roleBadgeClass = "bg-gray-600 text-white"
-            }
+            const roleBadgeClass = getRoleBadgeClass(student.role)
 
             return (
               <div

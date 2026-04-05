@@ -306,30 +306,25 @@ export default function CurriculumSetsManagement() {
               sets.map((set) => (
                 <div
                   key={set.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => fetchSetDetails(set.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault()
-                      fetchSetDetails(set.id)
-                    }
-                  }}
-                  className={`w-full text-left p-3 rounded-lg cursor-pointer border transition ${
+                  className={`w-full p-3 rounded-lg border transition ${
                     selectedSet?.id === set.id
                       ? "border-purple-500 bg-purple-500/10"
                       : "border-gray-700 hover:border-gray-600 bg-gray-800/50"
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => fetchSetDetails(set.id)}
+                      className="flex-1 min-w-0 text-left"
+                    >
                       <p className="font-medium text-sm text-white truncate">{set.name}</p>
                       {set.description && (
                         <p className="text-xs text-gray-400 line-clamp-2">{set.description}</p>
                       )}
-                    </div>
+                    </button>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
