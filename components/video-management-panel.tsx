@@ -132,7 +132,7 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                 >
                   <span className="text-sm text-white truncate flex-1 min-w-0 mr-2">{video.title}</span>
                   {video.recorded && (
-                    <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{new Date(video.recorded).getFullYear()}</span>
+                    <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{video.recorded}</span>
                   )}
                   <button
                     type="button"
@@ -176,7 +176,7 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                   >
                     <span className="text-sm text-white truncate flex-1 min-w-0 mr-2">{video.title}</span>
                     {video.recorded && (
-                      <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{new Date(video.recorded).getFullYear()}</span>
+                      <span className="text-xs text-gray-500 flex-shrink-0 mr-2">{video.recorded}</span>
                     )}
                     <button
                       type="button"
