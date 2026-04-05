@@ -232,4 +232,22 @@ describe("CurriculumSetsManagement", () => {
 
     expect(confirm).toBeDefined()
   })
+
+  it("should call deleteLevelFromCurriculumSet action", async () => {
+    vi.mocked(deleteLevelFromCurriculumSet).mockResolvedValue({ success: "Level deleted" })
+    
+    const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
+    
+    expect(result.success).toBe("Level deleted")
+    expect(deleteLevelFromCurriculumSet).toHaveBeenCalledWith("set-1", "level-1")
+  })
+
+  it("should call updateLevelInCurriculumSet action", async () => {
+    vi.mocked(updateLevelInCurriculumSet).mockResolvedValue({ success: "Level updated" })
+    
+    const result = await updateLevelInCurriculumSet("level-1", { name: "Updated Level", description: "", color: "#ff0000" })
+    
+    expect(result.success).toBe("Level updated")
+    expect(updateLevelInCurriculumSet).toHaveBeenCalledWith("level-1", expect.objectContaining({ name: "Updated Level" }))
+  })
 })

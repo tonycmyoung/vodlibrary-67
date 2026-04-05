@@ -85,7 +85,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleAddSet = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddSet = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     setSavingSet(true)
     try {
@@ -106,7 +106,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleUpdateSet = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateSet = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!editingSet) return
     setSavingSet(true)
@@ -147,7 +147,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleAddLevel = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddLevel = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!selectedSet) return
     setSavingSet(true)
@@ -169,7 +169,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleUpdateLevel = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateLevel = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!editingLevel) return
     setSavingSet(true)
