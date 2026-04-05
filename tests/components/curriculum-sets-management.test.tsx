@@ -232,4 +232,63 @@ describe("CurriculumSetsManagement", () => {
 
     expect(confirm).toBeDefined()
   })
+
+  it("should call deleteLevelFromCurriculumSet when delete level is confirmed", async () => {
+    vi.mocked(confirm).mockReturnValue(true)
+    const user = userEvent.setup()
+    render(<CurriculumSetsManagement />)
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText("First Level")).toBeTruthy()
+    })
+
+    // Open the dropdown menu for the first level
+    const moreButtons = screen.getAllByRole("button", { name: "" })
+    const levelMoreButton = moreButtons.find(btn => btn.querySelector('svg'))
+    if (levelMoreButton) {
+      await user.click(levelMoreButton)
+    }
+
+    // Look for delete option and click it
+    const deleteOption = await screen.findByText(/delete/i)
+    await user.click(deleteOption)
+
+    await waitFor(() => {
+      expect(deleteLevelFromCurriculumSet).toHaveBeenCalled()
+    })
+  })
+
+  it("should open edit dialog when edit level is clicked", async () => {
+    const user = userEvent.setup()
+    render(<CurriculumSetsManagement />)
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText("First Level")).toBeTruthy()
+    })
+
+    // Open the dropdown menu for a level
+    const moreButtons = screen.getAllByRole("button", { name: "" })
+    const levelMoreButton = moreButtons.find(btn => btn.querySelector('svg'))
+    if (levelMoreButton) {
+      await user.click(levelMoreButton)
+    }
+
+    // Click edit option
+    const editOption = await screen.findByText(/edit/i)
+    await user.click(editOption)
+
+    // Check that the edit dialog is populated with the level data
+    await waitFor(() => {
+      const nameInput = document.getElementById("level-name") as HTMLInputElement
+      expect(nameInput?.value).toBe("First Level")
+    })
+  })
 })

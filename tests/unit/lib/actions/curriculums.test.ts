@@ -799,5 +799,45 @@ describe("Curriculum Actions", () => {
       const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
       expect(result.error).toBe("Failed to delete level")
     })
+
+    it("should return error when level not found", async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      })
+
+      const result = await deleteLevelFromCurriculumSet("set-1", "nonexistent-level")
+      expect(result.error).toBe("Level not found")
+    })
+
+    it("should handle delete error after finding level", async () => {
+      const mockLevel = { id: "level-1", display_order: 0, curriculum_set_id: "set-1" }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          // First call: select level
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockLevel, error: null }),
+              }),
+            }),
+          }
+        }
+        // Second call: delete
+        return {
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
+          }),
+        }
+      })
+
+      const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
+      expect(result.error).toBe("Failed to delete level")
+    })
   })
 })

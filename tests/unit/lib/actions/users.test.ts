@@ -793,6 +793,36 @@ describe("User Actions", () => {
 
       expect(result).toEqual({ error: "Failed to update password" })
     })
+
+    it("should return error when user is not Admin", async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: "user-123", email: "user@example.com" } },
+        error: null,
+      })
+
+      mockSupabaseClient.from.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { full_name: "Regular User", role: "Member" },
+              error: null,
+            }),
+          }),
+        }),
+      })
+
+      const result = await adminResetUserPassword("user-123", "NewPassword123!")
+
+      expect(result).toEqual({ error: "Unauthorized - Admin access required" })
+    })
+
+    it("should handle exception during password reset", async () => {
+      mockSupabaseClient.auth.getUser.mockRejectedValue(new Error("Database connection failed"))
+
+      const result = await adminResetUserPassword("user-123", "NewPassword123!")
+
+      expect(result).toEqual({ error: "Failed to reset password" })
+    })
   })
 
   describe("inviteUser", () => {
