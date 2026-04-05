@@ -237,23 +237,24 @@ export default function CurriculumSetsManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+        <span className="ml-2 text-gray-300">Loading curriculum sets...</span>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Curriculum Sets</h1>
+        <p className="text-sm text-gray-400">Manage curriculum sets and their levels</p>
         <Dialog open={isAddSetDialogOpen} onOpenChange={setIsAddSetDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingSet(null)}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button onClick={() => setEditingSet(null)} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Plus className="w-4 h-4 mr-2" />
               New Curriculum Set
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
             <DialogHeader>
               <DialogTitle>{editingSet ? "Edit" : "Create"} Curriculum Set</DialogTitle>
             </DialogHeader>
