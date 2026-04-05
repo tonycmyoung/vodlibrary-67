@@ -62,11 +62,17 @@ export default async function MyLevelPage() {
 
   let nextBeltName = "Next Level"
   if (maxCurriculumOrder) {
-    const { data: nextBelt } = await supabase
+    // Filter by curriculum_set_id if user has one assigned
+    let query = supabase
       .from("curriculums")
       .select("name")
       .eq("display_order", maxCurriculumOrder)
-      .maybeSingle() // Use maybeSingle() instead of single() to handle 0 rows gracefully
+
+    if (userProfile?.curriculum_set_id) {
+      query = query.eq("curriculum_set_id", userProfile.curriculum_set_id)
+    }
+
+    const { data: nextBelt } = await query.maybeSingle() // Use maybeSingle() instead of single() to handle 0 rows gracefully
 
     if (nextBelt) {
       nextBeltName = nextBelt.name
