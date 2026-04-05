@@ -36,7 +36,9 @@ export default async function ProfilePage() {
       created_at,
       profile_image_url,
       current_belt_id,
-      current_belt:curriculums!current_belt_id(id, name, color, display_order)
+      curriculum_set_id,
+      current_belt:curriculums!current_belt_id(id, name, color, display_order),
+      curriculum_set:curriculum_sets!curriculum_set_id(id, name)
     `)
     .eq("id", user.id)
     .single()
@@ -56,6 +58,17 @@ export default async function ProfilePage() {
     .select("id, name, color, display_order")
     .order("display_order", { ascending: true })
 
+  // Fetch curriculum levels for user's curriculum set (if assigned)
+  let curriculumLevels: Array<{ id: string; name: string; display_name: string; sort_order: number }> = []
+  if (userProfile?.curriculum_set_id) {
+    const { data: levels } = await supabase
+      .from("curriculum_levels")
+      .select("id, name, display_name, sort_order")
+      .eq("curriculum_set_id", userProfile.curriculum_set_id)
+      .order("sort_order", { ascending: true })
+    curriculumLevels = levels || []
+  }
+
   const isAdmin = userProfile?.role === "Admin"
 
   const userWithStats = {
@@ -63,6 +76,8 @@ export default async function ProfilePage() {
     id: user.id,
     email: user.email,
     current_belt: userProfile?.current_belt || null,
+    curriculum_set: userProfile?.curriculum_set || null,
+    curriculum_set_id: userProfile?.curriculum_set_id || null,
     favorite_count: favoriteCount?.length || 0,
     isAdmin,
   }
@@ -85,7 +100,7 @@ export default async function ProfilePage() {
           <h1 className="text-3xl font-bold text-white mb-2">My Profile</h1>
           <p className="text-gray-300">Manage your account information</p>
         </div>
-        <UserProfile user={userWithStats} curriculums={curriculums || []} />
+        <UserProfile user={userWithStats} curriculums={curriculums || []} curriculumLevels={curriculumLevels} />
       </div>
     </div>
   )

@@ -27,11 +27,16 @@ interface UserProfileProps {
     readonly favorite_count: number
     readonly isAdmin?: boolean
     readonly current_belt_id: string | null
+    readonly curriculum_set_id?: string | null
     readonly current_belt?: {
       readonly id: string
       readonly name: string
       readonly color: string
       readonly display_order: number
+    } | null
+    readonly curriculum_set?: {
+      readonly id: string
+      readonly name: string
     } | null
   }
   readonly curriculums: Array<{
@@ -39,6 +44,12 @@ interface UserProfileProps {
     readonly name: string
     readonly color: string
     readonly display_order: number
+  }>
+  readonly curriculumLevels?: Array<{
+    readonly id: string
+    readonly name: string
+    readonly display_name: string
+    readonly sort_order: number
   }>
 }
 
@@ -472,19 +483,26 @@ function BeltSelector({
   handleBeltChange,
   currentBelt,
   curriculums,
+  curriculumLevels,
+  hasCurriculumSet,
 }: Readonly<{
   currentBeltId: string | null
   beltLoading: boolean
   handleBeltChange: (beltId: string) => void
   currentBelt: UserProfileProps["user"]["current_belt"]
   curriculums: UserProfileProps["curriculums"]
+  curriculumLevels?: UserProfileProps["curriculumLevels"]
+  hasCurriculumSet: boolean
 }>) {
+  // Use curriculum levels if user has a curriculum set, otherwise fall back to old curriculums
+  const useLevels = hasCurriculumSet && curriculumLevels && curriculumLevels.length > 0
   const sortedCurriculums = curriculums.toSorted((a, b) => a.display_order - b.display_order)
+  const sortedLevels = curriculumLevels?.toSorted((a, b) => a.sort_order - b.sort_order) || []
 
   return (
     <div>
       <label htmlFor="current-belt-select" className="block text-sm font-medium text-gray-300 mb-2">
-        Current Belt
+        Current Belt/Level
       </label>
       <Select value={currentBeltId || "none"} onValueChange={handleBeltChange} disabled={beltLoading}>
         <SelectTrigger id="current-belt-select" className="bg-gray-800 border-gray-700 text-white">
@@ -496,20 +514,26 @@ function BeltSelector({
           <SelectItem value="none" className="text-white">
             Not specified
           </SelectItem>
-          {sortedCurriculums.map((curriculum) => (
-            <SelectItem key={curriculum.id} value={curriculum.id} className="text-white">
-              <span className="flex items-center">
-                <span
-                  className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                  style={{ backgroundColor: curriculum.color }}
-                />
-                {curriculum.name}
-              </span>
-            </SelectItem>
-          ))}
+          {useLevels
+            ? sortedLevels.map((level) => (
+                <SelectItem key={level.id} value={level.id} className="text-white">
+                  {level.display_name}
+                </SelectItem>
+              ))
+            : sortedCurriculums.map((curriculum) => (
+                <SelectItem key={curriculum.id} value={curriculum.id} className="text-white">
+                  <span className="flex items-center">
+                    <span
+                      className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
+                      style={{ backgroundColor: curriculum.color }}
+                    />
+                    {curriculum.name}
+                  </span>
+                </SelectItem>
+              ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-gray-400 mt-1">Select your current belt level</p>
+      <p className="text-xs text-gray-400 mt-1">Select your current belt/level</p>
     </div>
   )
 }
@@ -521,12 +545,14 @@ function AccountInformationCard({
   beltLoading,
   handleBeltChange,
   curriculums,
+  curriculumLevels,
 }: Readonly<{
   user: UserProfileProps["user"]
   currentBeltId: string | null
   beltLoading: boolean
   handleBeltChange: (beltId: string) => void
   curriculums: UserProfileProps["curriculums"]
+  curriculumLevels?: UserProfileProps["curriculumLevels"]
 }>) {
   return (
     <Card className="bg-black/60 border-gray-800">
@@ -544,12 +570,23 @@ function AccountInformationCard({
             </div>
             <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact admin if needed.</p>
           </div>
+          <div>
+            <label htmlFor="profile-curriculum-set" className="block text-sm font-medium text-gray-300 mb-2">
+              Curriculum Set
+            </label>
+            <div id="profile-curriculum-set" className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+              <span className="text-white">{user.curriculum_set?.name || "Not assigned"}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Contact admin to change curriculum set</p>
+          </div>
           <BeltSelector
             currentBeltId={currentBeltId}
             beltLoading={beltLoading}
             handleBeltChange={handleBeltChange}
             currentBelt={user.current_belt}
             curriculums={curriculums}
+            curriculumLevels={curriculumLevels}
+            hasCurriculumSet={!!user.curriculum_set_id}
           />
           <div>
             <label htmlFor="profile-teacher" className="block text-sm font-medium text-gray-300 mb-2">
@@ -660,7 +697,7 @@ function ProfileHeaderCard({
   )
 }
 
-export default function UserProfile({ user, curriculums }: UserProfileProps) {
+export default function UserProfile({ user, curriculums, curriculumLevels }: UserProfileProps) {
   const initials = getInitials(user.full_name, user.email)
 
   const {
@@ -711,6 +748,7 @@ export default function UserProfile({ user, curriculums }: UserProfileProps) {
         beltLoading={beltLoading}
         handleBeltChange={handleBeltChange}
         curriculums={curriculums}
+        curriculumLevels={curriculumLevels}
       />
     </div>
   )

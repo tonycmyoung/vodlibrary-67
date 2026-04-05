@@ -127,6 +127,9 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
   const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
+  const [curriculumLevelsBySet, setCurriculumLevelsBySet] = useState<
+    Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
+  >({})
 
   const processedData = useMemo(() => {
     if (!users.length) return { roles: [], schools: [], belts: [] }
@@ -295,18 +298,6 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
 
-    // Fetch curriculum levels
-    const { data, error } = await supabase
-      .from("curriculums")
-      .select("id, name, color, display_order")
-      .order("display_order", { ascending: true })
-
-    if (error) {
-      console.error("Error fetching curriculums:", error)
-    } else {
-      setCurriculums(data || [])
-    }
-
     // Fetch curriculum sets
     const { data: setsData, error: setsError } = await supabase
       .from("curriculum_sets")
@@ -317,6 +308,42 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       console.error("Error fetching curriculum sets:", setsError)
     } else {
       setCurriculumSets(setsData || [])
+    }
+
+    // Fetch all curriculum levels grouped by set
+    const { data: levelsData, error: levelsError } = await supabase
+      .from("curriculum_levels")
+      .select("id, name, display_name, sort_order, curriculum_set_id")
+      .order("sort_order", { ascending: true })
+
+    if (levelsError) {
+      console.error("Error fetching curriculum levels:", levelsError)
+    } else {
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      levelsData?.forEach((level) => {
+        if (!levelsBySet[level.curriculum_set_id]) {
+          levelsBySet[level.curriculum_set_id] = []
+        }
+        levelsBySet[level.curriculum_set_id].push({
+          id: level.id,
+          name: level.name,
+          display_name: level.display_name,
+          sort_order: level.sort_order,
+        })
+      })
+      setCurriculumLevelsBySet(levelsBySet)
+    }
+
+    // Keep old curriculums fetch for backward compatibility
+    const { data, error } = await supabase
+      .from("curriculums")
+      .select("id, name, color, display_order")
+      .order("display_order", { ascending: true })
+
+    if (error) {
+      console.error("Error fetching curriculums:", error)
+    } else {
+      setCurriculums(data || [])
     }
   }
 
@@ -865,11 +892,17 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="">No belt</option>
-                        {curriculums.map((curriculum) => (
-                          <option key={curriculum.id} value={curriculum.id}>
-                            {curriculum.name}
-                          </option>
-                        ))}
+                        {student.curriculum_set_id && curriculumLevelsBySet[student.curriculum_set_id]
+                          ? curriculumLevelsBySet[student.curriculum_set_id].map((level) => (
+                              <option key={level.id} value={level.id}>
+                                {level.display_name}
+                              </option>
+                            ))
+                          : curriculums.map((curriculum) => (
+                              <option key={curriculum.id} value={curriculum.id}>
+                                {curriculum.name}
+                              </option>
+                            ))}
                       </select>
 
                       <div className="flex gap-1">
