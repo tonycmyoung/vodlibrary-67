@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { trace } from "@/lib/trace"
 
 interface Curriculum {
   id: string
@@ -388,25 +387,6 @@ export async function addLevelToCurriculumSet(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Check for duplicate name within this set only (case-insensitive)
-    const { data: existingLevel, error: checkError } = await serviceSupabase
-      .from("curriculums")
-      .select("id, name, curriculum_set_id")
-      .eq("curriculum_set_id", setId)
-      .ilike("name", levelData.name.trim())
-      .maybeSingle()
-
-    trace.debug("addLevelToCurriculumSet - checking duplicate", {
-      payload: { setId, name: levelData.name, existingLevel, checkError: checkError?.message }
-    })
-
-    if (existingLevel) {
-      trace.warn("addLevelToCurriculumSet - duplicate found", {
-        payload: { setId, name: levelData.name, existingLevelId: existingLevel.id }
-      })
-      return { error: `A level named "${levelData.name}" already exists in this curriculum set` }
-    }
-
     // Get max display_order for this set - use maybeSingle to avoid error when no rows exist
     let displayOrder = levelData.display_order
     if (displayOrder === undefined) {
@@ -421,8 +401,6 @@ export async function addLevelToCurriculumSet(
       displayOrder = maxOrderData ? maxOrderData.display_order + 1 : 0
     }
 
-    trace.debug("addLevelToCurriculumSet - inserting", { payload: { setId, displayOrder, name: levelData.name } })
-    
     const { data: newLevel, error } = await serviceSupabase.from("curriculums").insert({
       name: levelData.name,
       description: levelData.description || null,
@@ -432,11 +410,9 @@ export async function addLevelToCurriculumSet(
     }).select().single()
 
     if (error) {
-      trace.error("addLevelToCurriculumSet - insert failed", { payload: { setId, error: error.message } })
+      console.error("Error adding level:", error)
       return { error: `Failed to add level: ${error.message}` }
     }
-    
-    trace.info("addLevelToCurriculumSet - success", { payload: { setId, levelId: newLevel?.id } })
 
     return { success: "Level added successfully", id: newLevel?.id }
   } catch (error) {

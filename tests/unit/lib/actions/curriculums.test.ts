@@ -577,18 +577,7 @@ describe("Curriculum Actions", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++
         if (fromCallCount === 1) {
-          // First call: Check for duplicate name
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                ilike: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            }),
-          }
-        } else if (fromCallCount === 2) {
-          // Second call: Get max display_order
+          // Get max display_order - uses maybeSingle()
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -601,7 +590,7 @@ describe("Curriculum Actions", () => {
             }),
           }
         } else {
-          // Third call: Insert level
+          // Insert level
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -626,18 +615,7 @@ describe("Curriculum Actions", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++
         if (fromCallCount === 1) {
-          // First call: Check for duplicate name - returns no duplicate
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                ilike: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            }),
-          }
-        } else if (fromCallCount === 2) {
-          // Second call: Get max display_order
+          // Get max display_order
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -650,7 +628,7 @@ describe("Curriculum Actions", () => {
             }),
           }
         } else {
-          // Third call: Insert fails
+          // Insert fails
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({

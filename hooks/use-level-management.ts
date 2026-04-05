@@ -6,7 +6,6 @@ import {
   deleteLevelFromCurriculumSet,
   reorderLevelsInCurriculumSet,
 } from "@/lib/actions/curriculums"
-import { trace } from "@/lib/trace"
 
 interface UseLevelManagementProps {
   selectedSetId?: string
@@ -35,21 +34,18 @@ export function useLevelManagement({ selectedSetId, PRESET_COLORS, onSuccess }: 
     e.preventDefault()
     if (!selectedSetId) return
     setSavingSet(true)
-    trace.info("handleAddLevel - starting", { payload: { selectedSetId, levelFormData } })
     try {
       const result = await addLevelToCurriculumSet(selectedSetId, levelFormData)
-      trace.info("handleAddLevel - result received", { payload: { result } })
       if (result.success) {
         toast({ title: "Success", description: result.success })
         await onSuccess()
         setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
         setIsAddLevelDialogOpen(false)
       } else {
-        trace.warn("handleAddLevel - error from action", { payload: { error: result.error } })
         toast({ title: "Error", description: result.error, variant: "destructive" })
       }
     } catch (error) {
-      trace.error("handleAddLevel - exception", { payload: { error: String(error) } })
+      console.error("Error adding level:", error)
       toast({ title: "Error", description: "Failed to add level", variant: "destructive" })
     } finally {
       setSavingSet(false)
