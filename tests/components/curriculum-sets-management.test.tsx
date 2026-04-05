@@ -74,7 +74,8 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText("Test Curriculum Set")).toBeTruthy()
+      const elements = screen.getAllByText("Test Curriculum Set")
+      expect(elements.length).toBeGreaterThan(0)
     })
   })
 
@@ -195,8 +196,10 @@ describe("CurriculumSetsManagement", () => {
     expect(nameInput).toBeTruthy()
     await user.type(nameInput, "Yellow Belt")
 
-    const saveButton = screen.getByRole("button", { name: /^save$/i })
-    await user.click(saveButton)
+    // The dialog should have exactly one save button for level creation
+    const saveButtons = screen.getAllByRole("button", { name: /^save$/i })
+    const levelSaveButton = saveButtons[saveButtons.length - 1] // Get the last/latest save button
+    await user.click(levelSaveButton)
 
     await waitFor(() => {
       expect(addLevelToCurriculumSet).toHaveBeenCalledWith(
