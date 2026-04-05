@@ -287,7 +287,7 @@ describe("VideoLibrary", () => {
     })
 
     // Mock Supabase queries - matching actual component structure
-    mockSupabase.from.mockImplementation((table: string) => {
+    const mockFromImplementation = (table: string) => {
       if (table === "videos") {
         return {
           select: vi.fn().mockReturnValue({
@@ -317,10 +317,14 @@ describe("VideoLibrary", () => {
         }
       } else {
         return {
-          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         }
       }
-    })
+    }
+    
+    mockSupabase.from = vi.fn(mockFromImplementation)
 
     // Mock localStorage
     Storage.prototype.getItem = vi.fn(() => null)
