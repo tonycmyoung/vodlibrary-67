@@ -122,7 +122,7 @@ describe("CurriculumSetsManagement", () => {
     const addButton = screen.getByRole("button", { name: /new curriculum set/i })
     await user.click(addButton)
 
-    const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
+    const nameInput = screen.getByPlaceholderText(/e\.g\., Okinawa Kobudo Australia/i)
     await user.type(nameInput, "New Curriculum Set")
 
     const saveButton = screen.getByRole("button", { name: /^save$/i })
