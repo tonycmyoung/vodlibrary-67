@@ -85,7 +85,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleAddSet = async (e: React.FormEvent) => {
+  const handleAddSet = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setSavingSet(true)
     try {
@@ -106,7 +106,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleUpdateSet = async (e: React.FormEvent) => {
+  const handleUpdateSet = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editingSet) return
     setSavingSet(true)
@@ -147,7 +147,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleAddLevel = async (e: React.FormEvent) => {
+  const handleAddLevel = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedSet) return
     setSavingSet(true)
@@ -169,7 +169,7 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleUpdateLevel = async (e: React.FormEvent) => {
+  const handleUpdateLevel = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editingLevel) return
     setSavingSet(true)
@@ -306,7 +306,15 @@ export default function CurriculumSetsManagement() {
               sets.map((set) => (
                 <div
                   key={set.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => fetchSetDetails(set.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      fetchSetDetails(set.id)
+                    }
+                  }}
                   className={`p-3 rounded-lg cursor-pointer border transition ${
                     selectedSet?.id === set.id
                       ? "border-purple-500 bg-purple-500/10"
