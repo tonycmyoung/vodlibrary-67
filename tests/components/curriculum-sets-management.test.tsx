@@ -34,18 +34,18 @@ describe("CurriculumSetsManagement", () => {
   const mockToast = vi.fn()
 
   const mockSets = [
-    { id: "set-1", name: "Okinawa Kobudo Australia", description: "Australian curriculum", created_at: "2024-01-01" },
-    { id: "set-2", name: "Matayoshi International", description: null, created_at: "2024-01-02" },
+    { id: "set-1", name: "Curriculum Set Name", description: "Test curriculum", created_at: "2024-01-01" },
+    { id: "set-2", name: "Another Set", description: null, created_at: "2024-01-02" },
   ]
 
   const mockSetWithLevels = {
     id: "set-1",
-    name: "Okinawa Kobudo Australia",
-    description: "Australian curriculum",
+    name: "Curriculum Set Name",
+    description: "Test curriculum",
     created_at: "2024-01-01",
     levels: [
-      { id: "level-1", name: "White Belt", description: null, color: "#ffffff", display_order: 0, curriculum_set_id: "set-1" },
-      { id: "level-2", name: "Blue Belt", description: null, color: "#0000ff", display_order: 1, curriculum_set_id: "set-1" },
+      { id: "level-1", name: "Level Name", description: null, color: "#ffffff", display_order: 0, curriculum_set_id: "set-1" },
+      { id: "level-2", name: "Level Name 2", description: null, color: "#0000ff", display_order: 1, curriculum_set_id: "set-1" },
     ],
   }
 
@@ -87,7 +87,7 @@ describe("CurriculumSetsManagement", () => {
 
     await waitFor(() => {
       // Use getAllByText since the name appears in both the list and header
-      const elements = screen.getAllByText("Okinawa Kobudo Australia")
+      const elements = screen.getAllByText("Curriculum Set Name")
       expect(elements.length).toBeGreaterThan(0)
     })
   })
@@ -100,8 +100,8 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeTruthy()
-      expect(screen.getByText("Blue Belt")).toBeTruthy()
+      expect(screen.getByText("Level Name")).toBeTruthy()
+      expect(screen.getByText("Level Name 2")).toBeTruthy()
     })
   })
 
@@ -211,7 +211,7 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeTruthy()
+      expect(screen.getByText("Level Name")).toBeTruthy()
     })
 
     const addLevelButton = screen.getByRole("button", { name: /add level/i })
@@ -221,7 +221,7 @@ describe("CurriculumSetsManagement", () => {
       expect(screen.getByRole("dialog")).toBeTruthy()
     })
 
-    const nameInput = screen.getByPlaceholderText(/level name/i)
+    const nameInput = screen.getByPlaceholderText(/e\.g\., 1st Kyu/i)
     await user.type(nameInput, "Yellow Belt")
 
     const saveButton = screen.getByRole("button", { name: /^save$/i })
@@ -246,8 +246,8 @@ describe("CurriculumSetsManagement", () => {
 
     // The first set should be auto-selected and levels shown
     await waitFor(() => {
-      expect(screen.getByText("White Belt")).toBeTruthy()
-      expect(screen.getByText("Blue Belt")).toBeTruthy()
+      expect(screen.getByText("Level Name")).toBeTruthy()
+      expect(screen.getByText("Level Name 2")).toBeTruthy()
     })
   })
 
