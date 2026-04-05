@@ -15,6 +15,7 @@ interface VideoItem {
   title: string
   thumbnail_url: string | null
   duration_seconds: number | null
+  recorded: string | null
 }
 
 interface VideoManagementPanelProps {
@@ -103,7 +104,12 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                   key={video.id}
                   className="flex items-center justify-between p-2 rounded bg-gray-800 border border-gray-700"
                 >
-                  <span className="text-sm text-white truncate flex-1 mr-2">{video.title}</span>
+                  <div className="flex-1 min-w-0 mr-2">
+                    <span className="text-sm text-white truncate block">{video.title}</span>
+                    {video.recorded && (
+                      <span className="text-xs text-gray-500">{video.recorded}</span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveVideoFromLevel(video.id)}
@@ -144,7 +150,12 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
                     key={video.id}
                     className="flex items-center justify-between p-2 rounded bg-gray-800/50 border border-gray-700 hover:border-purple-500 transition"
                   >
-                    <span className="text-sm text-white truncate flex-1 mr-2">{video.title}</span>
+                    <div className="flex-1 min-w-0 mr-2">
+                      <span className="text-sm text-white truncate block">{video.title}</span>
+                      {video.recorded && (
+                        <span className="text-xs text-gray-500">{video.recorded}</span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleAddVideoToLevel(video.id)}

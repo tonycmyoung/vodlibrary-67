@@ -170,6 +170,8 @@ export default function CurriculumSetsManagement() {
 
   const fetchSetDetails = async (setId: string) => {
     try {
+      // Reset video management panel when switching sets
+      setManagingVideosForLevel(null)
       const data = await getCurriculumSetWithLevels(setId)
       if (data) setSelectedSet(data)
     } catch (error) {

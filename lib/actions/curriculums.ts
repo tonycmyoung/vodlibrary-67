@@ -387,6 +387,18 @@ export async function addLevelToCurriculumSet(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+    // Check for duplicate name within this set only
+    const { data: existingLevel } = await serviceSupabase
+      .from("curriculums")
+      .select("id")
+      .eq("curriculum_set_id", setId)
+      .ilike("name", levelData.name)
+      .maybeSingle()
+
+    if (existingLevel) {
+      return { error: `A level named "${levelData.name}" already exists in this curriculum set` }
+    }
+
     // Get max display_order for this set - use maybeSingle to avoid error when no rows exist
     let displayOrder = levelData.display_order
     if (displayOrder === undefined) {
@@ -400,8 +412,6 @@ export async function addLevelToCurriculumSet(
 
       displayOrder = maxOrderData ? maxOrderData.display_order + 1 : 0
     }
-
-    console.log("[v0] addLevelToCurriculumSet: inserting with display_order", displayOrder, "for set", setId)
 
     const { data: newLevel, error } = await serviceSupabase.from("curriculums").insert({
       name: levelData.name,
@@ -540,13 +550,14 @@ export async function getVideosForLevel(levelId: string): Promise<Array<{
   title: string
   thumbnail_url: string | null
   duration_seconds: number | null
+  recorded: string | null
 }>> {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const { data, error } = await serviceSupabase
       .from("video_curriculums")
-      .select("video_id, videos(id, title, thumbnail_url, duration_seconds)")
+      .select("video_id, videos(id, title, thumbnail_url, duration_seconds, recorded)")
       .eq("curriculum_id", levelId)
 
     if (error) {
@@ -608,13 +619,14 @@ export async function getAvailableVideos(search?: string): Promise<Array<{
   title: string
   thumbnail_url: string | null
   duration_seconds: number | null
+  recorded: string | null
 }>> {
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     let query = serviceSupabase
       .from("videos")
-      .select("id, title, thumbnail_url, duration_seconds")
+      .select("id, title, thumbnail_url, duration_seconds, recorded")
       .eq("is_published", true)
       .order("title", { ascending: true })
       .limit(50)
