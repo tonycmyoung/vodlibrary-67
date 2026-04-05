@@ -55,6 +55,8 @@ describe("UserManagement", () => {
         color: "#ffffff",
         display_order: 1,
       },
+      curriculum_set_id: "set-1",
+      curriculum_set: { id: "set-1", name: "Okinawa Kobudo Australia" },
     },
     {
       id: "user-2",
@@ -69,12 +71,18 @@ describe("UserManagement", () => {
       profile_image_url: null,
       current_belt_id: null,
       current_belt: null,
+      curriculum_set_id: null,
+      curriculum_set: null,
     },
   ]
 
   const mockCurriculums = [
     { id: "belt-1", name: "White Belt", color: "#ffffff", display_order: 1 },
     { id: "belt-2", name: "Yellow Belt", color: "#ffff00", display_order: 2 },
+  ]
+
+  const mockCurriculumSets = [
+    { id: "set-1", name: "Okinawa Kobudo Australia" },
   ]
 
   const mockLoginStats = [
@@ -117,6 +125,13 @@ describe("UserManagement", () => {
       }
       if (table === "curriculums") {
         return { select: mockSelect }
+      }
+      if (table === "curriculum_sets") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCurriculumSets, error: null }),
+          }),
+        }
       }
       if (table === "user_logins") {
         return {

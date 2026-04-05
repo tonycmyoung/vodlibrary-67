@@ -537,11 +537,13 @@ interface UserActionButtonsProps extends PasswordResetState, PasswordResetAction
   isEditing: boolean
   isProcessing: boolean
   curriculums: Curriculum[]
+  curriculumSets: Array<{ id: string; name: string }>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
   updateUserRole: (userId: string, role: string) => void
   updateUserBelt: (userId: string, beltId: string | null) => void
+  updateUserCurriculumSet: (userId: string, setId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
 }
@@ -555,6 +557,7 @@ const UserActionButtons = ({
   showPassword,
   resetPasswordError,
   curriculums,
+  curriculumSets,
   setResetPasswordUser,
   setNewPassword,
   setShowPassword,
@@ -564,6 +567,7 @@ const UserActionButtons = ({
   cancelEditing,
   updateUserRole,
   updateUserBelt,
+  updateUserCurriculumSet,
   toggleUserApproval,
   deleteUser,
   generateRandomPassword,
@@ -742,6 +746,7 @@ const UserRow = ({
         showPassword={showPassword}
         resetPasswordError={resetPasswordError}
         curriculums={curriculums}
+        curriculumSets={curriculumSets}
         setResetPasswordUser={setResetPasswordUser}
         setNewPassword={setNewPassword}
         setShowPassword={setShowPassword}
@@ -751,6 +756,7 @@ const UserRow = ({
         cancelEditing={cancelEditing}
         updateUserRole={updateUserRole}
         updateUserBelt={updateUserBelt}
+        updateUserCurriculumSet={updateUserCurriculumSet}
         toggleUserApproval={toggleUserApproval}
         deleteUser={deleteUser}
         generateRandomPassword={generateRandomPassword}
