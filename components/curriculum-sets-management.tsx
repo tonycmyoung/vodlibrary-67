@@ -1,5 +1,6 @@
 "use client"
 
+// Curriculum Sets Management - manages curriculum sets and their belt levels
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,16 +15,10 @@ import {
   createCurriculumSet,
   updateCurriculumSet,
   deleteCurriculumSet,
-  addLevelToCurriculumSet,
-  updateLevelInCurriculumSet,
-  deleteLevelFromCurriculumSet,
-  reorderLevelsInCurriculumSet,
-  getVideosForLevel,
-  addVideoToLevel,
-  removeVideoFromLevel,
-  getAvailableVideos,
 } from "@/lib/actions/curriculums"
 import { useToast } from "@/hooks/use-toast"
+import { useLevelManagement } from "@/hooks/use-level-management"
+import { VideoManagementPanel } from "@/components/video-management-panel"
 
 interface LevelItemProps {
   level: CurriculumLevel
@@ -116,17 +111,29 @@ export default function CurriculumSetsManagement() {
   const [loading, setLoading] = useState(true)
   const [savingSet, setSavingSet] = useState(false)
   const [isAddSetDialogOpen, setIsAddSetDialogOpen] = useState(false)
-  const [isAddLevelDialogOpen, setIsAddLevelDialogOpen] = useState(false)
   const [editingSet, setEditingSet] = useState<CurriculumSet | null>(null)
-  const [editingLevel, setEditingLevel] = useState<CurriculumLevel | null>(null)
   const [setFormData, setSetFormData] = useState({ name: "", description: "" })
-  const [levelFormData, setLevelFormData] = useState({ name: "", description: "", color: PRESET_COLORS[0] })
-  // Video management state
   const [managingVideosForLevel, setManagingVideosForLevel] = useState<CurriculumLevel | null>(null)
-  const [levelVideos, setLevelVideos] = useState<VideoItem[]>([])
-  const [availableVideos, setAvailableVideos] = useState<VideoItem[]>([])
-  const [videoSearch, setVideoSearch] = useState("")
-  const [videoSearchLoading, setVideoSearchLoading] = useState(false)
+
+  const {
+    editingLevel,
+    setEditingLevel,
+    levelFormData,
+    setLevelFormData,
+    savingSet: savingLevel,
+    isAddLevelDialogOpen,
+    setIsAddLevelDialogOpen,
+    handleAddLevel,
+    handleUpdateLevel,
+    handleDeleteLevel,
+    handleMoveLevel,
+  } = useLevelManagement({
+    selectedSetId: selectedSet?.id,
+    PRESET_COLORS,
+    onSuccess: async () => {
+      if (selectedSet) await fetchSetDetails(selectedSet.id)
+    },
+  })
 
   // Helper to reduce cognitive complexity - handles success/error toasts
   const handleResult = (
@@ -138,6 +145,9 @@ export default function CurriculumSetsManagement() {
       onSuccess?.()
       return true
     }
+    toast({ title: "Error", description: result.error, variant: "destructive" })
+    return false
+  }
     toast({ title: "Error", description: result.error, variant: "destructive" })
     return false
   }
@@ -227,123 +237,7 @@ export default function CurriculumSetsManagement() {
   const handleAddLevel = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!selectedSet) return
-    setSavingSet(true)
-    try {
-      const result = await addLevelToCurriculumSet(selectedSet.id, levelFormData)
-      handleResult(result, async () => {
-        await fetchSetDetails(selectedSet.id)
-        setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
-        setIsAddLevelDialogOpen(false)
-      })
-    } catch (error) {
-      console.error("Error adding level:", error)
-      toast({ title: "Error", description: "Failed to add level", variant: "destructive" })
-    } finally {
-      setSavingSet(false)
-    }
-  }
-
-  const handleUpdateLevel = async (e: { preventDefault: () => void }) => {
-    e.preventDefault()
-    if (!editingLevel) return
-    setSavingSet(true)
-    try {
-      const result = await updateLevelInCurriculumSet(editingLevel.id, levelFormData)
-      handleResult(result, async () => {
-        if (selectedSet) await fetchSetDetails(selectedSet.id)
-        setEditingLevel(null)
-        setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
-        setIsAddLevelDialogOpen(false)
-      })
-    } catch (error) {
-      console.error("Error updating level:", error)
-      toast({ title: "Error", description: "Failed to update level", variant: "destructive" })
-    } finally {
-      setSavingSet(false)
-    }
-  }
-
-  const handleDeleteLevel = async (levelId: string) => {
-    if (!globalThis.confirm("Are you sure? This level will be deleted.")) return
-    try {
-      const result = await deleteLevelFromCurriculumSet(levelId)
-      handleResult(result, async () => {
-        if (selectedSet) await fetchSetDetails(selectedSet.id)
-      })
-    } catch (error) {
-      console.error("Error deleting level:", error)
-      toast({ title: "Error", description: "Failed to delete level", variant: "destructive" })
-    }
-  }
-
-  const handleMoveLevel = async (level: CurriculumLevel, direction: "up" | "down") => {    if (!selectedSet) return
-    const levels = selectedSet.levels
-    const currentIndex = levels.findIndex((l) => l.id === level.id)
-    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
-
-    if (newIndex < 0 || newIndex >= levels.length) return
-
-    const newOrder = [...levels]
-    ;[newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]]
-
-    try {
-      await reorderLevelsInCurriculumSet(
-        selectedSet.id,
-        newOrder.map((l, idx) => ({ id: l.id, display_order: idx })),
-      )
-      await fetchSetDetails(selectedSet.id)
-      toast({ title: "Success", description: "Levels reordered successfully" })
-    } catch (error) {
-      console.error("Error reordering levels:", error)
-      toast({ title: "Error", description: "Failed to reorder levels", variant: "destructive" })
-    }
-  }
-
-  const openVideoManagement = async (level: CurriculumLevel) => {
-    setManagingVideosForLevel(level)
-    setVideoSearch("")
-    setVideoSearchLoading(true)
-    try {
-      const [videos, available] = await Promise.all([
-        getVideosForLevel(level.id),
-        getAvailableVideos(),
-      ])
-      setLevelVideos(videos)
-      setAvailableVideos(available)
-    } catch (error) {
-      console.error("Error loading video management:", error)
-      toast({ title: "Error", description: "Failed to load videos", variant: "destructive" })
-    } finally {
-      setVideoSearchLoading(false)
-    }
-  }
-
-  const handleVideoSearch = async (search: string) => {
-    setVideoSearch(search)
-    setVideoSearchLoading(true)
-    try {
-      const videos = await getAvailableVideos(search)
-      setAvailableVideos(videos)
-    } finally {
-      setVideoSearchLoading(false)
-    }
-  }
-
-  const handleAddVideoToLevel = async (videoId: string) => {
-    if (!managingVideosForLevel) return
-    const result = await addVideoToLevel(managingVideosForLevel.id, videoId)
-    if (result.success) {
-      const videos = await getVideosForLevel(managingVideosForLevel.id)
-      setLevelVideos(videos)
-    }
-  }
-
-  const handleRemoveVideoFromLevel = async (videoId: string) => {
-    if (!managingVideosForLevel) return
-    const result = await removeVideoFromLevel(managingVideosForLevel.id, videoId)
-    if (result.success) {
-      setLevelVideos((prev) => prev.filter((v) => v.id !== videoId))
-    }
+    await handleAddLevel(e)
   }
 
   if (loading) {
@@ -575,8 +469,8 @@ export default function CurriculumSetsManagement() {
                       level={level}
                       index={index}
                       totalLevels={selectedSet.levels.length}
-                      onMoveUp={() => handleMoveLevel(level, "up")}
-                      onMoveDown={() => handleMoveLevel(level, "down")}
+                      onMoveUp={() => handleMoveLevel(selectedSet.levels, level, "up")}
+                      onMoveDown={() => handleMoveLevel(selectedSet.levels, level, "down")}
                       onEdit={() => {
                         setEditingLevel(level)
                         setLevelFormData({
@@ -602,90 +496,10 @@ export default function CurriculumSetsManagement() {
       </div>
 
       {/* Video Management Panel */}
-      {managingVideosForLevel && (
-        <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-white">
-                Videos for: <span style={{ color: managingVideosForLevel.color }}>{managingVideosForLevel.name}</span>
-              </h3>
-              <p className="text-sm text-gray-400">{levelVideos.length} video{levelVideos.length === 1 ? "" : "s"} assigned to this level</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setManagingVideosForLevel(null)}
-              className="text-gray-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Assigned Videos */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Assigned Videos ({levelVideos.length})</h4>
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {levelVideos.length === 0 ? (
-                  <p className="text-xs text-gray-500">No videos assigned</p>
-                ) : (
-                  levelVideos.map((video) => (
-                    <div key={video.id} className="flex items-center justify-between p-2 rounded bg-gray-800 border border-gray-700">
-                      <span className="text-sm text-white truncate flex-1 mr-2">{video.title}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVideoFromLevel(video.id)}
-                        className="text-red-400 hover:text-red-300 flex-shrink-0"
-                        title="Remove from level"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Available Videos */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Add Videos</h4>
-              <div className="relative mb-2">
-                <Search className="absolute left-2 top-2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search videos..."
-                  value={videoSearch}
-                  onChange={(e) => handleVideoSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-              <div className="space-y-1 max-h-56 overflow-y-auto">
-                {videoSearchLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                  </div>
-                ) : (
-                  availableVideos
-                    .filter((v) => !levelVideos.some((lv) => lv.id === v.id))
-                    .map((video) => (
-                      <div key={video.id} className="flex items-center justify-between p-2 rounded bg-gray-800/50 border border-gray-700 hover:border-purple-500 transition">
-                        <span className="text-sm text-white truncate flex-1 mr-2">{video.title}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleAddVideoToLevel(video.id)}
-                          className="text-purple-400 hover:text-purple-300 flex-shrink-0 font-medium text-xs"
-                          title="Add to level"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <VideoManagementPanel
+        level={managingVideosForLevel}
+        onClose={() => setManagingVideosForLevel(null)}
+      />
     </div>
   )
 }
