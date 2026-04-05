@@ -1793,21 +1793,44 @@ describe("User Actions", () => {
 
   describe("assignCurriculumSetToUser", () => {
     it("should successfully assign a curriculum set to a user", async () => {
-      mockServiceClient.from.mockReturnValue({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: null }),
+      let callCount = 0
+      mockServiceClient.from.mockImplementation((table: string) => {
+        callCount++
+        if (table === "curriculum_sets") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { id: "set-456" }, error: null }),
+          }
+        }
+        // users table
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }
       })
 
       const result = await assignCurriculumSetToUser("user-123", "set-456")
 
       expect(result).toEqual({ success: "Curriculum set assigned successfully" })
+      expect(mockServiceClient.from).toHaveBeenCalledWith("curriculum_sets")
       expect(mockServiceClient.from).toHaveBeenCalledWith("users")
     })
 
     it("should handle database errors", async () => {
-      mockServiceClient.from.mockReturnValue({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "curriculum_sets") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { id: "set-456" }, error: null }),
+          }
+        }
+        // users table - return error
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+        }
       })
 
       const result = await assignCurriculumSetToUser("user-123", "set-456")
@@ -1815,19 +1838,18 @@ describe("User Actions", () => {
       expect(result).toEqual({ error: "Failed to assign curriculum set" })
     })
 
-    it("should reset user belt when assigning a new curriculum set", async () => {
-      const updateMock = vi.fn().mockReturnThis()
-      mockServiceClient.from.mockReturnValue({
-        update: updateMock,
-        eq: vi.fn().mockResolvedValue({ error: null }),
+    it("should return error if curriculum set not found", async () => {
+      mockServiceClient.from.mockImplementation(() => {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } }),
+        }
       })
 
-      await assignCurriculumSetToUser("user-123", "set-456")
+      const result = await assignCurriculumSetToUser("user-123", "invalid-set")
 
-      expect(updateMock).toHaveBeenCalledWith({
-        curriculum_set_id: "set-456",
-        current_belt_id: null,
-      })
+      expect(result).toEqual({ error: "Curriculum set not found" })
     })
   })
 
