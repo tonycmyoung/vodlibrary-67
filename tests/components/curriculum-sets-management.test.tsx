@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, waitFor, act, cleanup } from "@testing-library/react"
+import { render, screen, waitFor, cleanup } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import CurriculumSetsManagement from "@/components/curriculum-sets-management"
 import {
@@ -15,21 +15,8 @@ import {
 } from "@/lib/actions/curriculums"
 import { useToast } from "@/hooks/use-toast"
 
-vi.mock("@/lib/actions/curriculums", () => ({
-  getCurriculumSets: vi.fn(),
-  getCurriculumSetWithLevels: vi.fn(),
-  createCurriculumSet: vi.fn(),
-  updateCurriculumSet: vi.fn(),
-  deleteCurriculumSet: vi.fn(),
-  addLevelToCurriculumSet: vi.fn(),
-  updateLevelInCurriculumSet: vi.fn(),
-  deleteLevelFromCurriculumSet: vi.fn(),
-  reorderLevelsInCurriculumSet: vi.fn(),
-}))
-
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: vi.fn(),
-}))
+vi.mock("@/lib/actions/curriculums")
+vi.mock("@/hooks/use-toast")
 
 global.confirm = vi.fn()
 
@@ -72,48 +59,39 @@ describe("CurriculumSetsManagement", () => {
   })
 
   it("should show loading state initially", async () => {
-    render(<CurriculumSetsManagement />)
-    expect(screen.getByText(/loading/i)).toBeTruthy()
+    // Use never-resolving promise to keep in loading state
+    vi.mocked(getCurriculumSets).mockReturnValue(new Promise(() => {}))
     
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
-    })
+    const { unmount } = render(<CurriculumSetsManagement />)
+    expect(screen.getByText(/loading/i)).toBeTruthy()
+    // Unmount to prevent act() warnings from pending async operations
+    unmount()
   })
 
   it("should render curriculum sets after loading", async () => {
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(getCurriculumSets).toHaveBeenCalled()
-      })
+    await waitFor(() => {
+      expect(getCurriculumSets).toHaveBeenCalled()
     })
 
-    await act(async () => {
-      await waitFor(() => {
-        // Use getAllByText since the name appears in both the list and header
-        const elements = screen.getAllByText("Okinawa Kobudo Australia")
-        expect(elements.length).toBeGreaterThan(0)
-      })
+    await waitFor(() => {
+      // Use getAllByText since the name appears in both the list and header
+      const elements = screen.getAllByText("Okinawa Kobudo Australia")
+      expect(elements.length).toBeGreaterThan(0)
     })
   })
 
   it("should select a curriculum set and show its levels", async () => {
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(getCurriculumSetWithLevels).toHaveBeenCalledWith("set-1")
-      })
+    await waitFor(() => {
+      expect(getCurriculumSetWithLevels).toHaveBeenCalledWith("set-1")
     })
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByText("White Belt")).toBeTruthy()
-        expect(screen.getByText("Blue Belt")).toBeTruthy()
-      })
+    await waitFor(() => {
+      expect(screen.getByText("White Belt")).toBeTruthy()
+      expect(screen.getByText("Blue Belt")).toBeTruthy()
     })
   })
 
@@ -121,21 +99,15 @@ describe("CurriculumSetsManagement", () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    await act(async () => {
-      const addButton = screen.getByRole("button", { name: /new curriculum set/i })
-      await user.click(addButton)
-    })
+    const addButton = screen.getByRole("button", { name: /new curriculum set/i })
+    await user.click(addButton)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeTruthy()
-      })
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeTruthy()
     })
   })
 
@@ -143,33 +115,23 @@ describe("CurriculumSetsManagement", () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    await act(async () => {
-      const addButton = screen.getByRole("button", { name: /new curriculum set/i })
-      await user.click(addButton)
-    })
+    const addButton = screen.getByRole("button", { name: /new curriculum set/i })
+    await user.click(addButton)
 
-    await act(async () => {
-      const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
-      await user.type(nameInput, "New Curriculum Set")
-    })
+    const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
+    await user.type(nameInput, "New Curriculum Set")
 
-    await act(async () => {
-      const saveButton = screen.getByRole("button", { name: /^save$/i })
-      await user.click(saveButton)
-    })
+    const saveButton = screen.getByRole("button", { name: /^save$/i })
+    await user.click(saveButton)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(createCurriculumSet).toHaveBeenCalledWith({
-          name: "New Curriculum Set",
-          description: "",
-        })
+    await waitFor(() => {
+      expect(createCurriculumSet).toHaveBeenCalledWith({
+        name: "New Curriculum Set",
+        description: "",
       })
     })
   })
@@ -179,35 +141,25 @@ describe("CurriculumSetsManagement", () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    await act(async () => {
-      const addButton = screen.getByRole("button", { name: /new curriculum set/i })
-      await user.click(addButton)
-    })
+    const addButton = screen.getByRole("button", { name: /new curriculum set/i })
+    await user.click(addButton)
 
-    await act(async () => {
-      const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
-      await user.type(nameInput, "New Set")
-    })
+    const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
+    await user.type(nameInput, "New Set")
 
-    await act(async () => {
-      const saveButton = screen.getByRole("button", { name: /^save$/i })
-      await user.click(saveButton)
-    })
+    const saveButton = screen.getByRole("button", { name: /^save$/i })
+    await user.click(saveButton)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            variant: "destructive",
-          })
-        )
-      })
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "destructive",
+        })
+      )
     })
   })
 
@@ -217,16 +169,12 @@ describe("CurriculumSetsManagement", () => {
 
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByText(/no curriculum sets/i)).toBeTruthy()
-      })
+    await waitFor(() => {
+      expect(screen.getByText(/no curriculum sets/i)).toBeTruthy()
     })
   })
 
@@ -235,14 +183,12 @@ describe("CurriculumSetsManagement", () => {
 
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            variant: "destructive",
-          })
-        )
-      })
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "destructive",
+        })
+      )
     })
   })
 
@@ -250,79 +196,59 @@ describe("CurriculumSetsManagement", () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByText("White Belt")).toBeTruthy()
-      })
+    await waitFor(() => {
+      expect(screen.getByText("White Belt")).toBeTruthy()
     })
 
-    await act(async () => {
-      const addLevelButton = screen.getByRole("button", { name: /add level/i })
-      await user.click(addLevelButton)
+    const addLevelButton = screen.getByRole("button", { name: /add level/i })
+    await user.click(addLevelButton)
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeTruthy()
     })
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeTruthy()
-      })
-    })
+    const nameInput = screen.getByPlaceholderText(/level name/i)
+    await user.type(nameInput, "Yellow Belt")
 
-    await act(async () => {
-      const nameInput = screen.getByPlaceholderText(/level name/i)
-      await user.type(nameInput, "Yellow Belt")
-    })
+    const saveButton = screen.getByRole("button", { name: /^save$/i })
+    await user.click(saveButton)
 
-    await act(async () => {
-      const saveButton = screen.getByRole("button", { name: /^save$/i })
-      await user.click(saveButton)
-    })
-
-    await act(async () => {
-      await waitFor(() => {
-        expect(addLevelToCurriculumSet).toHaveBeenCalledWith(
-          "set-1",
-          expect.objectContaining({
-            name: "Yellow Belt",
-          })
-        )
-      })
+    await waitFor(() => {
+      expect(addLevelToCurriculumSet).toHaveBeenCalledWith(
+        "set-1",
+        expect.objectContaining({
+          name: "Yellow Belt",
+        })
+      )
     })
   })
 
   it("should show levels panel when a curriculum set is selected", async () => {
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
     // The first set should be auto-selected and levels shown
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.getByText("White Belt")).toBeTruthy()
-        expect(screen.getByText("Blue Belt")).toBeTruthy()
-      })
+    await waitFor(() => {
+      expect(screen.getByText("White Belt")).toBeTruthy()
+      expect(screen.getByText("Blue Belt")).toBeTruthy()
     })
   })
 
   it("should confirm before deleting a curriculum set", async () => {
     render(<CurriculumSetsManagement />)
 
-    await act(async () => {
-      await waitFor(() => {
-        expect(screen.queryByText(/loading/i)).toBeFalsy()
-      })
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    // Just verify confirm is mocked - actual deletion tests require complex menu interactions
+    // Just verify component loads and confirm is mocked
     expect(confirm).toBeDefined()
   })
 })

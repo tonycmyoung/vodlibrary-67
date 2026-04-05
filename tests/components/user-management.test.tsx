@@ -110,7 +110,9 @@ describe("UserManagement", () => {
     mockSearchParams.get = vi.fn((param: string) => null)
     vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
-    mockEq = vi.fn().mockResolvedValue({ data: null, error: null })
+    mockEq = vi.fn().mockReturnValue({ 
+      select: vi.fn().mockResolvedValue({ data: null, error: null }) 
+    })
     mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
     mockOrder = vi.fn().mockResolvedValue({ data: mockCurriculums, error: null })
     mockSelect = vi.fn().mockReturnValue({ order: mockOrder })
