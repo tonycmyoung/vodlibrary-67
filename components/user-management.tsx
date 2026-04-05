@@ -515,6 +515,7 @@ interface UserActionButtonsProps extends PasswordResetState, PasswordResetAction
   isProcessing: boolean
   curriculums: Curriculum[]
   curriculumSets: Array<{ id: string; name: string }>
+  curriculumLevelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
@@ -535,6 +536,7 @@ const UserActionButtons = ({
   resetPasswordError,
   curriculums,
   curriculumSets,
+  curriculumLevelsBySet,
   setResetPasswordUser,
   setNewPassword,
   setShowPassword,
@@ -636,6 +638,7 @@ interface UserRowProps extends PasswordResetState, PasswordResetActions {
   setEditValues: SetEditValuesType
   curriculums: Curriculum[]
   curriculumSets: Array<{ id: string; name: string }>
+  curriculumLevelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
@@ -653,6 +656,7 @@ const UserRow = ({
   isEditing,
   editValues,
   setEditValues,
+  curriculumLevelsBySet,
   resetPasswordUser,
   newPassword,
   showPassword,
@@ -730,6 +734,7 @@ const UserRow = ({
         resetPasswordError={resetPasswordError}
         curriculums={curriculums}
         curriculumSets={curriculumSets}
+        curriculumLevelsBySet={curriculumLevelsBySet}
         setResetPasswordUser={setResetPasswordUser}
         setNewPassword={setNewPassword}
         setShowPassword={setShowPassword}
@@ -1464,6 +1469,7 @@ export default function UserManagement() {
               resetPasswordError={resetPasswordError}
               curriculums={curriculums}
               curriculumSets={curriculumSets}
+              curriculumLevelsBySet={curriculumLevelsBySet}
               setResetPasswordUser={setResetPasswordUser}
               setNewPassword={setNewPassword}
               setShowPassword={setShowPassword}
