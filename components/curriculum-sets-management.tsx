@@ -25,6 +25,61 @@ import {
 } from "@/lib/actions/curriculums"
 import { useToast } from "@/hooks/use-toast"
 
+interface LevelItemProps {
+  level: CurriculumLevel
+  index: number
+  totalLevels: number
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onManageVideos: () => void
+}
+
+const LevelItem = ({ level, index, totalLevels, onMoveUp, onMoveDown, onEdit, onDelete, onManageVideos }: LevelItemProps) => (
+  <div className="p-3 rounded-lg border border-gray-700 bg-gray-800/50 flex items-center justify-between">
+    <div className="flex items-center gap-3 flex-1">
+      <div
+        className="w-6 h-6 rounded-full border border-gray-600"
+        style={{ backgroundColor: level.color }}
+        title={level.color}
+      />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm text-white">{level.name}</p>
+        {level.description && (
+          <p className="text-xs text-gray-400 line-clamp-1">{level.description}</p>
+        )}
+      </div>
+    </div>
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white" onClick={onMoveUp} disabled={index === 0}>
+        <ChevronUp className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white" onClick={onMoveDown} disabled={index === totalLevels - 1}>
+        <ChevronDown className="h-4 w-4" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+          <DropdownMenuItem onClick={onManageVideos} className="text-gray-200 hover:bg-gray-700 cursor-pointer">
+            <Film className="mr-2 h-4 w-4" /> Manage Videos
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onEdit} className="text-gray-200 hover:bg-gray-700 cursor-pointer">
+            <Pencil className="mr-2 h-4 w-4" /> Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onDelete} className="text-red-400 hover:bg-red-500/10 cursor-pointer">
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  </div>
+)
+
 interface CurriculumSet {
   id: string
   name: string
@@ -280,8 +335,6 @@ export default function CurriculumSetsManagement() {
     if (result.success) {
       const videos = await getVideosForLevel(managingVideosForLevel.id)
       setLevelVideos(videos)
-    } else {
-      toast({ title: "Error", description: result.error, variant: "destructive" })
     }
   }
 
@@ -290,8 +343,6 @@ export default function CurriculumSetsManagement() {
     const result = await removeVideoFromLevel(managingVideosForLevel.id, videoId)
     if (result.success) {
       setLevelVideos((prev) => prev.filter((v) => v.id !== videoId))
-    } else {
-      toast({ title: "Error", description: result.error, variant: "destructive" })
     }
   }
 
@@ -519,76 +570,25 @@ export default function CurriculumSetsManagement() {
                   <p className="text-sm text-gray-400">No levels in this curriculum set</p>
                 ) : (
                   selectedSet.levels.map((level, index) => (
-                    <div key={level.id} className="p-3 rounded-lg border border-gray-700 bg-gray-800/50 flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div
-                          className="w-6 h-6 rounded-full border border-gray-600"
-                          style={{ backgroundColor: level.color }}
-                          title={level.color}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-white">{level.name}</p>
-                          {level.description && (
-                            <p className="text-xs text-gray-400 line-clamp-1">{level.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                          onClick={() => handleMoveLevel(level, "up")}
-                          disabled={index === 0}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                          onClick={() => handleMoveLevel(level, "down")}
-                          disabled={index === selectedSet.levels.length - 1}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-                            <DropdownMenuItem
-                              onClick={() => openVideoManagement(level)}
-                              className="text-gray-200 hover:bg-gray-700 cursor-pointer"
-                            >
-                              <Film className="mr-2 h-4 w-4" /> Manage Videos
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setEditingLevel(level)
-                                setLevelFormData({
-                                  name: level.name,
-                                  description: level.description || "",
-                                  color: level.color,
-                                })
-                                setIsAddLevelDialogOpen(true)
-                              }}
-                              className="text-gray-200 hover:bg-gray-700 cursor-pointer"
-                            >
-                              <Pencil className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteLevel(level.id)}
-                              className="text-red-400 hover:bg-red-500/10 cursor-pointer"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
+                    <LevelItem
+                      key={level.id}
+                      level={level}
+                      index={index}
+                      totalLevels={selectedSet.levels.length}
+                      onMoveUp={() => handleMoveLevel(level, "up")}
+                      onMoveDown={() => handleMoveLevel(level, "down")}
+                      onEdit={() => {
+                        setEditingLevel(level)
+                        setLevelFormData({
+                          name: level.name,
+                          description: level.description || "",
+                          color: level.color,
+                        })
+                        setIsAddLevelDialogOpen(true)
+                      }}
+                      onDelete={() => handleDeleteLevel(level.id)}
+                      onManageVideos={() => openVideoManagement(level)}
+                    />
                   ))
                 )}
               </div>

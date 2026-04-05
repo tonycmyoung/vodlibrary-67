@@ -577,13 +577,13 @@ describe("Curriculum Actions", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++
         if (fromCallCount === 1) {
-          // Get max display_order
+          // Get max display_order - uses maybeSingle() now
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 order: vi.fn().mockReturnValue({
                   limit: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: { display_order: 2 }, error: null }),
+                    maybeSingle: vi.fn().mockResolvedValue({ data: { display_order: 2 }, error: null }),
                   }),
                 }),
               }),
@@ -957,12 +957,13 @@ describe("Curriculum Actions", () => {
         { id: "vid-1", title: "Punching Technique", thumbnail_url: "https://example.com/1.jpg", duration_seconds: 300 },
       ]
 
+      // The query chain is: select().eq().order().limit().ilike() when search is provided
       mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            ilike: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                ilike: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
               }),
             }),
           }),
