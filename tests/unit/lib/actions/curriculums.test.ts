@@ -14,6 +14,10 @@ import {
   updateLevelInCurriculumSet,
   deleteLevelFromCurriculumSet,
   reorderLevelsInCurriculumSet,
+  getVideosForLevel,
+  addVideoToLevel,
+  removeVideoFromLevel,
+  getAvailableVideos,
 } from "@/lib/actions/curriculums"
 
 const mockSelect = vi.fn()
@@ -25,6 +29,9 @@ const mockGt = vi.fn()
 const mockOrder = vi.fn()
 const mockLimit = vi.fn()
 const mockSingle = vi.fn()
+const mockMaybeSingle = vi.fn()
+const mockUpsert = vi.fn()
+const mockIlike = vi.fn()
 
 const mockFrom = vi.fn()
 
@@ -827,14 +834,164 @@ describe("Curriculum Actions", () => {
               }),
             }),
           }
-        }
-        // Second call: delete
-        return {
-          delete: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: { message: "Delete failed" } }),
-          }),
+        } else {
+          // Delete call
+          return {
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockRejectedValue(new Error("Delete failed")),
+            }),
+          }
         }
       })
+
+      const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
+      expect(result.error).toBe("Failed to delete level")
+    })
+  })
+
+  describe("Video Management Actions", () => {
+    it("getVideosForLevel should fetch videos associated with a level", async () => {
+      const mockVideos = [
+        { id: "vid-1", title: "Technique 1", thumbnail_url: "https://example.com/1.jpg", duration_seconds: 120 },
+        { id: "vid-2", title: "Technique 2", thumbnail_url: "https://example.com/2.jpg", duration_seconds: 180 },
+      ]
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [{ video_id: "vid-1", videos: mockVideos[0] }, { video_id: "vid-2", videos: mockVideos[1] }], error: null }),
+        }),
+      })
+
+      const result = await getVideosForLevel("level-1")
+
+      expect(result).toHaveLength(2)
+      expect(result[0].title).toBe("Technique 1")
+      expect(result[1].title).toBe("Technique 2")
+    })
+
+    it("getVideosForLevel should return empty array on error", async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: { message: "Error" } }),
+        }),
+      })
+
+      const result = await getVideosForLevel("level-1")
+
+      expect(result).toEqual([])
+    })
+
+    it("addVideoToLevel should add video to level using upsert", async () => {
+      mockFrom.mockReturnValue({
+        upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })
+
+      const result = await addVideoToLevel("level-1", "video-1")
+
+      expect(result.success).toBe("Video added to level")
+      expect(mockFrom).toHaveBeenCalledWith("video_curriculums")
+    })
+
+    it("addVideoToLevel should return error on failure", async () => {
+      mockFrom.mockReturnValue({
+        upsert: vi.fn().mockResolvedValue({ data: null, error: { message: "Conflict" } }),
+      })
+
+      const result = await addVideoToLevel("level-1", "video-1")
+
+      expect(result.error).toBe("Failed to add video to level")
+    })
+
+    it("removeVideoFromLevel should delete video from level", async () => {
+      mockFrom.mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      })
+
+      const result = await removeVideoFromLevel("level-1", "video-1")
+
+      expect(result.success).toBe("Video removed from level")
+    })
+
+    it("removeVideoFromLevel should return error on failure", async () => {
+      mockFrom.mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockRejectedValue(new Error("Delete failed")),
+          }),
+        }),
+      })
+
+      const result = await removeVideoFromLevel("level-1", "video-1")
+
+      expect(result.error).toBe("Failed to remove video from level")
+    })
+
+    it("getAvailableVideos should fetch published videos", async () => {
+      const mockVideos = [
+        { id: "vid-1", title: "Lesson 1", thumbnail_url: "https://example.com/1.jpg", duration_seconds: 300 },
+        { id: "vid-2", title: "Lesson 2", thumbnail_url: "https://example.com/2.jpg", duration_seconds: 420 },
+      ]
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
+            }),
+          }),
+        }),
+      })
+
+      const result = await getAvailableVideos()
+
+      expect(result).toHaveLength(2)
+      expect(result[0].title).toBe("Lesson 1")
+    })
+
+    it("getAvailableVideos should filter by search term", async () => {
+      const mockVideos = [
+        { id: "vid-1", title: "Punching Technique", thumbnail_url: "https://example.com/1.jpg", duration_seconds: 300 },
+      ]
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            ilike: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: mockVideos, error: null }),
+              }),
+            }),
+          }),
+        }),
+      })
+
+      const result = await getAvailableVideos("Punching")
+
+      expect(result).toHaveLength(1)
+      expect(result[0].title).toContain("Punching")
+    })
+
+    it("getAvailableVideos should return empty array on error", async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({ data: null, error: { message: "Error" } }),
+            }),
+          }),
+        }),
+      })
+
+      const result = await getAvailableVideos()
+
+      expect(result).toEqual([])
+    })
+  })
+})
 
       const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
       expect(result.error).toBe("Failed to delete level")
