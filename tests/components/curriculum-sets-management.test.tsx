@@ -18,35 +18,24 @@ import { useToast } from "@/hooks/use-toast"
 vi.mock("@/lib/actions/curriculums")
 vi.mock("@/hooks/use-toast")
 
-// Mock the Dialog component to avoid portal issues in tests
-vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div role="dialog" data-testid="dialog" className={className}>{children}</div>
-  ),
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
 global.confirm = vi.fn()
 
 describe("CurriculumSetsManagement", () => {
   const mockToast = vi.fn()
 
   const mockSets = [
-    { id: "set-1", name: "Curriculum Set Name", description: "Test curriculum", created_at: "2024-01-01" },
+    { id: "set-1", name: "Test Curriculum Set", description: "Test description", created_at: "2024-01-01" },
     { id: "set-2", name: "Another Set", description: null, created_at: "2024-01-02" },
   ]
 
   const mockSetWithLevels = {
     id: "set-1",
-    name: "Curriculum Set Name",
-    description: "Test curriculum",
+    name: "Test Curriculum Set",
+    description: "Test description",
     created_at: "2024-01-01",
     levels: [
-      { id: "level-1", name: "Level Name", description: null, color: "#ffffff", display_order: 0, curriculum_set_id: "set-1" },
-      { id: "level-2", name: "Level Name 2", description: null, color: "#0000ff", display_order: 1, curriculum_set_id: "set-1" },
+      { id: "level-1", name: "First Level", description: null, color: "#ffffff", display_order: 0, curriculum_set_id: "set-1" },
+      { id: "level-2", name: "Second Level", description: null, color: "#0000ff", display_order: 1, curriculum_set_id: "set-1" },
     ],
   }
 
@@ -70,12 +59,10 @@ describe("CurriculumSetsManagement", () => {
   })
 
   it("should show loading state initially", async () => {
-    // Use never-resolving promise to keep in loading state
     vi.mocked(getCurriculumSets).mockReturnValue(new Promise(() => {}))
     
     const { unmount } = render(<CurriculumSetsManagement />)
     expect(screen.getByText(/loading/i)).toBeTruthy()
-    // Unmount to prevent act() warnings from pending async operations
     unmount()
   })
 
@@ -87,13 +74,11 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      // Use getAllByText since the name appears in both the list and header
-      const elements = screen.getAllByText("Curriculum Set Name")
-      expect(elements.length).toBeGreaterThan(0)
+      expect(screen.getByText("Test Curriculum Set")).toBeTruthy()
     })
   })
 
-  it("should select a curriculum set and show its levels", async () => {
+  it("should fetch levels when a curriculum set is loaded", async () => {
     render(<CurriculumSetsManagement />)
 
     await waitFor(() => {
@@ -101,12 +86,12 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText("Level Name")).toBeTruthy()
-      expect(screen.getByText("Level Name 2")).toBeTruthy()
+      expect(screen.getByText("First Level")).toBeTruthy()
+      expect(screen.getByText("Second Level")).toBeTruthy()
     })
   })
 
-  it("should open create curriculum set dialog", async () => {
+  it("should call createCurriculumSet when create button is clicked", async () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
@@ -117,27 +102,14 @@ describe("CurriculumSetsManagement", () => {
     const addButton = screen.getByRole("button", { name: /new curriculum set/i })
     await user.click(addButton)
 
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy()
-    })
-  })
-
-  it("should create a new curriculum set", async () => {
-    const user = userEvent.setup()
-    render(<CurriculumSetsManagement />)
-
-    await waitFor(() => {
-      expect(screen.queryByText(/loading/i)).toBeFalsy()
-    })
-
-    const addButton = screen.getByRole("button", { name: /new curriculum set/i })
-    await user.click(addButton)
-
-    const nameInput = screen.getByPlaceholderText(/e\.g\., Okinawa Kobudo Australia/i)
+    // Find the name input by its id
+    const nameInput = document.getElementById("set-name") as HTMLInputElement
+    expect(nameInput).toBeTruthy()
     await user.type(nameInput, "New Curriculum Set")
 
-    const saveButton = screen.getByRole("button", { name: /^save$/i })
-    await user.click(saveButton)
+    // Find create button within the dialog form
+    const createButton = screen.getByRole("button", { name: /^create$/i })
+    await user.click(createButton)
 
     await waitFor(() => {
       expect(createCurriculumSet).toHaveBeenCalledWith({
@@ -147,7 +119,7 @@ describe("CurriculumSetsManagement", () => {
     })
   })
 
-  it("should handle create curriculum set error", async () => {
+  it("should show toast on create error", async () => {
     vi.mocked(createCurriculumSet).mockResolvedValue({ error: "Failed to create" })
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
@@ -159,11 +131,11 @@ describe("CurriculumSetsManagement", () => {
     const addButton = screen.getByRole("button", { name: /new curriculum set/i })
     await user.click(addButton)
 
-    const nameInput = screen.getByPlaceholderText(/e\.g\., Okinawa Kobudo Australia/i)
+    const nameInput = document.getElementById("set-name") as HTMLInputElement
     await user.type(nameInput, "New Set")
 
-    const saveButton = screen.getByRole("button", { name: /^save$/i })
-    await user.click(saveButton)
+    const createButton = screen.getByRole("button", { name: /^create$/i })
+    await user.click(createButton)
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith(
@@ -203,7 +175,7 @@ describe("CurriculumSetsManagement", () => {
     })
   })
 
-  it("should add a level to a curriculum set", async () => {
+  it("should call addLevelToCurriculumSet when add level is submitted", async () => {
     const user = userEvent.setup()
     render(<CurriculumSetsManagement />)
 
@@ -212,17 +184,15 @@ describe("CurriculumSetsManagement", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText("Level Name")).toBeTruthy()
+      expect(screen.getByText("First Level")).toBeTruthy()
     })
 
     const addLevelButton = screen.getByRole("button", { name: /add level/i })
     await user.click(addLevelButton)
 
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy()
-    })
-
-    const nameInput = screen.getByPlaceholderText(/e\.g\., 1st Kyu/i)
+    // Find the level name input by its id
+    const nameInput = document.getElementById("level-name") as HTMLInputElement
+    expect(nameInput).toBeTruthy()
     await user.type(nameInput, "Yellow Belt")
 
     const saveButton = screen.getByRole("button", { name: /^save$/i })
@@ -238,28 +208,26 @@ describe("CurriculumSetsManagement", () => {
     })
   })
 
-  it("should show levels panel when a curriculum set is selected", async () => {
+  it("should show levels when a curriculum set is selected", async () => {
     render(<CurriculumSetsManagement />)
 
     await waitFor(() => {
       expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    // The first set should be auto-selected and levels shown
     await waitFor(() => {
-      expect(screen.getByText("Level Name")).toBeTruthy()
-      expect(screen.getByText("Level Name 2")).toBeTruthy()
+      expect(screen.getByText("First Level")).toBeTruthy()
+      expect(screen.getByText("Second Level")).toBeTruthy()
     })
   })
 
-  it("should confirm before deleting a curriculum set", async () => {
+  it("should have delete confirmation mocked", async () => {
     render(<CurriculumSetsManagement />)
 
     await waitFor(() => {
       expect(screen.queryByText(/loading/i)).toBeFalsy()
     })
 
-    // Just verify component loads and confirm is mocked
     expect(confirm).toBeDefined()
   })
 })
