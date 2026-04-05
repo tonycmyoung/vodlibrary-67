@@ -586,11 +586,17 @@ const UserActionButtons = ({
         title="Current Belt"
       >
         <option value="">No belt</option>
-        {curriculums.map((curriculum) => (
-          <option key={curriculum.id} value={curriculum.id}>
-            {curriculum.name}
-          </option>
-        ))}
+        {user.curriculum_set_id && curriculumLevelsBySet[user.curriculum_set_id]
+          ? curriculumLevelsBySet[user.curriculum_set_id].map((level) => (
+              <option key={level.id} value={level.id}>
+                {level.display_name}
+              </option>
+            ))
+          : curriculums.map((curriculum) => (
+              <option key={curriculum.id} value={curriculum.id}>
+                {curriculum.name}
+              </option>
+            ))}
       </select>
 
       <div className="flex gap-1">
@@ -768,7 +774,10 @@ export default function UserManagement() {
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
-  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([]) // curriculum set options
+  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
+  const [curriculumLevelsBySet, setCurriculumLevelsBySet] = useState<
+    Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
+  >({})
 
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{
@@ -959,15 +968,6 @@ export default function UserManagement() {
     try {
       const supabase = createClient()
       
-      // Fetch curriculum levels
-      const { data, error } = await supabase
-        .from("curriculums")
-        .select("id, name, color, display_order")
-        .order("display_order", { ascending: true })
-
-      if (error) throw error
-      setCurriculums(data || [])
-
       // Fetch curriculum sets
       const { data: setsData, error: setsError } = await supabase
         .from("curriculum_sets")
@@ -976,8 +976,40 @@ export default function UserManagement() {
 
       if (setsError) throw setsError
       setCurriculumSets(setsData || [])
+
+      // Fetch all curriculum levels grouped by set
+      const { data: levelsData, error: levelsError } = await supabase
+        .from("curriculum_levels")
+        .select("id, name, display_name, sort_order, curriculum_set_id")
+        .order("sort_order", { ascending: true })
+
+      if (levelsError) throw levelsError
+
+      // Group levels by curriculum_set_id
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      levelsData?.forEach((level) => {
+        if (!levelsBySet[level.curriculum_set_id]) {
+          levelsBySet[level.curriculum_set_id] = []
+        }
+        levelsBySet[level.curriculum_set_id].push({
+          id: level.id,
+          name: level.name,
+          display_name: level.display_name,
+          sort_order: level.sort_order,
+        })
+      })
+      setCurriculumLevelsBySet(levelsBySet)
+
+      // Keep old curriculums fetch for backward compatibility (video library, etc.)
+      const { data: currData, error: currError } = await supabase
+        .from("curriculums")
+        .select("id, name, color, display_order")
+        .order("display_order", { ascending: true })
+
+      if (currError) throw currError
+      setCurriculums(currData || [])
     } catch (error) {
-      console.error("Error fetching curriculums:", error)
+      console.error("Error fetching curriculums and sets:", error)
     }
   }
 
