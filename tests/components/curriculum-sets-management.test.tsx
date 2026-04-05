@@ -20,9 +20,10 @@ vi.mock("@/hooks/use-toast")
 
 // Mock the Dialog component to avoid portal issues in tests
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div role="dialog" data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div role="dialog" data-testid="dialog" className={className}>{children}</div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
   DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
