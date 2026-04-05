@@ -148,9 +148,6 @@ export default function CurriculumSetsManagement() {
     toast({ title: "Error", description: result.error, variant: "destructive" })
     return false
   }
-    toast({ title: "Error", description: result.error, variant: "destructive" })
-    return false
-  }
 
   useEffect(() => {
     fetchSets()
