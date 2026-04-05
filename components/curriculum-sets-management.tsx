@@ -446,8 +446,7 @@ export default function CurriculumSetsManagement() {
                       </div>
                     </form>
                   </DialogContent>
-                  </Dialog>
-                </div>
+                </Dialog>
               </div>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {selectedSet.levels.length === 0 ? (
