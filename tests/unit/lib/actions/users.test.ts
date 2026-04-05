@@ -1935,5 +1935,39 @@ describe("User Actions", () => {
       expect(result).toEqual(mockUser)
       expect(result?.curriculum_sets).toBeNull()
     })
+
+    it("should handle exception when fetching user with curriculum set", async () => {
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockRejectedValue(new Error("Database connection failed")),
+      })
+
+      const result = await getUserWithCurriculumSet("user-123")
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe("assignCurriculumSetToUser error handling", () => {
+    it("should handle exception when assigning curriculum set", async () => {
+      mockServiceClient.from.mockImplementation((table: string) => {
+        if (table === "curriculum_sets") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockRejectedValue(new Error("Database error")),
+          }
+        }
+        return {
+          update: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockRejectedValue(new Error("Database error")),
+        }
+      })
+
+      const result = await assignCurriculumSetToUser("user-123", "set-456")
+
+      expect(result.error).toBeDefined()
+    })
   })
 })

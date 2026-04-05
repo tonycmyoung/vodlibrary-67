@@ -772,4 +772,32 @@ describe("Curriculum Actions", () => {
       expect(result.error).toBe("Failed to reorder levels")
     })
   })
+
+  describe("createCurriculumSet error handling", () => {
+    it("should handle database error when creating curriculum set", async () => {
+      mockFrom.mockReturnValue({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockRejectedValue(new Error("Database error")),
+          }),
+        }),
+      })
+
+      const result = await createCurriculumSet("Test Set", "Description")
+      expect(result.error).toBe("Failed to create curriculum set")
+    })
+  })
+
+  describe("deleteLevelFromCurriculumSet error handling", () => {
+    it("should handle database error when deleting level", async () => {
+      mockFrom.mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockRejectedValue(new Error("Database error")),
+        }),
+      })
+
+      const result = await deleteLevelFromCurriculumSet("set-1", "level-1")
+      expect(result.error).toBe("Failed to delete level")
+    })
+  })
 })
