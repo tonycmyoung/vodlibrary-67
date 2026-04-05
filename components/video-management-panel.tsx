@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2, X, Search, Plus } from "lucide-react"
 import { getVideosForLevel, addVideoToLevel, removeVideoFromLevel, getAvailableVideos } from "@/lib/actions/curriculums"
@@ -62,6 +62,32 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
       toast({ title: "Error", description: result.error, variant: "destructive" })
     }
   }
+
+  useEffect(() => {
+    if (!level) {
+      setIsOpen(false)
+      return
+    }
+    setIsOpen(true)
+    setVideoSearchLoading(true)
+    const loadVideos = async () => {
+      try {
+        const [assignedVideos, availableList] = await Promise.all([
+          getVideosForLevel(level.id),
+          getAvailableVideos(),
+        ])
+        setLevelVideos(assignedVideos)
+        setAvailableVideos(availableList)
+        setVideoSearch("")
+      } catch (error) {
+        console.error("Error loading videos:", error)
+        toast({ title: "Error", description: "Failed to load videos", variant: "destructive" })
+      } finally {
+        setVideoSearchLoading(false)
+      }
+    }
+    loadVideos()
+  }, [level, toast])
 
   if (!level || !isOpen) return null
 
