@@ -62,11 +62,16 @@ export default async function ProfilePage() {
   let curriculumLevels: Array<{ id: string; name: string; display_name: string; sort_order: number }> = []
   if (userProfile?.curriculum_set_id) {
     const { data: levels } = await supabase
-      .from("curriculum_levels")
-      .select("id, name, display_name, sort_order")
+      .from("curriculums")
+      .select("id, name, display_order")
       .eq("curriculum_set_id", userProfile.curriculum_set_id)
-      .order("sort_order", { ascending: true })
-    curriculumLevels = levels || []
+      .order("display_order", { ascending: true })
+    curriculumLevels = (levels || []).map((l) => ({
+      id: l.id,
+      name: l.name,
+      display_name: l.name,
+      sort_order: l.display_order,
+    }))
   }
 
   const isAdmin = userProfile?.role === "Admin"

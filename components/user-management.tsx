@@ -980,37 +980,31 @@ export default function UserManagement() {
       if (setsError) throw setsError
       setCurriculumSets(setsData || [])
 
-      // Fetch all curriculum levels grouped by set
-      const { data: levelsData, error: levelsError } = await supabase
-        .from("curriculum_levels")
-        .select("id, name, display_name, sort_order, curriculum_set_id")
-        .order("sort_order", { ascending: true })
-
-      if (levelsError) throw levelsError
-
-      // Group levels by curriculum_set_id
-      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
-      levelsData?.forEach((level) => {
-        if (!levelsBySet[level.curriculum_set_id]) {
-          levelsBySet[level.curriculum_set_id] = []
-        }
-        levelsBySet[level.curriculum_set_id].push({
-          id: level.id,
-          name: level.name,
-          display_name: level.display_name,
-          sort_order: level.sort_order,
-        })
-      })
-      setCurriculumLevelsBySet(levelsBySet)
-
-      // Keep old curriculums fetch for backward compatibility (video library, etc.)
+      // Fetch all curriculums (belt levels) with their curriculum_set_id
       const { data: currData, error: currError } = await supabase
         .from("curriculums")
-        .select("id, name, color, display_order")
+        .select("id, name, color, display_order, curriculum_set_id")
         .order("display_order", { ascending: true })
 
       if (currError) throw currError
       setCurriculums(currData || [])
+
+      // Group curriculums by curriculum_set_id for filtered belt dropdowns
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      currData?.forEach((curriculum) => {
+        if (curriculum.curriculum_set_id) {
+          if (!levelsBySet[curriculum.curriculum_set_id]) {
+            levelsBySet[curriculum.curriculum_set_id] = []
+          }
+          levelsBySet[curriculum.curriculum_set_id].push({
+            id: curriculum.id,
+            name: curriculum.name,
+            display_name: curriculum.name, // Use name as display_name
+            sort_order: curriculum.display_order,
+          })
+        }
+      })
+      setCurriculumLevelsBySet(levelsBySet)
     } catch (error) {
       console.error("Error fetching curriculums and sets:", error)
     }

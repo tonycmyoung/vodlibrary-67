@@ -310,40 +310,33 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       setCurriculumSets(setsData || [])
     }
 
-    // Fetch all curriculum levels grouped by set
-    const { data: levelsData, error: levelsError } = await supabase
-      .from("curriculum_levels")
-      .select("id, name, display_name, sort_order, curriculum_set_id")
-      .order("sort_order", { ascending: true })
-
-    if (levelsError) {
-      console.error("Error fetching curriculum levels:", levelsError)
-    } else {
-      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
-      levelsData?.forEach((level) => {
-        if (!levelsBySet[level.curriculum_set_id]) {
-          levelsBySet[level.curriculum_set_id] = []
-        }
-        levelsBySet[level.curriculum_set_id].push({
-          id: level.id,
-          name: level.name,
-          display_name: level.display_name,
-          sort_order: level.sort_order,
-        })
-      })
-      setCurriculumLevelsBySet(levelsBySet)
-    }
-
-    // Keep old curriculums fetch for backward compatibility
+    // Fetch all curriculums (belt levels) with curriculum_set_id
     const { data, error } = await supabase
       .from("curriculums")
-      .select("id, name, color, display_order")
+      .select("id, name, color, display_order, curriculum_set_id")
       .order("display_order", { ascending: true })
 
     if (error) {
       console.error("Error fetching curriculums:", error)
     } else {
       setCurriculums(data || [])
+
+      // Group curriculums by curriculum_set_id for filtered belt dropdowns
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      data?.forEach((curriculum) => {
+        if (curriculum.curriculum_set_id) {
+          if (!levelsBySet[curriculum.curriculum_set_id]) {
+            levelsBySet[curriculum.curriculum_set_id] = []
+          }
+          levelsBySet[curriculum.curriculum_set_id].push({
+            id: curriculum.id,
+            name: curriculum.name,
+            display_name: curriculum.name,
+            sort_order: curriculum.display_order,
+          })
+        }
+      })
+      setCurriculumLevelsBySet(levelsBySet)
     }
   }
 
