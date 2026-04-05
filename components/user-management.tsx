@@ -285,29 +285,6 @@ const UserInfoFields = ({
       icon={Building}
       displayValue={user.school}
     />
-    {isEditing && (
-      <InfoRowItem icon={Award}>
-        <Select
-          value={editValues.current_belt_id || "none"}
-          onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
-        >
-          <SelectTrigger className={STYLES.inputSmall}>
-            <SelectValue placeholder="Belt" />
-          </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-700">
-            <SelectItem value="none" className="text-white text-xs">No Belt</SelectItem>
-            {curriculums.map((c) => (
-              <SelectItem key={c.id} value={c.id} className="text-white text-xs">
-                <span className="flex items-center">
-                  <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: c.color }} />
-                  {c.name}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </InfoRowItem>
-    )}
   </div>
 )
 
@@ -578,7 +555,7 @@ const UserActionButtons = ({
       <select
         value={user.role || "Student"}
         onChange={(e) => updateUserRole(user.id, e.target.value)}
-        disabled={isProcessing || isEditing}
+        disabled={isProcessing}
         className={STYLES.selectDropdown}
       >
         <option value="Student">Student</option>
@@ -589,7 +566,7 @@ const UserActionButtons = ({
       <select
         value={user.curriculum_set_id || ""}
         onChange={(e) => updateUserCurriculumSet(user.id, e.target.value || null)}
-        disabled={isProcessing || isEditing}
+        disabled={isProcessing}
         className={STYLES.selectDropdown}
         title="Curriculum Set"
       >
@@ -604,7 +581,7 @@ const UserActionButtons = ({
       <select
         value={user.current_belt_id || ""}
         onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
-        disabled={isProcessing || isEditing}
+        disabled={isProcessing}
         className={STYLES.selectDropdown}
         title="Current Belt"
       >
@@ -1182,7 +1159,16 @@ export default function UserManagement() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("users").update({ curriculum_set_id: newSetId }).eq("id", userId)
+      
+      // When clearing curriculum set, also clear the belt since it's no longer valid
+      const updateData: { curriculum_set_id: string | null; current_belt_id?: null } = { 
+        curriculum_set_id: newSetId 
+      }
+      if (!newSetId) {
+        updateData.current_belt_id = null
+      }
+      
+      const { error } = await supabase.from("users").update(updateData).eq("id", userId)
 
       if (error) throw error
 
@@ -1195,6 +1181,8 @@ export default function UserManagement() {
                 ...user,
                 curriculum_set_id: newSetId,
                 curriculum_set: foundSet || null,
+                // Clear belt when curriculum is cleared
+                ...(newSetId === null ? { current_belt_id: null, curriculums: null } : {}),
               }
             : user,
         ),
