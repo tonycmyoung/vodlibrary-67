@@ -388,14 +388,18 @@ export async function addLevelToCurriculumSet(
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // Check for duplicate name within this set only
-    const { data: existingLevel } = await serviceSupabase
+    const { data: existingLevel, error: checkError } = await serviceSupabase
       .from("curriculums")
-      .select("id")
+      .select("id, name, curriculum_set_id")
       .eq("curriculum_set_id", setId)
       .ilike("name", levelData.name)
       .maybeSingle()
 
+    console.log("[v0] addLevelToCurriculumSet - checking duplicate for setId:", setId, "name:", levelData.name)
+    console.log("[v0] addLevelToCurriculumSet - existingLevel:", existingLevel, "checkError:", checkError)
+
     if (existingLevel) {
+      console.log("[v0] addLevelToCurriculumSet - duplicate found, returning error")
       return { error: `A level named "${levelData.name}" already exists in this curriculum set` }
     }
 
@@ -413,6 +417,8 @@ export async function addLevelToCurriculumSet(
       displayOrder = maxOrderData ? maxOrderData.display_order + 1 : 0
     }
 
+    console.log("[v0] addLevelToCurriculumSet - inserting level with display_order:", displayOrder)
+    
     const { data: newLevel, error } = await serviceSupabase.from("curriculums").insert({
       name: levelData.name,
       description: levelData.description || null,
@@ -420,6 +426,8 @@ export async function addLevelToCurriculumSet(
       display_order: displayOrder,
       curriculum_set_id: setId,
     }).select().single()
+
+    console.log("[v0] addLevelToCurriculumSet - insert result:", newLevel, "error:", error)
 
     if (error) {
       console.error("[v0] Error adding level:", error)
