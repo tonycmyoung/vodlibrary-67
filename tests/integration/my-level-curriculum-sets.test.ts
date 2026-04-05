@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { createClient } from "@/utils/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 
-vi.mock("@/utils/supabase/client")
+vi.mock("@/lib/supabase/server")
 
 describe("My Level Page with Curriculum Sets", () => {
   let mockSupabase: any

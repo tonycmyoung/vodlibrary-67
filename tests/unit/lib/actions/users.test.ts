@@ -1855,21 +1855,26 @@ describe("User Actions", () => {
 
   describe("getUserWithCurriculumSet", () => {
     it("should successfully fetch user with curriculum set details", async () => {
+      // Mock matches actual Supabase join field names
       const mockUser = {
         id: "user-123",
         full_name: "John Doe",
         email: "john@example.com",
         curriculum_set_id: "set-456",
-        curriculum_set: {
+        curriculum_sets: {
           id: "set-456",
           name: "Okinawa Kobudo Australia",
-          levels: [
-            { id: "level-1", name: "White Belt", display_order: 0 },
-            { id: "level-2", name: "Blue Belt", display_order: 1 },
-          ],
+          description: "Australian curriculum",
         },
         current_belt_id: "level-1",
-        current_belt: { id: "level-1", name: "White Belt" },
+        curriculums: {
+          id: "level-1",
+          name: "White Belt",
+          color: "#ffffff",
+          display_order: 0,
+          description: null,
+          curriculum_set_id: "set-456",
+        },
       }
 
       mockServiceClient.from.mockReturnValue({
@@ -1914,9 +1919,9 @@ describe("User Actions", () => {
         full_name: "John Doe",
         email: "john@example.com",
         curriculum_set_id: null,
-        curriculum_set: null,
+        curriculum_sets: null,
         current_belt_id: null,
-        current_belt: null,
+        curriculums: null,
       }
 
       mockServiceClient.from.mockReturnValue({
@@ -1928,7 +1933,7 @@ describe("User Actions", () => {
       const result = await getUserWithCurriculumSet("user-123")
 
       expect(result).toEqual(mockUser)
-      expect(result?.curriculum_set).toBeNull()
+      expect(result?.curriculum_sets).toBeNull()
     })
   })
 })
