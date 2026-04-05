@@ -733,7 +733,6 @@ describe("UserManagement", () => {
       })
     })
   })
-})
 
   describe("Sorting Branches", () => {
     it("should sort users by last_view date", async () => {
