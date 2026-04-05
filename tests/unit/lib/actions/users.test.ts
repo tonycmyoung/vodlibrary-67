@@ -14,6 +14,8 @@ import {
   adminResetUserPassword,
   deleteUserCompletely,
   updateUserBelt,
+  assignCurriculumSetToUser,
+  getUserWithCurriculumSet,
 } from "@/lib/actions/users"
 import { createServerClient } from "@supabase/ssr"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
@@ -1786,6 +1788,125 @@ describe("User Actions", () => {
         teacher: "Sensei",
         school: "BBMA Kincumber",
       })
+    })
+  })
+
+  describe("assignCurriculumSetToUser", () => {
+    it("should successfully assign a curriculum set to a user", async () => {
+      mockServiceClient.from.mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      const result = await assignCurriculumSetToUser("user-123", "set-456")
+
+      expect(result).toEqual({ success: "Curriculum set assigned successfully" })
+      expect(mockServiceClient.from).toHaveBeenCalledWith("users")
+    })
+
+    it("should handle database errors", async () => {
+      mockServiceClient.from.mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: { message: "Database error" } }),
+      })
+
+      const result = await assignCurriculumSetToUser("user-123", "set-456")
+
+      expect(result).toEqual({ error: "Failed to assign curriculum set" })
+    })
+
+    it("should reset user belt when assigning a new curriculum set", async () => {
+      const updateMock = vi.fn().mockReturnThis()
+      mockServiceClient.from.mockReturnValue({
+        update: updateMock,
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      await assignCurriculumSetToUser("user-123", "set-456")
+
+      expect(updateMock).toHaveBeenCalledWith({
+        curriculum_set_id: "set-456",
+        current_belt_id: null,
+      })
+    })
+  })
+
+  describe("getUserWithCurriculumSet", () => {
+    it("should successfully fetch user with curriculum set details", async () => {
+      const mockUser = {
+        id: "user-123",
+        full_name: "John Doe",
+        email: "john@example.com",
+        curriculum_set_id: "set-456",
+        curriculum_set: {
+          id: "set-456",
+          name: "Okinawa Kobudo Australia",
+          levels: [
+            { id: "level-1", name: "White Belt", display_order: 0 },
+            { id: "level-2", name: "Blue Belt", display_order: 1 },
+          ],
+        },
+        current_belt_id: "level-1",
+        current_belt: { id: "level-1", name: "White Belt" },
+      }
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockUser, error: null }),
+      })
+
+      const result = await getUserWithCurriculumSet("user-123")
+
+      expect(result).toEqual(mockUser)
+      expect(mockServiceClient.from).toHaveBeenCalledWith("users")
+    })
+
+    it("should return null when user not found", async () => {
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } }),
+      })
+
+      const result = await getUserWithCurriculumSet("nonexistent-user")
+
+      expect(result).toBeNull()
+    })
+
+    it("should return null on database error", async () => {
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: "Database error" } }),
+      })
+
+      const result = await getUserWithCurriculumSet("user-123")
+
+      expect(result).toBeNull()
+    })
+
+    it("should return user with null curriculum set if not assigned", async () => {
+      const mockUser = {
+        id: "user-123",
+        full_name: "John Doe",
+        email: "john@example.com",
+        curriculum_set_id: null,
+        curriculum_set: null,
+        current_belt_id: null,
+        current_belt: null,
+      }
+
+      mockServiceClient.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockUser, error: null }),
+      })
+
+      const result = await getUserWithCurriculumSet("user-123")
+
+      expect(result).toEqual(mockUser)
+      expect(result?.curriculum_set).toBeNull()
     })
   })
 })
