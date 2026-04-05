@@ -47,7 +47,7 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
     const result = await addVideoToLevel(level.id, videoId)
     if (result.success) {
       const videos = await getVideosForLevel(level.id)
-      setLevelVideos(videos)
+      setLevelVideos([...videos].sort((a, b) => a.title.localeCompare(b.title)))
     } else {
       toast({ title: "Error", description: result.error, variant: "destructive" })
     }
@@ -76,7 +76,7 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
           getVideosForLevel(level.id),
           getAvailableVideos(),
         ])
-        setLevelVideos(assignedVideos)
+        setLevelVideos([...assignedVideos].sort((a, b) => a.title.localeCompare(b.title)))
         setAvailableVideos(availableList)
         setVideoSearch("")
       } catch (error) {
