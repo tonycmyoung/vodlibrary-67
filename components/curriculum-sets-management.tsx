@@ -231,25 +231,6 @@ export default function CurriculumSetsManagement() {
     }
   }
 
-  const handleAddLevel = async (e: { preventDefault: () => void }) => {
-    e.preventDefault()
-    if (!selectedSet) return
-    setSavingSet(true)
-    try {
-      const result = await addLevelToCurriculumSet(selectedSet.id, levelFormData)
-      handleResult(result, async () => {
-        await fetchSetDetails(selectedSet.id)
-        setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
-        setIsAddLevelDialogOpen(false)
-      })
-    } catch (error) {
-      console.error("Error adding level:", error)
-      toast({ title: "Error", description: "Failed to add level", variant: "destructive" })
-    } finally {
-      setSavingSet(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
