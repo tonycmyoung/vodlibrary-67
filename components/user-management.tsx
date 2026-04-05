@@ -1010,7 +1010,7 @@ export default function UserManagement() {
           current_belt_id,
           current_belt:curriculums!current_belt_id(id, name, color, display_order),
           curriculum_set_id,
-          curriculum_set:curriculum_sets(id, name)
+          curriculum_set:curriculum_sets!curriculum_set_id(id, name)
         `)
         .order("created_at", { ascending: false })
 

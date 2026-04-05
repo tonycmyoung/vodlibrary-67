@@ -36,7 +36,7 @@ export default async function MyLevelPage() {
       current_belt_id,
       curriculum_set_id,
       current_belt:curriculums!current_belt_id(id, name, display_order, color),
-      curriculum_set:curriculum_sets(id, name)
+      curriculum_set:curriculum_sets!curriculum_set_id(id, name)
     `)
     .eq("id", user.id)
     .single()
