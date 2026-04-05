@@ -31,6 +31,8 @@ export interface Curriculum {
   color: string
   display_order: number
   description: string | null
+  curriculum_set_id?: string
+  curriculum_set_name?: string
 }
 
 export interface Performer {

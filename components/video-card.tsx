@@ -58,10 +58,10 @@ const VideoCard = memo(function VideoCard({
     const getUser = async () => {
       try {
         const supabase = createClient()
-        const {
-          data: { user: userData },
-        } = await supabase.auth.getUser()
-        setUser(userData)
+        const result = await supabase.auth.getUser()
+        if (result?.data?.user) {
+          setUser(result.data.user)
+        }
       } catch (error) {
         console.error("Error getting user:", error)
       }

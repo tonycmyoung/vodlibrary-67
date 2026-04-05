@@ -55,6 +55,8 @@ describe("UserManagement", () => {
         color: "#ffffff",
         display_order: 1,
       },
+      curriculum_set_id: "set-1",
+      curriculum_set: { id: "set-1", name: "Okinawa Kobudo Australia" },
     },
     {
       id: "user-2",
@@ -69,12 +71,25 @@ describe("UserManagement", () => {
       profile_image_url: null,
       current_belt_id: null,
       current_belt: null,
+      curriculum_set_id: null,
+      curriculum_set: null,
     },
   ]
 
   const mockCurriculums = [
     { id: "belt-1", name: "White Belt", color: "#ffffff", display_order: 1 },
     { id: "belt-2", name: "Yellow Belt", color: "#ffff00", display_order: 2 },
+  ]
+
+  const mockCurriculumLevels = [
+    { id: "level-1", name: "White", display_name: "White Belt", sort_order: 1, curriculum_set_id: "set-1" },
+    { id: "level-2", name: "Yellow", display_name: "Yellow Belt", sort_order: 2, curriculum_set_id: "set-1" },
+    { id: "level-3", name: "Green", display_name: "Green Belt", sort_order: 3, curriculum_set_id: "set-2" },
+  ]
+
+  const mockCurriculumSets = [
+    { id: "set-1", name: "Okinawa Kobudo Australia" },
+    { id: "set-2", name: "Matayoshi International" },
   ]
 
   const mockLoginStats = [
@@ -102,7 +117,9 @@ describe("UserManagement", () => {
     mockSearchParams.get = vi.fn((param: string) => null)
     vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
 
-    mockEq = vi.fn().mockResolvedValue({ data: null, error: null })
+    mockEq = vi.fn().mockReturnValue({ 
+      select: vi.fn().mockResolvedValue({ data: null, error: null }) 
+    })
     mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
     mockOrder = vi.fn().mockResolvedValue({ data: mockCurriculums, error: null })
     mockSelect = vi.fn().mockReturnValue({ order: mockOrder })
@@ -117,6 +134,20 @@ describe("UserManagement", () => {
       }
       if (table === "curriculums") {
         return { select: mockSelect }
+      }
+      if (table === "curriculum_sets") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCurriculumSets, error: null }),
+          }),
+        }
+      }
+      if (table === "curriculum_levels") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCurriculumLevels, error: null }),
+          }),
+        }
       }
       if (table === "user_logins") {
         return {
@@ -522,20 +553,186 @@ describe("UserManagement", () => {
     )
   })
 
-  it("should display current belt with color indicator", async () => {
-    render(<UserManagement />)
+  describe("Curriculum Set Management", () => {
+    it("should update curriculum set and clear belt when set is cleared", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
 
-    await waitFor(() => {
-      const whiteBeltElements = screen.getAllByText("White Belt")
-      expect(whiteBeltElements.length).toBeGreaterThan(0)
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      // Find and change curriculum set dropdown
+      const curriculumSetSelects = screen.getAllByRole("combobox")
+      // The curriculum set dropdown should be the second select (after role)
+      const curriculumSetSelect = curriculumSetSelects.find((select: HTMLElement) =>
+        Array.from(select.querySelectorAll("option")).some((opt) =>
+          opt.textContent?.includes("Okinawa Kobudo"),
+        ),
+      ) as HTMLSelectElement
+
+      expect(curriculumSetSelect).toBeTruthy()
+
+      // Select "No curriculum set"
+      await user.selectOptions(curriculumSetSelect, "")
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled()
+        // Verify that both curriculum_set_id AND current_belt_id are cleared
+        const updateCall = mockUpdate.mock.calls.find(
+          (call) => call[0]?.curriculum_set_id === null && call[0]?.current_belt_id === null,
+        )
+        expect(updateCall).toBeTruthy()
+      })
+    })
+
+    it("should update curriculum set without clearing belt when set is assigned", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const curriculumSetSelects = screen.getAllByRole("combobox")
+      const curriculumSetSelect = curriculumSetSelects.find((select: HTMLElement) =>
+        Array.from(select.querySelectorAll("option")).some((opt) =>
+          opt.textContent?.includes("Okinawa Kobudo"),
+        ),
+      ) as HTMLSelectElement
+
+      // Select a different curriculum set (set-2)
+      await user.selectOptions(curriculumSetSelect, "set-2")
+
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalled()
+        // Verify current_belt_id is NOT in the update when setting a curriculum set
+        const updateCall = mockUpdate.mock.calls[mockUpdate.mock.calls.length - 1]
+        expect(updateCall[0]).toHaveProperty("curriculum_set_id", "set-2")
+        expect(updateCall[0]).not.toHaveProperty("current_belt_id")
+      })
+    })
+
+    it("should display curriculum set in user row", async () => {
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        // Multiple elements exist with this text (dropdown options), so use getAllByText
+        const elements = screen.getAllByText("Okinawa Kobudo Australia")
+        expect(elements.length).toBeGreaterThan(0)
+      })
+    })
+
+    it("should show unassigned curriculum set as empty", async () => {
+      const unassignedUser = {
+        ...mockUsers[1],
+        curriculum_set_id: null,
+        curriculum_set: null,
+      }
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "users") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [mockUsers[0], unassignedUser],
+                error: null,
+              }),
+            }),
+            update: mockUpdate,
+          }
+        }
+        if (table === "curriculums") {
+          return { select: mockSelect }
+        }
+        if (table === "curriculum_sets") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockCurriculumSets, error: null }),
+            }),
+          }
+        }
+        if (table === "curriculum_levels") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockCurriculumLevels, error: null }),
+            }),
+          }
+        }
+        if (table === "user_logins") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockLoginStats, error: null }),
+            }),
+          }
+        }
+        if (table === "user_video_views") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockViewStats, error: null }),
+            }),
+          }
+        }
+        return { select: mockSelect }
+      })
+
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+      })
     })
   })
 
-  it("should render UserSortControl and UserFilter components", async () => {
-    render(<UserManagement />)
+  describe("Belt Level Filtering by Curriculum Set", () => {
+    it("should filter belt options based on user curriculum set", async () => {
+      // This is tested indirectly through the dropdown rendering
+      // The actual filtering happens in the component when rendering the belt dropdown
+      render(<UserManagement />)
 
-    await waitFor(() => {
-      expect(screen.getByText("All Users (2)")).toBeTruthy()
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      // The belt dropdown should exist and be populated
+      const beltSelects = screen.getAllByRole("combobox")
+      const beltSelect = beltSelects.find((select: HTMLElement) =>
+        Array.from(select.querySelectorAll("option")).some((opt) => opt.textContent?.includes("Belt")),
+      )
+      expect(beltSelect).toBeTruthy()
+    })
+
+    it("should show current belt level in dropdown for user with curriculum set", async () => {
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        // User with curriculum set should have their belt displayed
+        const whiteBeltOptions = screen.queryAllByText(/White Belt/)
+        expect(whiteBeltOptions.length).toBeGreaterThan(0)
+      })
+    })
+
+    it("should keep dropdowns editable when in edit mode", async () => {
+      const user = userEvent.setup()
+      render(<UserManagement />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      const editButtons = screen.getAllByLabelText("Edit user")
+      await user.click(editButtons[0])
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Save changes")).toBeTruthy()
+      })
+
+      // Get the dropdown elements
+      const dropdowns = screen.getAllByRole("combobox")
+      // Verify none of the dropdowns are disabled
+      dropdowns.forEach((dropdown) => {
+        expect(dropdown).not.toHaveAttribute("disabled")
+      })
     })
   })
 

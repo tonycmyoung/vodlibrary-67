@@ -34,7 +34,9 @@ export default async function MyLevelPage() {
       profile_image_url, 
       role,
       current_belt_id,
-      current_belt:curriculums!current_belt_id(id, name, display_order, color)
+      curriculum_set_id,
+      current_belt:curriculums!current_belt_id(id, name, display_order, color),
+      curriculum_set:curriculum_sets!curriculum_set_id(id, name)
     `)
     .eq("id", user.id)
     .single()
@@ -52,6 +54,7 @@ export default async function MyLevelPage() {
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
     current_belt: userProfile?.current_belt || null,
+    curriculum_set: userProfile?.curriculum_set || null,
   }
 
   // Calculate max curriculum order (user's belt + 1 for next level)
@@ -59,11 +62,17 @@ export default async function MyLevelPage() {
 
   let nextBeltName = "Next Level"
   if (maxCurriculumOrder) {
-    const { data: nextBelt } = await supabase
+    // Filter by curriculum_set_id if user has one assigned
+    let query = supabase
       .from("curriculums")
       .select("name")
       .eq("display_order", maxCurriculumOrder)
-      .maybeSingle() // Use maybeSingle() instead of single() to handle 0 rows gracefully
+
+    if (userProfile?.curriculum_set_id) {
+      query = query.eq("curriculum_set_id", userProfile.curriculum_set_id)
+    }
+
+    const { data: nextBelt } = await query.maybeSingle() // Use maybeSingle() instead of single() to handle 0 rows gracefully
 
     if (nextBelt) {
       nextBeltName = nextBelt.name

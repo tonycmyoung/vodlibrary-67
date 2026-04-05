@@ -27,7 +27,6 @@ import {
   Play,
   User,
   Key,
-  Award,
   EyeOff,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -36,7 +35,6 @@ import { deleteUserCompletely, updateUserFields, adminResetUserPassword } from "
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Curriculum {
   id: string
@@ -82,6 +80,8 @@ interface UserInterface {
   inviter?: { full_name: string } | null
   current_belt_id: string | null
   current_belt?: Curriculum | null
+  curriculum_set_id: string | null
+  curriculum_set?: { id: string; name: string } | null
 }
 
 // Helper to get role badge class - extracted to reduce cognitive complexity
@@ -283,29 +283,6 @@ const UserInfoFields = ({
       icon={Building}
       displayValue={user.school}
     />
-    {isEditing && (
-      <InfoRowItem icon={Award}>
-        <Select
-          value={editValues.current_belt_id || "none"}
-          onValueChange={(value) => setEditValues({ ...editValues, current_belt_id: value === "none" ? null : value })}
-        >
-          <SelectTrigger className={STYLES.inputSmall}>
-            <SelectValue placeholder="Belt" />
-          </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-700">
-            <SelectItem value="none" className="text-white text-xs">No Belt</SelectItem>
-            {curriculums.map((c) => (
-              <SelectItem key={c.id} value={c.id} className="text-white text-xs">
-                <span className="flex items-center">
-                  <span className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: c.color }} />
-                  {c.name}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </InfoRowItem>
-    )}
   </div>
 )
 
@@ -535,11 +512,14 @@ interface UserActionButtonsProps extends PasswordResetState, PasswordResetAction
   isEditing: boolean
   isProcessing: boolean
   curriculums: Curriculum[]
+  curriculumSets: Array<{ id: string; name: string }>
+  curriculumLevelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
   updateUserRole: (userId: string, role: string) => void
   updateUserBelt: (userId: string, beltId: string | null) => void
+  updateUserCurriculumSet: (userId: string, setId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
 }
@@ -553,6 +533,8 @@ const UserActionButtons = ({
   showPassword,
   resetPasswordError,
   curriculums,
+  curriculumSets,
+  curriculumLevelsBySet,
   setResetPasswordUser,
   setNewPassword,
   setShowPassword,
@@ -562,6 +544,7 @@ const UserActionButtons = ({
   cancelEditing,
   updateUserRole,
   updateUserBelt,
+  updateUserCurriculumSet,
   toggleUserApproval,
   deleteUser,
   generateRandomPassword,
@@ -572,7 +555,7 @@ const UserActionButtons = ({
       <select
         value={user.role || "Student"}
         onChange={(e) => updateUserRole(user.id, e.target.value)}
-        disabled={isProcessing || isEditing}
+        disabled={isProcessing}
         className={STYLES.selectDropdown}
       >
         <option value="Student">Student</option>
@@ -581,17 +564,39 @@ const UserActionButtons = ({
       </select>
 
       <select
-        value={user.current_belt_id || ""}
-        onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
-        disabled={isProcessing || isEditing}
+        value={user.curriculum_set_id || ""}
+        onChange={(e) => updateUserCurriculumSet(user.id, e.target.value || null)}
+        disabled={isProcessing}
         className={STYLES.selectDropdown}
+        title="Curriculum Set"
       >
-        <option value="">No belt</option>
-        {curriculums.map((curriculum) => (
-          <option key={curriculum.id} value={curriculum.id}>
-            {curriculum.name}
+        <option value="">No curriculum set</option>
+        {curriculumSets.map((set) => (
+          <option key={set.id} value={set.id}>
+            {set.name}
           </option>
         ))}
+      </select>
+
+      <select
+        value={user.current_belt_id || ""}
+        onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
+        disabled={isProcessing}
+        className={STYLES.selectDropdown}
+        title="Current Belt"
+      >
+        <option value="">No belt</option>
+        {user.curriculum_set_id && curriculumLevelsBySet[user.curriculum_set_id]
+          ? curriculumLevelsBySet[user.curriculum_set_id].map((level) => (
+              <option key={level.id} value={level.id}>
+                {level.display_name}
+              </option>
+            ))
+          : curriculums.map((curriculum) => (
+              <option key={curriculum.id} value={curriculum.id}>
+                {curriculum.name}
+              </option>
+            ))}
       </select>
 
       <div className="flex gap-1">
@@ -630,11 +635,14 @@ interface UserRowProps extends PasswordResetState, PasswordResetActions {
   editValues: EditValuesType
   setEditValues: SetEditValuesType
   curriculums: Curriculum[]
+  curriculumSets: Array<{ id: string; name: string }>
+  curriculumLevelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
   updateUserRole: (userId: string, role: string) => void
   updateUserBelt: (userId: string, beltId: string | null) => void
+  updateUserCurriculumSet: (userId: string, setId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
 }
@@ -646,11 +654,13 @@ const UserRow = ({
   isEditing,
   editValues,
   setEditValues,
+  curriculumLevelsBySet,
   resetPasswordUser,
   newPassword,
   showPassword,
   resetPasswordError,
   curriculums,
+  curriculumSets,
   setResetPasswordUser,
   setNewPassword,
   setShowPassword,
@@ -660,6 +670,7 @@ const UserRow = ({
   cancelEditing,
   updateUserRole,
   updateUserBelt,
+  updateUserCurriculumSet,
   toggleUserApproval,
   deleteUser,
   generateRandomPassword,
@@ -720,6 +731,8 @@ const UserRow = ({
         showPassword={showPassword}
         resetPasswordError={resetPasswordError}
         curriculums={curriculums}
+        curriculumSets={curriculumSets}
+        curriculumLevelsBySet={curriculumLevelsBySet}
         setResetPasswordUser={setResetPasswordUser}
         setNewPassword={setNewPassword}
         setShowPassword={setShowPassword}
@@ -729,6 +742,7 @@ const UserRow = ({
         cancelEditing={cancelEditing}
         updateUserRole={updateUserRole}
         updateUserBelt={updateUserBelt}
+        updateUserCurriculumSet={updateUserCurriculumSet}
         toggleUserApproval={toggleUserApproval}
         deleteUser={deleteUser}
         generateRandomPassword={generateRandomPassword}
@@ -763,6 +777,10 @@ export default function UserManagement() {
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
+  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
+  const [curriculumLevelsBySet, setCurriculumLevelsBySet] = useState<
+    Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
+  >({})
 
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{
@@ -952,15 +970,43 @@ export default function UserManagement() {
   const fetchCurriculums = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
+      
+      // Fetch curriculum sets
+      const { data: setsData, error: setsError } = await supabase
+        .from("curriculum_sets")
+        .select("id, name")
+        .order("created_at", { ascending: true })
+
+      if (setsError) throw setsError
+      setCurriculumSets(setsData || [])
+
+      // Fetch all curriculums (belt levels) with their curriculum_set_id
+      const { data: currData, error: currError } = await supabase
         .from("curriculums")
-        .select("id, name, color, display_order")
+        .select("id, name, color, display_order, curriculum_set_id")
         .order("display_order", { ascending: true })
 
-      if (error) throw error
-      setCurriculums(data || [])
+      if (currError) throw currError
+      setCurriculums(currData || [])
+
+      // Group curriculums by curriculum_set_id for filtered belt dropdowns
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      currData?.forEach((curriculum) => {
+        if (curriculum.curriculum_set_id) {
+          if (!levelsBySet[curriculum.curriculum_set_id]) {
+            levelsBySet[curriculum.curriculum_set_id] = []
+          }
+          levelsBySet[curriculum.curriculum_set_id].push({
+            id: curriculum.id,
+            name: curriculum.name,
+            display_name: curriculum.name, // Use name as display_name
+            sort_order: curriculum.display_order,
+          })
+        }
+      })
+      setCurriculumLevelsBySet(levelsBySet)
     } catch (error) {
-      console.error("Error fetching curriculums:", error)
+      console.error("Error fetching curriculums and sets:", error)
     }
   }
 
@@ -974,7 +1020,9 @@ export default function UserManagement() {
           id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
           inviter:invited_by(full_name),
           current_belt_id,
-          current_belt:curriculums!current_belt_id(id, name, color, display_order)
+          current_belt:curriculums!current_belt_id(id, name, color, display_order),
+          curriculum_set_id,
+          curriculum_set:curriculum_sets!curriculum_set_id(id, name)
         `)
         .order("created_at", { ascending: false })
 
@@ -1126,6 +1174,51 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Error updating user belt:", error)
       alert("Failed to update user belt. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  const updateUserCurriculumSet = async (userId: string, newSetId: string | null) => {
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const supabase = createClient()
+      
+      // When clearing curriculum set, also clear the belt since it's no longer valid
+      const updateData: { curriculum_set_id: string | null; current_belt_id?: null } = { 
+        curriculum_set_id: newSetId 
+      }
+      if (!newSetId) {
+        updateData.current_belt_id = null
+      }
+      
+      const { error } = await supabase.from("users").update(updateData).eq("id", userId)
+
+      if (error) throw error
+
+      // Update local state - find the set from the current curriculumSets state
+      const foundSet = newSetId ? curriculumSets.find((s) => s.id === newSetId) : null
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                curriculum_set_id: newSetId,
+                curriculum_set: foundSet || null,
+                // Clear belt when curriculum is cleared
+                ...(newSetId === null ? { current_belt_id: null, curriculums: null } : {}),
+              }
+            : user,
+        ),
+      )
+    } catch (error) {
+      console.error("Error updating user curriculum set:", error)
+      alert("Failed to update curriculum set. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -1367,6 +1460,8 @@ export default function UserManagement() {
               showPassword={showPassword}
               resetPasswordError={resetPasswordError}
               curriculums={curriculums}
+              curriculumSets={curriculumSets}
+              curriculumLevelsBySet={curriculumLevelsBySet}
               setResetPasswordUser={setResetPasswordUser}
               setNewPassword={setNewPassword}
               setShowPassword={setShowPassword}
@@ -1376,6 +1471,7 @@ export default function UserManagement() {
               cancelEditing={cancelEditing}
               updateUserRole={updateUserRole}
               updateUserBelt={updateUserBelt}
+              updateUserCurriculumSet={updateUserCurriculumSet}
               toggleUserApproval={toggleUserApproval}
               deleteUser={deleteUser}
               generateRandomPassword={generateRandomPassword}
