@@ -646,6 +646,46 @@ describe("Curriculum Actions", () => {
 
       expect(result.error).toBe("Failed to add level: Insert error")
     })
+
+    it("should return error when duplicate name exists in same curriculum set", async () => {
+      let fromCallCount = 0
+      mockFrom.mockImplementation(() => {
+        fromCallCount++
+        if (fromCallCount === 1) {
+          // Get max display_order
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({ data: { display_order: 2 }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        } else {
+          // Insert fails due to unique constraint violation
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: "duplicate key value violates unique constraint \"curriculums_curriculum_set_id_name_key\"" },
+                }),
+              }),
+            }),
+          }
+        }
+      })
+
+      const result = await addLevelToCurriculumSet("set-1", {
+        name: "White Belt",
+        color: "#FFFFFF",
+      })
+
+      expect(result.error).toContain("Failed to add level")
+    })
   })
 
   describe("updateLevelInCurriculumSet", () => {
