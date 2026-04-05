@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, Film, X, Search, Plus } from "lucide-react"
+import { Loader2, X, Search, Plus } from "lucide-react"
 import { getVideosForLevel, addVideoToLevel, removeVideoFromLevel, getAvailableVideos } from "@/lib/actions/curriculums"
 import { useToast } from "@/hooks/use-toast"
 
@@ -18,8 +18,8 @@ interface VideoItem {
 }
 
 interface VideoManagementPanelProps {
-  level: CurriculumLevel | null
-  onClose: () => void
+  readonly level: CurriculumLevel | null
+  readonly onClose: () => void
 }
 
 export function VideoManagementPanel({ level, onClose }: VideoManagementPanelProps) {
@@ -29,22 +29,6 @@ export function VideoManagementPanel({ level, onClose }: VideoManagementPanelPro
   const [videoSearch, setVideoSearch] = useState("")
   const [videoSearchLoading, setVideoSearchLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-
-  const openVideoManagement = async (lv: CurriculumLevel) => {
-    setIsOpen(true)
-    setVideoSearch("")
-    setVideoSearchLoading(true)
-    try {
-      const [videos, available] = await Promise.all([getVideosForLevel(lv.id), getAvailableVideos()])
-      setLevelVideos(videos)
-      setAvailableVideos(available)
-    } catch (error) {
-      console.error("Error loading video management:", error)
-      toast({ title: "Error", description: "Failed to load videos", variant: "destructive" })
-    } finally {
-      setVideoSearchLoading(false)
-    }
-  }
 
   const handleVideoSearch = async (search: string) => {
     setVideoSearch(search)
