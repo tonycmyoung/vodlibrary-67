@@ -785,7 +785,7 @@ export default function UserManagement() {
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
-  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
+  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([]) // curriculum set options
 
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{
@@ -1180,14 +1180,15 @@ export default function UserManagement() {
 
       if (error) throw error
 
-      // Update local state
+      // Update local state - find the set from the current curriculumSets state
+      const foundSet = newSetId ? curriculumSets.find((s) => s.id === newSetId) : null
       setUsers((prev) =>
         prev.map((user) =>
           user.id === userId
             ? {
                 ...user,
                 curriculum_set_id: newSetId,
-                curriculum_set: newSetId ? curriculumSets.find((s) => s.id === newSetId) || null : null,
+                curriculum_set: foundSet || null,
               }
             : user,
         ),
