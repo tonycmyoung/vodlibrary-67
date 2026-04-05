@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase/client", () => ({
 vi.mock("@/lib/actions/users", () => ({
   fetchStudentsForHeadTeacher: vi.fn(),
   updateStudentForHeadTeacher: vi.fn(),
+  assignCurriculumSetToUser: vi.fn().mockResolvedValue({ success: "Curriculum set assigned successfully" }),
 }))
 
 vi.mock("@/lib/actions", () => ({
@@ -65,6 +66,8 @@ describe("StudentManagement", () => {
       inviter: {
         full_name: "Admin User",
       },
+      curriculum_set_id: "set-1",
+      curriculum_set: { id: "set-1", name: "Okinawa Kobudo Australia" },
     },
     {
       id: "student-2",
@@ -83,8 +86,12 @@ describe("StudentManagement", () => {
       view_count: 0,
       current_belt_id: null,
       current_belt: null,
+      curriculum_set_id: null,
+      curriculum_set: null,
     },
   ]
+
+  const mockCurriculumSets = [{ id: "set-1", name: "Okinawa Kobudo Australia" }]
 
   const mockCurriculums = [
     { id: "belt-1", name: "White Belt", color: "#ffffff", display_order: 1 },
@@ -121,6 +128,13 @@ describe("StudentManagement", () => {
       }
       if (table === "curriculums") {
         return { select: mockSelect }
+      }
+      if (table === "curriculum_sets") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCurriculumSets, error: null }),
+          }),
+        }
       }
       return { select: mockSelect }
     })

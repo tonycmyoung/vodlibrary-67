@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event"
 import MetadataManagement from "@/components/metadata-management"
 
 // Mock the child components
-vi.mock("@/components/curriculum-management", () => ({
-  default: () => <div>Curriculum Management Component</div>,
+vi.mock("@/components/curriculum-sets-management", () => ({
+  default: () => <div>Curriculum Sets Management Component</div>,
 }))
 
 vi.mock("@/components/category-management", () => ({
@@ -36,7 +36,7 @@ describe("MetadataManagement", () => {
     render(<MetadataManagement />)
     const curriculumTab = screen.getByRole("tab", { name: /curriculum/i })
     expect(curriculumTab).toHaveAttribute("data-state", "active")
-    expect(screen.getByText("Curriculum Management Component")).toBeTruthy()
+    expect(screen.getByText("Curriculum Sets Management Component")).toBeTruthy()
   })
 
   it("should display curriculum icon in curriculum tab", () => {
@@ -100,7 +100,7 @@ describe("MetadataManagement", () => {
     await user.click(curriculumTab)
     await waitFor(() => {
       expect(curriculumTab).toHaveAttribute("data-state", "active")
-      expect(screen.getByText("Curriculum Management Component")).toBeTruthy()
+      expect(screen.getByText("Curriculum Sets Management Component")).toBeTruthy()
     })
   })
 
