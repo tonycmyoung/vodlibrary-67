@@ -387,7 +387,7 @@ export async function addLevelToCurriculumSet(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get max display_order for this set
+    // Get max display_order for this set - use maybeSingle to avoid error when no rows exist
     let displayOrder = levelData.display_order
     if (displayOrder === undefined) {
       const { data: maxOrderData } = await serviceSupabase
@@ -396,10 +396,12 @@ export async function addLevelToCurriculumSet(
         .eq("curriculum_set_id", setId)
         .order("display_order", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       displayOrder = maxOrderData ? maxOrderData.display_order + 1 : 0
     }
+
+    console.log("[v0] addLevelToCurriculumSet: inserting with display_order", displayOrder, "for set", setId)
 
     const { data: newLevel, error } = await serviceSupabase.from("curriculums").insert({
       name: levelData.name,
@@ -410,8 +412,8 @@ export async function addLevelToCurriculumSet(
     }).select().single()
 
     if (error) {
-      console.error("Error adding level:", error)
-      return { error: "Failed to add level" }
+      console.error("[v0] Error adding level:", error)
+      return { error: `Failed to add level: ${error.message}` }
     }
 
     return { success: "Level added successfully", id: newLevel?.id }
@@ -530,5 +532,107 @@ export async function reorderLevelsInCurriculumSet(
   } catch (error) {
     console.error("Error in reorderLevelsInCurriculumSet:", error)
     return { error: "Failed to reorder levels" }
+  }
+}
+
+export async function getVideosForLevel(levelId: string): Promise<Array<{
+  id: string
+  title: string
+  thumbnail_url: string | null
+  duration_seconds: number | null
+}>> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { data, error } = await serviceSupabase
+      .from("video_curriculums")
+      .select("video_id, videos(id, title, thumbnail_url, duration_seconds)")
+      .eq("curriculum_id", levelId)
+
+    if (error) {
+      console.error("Error fetching videos for level:", error)
+      return []
+    }
+
+    return (data || []).map((row: any) => row.videos).filter(Boolean)
+  } catch (error) {
+    console.error("Error in getVideosForLevel:", error)
+    return []
+  }
+}
+
+export async function addVideoToLevel(levelId: string, videoId: string): Promise<{ success?: string; error?: string }> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase
+      .from("video_curriculums")
+      .upsert({ curriculum_id: levelId, video_id: videoId }, { onConflict: "curriculum_id,video_id" })
+
+    if (error) {
+      console.error("Error adding video to level:", error)
+      return { error: "Failed to add video to level" }
+    }
+
+    return { success: "Video added to level" }
+  } catch (error) {
+    console.error("Error in addVideoToLevel:", error)
+    return { error: "Failed to add video to level" }
+  }
+}
+
+export async function removeVideoFromLevel(levelId: string, videoId: string): Promise<{ success?: string; error?: string }> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { error } = await serviceSupabase
+      .from("video_curriculums")
+      .delete()
+      .eq("curriculum_id", levelId)
+      .eq("video_id", videoId)
+
+    if (error) {
+      console.error("Error removing video from level:", error)
+      return { error: "Failed to remove video from level" }
+    }
+
+    return { success: "Video removed from level" }
+  } catch (error) {
+    console.error("Error in removeVideoFromLevel:", error)
+    return { error: "Failed to remove video from level" }
+  }
+}
+
+export async function getAvailableVideos(search?: string): Promise<Array<{
+  id: string
+  title: string
+  thumbnail_url: string | null
+  duration_seconds: number | null
+}>> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    let query = serviceSupabase
+      .from("videos")
+      .select("id, title, thumbnail_url, duration_seconds")
+      .eq("is_published", true)
+      .order("title", { ascending: true })
+      .limit(50)
+
+    if (search) {
+      query = query.ilike("title", `%${search}%`)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Error fetching available videos:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Error in getAvailableVideos:", error)
+    return []
   }
 }
