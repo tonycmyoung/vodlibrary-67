@@ -18,6 +18,16 @@ import { useToast } from "@/hooks/use-toast"
 vi.mock("@/lib/actions/curriculums")
 vi.mock("@/hooks/use-toast")
 
+// Mock the Dialog component to avoid portal issues in tests
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+    open ? <div role="dialog" data-testid="dialog">{children}</div> : null,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}))
+
 global.confirm = vi.fn()
 
 describe("CurriculumSetsManagement", () => {
@@ -148,7 +158,7 @@ describe("CurriculumSetsManagement", () => {
     const addButton = screen.getByRole("button", { name: /new curriculum set/i })
     await user.click(addButton)
 
-    const nameInput = screen.getByPlaceholderText(/curriculum set name/i)
+    const nameInput = screen.getByPlaceholderText(/e\.g\., Okinawa Kobudo Australia/i)
     await user.type(nameInput, "New Set")
 
     const saveButton = screen.getByRole("button", { name: /^save$/i })
