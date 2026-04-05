@@ -196,10 +196,9 @@ describe("CurriculumSetsManagement", () => {
     expect(nameInput).toBeTruthy()
     await user.type(nameInput, "Yellow Belt")
 
-    // The dialog should have exactly one save button for level creation
-    const saveButtons = screen.getAllByRole("button", { name: /^save$/i })
-    const levelSaveButton = saveButtons[saveButtons.length - 1] // Get the last/latest save button
-    await user.click(levelSaveButton)
+    // The Add Level dialog has an "Add" button, not "Save"
+    const addButton = screen.getByRole("button", { name: /^add$/i })
+    await user.click(addButton)
 
     await waitFor(() => {
       expect(addLevelToCurriculumSet).toHaveBeenCalledWith(
