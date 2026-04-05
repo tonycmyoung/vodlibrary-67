@@ -82,6 +82,8 @@ interface UserInterface {
   inviter?: { full_name: string } | null
   current_belt_id: string | null
   current_belt?: Curriculum | null
+  curriculum_set_id: string | null
+  curriculum_set?: { id: string; name: string } | null
 }
 
 // Helper to get role badge class - extracted to reduce cognitive complexity
@@ -581,10 +583,26 @@ const UserActionButtons = ({
       </select>
 
       <select
+        value={user.curriculum_set_id || ""}
+        onChange={(e) => updateUserCurriculumSet(user.id, e.target.value || null)}
+        disabled={isProcessing || isEditing}
+        className={STYLES.selectDropdown}
+        title="Curriculum Set"
+      >
+        <option value="">No curriculum set</option>
+        {curriculumSets.map((set) => (
+          <option key={set.id} value={set.id}>
+            {set.name}
+          </option>
+        ))}
+      </select>
+
+      <select
         value={user.current_belt_id || ""}
         onChange={(e) => updateUserBelt(user.id, e.target.value || null)}
         disabled={isProcessing || isEditing}
         className={STYLES.selectDropdown}
+        title="Current Belt"
       >
         <option value="">No belt</option>
         {curriculums.map((curriculum) => (
@@ -630,11 +648,13 @@ interface UserRowProps extends PasswordResetState, PasswordResetActions {
   editValues: EditValuesType
   setEditValues: SetEditValuesType
   curriculums: Curriculum[]
+  curriculumSets: Array<{ id: string; name: string }>
   startEditing: (user: UserInterface) => void
   saveEditing: () => void
   cancelEditing: () => void
   updateUserRole: (userId: string, role: string) => void
   updateUserBelt: (userId: string, beltId: string | null) => void
+  updateUserCurriculumSet: (userId: string, setId: string | null) => void
   toggleUserApproval: (userId: string, currentStatus: boolean) => void
   deleteUser: (userId: string, email: string) => void
 }
@@ -651,6 +671,7 @@ const UserRow = ({
   showPassword,
   resetPasswordError,
   curriculums,
+  curriculumSets,
   setResetPasswordUser,
   setNewPassword,
   setShowPassword,
@@ -660,6 +681,7 @@ const UserRow = ({
   cancelEditing,
   updateUserRole,
   updateUserBelt,
+  updateUserCurriculumSet,
   toggleUserApproval,
   deleteUser,
   generateRandomPassword,
@@ -763,6 +785,7 @@ export default function UserManagement() {
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
+  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
 
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{
@@ -952,6 +975,8 @@ export default function UserManagement() {
   const fetchCurriculums = async () => {
     try {
       const supabase = createClient()
+      
+      // Fetch curriculum levels
       const { data, error } = await supabase
         .from("curriculums")
         .select("id, name, color, display_order")
@@ -959,6 +984,15 @@ export default function UserManagement() {
 
       if (error) throw error
       setCurriculums(data || [])
+
+      // Fetch curriculum sets
+      const { data: setsData, error: setsError } = await supabase
+        .from("curriculum_sets")
+        .select("id, name")
+        .order("created_at", { ascending: true })
+
+      if (setsError) throw setsError
+      setCurriculumSets(setsData || [])
     } catch (error) {
       console.error("Error fetching curriculums:", error)
     }
@@ -974,7 +1008,9 @@ export default function UserManagement() {
           id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url,
           inviter:invited_by(full_name),
           current_belt_id,
-          current_belt:curriculums!current_belt_id(id, name, color, display_order)
+          current_belt:curriculums!current_belt_id(id, name, color, display_order),
+          curriculum_set_id,
+          curriculum_set:curriculum_sets(id, name)
         `)
         .order("created_at", { ascending: false })
 
@@ -1126,6 +1162,39 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Error updating user belt:", error)
       alert("Failed to update user belt. Please try again.")
+    } finally {
+      setProcessingUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
+    }
+  }
+
+  const updateUserCurriculumSet = async (userId: string, newSetId: string | null) => {
+    setProcessingUsers((prev) => new Set(prev).add(userId))
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("users").update({ curriculum_set_id: newSetId }).eq("id", userId)
+
+      if (error) throw error
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                curriculum_set_id: newSetId,
+                curriculum_set: newSetId ? curriculumSets.find((s) => s.id === newSetId) || null : null,
+              }
+            : user,
+        ),
+      )
+    } catch (error) {
+      console.error("Error updating user curriculum set:", error)
+      alert("Failed to update curriculum set. Please try again.")
     } finally {
       setProcessingUsers((prev) => {
         const newSet = new Set(prev)
@@ -1367,6 +1436,7 @@ export default function UserManagement() {
               showPassword={showPassword}
               resetPasswordError={resetPasswordError}
               curriculums={curriculums}
+              curriculumSets={curriculumSets}
               setResetPasswordUser={setResetPasswordUser}
               setNewPassword={setNewPassword}
               setShowPassword={setShowPassword}
@@ -1376,6 +1446,7 @@ export default function UserManagement() {
               cancelEditing={cancelEditing}
               updateUserRole={updateUserRole}
               updateUserBelt={updateUserBelt}
+              updateUserCurriculumSet={updateUserCurriculumSet}
               toggleUserApproval={toggleUserApproval}
               deleteUser={deleteUser}
               generateRandomPassword={generateRandomPassword}
