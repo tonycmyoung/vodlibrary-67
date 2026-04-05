@@ -304,10 +304,17 @@ export default function CurriculumSetsManagement() {
               <p className="text-sm text-gray-400">No curriculum sets yet</p>
             ) : (
               sets.map((set) => (
-                <button
+                <div
                   key={set.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => fetchSetDetails(set.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      fetchSetDetails(set.id)
+                    }
+                  }}
                   className={`w-full text-left p-3 rounded-lg cursor-pointer border transition ${
                     selectedSet?.id === set.id
                       ? "border-purple-500 bg-purple-500/10"
@@ -347,7 +354,7 @@ export default function CurriculumSetsManagement() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>

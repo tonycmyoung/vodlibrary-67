@@ -617,7 +617,9 @@ describe("UserManagement", () => {
       render(<UserManagement />)
 
       await waitFor(() => {
-        expect(screen.getByText("Okinawa Kobudo Australia")).toBeTruthy()
+        // Multiple elements exist with this text (dropdown options), so use getAllByText
+        const elements = screen.getAllByText("Okinawa Kobudo Australia")
+        expect(elements.length).toBeGreaterThan(0)
       })
     })
 
