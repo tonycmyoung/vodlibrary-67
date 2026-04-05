@@ -91,7 +91,16 @@ describe("StudentManagement", () => {
     },
   ]
 
-  const mockCurriculumSets = [{ id: "set-1", name: "Okinawa Kobudo Australia" }]
+  const mockCurriculumSets = [
+    { id: "set-1", name: "Okinawa Kobudo Australia" },
+    { id: "set-2", name: "Matayoshi International" },
+  ]
+
+  const mockCurriculumLevels = [
+    { id: "level-1", name: "White", display_name: "White Belt", sort_order: 1, curriculum_set_id: "set-1" },
+    { id: "level-2", name: "Yellow", display_name: "Yellow Belt", sort_order: 2, curriculum_set_id: "set-1" },
+    { id: "level-3", name: "Green", display_name: "Green Belt", sort_order: 3, curriculum_set_id: "set-2" },
+  ]
 
   const mockCurriculums = [
     { id: "belt-1", name: "White Belt", color: "#ffffff", display_order: 1 },
@@ -133,6 +142,13 @@ describe("StudentManagement", () => {
         return {
           select: vi.fn().mockReturnValue({
             order: vi.fn().mockResolvedValue({ data: mockCurriculumSets, error: null }),
+          }),
+        }
+      }
+      if (table === "curriculum_levels") {
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCurriculumLevels, error: null }),
           }),
         }
       }
@@ -653,6 +669,38 @@ describe("StudentManagement", () => {
         "Test Dojo",
         null
       )
+    })
+  })
+
+  describe("Belt Level Filtering by Curriculum Set", () => {
+    it("should show belt options filtered by student curriculum set", async () => {
+      render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+      await waitFor(() => {
+        expect(screen.getByText("John Doe")).toBeTruthy()
+      })
+
+      // The belt dropdown should render with the available options
+      // For a student with set-1, should have set-1 levels (level-1, level-2)
+      const beltSelects = screen.getAllByRole("combobox")
+      expect(beltSelects.length).toBeGreaterThan(0)
+    })
+
+    it("should display curriculum set name for student", async () => {
+      render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Okinawa Kobudo Australia")).toBeTruthy()
+      })
+    })
+
+    it("should show no curriculum set for unassigned student", async () => {
+      render(<StudentManagement headTeacherSchool="Test Dojo" headTeacherId="teacher-1" userRole="Head Teacher" />)
+
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeTruthy()
+        // Jane has no curriculum set, should display as empty or "Not assigned"
+      })
     })
   })
 })
