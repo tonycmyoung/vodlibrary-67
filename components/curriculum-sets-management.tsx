@@ -2,13 +2,11 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Pencil, Trash2, MoreVertical, ChevronUp, ChevronDown, Loader2 } from "lucide-react"
 import {
   getCurriculumSets,
@@ -299,50 +297,221 @@ export default function CurriculumSetsManagement() {
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Sets List */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Curriculum Sets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {sets.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No curriculum sets yet</p>
-                ) : (
-                  sets.map((set) => (
-                    <div
-                      key={set.id}
-                      onClick={() => fetchSetDetails(set.id)}
-                      className={`p-3 rounded-lg cursor-pointer border transition ${
-                        selectedSet?.id === set.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
+        <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+          <h3 className="text-lg font-semibold text-white mb-4">Curriculum Sets</h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {sets.length === 0 ? (
+              <p className="text-sm text-gray-400">No curriculum sets yet</p>
+            ) : (
+              sets.map((set) => (
+                <div
+                  key={set.id}
+                  onClick={() => fetchSetDetails(set.id)}
+                  className={`p-3 rounded-lg cursor-pointer border transition ${
+                    selectedSet?.id === set.id
+                      ? "border-purple-500 bg-purple-500/10"
+                      : "border-gray-700 hover:border-gray-600 bg-gray-800/50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-white truncate">{set.name}</p>
+                      {set.description && (
+                        <p className="text-xs text-gray-400 line-clamp-2">{set.description}</p>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingSet(set)
+                            setSetFormData({ name: set.name, description: set.description || "" })
+                            setIsAddSetDialogOpen(true)
+                          }}
+                          className="text-gray-200 hover:bg-gray-700 cursor-pointer"
+                        >
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteSet(set.id)}
+                          className="text-red-400 hover:bg-red-500/10 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Levels Management */}
+        <div className="lg:col-span-2">
+          {selectedSet ? (
+            <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{selectedSet.name}</h3>
+                  {selectedSet.description && (
+                    <p className="text-sm text-gray-400 mt-1">{selectedSet.description}</p>
+                  )}
+                </div>
+                <Dialog open={isAddLevelDialogOpen} onOpenChange={setIsAddLevelDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setEditingLevel(null)
+                        setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
+                      }}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
-                      <div className="flex items-start justify-between">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Level
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">{editingLevel ? "Edit" : "Add"} Level</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={editingLevel ? handleUpdateLevel : handleAddLevel} className="space-y-4">
+                      <div>
+                        <label htmlFor="level-name" className="block text-sm font-medium text-gray-200 mb-1">
+                          Level Name
+                        </label>
+                        <Input
+                          id="level-name"
+                          placeholder="e.g., 1st Kyu"
+                          value={levelFormData.name}
+                          onChange={(e) => setLevelFormData({ ...levelFormData, name: e.target.value })}
+                          className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="level-description" className="block text-sm font-medium text-gray-200 mb-1">
+                          Description
+                        </label>
+                        <Textarea
+                          id="level-description"
+                          placeholder="Describe this level..."
+                          value={levelFormData.description}
+                          onChange={(e) => setLevelFormData({ ...levelFormData, description: e.target.value })}
+                          className="bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="level-color" className="block text-sm font-medium text-gray-200 mb-2">
+                          Color
+                        </label>
+                        <div className="flex gap-2 flex-wrap">
+                          {PRESET_COLORS.map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`w-8 h-8 rounded border-2 transition ${
+                                levelFormData.color === color ? "border-white" : "border-gray-600"
+                              }`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setLevelFormData({ ...levelFormData, color })}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsAddLevelDialogOpen(false)}
+                          className="bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={savingSet || !levelFormData.name}
+                          className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                        >
+                          {savingSet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {editingLevel ? "Update" : "Add"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {selectedSet.levels.length === 0 ? (
+                  <p className="text-sm text-gray-400">No levels in this curriculum set</p>
+                ) : (
+                  selectedSet.levels.map((level, index) => (
+                    <div key={level.id} className="p-3 rounded-lg border border-gray-700 bg-gray-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div
+                          className="w-6 h-6 rounded-full border border-gray-600"
+                          style={{ backgroundColor: level.color }}
+                          title={level.color}
+                        />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{set.name}</p>
-                          {set.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">{set.description}</p>
+                          <p className="font-medium text-sm text-white">{level.name}</p>
+                          {level.description && (
+                            <p className="text-xs text-gray-400 line-clamp-1">{level.description}</p>
                           )}
                         </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          onClick={() => handleMoveLevel(level, "up")}
+                          disabled={index === 0}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          onClick={() => handleMoveLevel(level, "down")}
+                          disabled={index === selectedSet.levels.length - 1}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
                             <DropdownMenuItem
                               onClick={() => {
-                                setEditingSet(set)
-                                setSetFormData({ name: set.name, description: set.description || "" })
-                                setIsAddSetDialogOpen(true)
+                                setEditingLevel(level)
+                                setLevelFormData({
+                                  name: level.name,
+                                  description: level.description || "",
+                                  color: level.color,
+                                })
+                                setIsAddLevelDialogOpen(true)
                               }}
+                              className="text-gray-200 hover:bg-gray-700 cursor-pointer"
                             >
                               <Pencil className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteSet(set.id)} className="text-destructive">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteLevel(level.id)}
+                              className="text-red-400 hover:bg-red-500/10 cursor-pointer"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -352,175 +521,11 @@ export default function CurriculumSetsManagement() {
                   ))
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Levels Management */}
-        <div className="lg:col-span-2">
-          {selectedSet ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{selectedSet.name}</CardTitle>
-                    {selectedSet.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedSet.description}</p>
-                    )}
-                  </div>
-                  <Dialog open={isAddLevelDialogOpen} onOpenChange={setIsAddLevelDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        onClick={() => {
-                          setEditingLevel(null)
-                          setLevelFormData({ name: "", description: "", color: PRESET_COLORS[0] })
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Level
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>{editingLevel ? "Edit" : "Add"} Level</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={editingLevel ? handleUpdateLevel : handleAddLevel} className="space-y-4">
-                        <div>
-                          <label htmlFor="level-name" className="block text-sm font-medium mb-1">
-                            Level Name
-                          </label>
-                          <Input
-                            id="level-name"
-                            placeholder="e.g., 1st Kyu"
-                            value={levelFormData.name}
-                            onChange={(e) => setLevelFormData({ ...levelFormData, name: e.target.value })}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="level-description" className="block text-sm font-medium mb-1">
-                            Description
-                          </label>
-                          <Textarea
-                            id="level-description"
-                            placeholder="Describe this level..."
-                            value={levelFormData.description}
-                            onChange={(e) => setLevelFormData({ ...levelFormData, description: e.target.value })}
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="level-color" className="block text-sm font-medium mb-2">
-                            Color
-                          </label>
-                          <div className="flex gap-2 flex-wrap">
-                            {PRESET_COLORS.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                className={`w-8 h-8 rounded border-2 transition ${
-                                  levelFormData.color === color ? "border-foreground" : "border-transparent"
-                                }`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => setLevelFormData({ ...levelFormData, color })}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 justify-end">
-                          <Button type="button" variant="outline" onClick={() => setIsAddLevelDialogOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button type="submit" disabled={savingSet || !levelFormData.name}>
-                            {savingSet && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {editingLevel ? "Update" : "Add"}
-                          </Button>
-                        </div>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {selectedSet.levels.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No levels in this curriculum set</p>
-                  ) : (
-                    selectedSet.levels.map((level, index) => (
-                      <div key={level.id} className="p-3 rounded-lg border border-border flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div
-                            className="w-6 h-6 rounded-full border"
-                            style={{ backgroundColor: level.color }}
-                            title={level.color}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{level.name}</p>
-                            {level.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-1">{level.description}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => handleMoveLevel(level, "up")}
-                            disabled={index === 0}
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => handleMoveLevel(level, "down")}
-                            disabled={index === selectedSet.levels.length - 1}
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setEditingLevel(level)
-                                  setLevelFormData({
-                                    name: level.name,
-                                    description: level.description || "",
-                                    color: level.color,
-                                  })
-                                  setIsAddLevelDialogOpen(true)
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteLevel(level.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">Select a curriculum set to manage its levels</p>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+              <p className="text-center text-gray-400">Select a curriculum set to manage its levels</p>
+            </div>
           )}
         </div>
       </div>
