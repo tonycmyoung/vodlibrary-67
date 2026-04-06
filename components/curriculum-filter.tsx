@@ -25,68 +25,106 @@ interface Curriculum {
   color: string
   display_order: number
   description?: string | null
+  curriculum_set_id?: string
+  curriculum_set?: { id: string; name: string }
 }
 
 interface CurriculumFilterProps {
   readonly curriculums: Curriculum[]
   readonly selectedCurriculums: string[]
   readonly onCurriculumToggle: (curriculumId: string) => void
+  readonly groupBySet?: boolean
 }
 
 export default function CurriculumFilter({
   curriculums,
   selectedCurriculums,
   onCurriculumToggle,
+  groupBySet = false,
 }: CurriculumFilterProps) {
   // Sort by display_order
   const sortedCurriculums = [...curriculums].sort((a, b) => a.display_order - b.display_order)
 
   if (sortedCurriculums.length === 0) return null
 
+  const renderBadge = (item: Curriculum) => {
+    const isSelected = selectedCurriculums.includes(item.id)
+
+    const badgeStyle = {
+      backgroundColor: isSelected ? item.color : undefined,
+      borderColor: isSelected ? item.color : addTransparency(item.color, "90") || item.color,
+      color: isSelected ? getContrastColor(item.color) : undefined,
+      borderLeftColor: !isSelected ? item.color : undefined,
+      borderLeftWidth: !isSelected ? "4px" : undefined,
+    }
+
+    const badge = (
+      <Badge
+        variant={isSelected ? "default" : "outline"}
+        className={`cursor-pointer transition-all hover:scale-105 relative ${
+          isSelected
+            ? "text-white border-2 shadow-lg"
+            : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
+        }`}
+        style={badgeStyle}
+        onClick={() => onCurriculumToggle(item.id)}
+      >
+        {item.name}
+      </Badge>
+    )
+
+    if (item.description) {
+      return (
+        <Tooltip key={item.id}>
+          <TooltipTrigger asChild>{badge}</TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            {item.description}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    return <div key={item.id}>{badge}</div>
+  }
+
+  // Group curriculums by set if groupBySet is true
+  if (groupBySet) {
+    const curriculumsBySet = sortedCurriculums.reduce(
+      (acc, curr) => {
+        const setId = curr.curriculum_set_id || "unknown"
+        const setName = curr.curriculum_set?.name || "Unknown"
+        if (!acc[setId]) {
+          acc[setId] = { name: setName, curriculums: [] }
+        }
+        acc[setId].curriculums.push(curr)
+        return acc
+      },
+      {} as Record<string, { name: string; curriculums: Curriculum[] }>,
+    )
+
+    return (
+      <TooltipProvider>
+        <div>
+          <div className="text-xs font-medium text-gray-500 mb-2">CURRICULUM</div>
+          <div className="space-y-2">
+            {Object.entries(curriculumsBySet).map(([setId, { name, curriculums: setCurriculums }]) => (
+              <div key={setId} className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-400 min-w-fit">{name}:</span>
+                {setCurriculums.map((item) => renderBadge(item))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </TooltipProvider>
+    )
+  }
+
   return (
     <TooltipProvider>
       <div>
         <div className="text-xs font-medium text-gray-500 mb-2">CURRICULUM</div>
         <div className="flex flex-wrap gap-2">
-          {sortedCurriculums.map((item) => {
-            const isSelected = selectedCurriculums.includes(item.id)
-
-            const badgeStyle = {
-              backgroundColor: isSelected ? item.color : undefined,
-              borderColor: isSelected ? item.color : addTransparency(item.color, "90") || item.color,
-              color: isSelected ? getContrastColor(item.color) : undefined,
-              borderLeftColor: !isSelected ? item.color : undefined,
-              borderLeftWidth: !isSelected ? "4px" : undefined,
-            }
-
-            const badge = (
-              <Badge
-                variant={isSelected ? "default" : "outline"}
-                className={`cursor-pointer transition-all hover:scale-105 relative ${
-                  isSelected
-                    ? "text-white border-2 shadow-lg"
-                    : "bg-gray-800/40 text-gray-100 border-2 hover:border-2 hover:text-white hover:bg-gray-700/60"
-                }`}
-                style={badgeStyle}
-                onClick={() => onCurriculumToggle(item.id)}
-              >
-                {item.name}
-              </Badge>
-            )
-
-            if (item.description) {
-              return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>{badge}</TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    {item.description}
-                  </TooltipContent>
-                </Tooltip>
-              )
-            }
-
-            return <div key={item.id}>{badge}</div>
-          })}
+          {sortedCurriculums.map((item) => renderBadge(item))}
         </div>
       </div>
     </TooltipProvider>

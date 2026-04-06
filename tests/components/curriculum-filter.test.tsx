@@ -5,9 +5,9 @@ import CurriculumFilter from "@/components/curriculum-filter"
 
 describe("CurriculumFilter", () => {
   const mockCurriculums = [
-    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt" },
-    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt" },
-    { id: "curr-3", name: "8.Kyu", color: "#ff8800", display_order: 3 },
+    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt", curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
+    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt", curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
+    { id: "curr-3", name: "8.Kyu", color: "#ff8800", display_order: 3, curriculum_set_id: "set-2", curriculum_set: { id: "set-2", name: "Matayoshi" } },
   ]
 
   const defaultProps = {
@@ -78,5 +78,42 @@ describe("CurriculumFilter", () => {
 
     const selectedBadge = screen.getByText("10.Kyu")
     expect(selectedBadge).toHaveStyle({ backgroundColor: "#ffffff" })
+  })
+
+  describe("groupBySet", () => {
+    it("should render curriculums grouped by set when groupBySet is true", () => {
+      render(<CurriculumFilter {...defaultProps} groupBySet={true} />)
+
+      // Should show set names as labels
+      expect(screen.getByText("Okinawa Kobudo:")).toBeTruthy()
+      expect(screen.getByText("Matayoshi:")).toBeTruthy()
+    })
+
+    it("should render curriculums within their respective sets", () => {
+      render(<CurriculumFilter {...defaultProps} groupBySet={true} />)
+
+      // All curriculum badges should still be present
+      expect(screen.getByText("10.Kyu")).toBeTruthy()
+      expect(screen.getByText("9.Kyu")).toBeTruthy()
+      expect(screen.getByText("8.Kyu")).toBeTruthy()
+    })
+
+    it("should not show set labels when groupBySet is false", () => {
+      render(<CurriculumFilter {...defaultProps} groupBySet={false} />)
+
+      expect(screen.queryByText("Okinawa Kobudo:")).toBeNull()
+      expect(screen.queryByText("Matayoshi:")).toBeNull()
+    })
+
+    it("should still allow toggling curriculums when grouped", async () => {
+      const user = userEvent.setup()
+      const onCurriculumToggle = vi.fn()
+      render(<CurriculumFilter {...defaultProps} onCurriculumToggle={onCurriculumToggle} groupBySet={true} />)
+
+      const curriculumBadge = screen.getByText("8.Kyu")
+      await user.click(curriculumBadge)
+
+      expect(onCurriculumToggle).toHaveBeenCalledWith("curr-3")
+    })
   })
 })

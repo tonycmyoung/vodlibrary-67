@@ -18,8 +18,8 @@ describe("CategoryFilter", () => {
   const mockRecordedValues = ["2023", "2024", "DVD"]
 
   const mockCurriculums = [
-    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1 },
-    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2 },
+    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
+    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
   ]
 
   const defaultProps = {
@@ -177,5 +177,35 @@ describe("CategoryFilter", () => {
     expect(screen.queryByText("Unset")).toBeNull()
     expect(screen.getByText("2023")).toBeTruthy()
     expect(screen.getByText("DVD")).toBeTruthy()
+  })
+
+  it("should pass groupCurriculumsBySet to CurriculumFilter", () => {
+    render(
+      <CategoryFilter
+        {...defaultProps}
+        curriculums={mockCurriculums}
+        selectedCurriculums={[]}
+        onCurriculumToggle={vi.fn()}
+        groupCurriculumsBySet={true}
+      />,
+    )
+
+    // When groupCurriculumsBySet is true, CurriculumFilter should group by set
+    expect(screen.getByText("Okinawa Kobudo:")).toBeTruthy()
+  })
+
+  it("should not group curriculums when groupCurriculumsBySet is false", () => {
+    render(
+      <CategoryFilter
+        {...defaultProps}
+        curriculums={mockCurriculums}
+        selectedCurriculums={[]}
+        onCurriculumToggle={vi.fn()}
+        groupCurriculumsBySet={false}
+      />,
+    )
+
+    // When groupCurriculumsBySet is false, no set labels should appear
+    expect(screen.queryByText("Okinawa Kobudo:")).toBeNull()
   })
 })
