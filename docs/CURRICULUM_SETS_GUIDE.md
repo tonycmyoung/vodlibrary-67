@@ -67,7 +67,7 @@ Students are assigned a single curriculum set, which determines:
 
 ## Database Relationships
 
-```
+\`\`\`
 curriculum_sets (1) ──────── (n) curriculums
                               │
                               └──── (n) videos (via video_curriculums junction table)
@@ -75,7 +75,7 @@ curriculum_sets (1) ──────── (n) curriculums
 curriculum_sets (1) ──────── (n) users (via curriculum_set_id in users table)
 
 users ──────── curriculums (via current_belt_id - user's current training level)
-```
+\`\`\`
 
 **Video Association**: Videos are linked to curricula via the `video_curriculums` junction table, allowing a video to belong to multiple curricula.
 
@@ -141,7 +141,7 @@ users ──────── curriculums (via current_belt_id - user's current
 
 The admin video management page displays curricula grouped by curriculum sets:
 
-```
+\`\`\`
 Okinawa Kobudo:
   ├─ Yellow Belt
   ├─ Orange Belt
@@ -151,7 +151,7 @@ Matayoshi:
   ├─ Level 1
   ├─ Level 2
   └─ Level 3
-```
+\`\`\`
 
 This grouping helps admins:
 - Quickly locate and organize videos
@@ -178,21 +178,21 @@ This grouping helps admins:
 ### Filtering Logic
 
 **Student Video Library Filter**:
-```typescript
+\`\`\`typescript
 if (user.curriculum_set_id) {
   videos = videos.filter(v => 
     v.curriculum?.curriculum_set_id === user.curriculum_set_id
   )
 }
-```
+\`\`\`
 
 **Admin Video Filter**:
-```typescript
+\`\`\`typescript
 // Optional filter by curriculum_set_id for management
 videos = videos.filter(v => 
   !filterSetId || v.curriculum?.curriculum_set_id === filterSetId
 )
-```
+\`\`\`
 
 ## Permissions Matrix
 
