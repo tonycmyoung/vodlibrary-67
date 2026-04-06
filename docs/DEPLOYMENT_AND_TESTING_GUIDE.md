@@ -17,22 +17,21 @@ The application is deployed to Vercel with automatic deployments on push to the 
 
 Required environment variables (configure in Vercel dashboard).
 
-See \`/.env.template\` for a fully documented template with all variables and descriptions.
+See `/env.template` for a fully documented template with all variables and descriptions.
 
 **Required Variables:**
-- \`SUPABASE_URL\`, \`SUPABASE_SERVICE_ROLE_KEY\`, \`SUPABASE_ANON_KEY\`
-- \`NEXT_PUBLIC_SUPABASE_URL\`, \`NEXT_PUBLIC_SUPABASE_ANON_KEY\`
-- \`SUPABASE_JWT_SECRET\`
-- \`RESEND_API_KEY\`, \`FROM_EMAIL\`, \`ADMIN_EMAIL\`
-- \`BLOB_READ_WRITE_TOKEN\`
-- \`NEXT_PUBLIC_FULL_SITE_URL\`, \`NEXT_PUBLIC_SITE_URL\`
-- \`ADMIN_USER\` (super admin email for bootstrap access)
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_JWT_SECRET`
+- `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL`
+- `BLOB_READ_WRITE_TOKEN`
+- `NEXT_PUBLIC_FULL_SITE_URL`, `NEXT_PUBLIC_SITE_URL`
+- `ADMIN_USER` (super admin email for bootstrap access)
 
 **Optional Variables:**
-- \`POSTGRES_*\` variables (auto-populated when connecting Supabase to Vercel)
-- \`STRIPE_*\` variables (for donations/subscriptions)
-- \`NEXT_PUBLIC_DONATE_PAYID\` (PayID for donations)
-- \`NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL\` (dev-specific auth redirects)
+- `STRIPE_*` variables (for donations/subscriptions)
+- `NEXT_PUBLIC_DONATE_PAYID` (PayID for donations)
+- `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL` (dev-specific auth redirects)
 
 ### Supabase Configuration
 
@@ -45,7 +44,7 @@ See \`/.env.template\` for a fully documented template with all variables and de
 
 ### Running Tests Locally
 
-\`\`\`bash
+```bash
 # Install dependencies
 npm install --legacy-peer-deps
 
@@ -57,11 +56,11 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
-\`\`\`
+```
 
 ### Test Structure
 
-\`\`\`
+```
 tests/
 ├── components/     # Component tests (48 files)
 ├── unit/           # Unit tests (21 files)
@@ -70,11 +69,11 @@ tests/
 ├── mocks/          # Mock utilities
 ├── utils/          # Test helpers
 └── setup.ts        # Test configuration
-\`\`\`
+```
 
 ### Code Quality Tools
 
-\`\`\`bash
+```bash
 # Run linting
 npm run lint
 
@@ -89,7 +88,7 @@ npm run format
 
 # Type checking
 npm run type-check
-\`\`\`
+```
 
 ## CI/CD Pipeline
 
@@ -114,19 +113,19 @@ https://sonarcloud.io/project/overview?id=tonycmyoung_vodlibrary-67
 ### Dependency Installation Fails
 
 Use `--legacy-peer-deps` flag:
-\`\`\`bash
+```bash
 npm install --legacy-peer-deps
-\`\`\`
+```
 
 This is required because React 19 has peer dependency conflicts with some packages.
 
 ### Tests Fail Locally
 
 1. Clear node_modules and reinstall:
-   \`\`\`bash
-   rm -rf node_modules package-lock.json
-   npm install --legacy-peer-deps
-   \`\`\`
+```bash
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
 
 2. Verify Node.js version (v18 or v20 required)
 
