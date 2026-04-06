@@ -11,18 +11,23 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ## Key Features
 
 - **Invite-Only Access**: Admin-approved user registration system
-- **Video Library**: Categorized martial arts training videos with search and filtering
-- **User Management**: Role-based access (Student, Teacher, Head Teacher, Admin)
+- **Video Library**: Categorized martial arts training videos with search and filtering by curriculum sets
+- **Curriculum Sets**: Organize belt-levels into structured curriculum pathways (e.g., Okinawa Kobudo, Matayoshi)
+- **User Management**: Role-based access (Student, Teacher, Head Teacher, Admin) with granular permissions
+  - **Admin**: Full system access, manage all users and content
+  - **Head Teacher**: Manage students within their school, assign curriculum sets and belt levels
+  - **Teacher**: View and track students within their school, can only edit belt levels
+  - **Student**: Access videos within their assigned curriculum set
 - **School Separation**: Teachers and Head Teachers can only view/manage students within their school
-- **Curriculum System**: Belt-level curriculum tracking with ordered content
+- **Curriculum System**: Belt-level curriculum tracking with ordered content organized by curriculum sets
 - **Real-Time Notifications**: In-app messaging and email notifications
-- **Content Management**: Full CRUD operations for videos, categories, performers, and curriculums
+- **Content Management**: Full CRUD operations for videos, categories, performers, curriculum sets, and belt levels
 - **Favorites System**: Users can save and organize favorite videos
 - **Legal Compliance**: EULA and Privacy Policy tracking with consent management
-- **Audit Logging**: Comprehensive admin action logging
+- **Audit Logging**: Comprehensive admin action logging for all system changes
 - **Email System**: Rich HTML emails with "OKL Admin" branding
 - **Donation Integration**: PayPal and PayID donation options
-- **Responsive Design**: Mobile-friendly interface
+- **Responsive Design**: Mobile-friendly interface across all user roles
 
 ## Technology Stack
 
@@ -79,11 +84,25 @@ NEXT_PUBLIC_SITE_URL=
 
 ## Documentation
 
-- **[Development Documentation](docs/TY-Kobudo-Library-Development-Documentation.md)** - Architecture, database schema, and detailed technical documentation
+- **[Development Documentation](docs/TY-Kobudo-Library-Development-Documentation.md)** - Architecture, database schema, curriculum system design, and detailed technical documentation
 - **[Deployment Guide](docs/DEPLOYMENT_AND_TESTING_GUIDE.md)** - Deployment and testing instructions
+- **[Curriculum Sets Architecture](docs/CURRICULUM_SETS_GUIDE.md)** - Curriculum sets system design, grouping logic, and admin workflows
 - **[Contributing](CONTRIBUTING.md)** - Guidelines for contributing to this project
 - **[Security Policy](SECURITY.md)** - How to report security vulnerabilities
+- **[License](LICENSE.md)** - License and usage terms
+
+## Curriculum Sets System
+
+The Curriculum Sets system organizes belt levels into structured curriculum pathways, allowing the organization to manage multiple curricula (e.g., Okinawa Kobudo, Matayoshi) within a single video library. Key aspects:
+
+- **Admin Management**: Admins can create and manage curriculum sets from the admin dashboard
+- **Content Organization**: Videos are associated with specific belt levels within curriculum sets
+- **User Assignment**: Head Teachers assign curriculum sets to students, determining which videos they can access
+- **Admin Filtering**: Video management pages display curriculum levels grouped by set for easier organization
+- **User Views**: Student-facing video library is filtered to only show videos from their assigned curriculum set
+
+For detailed information on the curriculum sets architecture and implementation, see [Curriculum Sets Architecture](docs/CURRICULUM_SETS_GUIDE.md).
 
 ## License
 
-Private project for Matayoshi/Okinawa Kobudo Australia.
+This project is proprietary software. See [LICENSE.md](LICENSE.md) for full license terms and usage restrictions.

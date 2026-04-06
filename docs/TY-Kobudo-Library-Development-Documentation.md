@@ -84,7 +84,8 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - profile_image_url: text
 - school: text
 - teacher: text
-- role: text (Student/Teacher/Admin)
+- role: text (Student/Teacher/Head Teacher/Admin)
+- curriculum_set_id: uuid (foreign key to curriculum_sets.id, nullable)
 - is_approved: boolean
 - approved_by: uuid (foreign key to users.id)
 - approved_at: timestamp
@@ -124,6 +125,30 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - id: uuid (primary key)
 - name: character varying
 - created_at: timestamp
+\`\`\`
+
+#### curriculums
+\`\`\`sql
+- id: uuid (primary key)
+- name: text (unique within curriculum_set)
+- description: text
+- level_order: integer (display order within set)
+- is_active: boolean
+- curriculum_set_id: uuid (foreign key to curriculum_sets.id)
+- created_by: uuid (foreign key to users.id)
+- created_at: timestamp
+- updated_at: timestamp
+\`\`\`
+
+#### curriculum_sets
+\`\`\`sql
+- id: uuid (primary key)
+- name: text (unique)
+- description: text
+- is_active: boolean
+- created_by: uuid (foreign key to users.id)
+- created_at: timestamp
+- updated_at: timestamp
 \`\`\`
 
 #### notifications
@@ -214,6 +239,9 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 ### Database Relationships
 - Users can create multiple videos (one-to-many)
+- Users can be assigned to a curriculum set (many-to-one via curriculum_set_id)
+- Curriculum sets contain multiple curriculums (one-to-many via curriculum_set_id)
+- Videos are associated with curriculums within a curriculum set (many-to-one via curriculum_id)
 - Videos can have multiple categories (many-to-many via video_categories)
 - Videos can have multiple performers (many-to-many via video_performers)
 - Users can favorite multiple videos (many-to-many via user_favorites)
@@ -230,8 +258,10 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ### Authorization Levels
 - **Unauthenticated**: Access to login/signup pages only
 - **Pending User**: Access to pending approval page only
-- **Approved User**: Full access to video library and user features
-- **Admin**: Full system access including admin panel
+- **Student**: Access to video library filtered by assigned curriculum set, view favorites
+- **Teacher**: View students in their school, edit student belt levels (read-only curriculum set display)
+- **Head Teacher**: Manage students in their school, edit both curriculum set and belt levels, view analytics
+- **Admin**: Full system access including user management, video management, curriculum sets management, notifications, audit logs
 
 ### Security Features
 - Row Level Security (RLS) policies on all database tables
@@ -426,14 +456,25 @@ NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 
 ### Video Library System
 - **Video Management**: Upload, categorize, and publish videos
-- **Search & Filtering**: Full-text search across titles, descriptions, and performers
+- **Search & Filtering**: Full-text search across titles, descriptions, and performers with curriculum set filtering
 - **Categorization**: Multi-category tagging system
 - **Performer Tagging**: Associate videos with specific martial artists
+- **Curriculum Organization**: Videos organized by curriculum sets and belt levels within those sets
 - **Favorites System**: Users can save and organize favorite videos
+
+### Curriculum Sets System
+- **Multiple Curriculum Support**: Organize belt levels into separate curriculum pathways (e.g., Okinawa Kobudo, Matayoshi)
+- **Structured Content**: Each curriculum set contains ordered belt levels for progressive learning
+- **User Assignment**: Head Teachers assign curriculum sets to students, controlling content access
+- **Admin Management**: Full CRUD operations for curriculum sets and curricula from admin dashboard
+- **Curriculum Grouping**: Videos associated with specific curricula within assigned curriculum sets
+- **Flexible Organization**: Supports multiple, independent curriculum structures within single library
 
 ### User Management
 - **Invite-Only Registration**: Admin approval required for new users
-- **Role-Based Access**: Student, Teacher, Admin roles
+- **Role-Based Access**: Student, Teacher, Head Teacher, Admin roles with specific permissions
+- **School-Based Filtering**: Teachers and Head Teachers only see students in their school
+- **Curriculum Assignment**: Head Teachers can assign curriculum sets to students
 - **Profile Management**: User profiles with image uploads
 - **User Invitation**: Existing users can invite new members
 
