@@ -85,7 +85,7 @@ export default async function MyLevelPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" nextBeltName={nextBeltName} />
+      <VideoLibrary maxCurriculumOrder={maxCurriculumOrder} storagePrefix="myLevel" nextBeltName={nextBeltName} userProfile={{ curriculum_set_id: userProfile?.curriculum_set_id }} />
     </div>
   )
 }

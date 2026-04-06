@@ -247,11 +247,11 @@ describe("VideoLibrary", () => {
   const mockVideoCurriculums = [
     {
       video_id: "video-1",
-      curriculums: { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt" },
+      curriculums: { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt", curriculum_set_id: "set-1" },
     },
     {
       video_id: "video-2",
-      curriculums: { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt" },
+      curriculums: { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt", curriculum_set_id: "set-1" },
     },
   ]
 

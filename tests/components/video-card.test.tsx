@@ -38,8 +38,8 @@ describe("VideoCard", () => {
     ],
     performers: [{ id: "perf-1", name: "John Doe" }],
     curriculums: [
-      { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1 },
-      { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2 },
+      { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1" },
+      { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-1" },
     ],
   }
 
@@ -246,5 +246,49 @@ describe("VideoCard", () => {
     render(<VideoCard video={videoWithUnsetRecorded} />)
 
     expect(screen.queryByText("Unset")).toBeNull()
+  })
+
+  it("should filter curriculums by user curriculum set", () => {
+    const videoWithMultipleSets = {
+      ...mockVideo,
+      curriculums: [
+        { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1" },
+        { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-2" },
+        { id: "curr-3", name: "8.Kyu", color: "#00ff00", display_order: 3, curriculum_set_id: "set-1" },
+      ],
+    }
+    render(<VideoCard video={videoWithMultipleSets} userCurriculumSetId="set-1" />)
+
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("8.Kyu")).toBeTruthy()
+    expect(screen.queryByText("9.Kyu")).toBeNull()
+  })
+
+  it("should show all curriculums when no user curriculum set specified", () => {
+    const videoWithMultipleSets = {
+      ...mockVideo,
+      curriculums: [
+        { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1" },
+        { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-2" },
+      ],
+    }
+    render(<VideoCard video={videoWithMultipleSets} />)
+
+    expect(screen.getByText("10.Kyu")).toBeTruthy()
+    expect(screen.getByText("9.Kyu")).toBeTruthy()
+  })
+
+  it("should show no curriculums when none match user set", () => {
+    const videoWithMultipleSets = {
+      ...mockVideo,
+      curriculums: [
+        { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-2" },
+        { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-2" },
+      ],
+    }
+    render(<VideoCard video={videoWithMultipleSets} userCurriculumSetId="set-1" />)
+
+    expect(screen.queryByText("10.Kyu")).toBeNull()
+    expect(screen.queryByText("9.Kyu")).toBeNull()
   })
 })
