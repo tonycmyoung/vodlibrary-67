@@ -140,17 +140,17 @@ Copy \`.env.template\` to \`.env.local\` for a fully documented template. Key va
 | \`RESEND_API_KEY\` | Yes | Resend email API key |
 | \`FROM_EMAIL\` | Yes | Verified sender email address |
 | \`ADMIN_EMAIL\` | Yes | Admin notification recipient |
-| \`ADMIN_USER\` | Yes | Super admin email (bootstrap access) |
+| \`ADMIN_USER\` | Yes | Super admin login email (bootstrap access) |
 | \`BLOB_READ_WRITE_TOKEN\` | Yes* | Vercel Blob storage token |
-| \`NEXT_PUBLIC_FULL_SITE_URL\` | Yes | Full site URL with protocol |
-| \`NEXT_PUBLIC_SITE_URL\` | Yes | Site URL for auth redirects |
-| \`STRIPE_SECRET_KEY\` | No | Stripe server-side key |
-| \`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY\` | No | Stripe client-side key |
+| \`NEXT_PUBLIC_FULL_SITE_URL\` | Yes | Production site URL (used in emails/links) |
+| \`NEXT_PUBLIC_SITE_URL\` | Yes | Current deployment URL (for auth redirects) |
+| \`STRIPE_SECRET_KEY\` | No | Stripe server-side key (use test keys for non-prod) |
+| \`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY\` | No | Stripe client-side key (use test keys for non-prod) |
 | \`NEXT_PUBLIC_DONATE_PAYID\` | No | PayID for donations |
 
 *Profile image uploads will fail without blob storage configured.
 
-See \`.env.template\` for a complete list with descriptions.
+See \`env.template\` for a complete list with descriptions.
 
 ## Documentation
 
