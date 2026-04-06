@@ -39,7 +39,7 @@ const mockVideosData = [
     created_at: "2024-01-01T00:00:00Z",
     recorded: "2024-01",
     video_categories: [{ categories: { id: "cat-1", name: "Basics", color: "#ff0000" } }],
-    video_curriculums: [{ curriculums: { id: "curr-1", name: "White Belt", color: "#ffffff", display_order: 1 } }],
+    video_curriculums: [{ curriculums: { id: "curr-1", name: "White Belt", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } } }],
     video_performers: [{ performers: { id: "perf-1", name: "John Doe" } }],
   },
   {

@@ -26,8 +26,8 @@ vi.mock("@/components/ui/dialog", () => ({
 
 describe("VideoModal", () => {
   const mockCurriculums = [
-    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1 },
-    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2 },
+    { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
+    { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, curriculum_set_id: "set-1", curriculum_set: { id: "set-1", name: "Okinawa Kobudo" } },
   ]
 
   const mockCategories = [
@@ -113,7 +113,7 @@ describe("VideoModal", () => {
     expect(screen.getByLabelText("Recorded")).toBeTruthy()
   })
 
-  it("should render curriculum checkboxes", () => {
+  it("should render curriculum checkboxes grouped by set", () => {
     render(
       <VideoModal
         isOpen={true}
@@ -126,6 +126,9 @@ describe("VideoModal", () => {
       />,
     )
 
+    // Should show set name as a header
+    expect(screen.getByText("Okinawa Kobudo")).toBeTruthy()
+    // Should still show curriculum levels
     expect(screen.getByText("10.Kyu")).toBeTruthy()
     expect(screen.getByText("9.Kyu")).toBeTruthy()
   })

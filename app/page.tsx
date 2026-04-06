@@ -35,6 +35,7 @@ export default async function Home() {
       full_name, 
       profile_image_url, 
       role,
+      curriculum_set_id,
       current_belt:curriculums!current_belt_id(id, name, display_order, color)
     `)
     .eq("id", user.id)
@@ -58,7 +59,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
       <Header user={userWithEmail} />
-      <VideoLibrary />
+      <VideoLibrary userProfile={{ curriculum_set_id: userProfile?.curriculum_set_id }} />
     </div>
   )
 }

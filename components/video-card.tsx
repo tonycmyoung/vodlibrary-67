@@ -25,6 +25,7 @@ interface Video {
     name: string
     color: string
     display_order: number
+    curriculum_set_id?: string
   }>
   categories: Array<{
     id: string
@@ -42,6 +43,7 @@ interface VideoCardProps {
   readonly isFavorited?: boolean
   readonly onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
   readonly viewCount?: number
+  readonly userCurriculumSetId?: string | null
 }
 
 const VideoCard = memo(function VideoCard({
@@ -49,6 +51,7 @@ const VideoCard = memo(function VideoCard({
   isFavorited: initialIsFavorited = false,
   onFavoriteToggle,
   viewCount,
+  userCurriculumSetId,
 }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [user, setUser] = useState<any>(null)
@@ -58,10 +61,10 @@ const VideoCard = memo(function VideoCard({
     const getUser = async () => {
       try {
         const supabase = createClient()
-        const {
-          data: { user: userData },
-        } = await supabase.auth.getUser()
-        setUser(userData)
+        const result = await supabase.auth.getUser()
+        if (result?.data?.user) {
+          setUser(result.data.user)
+        }
       } catch (error) {
         console.error("Error getting user:", error)
       }
@@ -112,7 +115,12 @@ const VideoCard = memo(function VideoCard({
 
   const validCategories = (video.categories || []).filter((category) => category?.id && category?.name)
   const validCurriculums = (video.curriculums || [])
-    .filter((curriculum) => curriculum?.id && curriculum?.name)
+    .filter((curriculum) => {
+      if (!curriculum?.id || !curriculum?.name) return false
+      // Filter by user's curriculum set if specified
+      if (userCurriculumSetId && curriculum.curriculum_set_id !== userCurriculumSetId) return false
+      return true
+    })
     .sort((a, b) => a.display_order - b.display_order)
 
   const handleVideoClick = async (e: React.MouseEvent) => {

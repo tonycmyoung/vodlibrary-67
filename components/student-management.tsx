@@ -32,7 +32,7 @@ import { deleteUserCompletely } from "@/lib/actions"
 import { formatDate } from "@/lib/utils/date"
 import UserSortControl from "@/components/user-sort-control"
 import UserFilter from "@/components/user-filter"
-import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher } from "@/lib/actions/users"
+import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher, assignCurriculumSetToUser } from "@/lib/actions/users"
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
 
@@ -52,11 +52,16 @@ interface UserInterface {
   last_view: string | null
   view_count: number
   current_belt_id: string | null
+  curriculum_set_id: string | null
   current_belt?: {
     id: string
     name: string
     color: string
     display_order: number
+  } | null
+  curriculum_set?: {
+    id: string
+    name: string
   } | null
   inviter?: {
     full_name: string
@@ -103,11 +108,13 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     teacher: string
     school: string
     current_belt_id: string | null
+    curriculum_set_id: string | null
   }>({
     full_name: "",
     teacher: "",
     school: "",
     current_belt_id: null,
+    curriculum_set_id: null,
   })
 
   // Use URL state for filters (state is managed by hook)
@@ -119,6 +126,10 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   const [curriculums, setCurriculums] = useState<
     Array<{ id: string; name: string; color: string; display_order: number }>
   >([])
+  const [curriculumSets, setCurriculumSets] = useState<Array<{ id: string; name: string }>>([])
+  const [curriculumLevelsBySet, setCurriculumLevelsBySet] = useState<
+    Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>>
+  >({})
 
   const processedData = useMemo(() => {
     if (!users.length) return { roles: [], schools: [], belts: [] }
@@ -287,15 +298,45 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
 
+    // Fetch curriculum sets
+    const { data: setsData, error: setsError } = await supabase
+      .from("curriculum_sets")
+      .select("id, name")
+      .order("created_at", { ascending: true })
+
+    if (setsError) {
+      console.error("Error fetching curriculum sets:", setsError)
+    } else {
+      setCurriculumSets(setsData || [])
+    }
+
+    // Fetch all curriculums (belt levels) with curriculum_set_id
     const { data, error } = await supabase
       .from("curriculums")
-      .select("id, name, color, display_order")
+      .select("id, name, color, display_order, curriculum_set_id")
       .order("display_order", { ascending: true })
 
     if (error) {
       console.error("Error fetching curriculums:", error)
     } else {
       setCurriculums(data || [])
+
+      // Group curriculums by curriculum_set_id for filtered belt dropdowns
+      const levelsBySet: Record<string, Array<{ id: string; name: string; display_name: string; sort_order: number }>> = {}
+      data?.forEach((curriculum) => {
+        if (curriculum.curriculum_set_id) {
+          if (!levelsBySet[curriculum.curriculum_set_id]) {
+            levelsBySet[curriculum.curriculum_set_id] = []
+          }
+          levelsBySet[curriculum.curriculum_set_id].push({
+            id: curriculum.id,
+            name: curriculum.name,
+            display_name: curriculum.name,
+            sort_order: curriculum.display_order,
+          })
+        }
+      })
+      setCurriculumLevelsBySet(levelsBySet)
     }
   }
 
@@ -409,6 +450,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       teacher: user.teacher || "",
       school: schoolSuffix,
       current_belt_id: user.current_belt_id,
+      curriculum_set_id: user.curriculum_set_id,
     })
   }
 
@@ -419,6 +461,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
       teacher: "",
       school: "",
       current_belt_id: null,
+      curriculum_set_id: null,
     })
   }
 
@@ -488,6 +531,19 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         .toUpperCase()
     }
     return email[0].toUpperCase()
+  }
+
+  const getRoleBadgeClass = (role: string | null): string => {
+    switch (role) {
+      case "Admin":
+        return "bg-red-600 text-white"
+      case "Teacher":
+        return "bg-purple-600 text-white"
+      case "Head Teacher":
+        return "bg-teal-600 text-white"
+      default:
+        return "bg-gray-600 text-white"
+    }
   }
 
   if (loading) {
@@ -639,17 +695,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
           {filteredUsers.map((student) => {
             const isProcessing = processingUsers.has(student.id)
             const isEditing = editingUser === student.id
-
-            let roleBadgeClass: string
-            if (student.role === "Admin") {
-              roleBadgeClass = "bg-red-600 text-white"
-            } else if (student.role === "Teacher") {
-              roleBadgeClass = "bg-purple-600 text-white"
-            } else if (student.role === "Head Teacher") {
-              roleBadgeClass = "bg-teal-600 text-white"
-            } else {
-              roleBadgeClass = "bg-gray-600 text-white"
-            }
+            const roleBadgeClass = getRoleBadgeClass(student.role)
 
             return (
               <div
@@ -795,6 +841,38 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                       )}
 
                       <select
+                        value={isEditing ? editValues.curriculum_set_id || "" : student.curriculum_set_id || ""}
+                        onChange={(e) => {
+                          if (isEditing) {
+                            setEditValues({
+                              ...editValues,
+                              curriculum_set_id: e.target.value || null,
+                            })
+                          } else {
+                            assignCurriculumSetToUser(student.id, e.target.value || "")
+                              .then(() => {
+                                // Refetch to update the UI
+                                fetchStudents()
+                                toast.success("Curriculum set assigned successfully")
+                              })
+                              .catch((error) => {
+                                console.error("Error assigning curriculum set:", error)
+                                toast.error("Failed to assign curriculum set")
+                              })
+                          }
+                        }}
+                        disabled={isProcessing}
+                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">No curriculum set</option>
+                        {curriculumSets.map((set) => (
+                          <option key={set.id} value={set.id}>
+                            {set.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
                         value={isEditing ? editValues.current_belt_id || "" : student.current_belt_id || ""}
                         onChange={(e) => {
                           if (isEditing) {
@@ -810,11 +888,17 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="">No belt</option>
-                        {curriculums.map((curriculum) => (
-                          <option key={curriculum.id} value={curriculum.id}>
-                            {curriculum.name}
-                          </option>
-                        ))}
+                        {student.curriculum_set_id && curriculumLevelsBySet[student.curriculum_set_id]
+                          ? curriculumLevelsBySet[student.curriculum_set_id].map((level) => (
+                              <option key={level.id} value={level.id}>
+                                {level.display_name}
+                              </option>
+                            ))
+                          : curriculums.map((curriculum) => (
+                              <option key={curriculum.id} value={curriculum.id}>
+                                {curriculum.name}
+                              </option>
+                            ))}
                       </select>
 
                       <div className="flex gap-1">

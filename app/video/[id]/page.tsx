@@ -21,6 +21,7 @@ interface User {
   full_name: string | null
   profile_image_url: string | null
   role: string
+  curriculum_set_id?: string | null
 }
 
 interface Video {
@@ -38,6 +39,7 @@ interface Video {
     name: string
     color: string
     display_order: number
+    curriculum_set_id?: string
   }>
   categories: Array<{
     id: string
@@ -73,7 +75,7 @@ export default function VideoPage({ params }: VideoPageProps) {
 
       const { data: userProfile, error: profileError } = await supabase
         .from("users")
-        .select("is_approved, full_name, profile_image_url, role")
+        .select("is_approved, full_name, profile_image_url, role, curriculum_set_id")
         .eq("id", authUser.id)
         .single()
 
@@ -105,7 +107,7 @@ export default function VideoPage({ params }: VideoPageProps) {
         supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", videoId).maybeSingle(),
         supabase
           .from("video_curriculums")
-          .select("curriculums(id, name, color, display_order)")
+          .select("curriculums(id, name, color, display_order, curriculum_set_id)")
           .eq("video_id", videoId),
         supabase.from("video_categories").select("categories(id, name, color)").eq("video_id", videoId),
         supabase.from("video_performers").select("performers(id, name)").eq("video_id", videoId),
@@ -131,7 +133,12 @@ export default function VideoPage({ params }: VideoPageProps) {
         curriculums:
           videoCurriculums
             ?.map((vc: any) => vc.curriculums)
-            .filter(Boolean)
+            .filter((curriculum) => {
+              if (!curriculum) return false
+              // Filter by user's curriculum set if specified
+              if (user.curriculum_set_id && curriculum.curriculum_set_id !== user.curriculum_set_id) return false
+              return true
+            })
             .sort((a, b) => a.display_order - b.display_order) || [],
         categories: videoCategories?.map((vc: any) => vc.categories) || [],
         performers: videoPerformers?.map((vp: any) => vp.performers) || [],

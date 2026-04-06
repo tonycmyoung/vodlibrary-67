@@ -731,9 +731,10 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
       .select(`
-        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id,
+        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id, curriculum_set_id,
         inviter:invited_by(full_name),
-        current_belt:curriculums!current_belt_id(id, name, color, display_order)
+        current_belt:curriculums!current_belt_id(id, name, color, display_order),
+        curriculum_set:curriculum_sets!curriculum_set_id(id, name)
       `)
       .eq("is_approved", true)
       .or(`school.eq.${headTeacherSchool},school.ilike.${headTeacherSchool} %`)
@@ -846,5 +847,84 @@ export async function adminResetUserPassword(userId: string, newPassword: string
   } catch (error) {
     console.error("Error in adminResetUserPassword:", error)
     return { error: "Failed to reset password" }
+  }
+}
+
+// ============================================
+// Curriculum Set Assignment Actions
+// ============================================
+
+export async function assignCurriculumSetToUser(
+  userId: string,
+  curriculumSetId: string,
+): Promise<{ success?: string; error?: string }> {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Verify curriculum set exists
+    const { data: curriculumSet, error: setError } = await serviceSupabase
+      .from("curriculum_sets")
+      .select("id")
+      .eq("id", curriculumSetId)
+      .single()
+
+    if (setError || !curriculumSet) {
+      return { error: "Curriculum set not found" }
+    }
+
+    // Update user's curriculum set
+    const { error: updateError } = await serviceSupabase
+      .from("users")
+      .update({ curriculum_set_id: curriculumSetId })
+      .eq("id", userId)
+
+    if (updateError) {
+      console.error("Error assigning curriculum set:", updateError)
+      return { error: "Failed to assign curriculum set" }
+    }
+
+    return { success: "Curriculum set assigned successfully" }
+  } catch (error) {
+    console.error("Error in assignCurriculumSetToUser:", error)
+    return { error: "Failed to assign curriculum set" }
+  }
+}
+
+export async function getUserWithCurriculumSet(userId: string) {
+  try {
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    const { data: user, error } = await serviceSupabase
+      .from("users")
+      .select(
+        `
+        *,
+        curriculum_sets:curriculum_set_id(
+          id,
+          name,
+          description
+        ),
+        curriculums:current_belt_id(
+          id,
+          name,
+          color,
+          display_order,
+          description,
+          curriculum_set_id
+        )
+      `,
+      )
+      .eq("id", userId)
+      .single()
+
+    if (error) {
+      console.error("Error fetching user with curriculum set:", error)
+      return null
+    }
+
+    return user
+  } catch (error) {
+    console.error("Error in getUserWithCurriculumSet:", error)
+    return null
   }
 }

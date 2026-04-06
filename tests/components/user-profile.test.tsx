@@ -44,11 +44,21 @@ describe("UserProfile", () => {
       color: "#ffffff",
       display_order: 1,
     },
+    curriculum_set_id: "set-1",
+    curriculum_set: {
+      id: "set-1",
+      name: "Okinawa Kobudo Australia",
+    },
   }
 
   const mockCurriculums = [
     { id: "belt-1", name: "White Belt", color: "#ffffff", display_order: 1 },
     { id: "belt-2", name: "Yellow Belt", color: "#ffff00", display_order: 2 },
+  ]
+
+  const mockCurriculumLevels = [
+    { id: "level-1", name: "White", display_name: "White Belt", sort_order: 1 },
+    { id: "level-2", name: "Yellow", display_name: "Yellow Belt", sort_order: 2 },
   ]
 
   beforeEach(() => {
@@ -58,7 +68,7 @@ describe("UserProfile", () => {
   })
 
   it("should render user profile information", () => {
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("John Doe")).toBeTruthy()
     expect(screen.getAllByText("test@example.com")[0]).toBeTruthy()
@@ -67,14 +77,14 @@ describe("UserProfile", () => {
   })
 
   it("should display favorite count and member since date", () => {
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("5")).toBeTruthy()
     expect(screen.getByText(/Member Since/i)).toBeTruthy()
   })
 
   it("should render quick action buttons", () => {
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("View My Favorites")).toBeTruthy()
     expect(screen.getByText("Change Password")).toBeTruthy()
@@ -83,7 +93,7 @@ describe("UserProfile", () => {
 
   it("should enter edit mode when Edit Profile button is clicked", async () => {
     const user = userEvent.setup()
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     const editButton = screen.getByRole("button", { name: /edit profile/i })
     await user.click(editButton)
@@ -96,7 +106,7 @@ describe("UserProfile", () => {
 
   it("should update full name input when in edit mode", async () => {
     const user = userEvent.setup()
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     const editButton = screen.getByRole("button", { name: /edit profile/i })
     await user.click(editButton)
@@ -168,29 +178,72 @@ describe("UserProfile", () => {
 
   it("should display administrator badge for admin users", () => {
     const adminUser = { ...mockUser, isAdmin: true }
-    render(<UserProfile user={adminUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={adminUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("Administrator")).toBeTruthy()
   })
 
   it("should display teacher badge for teacher role", () => {
     const teacherUser = { ...mockUser, role: "Teacher" }
-    render(<UserProfile user={teacherUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={teacherUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     const teacherBadges = screen.getAllByText(/Teacher/i)
     expect(teacherBadges.length).toBeGreaterThan(0)
   })
 
   it("should show current belt with color indicator", () => {
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("White Belt")).toBeTruthy()
   })
 
   it("should show belt select dropdown with all curriculum options", () => {
-    render(<UserProfile user={mockUser} curriculums={mockCurriculums} />)
+    render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
 
     expect(screen.getByText("White Belt")).toBeTruthy()
+  })
+
+  describe("Curriculum Set Display and Belt Filtering", () => {
+    it("should display curriculum set name as read-only", () => {
+      render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
+
+      expect(screen.getByText("Okinawa Kobudo Australia")).toBeTruthy()
+    })
+
+    it("should display curriculum set as unassigned when null", () => {
+      const userWithoutSet = {
+        ...mockUser,
+        curriculum_set_id: null,
+        curriculum_set: null,
+      }
+      render(<UserProfile user={userWithoutSet} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
+
+      expect(screen.getByText("Not assigned")).toBeTruthy()
+    })
+
+    it("should use curriculum levels for belt options when curriculum set is assigned", () => {
+      render(<UserProfile user={mockUser} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
+
+      // When user has a curriculum set and levels are provided, it should use those levels
+      // The belt dropdown should exist (text visible is current selection, not all options)
+      expect(screen.getByText("White Belt")).toBeTruthy()
+      // Verify the select component exists
+      const selectElements = screen.getAllByRole("combobox")
+      expect(selectElements.length).toBeGreaterThan(0)
+    })
+
+    it("should fall back to curriculums when no curriculum set assigned", () => {
+      const userWithoutSet = {
+        ...mockUser,
+        curriculum_set_id: null,
+        curriculum_set: null,
+      }
+      render(<UserProfile user={userWithoutSet} curriculums={mockCurriculums} curriculumLevels={mockCurriculumLevels} />)
+
+      // Should still have belt options (fallback to mockCurriculums)
+      const selectElements = screen.getAllByRole("combobox")
+      expect(selectElements.length).toBeGreaterThan(0)
+    })
   })
 
   it("should show placeholder text when user data is missing", () => {

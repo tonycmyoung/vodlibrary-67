@@ -115,6 +115,7 @@ const DesktopFilterSection = ({
   onCurriculumToggle,
   filterMode,
   onFilterModeChange,
+  showCurriculumFilter,
 }: {
   categories: Category[]
   recordedValues: string[]
@@ -127,6 +128,7 @@ const DesktopFilterSection = ({
   onCurriculumToggle: (id: string) => void
   filterMode: FilterMode
   onFilterModeChange: (mode: FilterMode) => void
+  showCurriculumFilter: boolean
 }) => (
   <div className="hidden lg:block">
     <FilterSection
@@ -136,8 +138,8 @@ const DesktopFilterSection = ({
       selectedCategories={selectedCategories}
       onCategoryToggle={onCategoryToggle}
       videoCount={videoCount}
-      curriculums={curriculums}
-      selectedCurriculums={selectedCurriculums}
+      curriculums={showCurriculumFilter ? curriculums : []}
+      selectedCurriculums={showCurriculumFilter ? selectedCurriculums : []}
       onCurriculumToggle={onCurriculumToggle}
     />
     {selectedCategories.length + selectedCurriculums.length > 1 && (
@@ -159,6 +161,7 @@ const VideoContentSection = ({
   userFavorites,
   onFavoriteToggle,
   favoritesOnly,
+  userCurriculumSetId,
 }: {
   videos: Video[]
   paginatedVideos: Video[]
@@ -171,6 +174,7 @@ const VideoContentSection = ({
   userFavorites: Set<string>
   onFavoriteToggle: (videoId: string, isFavorited: boolean) => void
   favoritesOnly: boolean
+  userCurriculumSetId?: string | null
 }) => {
   if (videos.length === 0) {
     return <NoVideosState favoritesOnly={favoritesOnly} />
@@ -190,6 +194,7 @@ const VideoContentSection = ({
         videos={paginatedVideos}
         userFavorites={userFavorites}
         onFavoriteToggle={onFavoriteToggle}
+        userCurriculumSetId={userCurriculumSetId}
       />
       <PaginationControls
         totalPages={totalPages}
@@ -208,11 +213,13 @@ const VideoDisplay = ({
   videos,
   userFavorites,
   onFavoriteToggle,
+  userCurriculumSetId,
 }: {
   view: "grid" | "list"
   videos: Video[]
   userFavorites: Set<string>
   onFavoriteToggle: (videoId: string, isFavorited: boolean) => void
+  userCurriculumSetId?: string | null
 }) => {
   if (view === "grid") {
     return (
@@ -223,6 +230,7 @@ const VideoDisplay = ({
             video={video}
             isFavorited={userFavorites.has(video.id)}
             onFavoriteToggle={onFavoriteToggle}
+            userCurriculumSetId={userCurriculumSetId}
           />
         ))}
       </div>
@@ -237,6 +245,7 @@ const VideoDisplay = ({
           video={video}
           isFavorited={userFavorites.has(video.id)}
           onFavoriteToggle={onFavoriteToggle}
+          userCurriculumSetId={userCurriculumSetId}
         />
       ))}
     </div>
@@ -377,7 +386,8 @@ function buildVideoWithMetadata(
 // Helper function to process video metadata into filter options - reduces cognitive complexity
 function processVideoMetadata(
   videosToProcess: Video[],
-  maxCurriculumOrder?: number
+  maxCurriculumOrder?: number,
+  userCurriculumSetId?: string | null
 ): {
   categories: Category[]
   curriculums: Curriculum[]
@@ -395,7 +405,7 @@ function processVideoMetadata(
 
   for (const video of videosToProcess) {
     collectCategoriesFromVideo(video, categoryMap)
-    collectCurriculumsFromVideo(video, curriculumMap, maxCurriculumOrder)
+    collectCurriculumsFromVideo(video, curriculumMap, maxCurriculumOrder, userCurriculumSetId)
     collectPerformersFromVideo(video, performerMap)
     collectRecordedFromVideo(video, recordedSet)
   }
@@ -419,10 +429,13 @@ function collectCategoriesFromVideo(video: Video, categoryMap: Map<string, Categ
 function collectCurriculumsFromVideo(
   video: Video,
   curriculumMap: Map<string, Curriculum>,
-  maxCurriculumOrder?: number
+  maxCurriculumOrder?: number,
+  userCurriculumSetId?: string | null
 ) {
   video.curriculums?.forEach((curriculum) => {
     if (!curriculum?.id || !curriculum?.name) return
+    // Filter by user's curriculum set if specified
+    if (userCurriculumSetId && curriculum.curriculum_set_id !== userCurriculumSetId) return
     if (!maxCurriculumOrder || curriculum.display_order <= maxCurriculumOrder) {
       curriculumMap.set(curriculum.id, curriculum)
     }
@@ -502,10 +515,12 @@ export default function VideoLibrary({
     })
   }, [allVideos, maxCurriculumOrder])
 
+  const userCurriculumSetId = userProfile?.curriculum_set_id
+  
   const processedData = useMemo(() => {
     const videosToProcess = maxCurriculumOrder ? filteredByLevel : allVideos
-    return processVideoMetadata(videosToProcess, maxCurriculumOrder)
-  }, [allVideos, filteredByLevel, maxCurriculumOrder])
+    return processVideoMetadata(videosToProcess, maxCurriculumOrder, userCurriculumSetId)
+  }, [allVideos, filteredByLevel, maxCurriculumOrder, userCurriculumSetId])
 
   useEffect(() => {
     let mounted = true
@@ -564,7 +579,7 @@ export default function VideoLibrary({
 
             supabase.from("video_curriculums").select(`
               video_id,
-              curriculums(id, name, color, display_order, description)
+              curriculums(id, name, color, display_order, description, curriculum_set_id)
             `),
 
             supabase.from("video_performers").select(`
@@ -833,8 +848,8 @@ export default function VideoLibrary({
                 selectedCategories={selectedCategories}
                 onCategoryToggle={handleCategoryToggle}
                 videoCount={videos.length}
-                curriculums={curriculums}
-                selectedCurriculums={selectedCurriculums}
+                curriculums={userCurriculumSetId ? curriculums : []}
+                selectedCurriculums={userCurriculumSetId ? selectedCurriculums : []}
                 onCurriculumToggle={handleCurriculumToggle}
                 filterMode={filterMode}
                 onFilterModeChange={handleFilterModeChange}
@@ -858,6 +873,7 @@ export default function VideoLibrary({
           onCurriculumToggle={handleCurriculumToggle}
           filterMode={filterMode}
           onFilterModeChange={handleFilterModeChange}
+          showCurriculumFilter={!!userCurriculumSetId}
         />
 <VideoContentSection
   videos={videos}
@@ -871,6 +887,7 @@ export default function VideoLibrary({
   userFavorites={userFavorites}
   onFavoriteToggle={handleFavoriteToggle}
           favoritesOnly={favoritesOnly}
+          userCurriculumSetId={userCurriculumSetId}
         />
       </div>
     </div>

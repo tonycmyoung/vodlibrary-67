@@ -247,11 +247,11 @@ describe("VideoLibrary", () => {
   const mockVideoCurriculums = [
     {
       video_id: "video-1",
-      curriculums: { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt" },
+      curriculums: { id: "curr-1", name: "10.Kyu", color: "#ffffff", display_order: 1, description: "White belt", curriculum_set_id: "set-1" },
     },
     {
       video_id: "video-2",
-      curriculums: { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt" },
+      curriculums: { id: "curr-2", name: "9.Kyu", color: "#ffff00", display_order: 2, description: "Yellow belt", curriculum_set_id: "set-1" },
     },
   ]
 
@@ -287,7 +287,7 @@ describe("VideoLibrary", () => {
     })
 
     // Mock Supabase queries - matching actual component structure
-    mockSupabase.from.mockImplementation((table: string) => {
+    const mockFromImplementation = (table: string) => {
       if (table === "videos") {
         return {
           select: vi.fn().mockReturnValue({
@@ -317,10 +317,14 @@ describe("VideoLibrary", () => {
         }
       } else {
         return {
-          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         }
       }
-    })
+    }
+    
+    mockSupabase.from = vi.fn(mockFromImplementation)
 
     // Mock localStorage
     Storage.prototype.getItem = vi.fn(() => null)
@@ -758,7 +762,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()
@@ -778,7 +782,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
@@ -813,7 +817,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
@@ -1046,7 +1050,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for initial filter to be applied from URL params
       await waitFor(() => {
@@ -1222,7 +1226,7 @@ describe("VideoLibrary", () => {
   describe("Curriculum Toggle", () => {
     it("should handle curriculum toggle and update selected curriculums", async () => {
       const user = userEvent.setup()
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()

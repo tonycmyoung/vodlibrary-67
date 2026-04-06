@@ -29,6 +29,8 @@ interface Curriculum {
   name: string
   color: string
   display_order: number
+  curriculum_set_id?: string
+  curriculum_set?: { id: string; name: string }
 }
 
 interface Category {
@@ -50,6 +52,33 @@ interface VideoModalProps {
   curriculums: Curriculum[]
   categories: Category[]
   performers: Performer[]
+}
+
+const groupCurriculumsBySet = (curriculums: Curriculum[]) => {
+  const sorted = curriculums.toSorted((a, b) => a.display_order - b.display_order)
+  return sorted.reduce(
+    (acc, curr) => {
+      const setId = curr.curriculum_set_id || "unknown"
+      const setName = curr.curriculum_set?.name || "Unknown"
+      if (!acc[setId]) {
+        acc[setId] = { name: setName, curriculums: [] }
+      }
+      acc[setId].curriculums.push(curr)
+      return acc
+    },
+    {} as Record<string, { name: string; curriculums: Curriculum[] }>,
+  )
+}
+
+const toggleCurriculumId = (
+  currentIds: string[],
+  curriculumId: string,
+  checked: boolean,
+): string[] => {
+  if (checked) {
+    return [...currentIds, curriculumId]
+  }
+  return currentIds.filter((id) => id !== curriculumId)
 }
 
 export default function VideoModal({
@@ -271,40 +300,38 @@ export default function VideoModal({
               </label>
               <div
                 id="video-curriculum-list"
-                className="space-y-2 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
+                className="space-y-3 max-h-40 overflow-y-auto border border-gray-700 rounded p-3 bg-gray-900/30"
               >
-                {curriculums
-                  .toSorted((a, b) => a.display_order - b.display_order)
-                  .map((curriculum) => (
-                    <label
-                      key={curriculum.id}
-                      htmlFor={`curriculum-${curriculum.id}`}
-                      className="flex items-center space-x-2 cursor-pointer"
-                    >
-                      <input
-                        id={`curriculum-${curriculum.id}`}
-                        type="checkbox"
-                        checked={formData.curriculum_ids.includes(curriculum.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              curriculum_ids: [...formData.curriculum_ids, curriculum.id],
-                            })
-                          } else {
-                            setFormData({
-                              ...formData,
-                              curriculum_ids: formData.curriculum_ids.filter((id) => id !== curriculum.id),
-                            })
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-sm font-medium" style={{ color: curriculum.color || "#9ca3af" }}>
-                        {curriculum.name}
-                      </span>
-                    </label>
-                  ))}
+                {Object.entries(groupCurriculumsBySet(curriculums)).map(([setId, { name, curriculums: setCurriculums }]) => (
+                  <div key={setId}>
+                    <div className="text-xs font-semibold text-gray-500 mb-1">{name}</div>
+                    <div className="space-y-1 pl-2">
+                      {setCurriculums.map((curriculum) => (
+                        <label
+                          key={curriculum.id}
+                          htmlFor={`curriculum-${curriculum.id}`}
+                          className="flex items-center space-x-2 cursor-pointer"
+                        >
+                          <input
+                            id={`curriculum-${curriculum.id}`}
+                            type="checkbox"
+                            checked={formData.curriculum_ids.includes(curriculum.id)}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                curriculum_ids: toggleCurriculumId(formData.curriculum_ids, curriculum.id, e.target.checked),
+                              })
+                            }
+                            className="rounded"
+                          />
+                          <span className="text-sm font-medium" style={{ color: curriculum.color || "#9ca3af" }}>
+                            {curriculum.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             <div>

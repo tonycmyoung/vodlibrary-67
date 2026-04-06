@@ -36,6 +36,8 @@ interface Video {
     name: string
     color: string
     display_order: number
+    curriculum_set_id: string
+    curriculum_set?: { id: string; name: string }
   }>
   categories: Array<{
     id: string
@@ -48,11 +50,18 @@ interface Video {
   }>
 }
 
+interface CurriculumSet {
+  id: string
+  name: string
+}
+
 interface Curriculum {
   id: string
   name: string
   color: string
   display_order: number
+  curriculum_set_id: string
+  curriculum_set?: CurriculumSet
 }
 
 interface Category {
@@ -65,6 +74,37 @@ interface Performer {
   id: string
   name: string
 }
+
+// Helper function to group curriculums by set - reduces nesting complexity
+const groupCurriculumsBySet = (curriculums: Video["curriculums"]) => {
+  return curriculums.reduce(
+    (acc, curr) => {
+      const setId = curr.curriculum_set_id || "unknown"
+      const setName = curr.curriculum_set?.name || "Unknown"
+      if (!acc[setId]) {
+        acc[setId] = { name: setName, curriculums: [] }
+      }
+      acc[setId].curriculums.push(curr)
+      return acc
+    },
+    {} as Record<string, { name: string; curriculums: Video["curriculums"] }>,
+  )
+}
+
+// Component rendering function to avoid deep nesting
+const renderCurriculumBadges = (curriculum: Curriculum) => (
+  <Badge
+    key={curriculum.id}
+    variant="outline"
+    className="text-xs"
+    style={{
+      borderColor: curriculum.color,
+      color: curriculum.color,
+    }}
+  >
+    {curriculum.name}
+  </Badge>
+)
 
 export default function VideoManagement() {
   const [videos, setVideos] = useState<Video[]>([])
@@ -100,7 +140,10 @@ export default function VideoManagement() {
     setLoading(true)
 
     try {
-      const { data: curriculumsData } = await supabase.from("curriculums").select("*").order("display_order")
+      const { data: curriculumsData } = await supabase
+        .from("curriculums")
+        .select("*, curriculum_set:curriculum_sets!curriculum_set_id(id, name)")
+        .order("display_order")
       setCurriculums(curriculumsData || [])
 
       const { data: categoriesData } = await supabase.from("categories").select("*").order("name")
@@ -114,7 +157,7 @@ export default function VideoManagement() {
         .select(`
           *,
           video_categories(categories(id, name, color)),
-          video_curriculums(curriculums(id, name, color, display_order)),
+          video_curriculums(curriculums(id, name, color, display_order, curriculum_set_id, curriculum_set:curriculum_sets!curriculum_set_id(id, name))),
           video_performers(performers(id, name))
         `)
         .order("created_at", { ascending: false })
@@ -410,6 +453,7 @@ export default function VideoManagement() {
               curriculums={curriculums}
               selectedCurriculums={selectedCurriculums}
               onCurriculumToggle={handleCurriculumToggle}
+              groupCurriculumsBySet={true}
             />
 
             {(selectedCategories.length > 1 || selectedCurriculums.length > 1) && (
@@ -513,35 +557,34 @@ export default function VideoManagement() {
                         <span>A: {formatDate(video.created_at)}</span>
                       </div>
 
-                      <div className="flex flex-wrap gap-1">
-                        {video.curriculums
-                          .toSorted((a, b) => a.display_order - b.display_order)
-                          .map((curriculum) => (
-                            <Badge
-                              key={curriculum.id}
-                              variant="outline"
-                              className="text-xs"
-                              style={{
-                                borderColor: curriculum.color,
-                                color: curriculum.color,
-                              }}
-                            >
-                              {curriculum.name}
-                            </Badge>
-                          ))}
-                        {video.categories.map((category) => (
-                          <Badge
-                            key={category.id}
-                            className="text-xs"
-                            style={{
-                              backgroundColor: category.color + "40",
-                              borderColor: category.color,
-                              color: category.color,
-                            }}
-                          >
-                            {category.name}
-                          </Badge>
-                        ))}
+                      <div className="space-y-1">
+                        {/* Group curriculums by set */}
+                        {Object.entries(groupCurriculumsBySet(video.curriculums)).map(
+                          ([setId, { name, curriculums: setCurriculums }]) => (
+                            <div key={setId} className="flex flex-wrap items-center gap-1">
+                              <span className="text-xs text-gray-500 font-medium">{name}:</span>
+                              {setCurriculums.toSorted((a, b) => a.display_order - b.display_order).map(renderCurriculumBadges)}
+                            </div>
+                          ),
+                        )}
+                        {/* Categories row */}
+                        {video.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {video.categories.map((category) => (
+                              <Badge
+                                key={category.id}
+                                className="text-xs"
+                                style={{
+                                  backgroundColor: category.color + "40",
+                                  borderColor: category.color,
+                                  color: category.color,
+                                }}
+                              >
+                                {category.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 

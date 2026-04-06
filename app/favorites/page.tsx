@@ -29,7 +29,7 @@ export default async function FavoritesPage() {
   const { data: userProfile } = await supabase
     .from("users")
     .select(
-      "is_approved, full_name, profile_image_url, role, current_belt:curriculums!current_belt_id(id, name, display_order, color)",
+      "is_approved, full_name, profile_image_url, role, curriculum_set_id, current_belt:curriculums!current_belt_id(id, name, display_order, color)",
     )
     .eq("id", user.id)
     .single()
@@ -57,7 +57,7 @@ export default async function FavoritesPage() {
           <h1 className="text-3xl font-bold text-white mb-2">My Favorites</h1>
           <p className="text-gray-300">Videos you've saved for later</p>
         </div>
-        <VideoLibrary favoritesOnly={true} />
+        <VideoLibrary favoritesOnly={true} userProfile={{ curriculum_set_id: userProfile?.curriculum_set_id }} />
       </div>
     </div>
   )

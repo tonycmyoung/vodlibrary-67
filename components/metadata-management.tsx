@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { GraduationCap, Tags, Users } from "lucide-react"
-import CurriculumManagement from "@/components/curriculum-management"
+import CurriculumSetsManagement from "@/components/curriculum-sets-management"
 import CategoryManagement from "@/components/category-management"
 import PerformerManagement from "@/components/performer-management"
 
@@ -44,7 +44,7 @@ export default function MetadataManagement() {
           </TabsList>
 
           <TabsContent value="curriculum" className="mt-6">
-            <CurriculumManagement />
+            <CurriculumSetsManagement />
           </TabsContent>
 
           <TabsContent value="categories" className="mt-6">

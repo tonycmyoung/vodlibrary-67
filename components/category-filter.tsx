@@ -57,9 +57,10 @@ interface CategoryFilterProps {
   readonly selectedCategories: string[]
   readonly onCategoryToggle: (categoryId: string) => void
   readonly videoCount: number
-  readonly curriculums?: Array<{ id: string; name: string; color: string; display_order: number; description?: string | null }>
+  readonly curriculums?: Array<{ id: string; name: string; color: string; display_order: number; description?: string | null; curriculum_set_id?: string; curriculum_set?: { id: string; name: string } }>
   readonly selectedCurriculums?: string[]
   readonly onCurriculumToggle?: (curriculumId: string) => void
+  readonly groupCurriculumsBySet?: boolean
 }
 
 export default function CategoryFilter({
@@ -72,6 +73,7 @@ export default function CategoryFilter({
   curriculums = [],
   selectedCurriculums = [],
   onCurriculumToggle,
+  groupCurriculumsBySet = false,
 }: CategoryFilterProps) {
   const clearAllFilters = () => {
     selectedCategories.forEach((categoryId) => {
@@ -120,6 +122,7 @@ export default function CategoryFilter({
               curriculums={curriculums}
               selectedCurriculums={selectedCurriculums}
               onCurriculumToggle={onCurriculumToggle}
+              groupBySet={groupCurriculumsBySet}
             />
           )}
 

@@ -18,6 +18,13 @@ interface Video {
   created_at: string
   recorded: string | null
   views: number | null
+  curriculums?: Array<{
+    id: string
+    name: string
+    color: string
+    display_order: number
+    curriculum_set_id?: string
+  }>
   categories: Array<{
     id: string
     name: string
@@ -34,6 +41,7 @@ interface VideoCardListProps {
   readonly isFavorited?: boolean
   readonly onFavoriteToggle?: (videoId: string, isFavorited: boolean) => void
   readonly viewCount?: number
+  readonly userCurriculumSetId?: string | null
 }
 
 export default function VideoCardList({
@@ -41,6 +49,7 @@ export default function VideoCardList({
   isFavorited: initialIsFavorited = false,
   onFavoriteToggle,
   viewCount,
+  userCurriculumSetId,
 }: VideoCardListProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
   const [user, setUser] = useState<any>(null)
@@ -102,6 +111,14 @@ export default function VideoCardList({
   }
 
   const validCategories = (video.categories || []).filter((category) => category?.id && category?.name)
+  const validCurriculums = (video.curriculums || [])
+    .filter((curriculum) => {
+      if (!curriculum?.id || !curriculum?.name) return false
+      // Filter by user's curriculum set if specified
+      if (userCurriculumSetId && curriculum.curriculum_set_id !== userCurriculumSetId) return false
+      return true
+    })
+    .sort((a, b) => a.display_order - b.display_order)
 
   const videoUrl = `/video/${video.id}`
 
@@ -143,6 +160,28 @@ export default function VideoCardList({
             {video.description && <p className="text-gray-400 text-xs line-clamp-1 mb-2">{video.description}</p>}
 
             <div className="flex flex-wrap gap-1">
+              {validCurriculums.map((curriculum) => {
+                const hasValidColor =
+                  curriculum?.color && curriculum.color.startsWith("#") && curriculum.color.length >= 7
+                return (
+                  <Badge
+                    key={curriculum.id}
+                    variant="outline"
+                    className="text-xs px-1 py-0 h-4 border-2 font-semibold"
+                    style={
+                      hasValidColor
+                        ? {
+                            borderColor: curriculum.color,
+                            color: curriculum.color,
+                            backgroundColor: curriculum.color + "20",
+                          }
+                        : undefined
+                    }
+                  >
+                    {curriculum?.name || "Uncategorized"}
+                  </Badge>
+                )
+              })}
               {validCategories.map((category) => (
                 <Badge
                   key={category.id}
