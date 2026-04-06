@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type { TraceLevel, TraceOptions } from "@/lib/trace-logger"
 
 // Create a direct Supabase client for trace logging
@@ -22,7 +23,8 @@ const getEnvironment = (): string => {
 let writeCounter = 0
 
 // Cleanup old logs based on retention settings
-async function cleanupOldLogs(client: ReturnType<typeof createClient>, retentionDays: number): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function cleanupOldLogs(client: SupabaseClient<any, any, any>, retentionDays: number): Promise<void> {
   if (retentionDays <= 0) return
   
   const cutoffDate = new Date()

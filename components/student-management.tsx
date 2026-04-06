@@ -39,9 +39,9 @@ import { toast } from "react-toastify"
 const updateUserInList = (
   user: UserInterface,
   editingUser: string,
-  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string; curriculum_set_id: string | null },
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string | null; curriculum_set_id: string | null },
   fullSchool: string,
-  curriculumSets: CurriculumSet[],
+  curriculumSets: Array<{ id: string; name: string }>,
 ): UserInterface => {
   if (user.id !== editingUser) {
     return user
@@ -303,7 +303,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         console.error("Error fetching students:", result.error)
         setUsers([])
       } else {
-        setUsers(result.data)
+        setUsers(result.data as UserInterface[])
       }
     } catch (error) {
       console.error("Error fetching students:", error)
@@ -314,10 +314,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   }
 
   const fetchCurriculums = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    )
+    const supabase = createBrowserClient()
 
     // Fetch curriculum sets
     const { data: setsData, error: setsError } = await supabase
@@ -371,7 +368,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const result = await deleteUserCompletely(userId, userEmail)
+      const result = await deleteUserCompletely(userId)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to delete user")
@@ -517,6 +514,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         teacher: "",
         school: "",
         current_belt_id: null,
+        curriculum_set_id: null,
       })
       toast.success("User details updated successfully")
     } catch (error) {
@@ -575,7 +573,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
           <div className="text-center">
             <p className="text-gray-400 text-lg">No students found for your school.</p>
             <p className="text-gray-500 text-sm mt-2">
-              Students with school names starting with "{headTeacherSchool}" will appear here.
+              Students with school names starting with &quot;{headTeacherSchool}&quot; will appear here.
             </p>
             <div className="mt-6 flex justify-center">
               <Button
@@ -837,7 +835,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                     <div className="flex flex-col gap-1 w-full">
                       {userRole === "Head Teacher" && (
                         <select
-                          value={isEditing ? editValues.role || "Student" : student.role || "Student"}
+                          value={student.role || "Student"}
                           onChange={(e) => updateUserRole(student.id, e.target.value)}
                           disabled={isProcessing || isEditing}
                           className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
+import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useVideoLibraryUrl } from "@/hooks/use-video-library-url"
 import { useFilteredVideos } from "@/hooks/use-filtered-videos"
@@ -84,12 +85,12 @@ const EmptyFavoritesState = () => (
     </div>
     <h3 className="text-xl font-semibold text-white mb-2">No favorites yet</h3>
     <p className="text-gray-400 mb-6">Start adding videos to your favorites to see them here.</p>
-    <a
+    <Link
       href="/"
       className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
     >
       Browse Videos
-    </a>
+    </Link>
   </div>
 )
 
@@ -598,9 +599,9 @@ export default function VideoLibrary({
         const videosWithMetadata = (videosResult.data || []).map((video) =>
           buildVideoWithMetadata(
             video,
-            categoriesResult.data,
-            curriculumsResult.data,
-            performersResult.data
+            categoriesResult.data as unknown as Array<{ video_id: string; categories: Category }> | null,
+            curriculumsResult.data as unknown as Array<{ video_id: string; curriculums: Curriculum }> | null,
+            performersResult.data as unknown as Array<{ video_id: string; performers: Performer }> | null,
           )
         )
 
@@ -706,8 +707,8 @@ export default function VideoLibrary({
 
   // Sync processed videos to state for components that need them
   useEffect(() => {
-    setVideos(processedVideos)
-    setPaginatedVideos(paginatedResult)
+    setVideos(processedVideos as Video[])
+    setPaginatedVideos(paginatedResult as Video[])
   }, [processedVideos, paginatedResult])
 
   const [showMobileFilters, setShowMobileFilters] = useState(false)

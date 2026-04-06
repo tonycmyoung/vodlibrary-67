@@ -5,16 +5,16 @@ import Link from "next/link"
 import { createClient } from "@supabase/supabase-js"
 
 interface ConfirmPageProps {
-  searchParams: {
+  searchParams: Promise<{
     error?: string
     error_code?: string
     error_description?: string
     success?: string
-  }
+  }>
 }
 
 export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
-  const { error, error_code, error_description, success } = searchParams
+  const { error, error_code, error_description, success } = await searchParams
 
   const isSuccess = success === "true" && !error && !error_code
   const isExpired = error_code === "otp_expired" || error_description?.includes("expired")
@@ -98,7 +98,7 @@ export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
                   <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-gray-300">
-                      If your account requires approval, an administrator will review your access. You'll receive an
+                      If your account requires approval, an administrator will review your access. You&apos;ll receive an
                       email notification once approved.
                     </p>
                     <p className="text-sm text-cyan-300 mt-2">This usually takes 24-48 hours.</p>

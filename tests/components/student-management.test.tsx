@@ -446,7 +446,7 @@ describe("StudentManagement", () => {
     await user.click(deleteButton)
 
     await waitFor(() => {
-      expect(deleteUserCompletely).toHaveBeenCalledWith("student-1", "john@example.com")
+      expect(deleteUserCompletely).toHaveBeenCalledWith("student-1")
     })
   })
 

@@ -46,7 +46,7 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Rea
       }
 
       trace.info("Subscription checkout session created", { category: "subscription", payload: { hasClientSecret: !!result.clientSecret } })
-      setClientSecret(result.clientSecret)
+      setClientSecret(result.clientSecret ?? null)
     } catch (err) {
       trace.error("Subscription checkout error", { category: "subscription", payload: { error: err instanceof Error ? err.message : String(err) } })
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -58,7 +58,7 @@ export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Rea
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-          <EmbeddedCheckout onComplete={onSuccess} />
+          <EmbeddedCheckout />
         </EmbeddedCheckoutProvider>
       </div>
     )

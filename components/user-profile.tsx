@@ -466,10 +466,10 @@ function QuickActionsCard() {
           variant="outline"
           className="w-full justify-start border-gray-600 text-gray-300 hover:bg-gray-800 bg-transparent"
         >
-          <a href="/">
+          <Link href="/">
             <User className="w-4 h-4 mr-2" />
             Browse Video Library
-          </a>
+          </Link>
         </Button>
       </CardContent>
     </Card>

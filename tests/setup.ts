@@ -11,6 +11,7 @@ afterEach(() => {
 })
 
 // Mock Next.js modules
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 vi.mock("next/navigation", () => require("./mocks/next-navigation"))
 
 // Mock Supabase - will be customized per test

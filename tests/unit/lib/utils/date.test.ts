@@ -1,26 +1,51 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { formatDate, formatShortDate, formatTimeAgo, formatMonth } from "@/lib/utils/date"
 
+// Helper: compute expected output the same way the function does, so tests
+// pass regardless of the machine's local timezone.
+function expectedFormatDate(isoString: string): string {
+  const hasTimezone = isoString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(isoString)
+  const date = new Date(hasTimezone ? isoString : isoString + "Z")
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+}
+
+function expectedFormatShortDate(isoString: string): string {
+  const hasTimezone = isoString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(isoString)
+  const date = new Date(hasTimezone ? isoString : isoString + "Z")
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 describe("Date Utilities", () => {
   describe("formatDate", () => {
     it("should format a valid ISO date string with timezone", () => {
-      const result = formatDate("2024-01-15T14:30:00Z")
-      expect(result).toMatch(/Jan 15, 2024/)
+      const input = "2024-01-15T14:30:00Z"
+      expect(formatDate(input)).toBe(expectedFormatDate(input))
     })
 
     it("should format a valid ISO date string without timezone by adding Z", () => {
-      const result = formatDate("2024-01-15T14:30:00")
-      expect(result).toMatch(/Jan 15, 2024/)
+      const input = "2024-01-15T14:30:00"
+      expect(formatDate(input)).toBe(expectedFormatDate(input))
     })
 
     it("should handle date string with positive timezone offset", () => {
-      const result = formatDate("2024-01-15T14:30:00+05:00")
-      expect(result).toMatch(/Jan 15, 2024/)
+      const input = "2024-01-15T14:30:00+05:00"
+      expect(formatDate(input)).toBe(expectedFormatDate(input))
     })
 
     it("should handle date string with negative timezone offset", () => {
-      const result = formatDate("2024-01-15T14:30:00-05:00")
-      expect(result).toMatch(/Jan 15, 2024/)
+      const input = "2024-01-15T14:30:00-05:00"
+      expect(formatDate(input)).toBe(expectedFormatDate(input))
     })
 
     it("should return 'No date' for null input", () => {
@@ -50,18 +75,18 @@ describe("Date Utilities", () => {
 
   describe("formatShortDate", () => {
     it("should format a valid ISO date string to short date", () => {
-      const result = formatShortDate("2024-01-15T14:30:00Z")
-      expect(result).toBe("Jan 15, 2024")
+      const input = "2024-01-15T14:30:00Z"
+      expect(formatShortDate(input)).toBe(expectedFormatShortDate(input))
     })
 
     it("should format date without timezone by adding Z", () => {
-      const result = formatShortDate("2024-01-15T14:30:00")
-      expect(result).toBe("Jan 15, 2024")
+      const input = "2024-01-15T14:30:00"
+      expect(formatShortDate(input)).toBe(expectedFormatShortDate(input))
     })
 
     it("should handle date string with timezone offset", () => {
-      const result = formatShortDate("2024-01-15T14:30:00+05:00")
-      expect(result).toBe("Jan 15, 2024")
+      const input = "2024-01-15T14:30:00+05:00"
+      expect(formatShortDate(input)).toBe(expectedFormatShortDate(input))
     })
 
     it("should return 'No date' for null input", () => {

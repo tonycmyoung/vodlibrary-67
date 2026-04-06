@@ -1,17 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // TODO: Remove ignoreDuringBuilds once the 36 pre-existing lint errors are fixed:
-  //   - react/no-unescaped-entities: unescaped ' and " in JSX across several components
-  //   - react-hooks/exhaustive-deps: setState called synchronously in effects (2 instances)
-  //   - @typescript-eslint/no-unsafe-function-type: Function type used in test files
-  // TODO: Remove ignoreBuildErrors once the ~83 pre-existing TS errors are fixed
-  //   (see memory for full breakdown by file)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     // Enable Next.js image optimization for better LCP on mobile
     remotePatterns: [

@@ -42,7 +42,7 @@ describe("ChangePasswordForm", () => {
     render(<ChangePasswordForm />)
 
     const currentPasswordInput = screen.getByLabelText("Current Password") as HTMLInputElement
-    const toggleButton = currentPasswordInput.parentElement?.querySelector("button")!
+    const toggleButton = currentPasswordInput.parentElement?.querySelector("button") as HTMLButtonElement
 
     expect(currentPasswordInput.type).toBe("password")
 

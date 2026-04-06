@@ -52,7 +52,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
         return
       }
 
-      setNotifications(result.data)
+      setNotifications(result.data as Notification[])
       setUnreadCount(result.data.filter((n) => !n.is_read).length)
     } catch (error) {
       traceError("Error fetching notifications", { category: "notifications", payload: { error: String(error) } })
@@ -155,6 +155,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       return
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications()
   }, [fetchNotifications]) // Now properly depends on memoized function
 

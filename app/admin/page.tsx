@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import AdminDashboardClient from "@/components/admin-dashboard-client"
+import { buildAdminHeaderUser } from "@/lib/utils/admin-header-user"
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -30,28 +31,25 @@ export default async function AdminDashboard() {
       .from("users")
       .upsert({
         id: user.id,
-        email: user.email,
+        email: user.email ?? "",
         full_name: user.user_metadata?.full_name || "Administrator",
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: user.id,
       })
-      .select("is_approved, full_name, email, profile_image_url")
+      .select("is_approved, full_name, email, profile_image_url, role")
       .single()
 
     userProfile = updatedProfile || {
       is_approved: true,
       full_name: "Administrator",
-      email: user.email,
+      email: user.email ?? "",
       profile_image_url: null,
+      role: "Admin",
     }
   }
 
-  const userWithId = {
-    ...userProfile,
-    id: user.id,
-    email: user.email,
-  }
+  const userWithId = buildAdminHeaderUser(user, userProfile)
 
   return (
     <div className="min-h-screen bg-gray-900">

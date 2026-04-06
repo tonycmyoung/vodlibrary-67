@@ -117,7 +117,7 @@ const countActiveFilters = (role: string, school: string, belt: string): number 
 
 // Helper to check if any filter is active
 const hasActiveFilters = (role: string, school: string, belt: string): boolean => {
-  return (role && role !== "all") || (school && school !== "all") || (belt && belt !== "all")
+  return !!(role && role !== "all") || !!(school && school !== "all") || !!(belt && belt !== "all")
 }
 
 // Helper to build updated user with new belt - extracted to reduce nesting
@@ -273,7 +273,7 @@ const UserInfoFields = ({
       onEditChange={(v) => setEditValues({ ...editValues, teacher: v })}
       placeholder="Teacher name"
       icon={GraduationCap}
-      displayValue={user.teacher}
+      displayValue={user.teacher || ""}
     />
     <EditableField
       isEditing={isEditing}
@@ -281,7 +281,7 @@ const UserInfoFields = ({
       onEditChange={(v) => setEditValues({ ...editValues, school: v })}
       placeholder="School name"
       icon={Building}
-      displayValue={user.school}
+      displayValue={user.school || ""}
     />
   </div>
 )
@@ -1061,7 +1061,7 @@ export default function UserManagement() {
           }
         }) || []
 
-      setUsers(usersWithStats)
+      setUsers(usersWithStats as unknown as UserInterface[])
     } catch (error) {
       console.error("Error fetching users:", error)
     } finally {
@@ -1115,7 +1115,7 @@ export default function UserManagement() {
     setProcessingUsers((prev) => new Set(prev).add(userId))
 
     try {
-      const result = await deleteUserCompletely(userId, userEmail)
+      const result = await deleteUserCompletely(userId)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to delete user")

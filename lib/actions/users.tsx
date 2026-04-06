@@ -78,7 +78,7 @@ export async function inviteUser(email: string) {
       actor_id: currentUser.user.id,
       actor_email: currentUser.user.email!,
       action: "user_invitation",
-      target_id: null,
+      target_id: undefined,
       target_email: email.toLowerCase(),
       additional_data: {
         actor_name: inviterUser.full_name,
@@ -221,21 +221,7 @@ export async function approveUserServerAction(userId: string, role = "Student") 
 
 export async function rejectUserServerAction(userId: string) {
   try {
-    const cookieStore = await cookies()
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // First delete from public.users table
     const { error: publicError } = await serviceSupabase.from("users").delete().eq("id", userId)
@@ -263,21 +249,7 @@ export async function rejectUserServerAction(userId: string) {
 
 export async function updatePendingUserFields(userId: string, fullName: string, teacher: string, school: string) {
   try {
-    const cookieStore = await cookies()
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const { error } = await serviceSupabase
       .from("users")
@@ -309,21 +281,7 @@ export async function updateUserFields(
   currentBeltId?: string | null,
 ) {
   try {
-    const cookieStore = await cookies()
-    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    })
+    const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     const updateData: any = {
       full_name: fullName.trim(),

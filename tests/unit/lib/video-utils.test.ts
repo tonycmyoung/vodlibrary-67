@@ -79,7 +79,7 @@ describe("video-utils", () => {
       global.document = {
         createElement: vi.fn((tag: string) => {
           if (tag === "video") {
-            const listeners: { [key: string]: Function[] } = {}
+            const listeners: { [key: string]: ((...args: unknown[]) => unknown)[] } = {}
             const video = {
               crossOrigin: "",
               preload: "",
@@ -88,7 +88,7 @@ describe("video-utils", () => {
               duration: 120,
               videoWidth: 640,
               videoHeight: 480,
-              addEventListener: vi.fn((event: string, callback: Function, options?: any) => {
+              addEventListener: vi.fn((event: string, callback: (...args: unknown[]) => unknown, options?: unknown) => {
                 if (!listeners[event]) listeners[event] = []
                 listeners[event].push(callback)
 
@@ -101,7 +101,7 @@ describe("video-utils", () => {
                   setTimeout(() => callback(), 10)
                 }
               }),
-              removeEventListener: vi.fn((event: string, callback: Function) => {
+              removeEventListener: vi.fn((event: string, callback: (...args: unknown[]) => unknown) => {
                 if (listeners[event]) {
                   listeners[event] = listeners[event].filter((cb) => cb !== callback)
                 }

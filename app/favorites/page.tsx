@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Header from "@/components/header"
 import VideoLibrary from "@/components/video-library"
+import type { CurrentBelt } from "@/lib/utils/admin-header-user"
 
 export default async function FavoritesPage() {
   // If Supabase is not configured, show setup message directly
@@ -41,12 +42,12 @@ export default async function FavoritesPage() {
 
   const userWithEmail = {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null,
+    current_belt: userProfile?.current_belt as unknown as CurrentBelt | null | undefined,
   }
 
   return (
@@ -55,7 +56,7 @@ export default async function FavoritesPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-2">
           <h1 className="text-3xl font-bold text-white mb-2">My Favorites</h1>
-          <p className="text-gray-300">Videos you've saved for later</p>
+          <p className="text-gray-300">Videos you&apos;ve saved for later</p>
         </div>
         <VideoLibrary favoritesOnly={true} userProfile={{ curriculum_set_id: userProfile?.curriculum_set_id }} />
       </div>

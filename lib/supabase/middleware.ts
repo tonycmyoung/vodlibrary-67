@@ -1,8 +1,8 @@
-import { createServerClient, type SupabaseClient } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
+import type { Session, SupabaseClient } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { validateReturnTo } from "@/lib/utils/auth"
-import type { Session } from "@supabase/supabase-js"
 
 const userApprovalCache = new Map<string, { isApproved: boolean; role: string; timestamp: number }>()
 const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes

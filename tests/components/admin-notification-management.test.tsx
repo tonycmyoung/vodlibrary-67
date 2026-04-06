@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("@/lib/supabase/client", () => ({
-  createBrowserClient: () => ({
+  createClient: () => ({
     from: (table: string) => {
       const selectChain = {
         select: vi.fn(() => selectChain),

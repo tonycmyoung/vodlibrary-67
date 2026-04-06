@@ -65,7 +65,7 @@ export default function SendMessageForm({ userId, userName }: SendMessageFormPro
           <CardTitle className="text-xl font-bold text-white">Send Message to Admin</CardTitle>
         </div>
         <CardDescription className="text-gray-400">
-          Send a message directly to the administrator. You'll receive a response via the notification system and email.
+          Send a message directly to the administrator. You&apos;ll receive a response via the notification system and email.
         </CardDescription>
       </CardHeader>
 

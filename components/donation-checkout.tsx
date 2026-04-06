@@ -65,7 +65,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
       }
 
       trace.info("Checkout session created, rendering Stripe form", { category: "donation", payload: { hasClientSecret: !!result.clientSecret } })
-      setClientSecret(result.clientSecret)
+      setClientSecret(result.clientSecret ?? null)
     } catch (err) {
       trace.error("Checkout error", { category: "donation", payload: { error: err instanceof Error ? err.message : String(err) } })
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -77,7 +77,7 @@ export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckou
     return (
       <div>
         <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-          <EmbeddedCheckout onComplete={onSuccess} />
+          <EmbeddedCheckout />
         </EmbeddedCheckoutProvider>
       </div>
     )

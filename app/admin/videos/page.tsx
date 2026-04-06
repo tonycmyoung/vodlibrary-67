@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import VideoManagement from "@/components/video-management"
+import { buildAdminHeaderUser } from "@/lib/utils/admin-header-user"
 
 export default async function AdminVideosPage() {
   const supabase = await createClient()
@@ -25,11 +26,7 @@ export default async function AdminVideosPage() {
     redirect("/")
   }
 
-  const userWithId = {
-    ...userProfile,
-    id: user.id,
-    email: user.email,
-  }
+  const userWithId = buildAdminHeaderUser(user, userProfile)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">

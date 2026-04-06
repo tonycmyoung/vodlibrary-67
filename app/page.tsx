@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
+import type { CurrentBelt } from "@/lib/utils/admin-header-user"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -48,12 +49,12 @@ export default async function Home() {
 
   const userWithEmail = {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null,
+    current_belt: userProfile?.current_belt as unknown as CurrentBelt | null | undefined,
   }
 
   return (

@@ -142,7 +142,7 @@ export default function LoginForm({ returnTo, error }: LoginFormProps) {
           <SubmitButton />
 
           <div className="text-center text-gray-400">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/sign-up" className="text-red-400 hover:text-red-300 hover:underline">
               Request one
             </Link>

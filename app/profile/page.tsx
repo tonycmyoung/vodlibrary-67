@@ -79,9 +79,9 @@ export default async function ProfilePage() {
   const userWithStats = {
     ...userProfile,
     id: user.id,
-    email: user.email,
-    current_belt: userProfile?.current_belt || null,
-    curriculum_set: userProfile?.curriculum_set || null,
+    email: user.email ?? "",
+    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; color: string; display_order: number } | null | undefined,
+    curriculum_set: userProfile?.curriculum_set as unknown as { id: string; name: string } | null | undefined,
     curriculum_set_id: userProfile?.curriculum_set_id || null,
     favorite_count: favoriteCount?.length || 0,
     isAdmin,
@@ -89,12 +89,12 @@ export default async function ProfilePage() {
 
   const userForHeader = {
     id: user.id, // Always use the authenticated user's ID
-    email: user.email,
+    email: user.email ?? "",
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null,
+    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; color: string; display_order: number } | null | undefined,
   }
 
   return (
