@@ -2,7 +2,7 @@
 
 *Traditional Martial Arts Video Library System*
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tonycmyoung_vodlibrary-67&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tonycmyoung_vodlibrary-67)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tonycmyoung_kobudo-library&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tonycmyoung_kobudo-library)
 
 ## Overview
 
@@ -52,16 +52,16 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 ### Step 1: Clone and Install
 
 ```bash
-git clone https://github.com/tonycmyoung/vodlibrary-67.git
-cd vodlibrary-67
+git clone https://github.com/tonycmyoung/kobudo-library.git
+cd kobudo-library
 npm install --legacy-peer-deps
 ```
 
 ### Step 2: Configure Environment Variables
 
-```bash
+\`\`\`bash
 cp env.template .env.local
-```
+\`\`\`
 
 Edit `.env.local` and fill in your values. See [Environment Variables](#environment-variables) for details on each variable.
 
@@ -94,9 +94,9 @@ Edit `.env.local` and fill in your values. See [Environment Variables](#environm
 
 ### Step 5: Run Development Server
 
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 The application will be available at `http://localhost:3000`
 
@@ -109,7 +109,7 @@ The application will be available at `http://localhost:3000`
 
 ## Available Scripts
 
-```bash
+\`\`\`bash
 npm run dev           # Start development server
 npm run build         # Build for production
 npm test              # Run tests
@@ -120,7 +120,7 @@ npm run lint:fix      # Fix linting issues
 npm run format        # Format code with Prettier
 npm run format:check  # Check formatting
 npm run type-check    # Run TypeScript type checking
-```
+\`\`\`
 
 ## Environment Variables
 

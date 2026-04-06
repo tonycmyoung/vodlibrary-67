@@ -44,7 +44,7 @@ See `/env.template` for a fully documented template with all variables and descr
 
 ### Running Tests Locally
 
-```bash
+\`\`\`bash
 # Install dependencies
 npm install --legacy-peer-deps
 
@@ -56,11 +56,11 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
-```
+\`\`\`
 
 ### Test Structure
 
-```
+\`\`\`
 tests/
 ├── components/     # Component tests (48 files)
 ├── unit/           # Unit tests (21 files)
@@ -69,11 +69,11 @@ tests/
 ├── mocks/          # Mock utilities
 ├── utils/          # Test helpers
 └── setup.ts        # Test configuration
-```
+\`\`\`
 
 ### Code Quality Tools
 
-```bash
+\`\`\`bash
 # Run linting
 npm run lint
 
@@ -88,7 +88,7 @@ npm run format
 
 # Type checking
 npm run type-check
-```
+\`\`\`
 
 ## CI/CD Pipeline
 
@@ -102,7 +102,7 @@ The `.github/workflows/sonarqube.yml` workflow runs on every push:
 ### SonarCloud
 
 Code quality analysis is available at:
-https://sonarcloud.io/project/overview?id=tonycmyoung_vodlibrary-67
+https://sonarcloud.io/project/overview?id=tonycmyoung_kobudo-library
 
 ### Required GitHub Secrets
 
@@ -113,19 +113,19 @@ https://sonarcloud.io/project/overview?id=tonycmyoung_vodlibrary-67
 ### Dependency Installation Fails
 
 Use `--legacy-peer-deps` flag:
-```bash
+\`\`\`bash
 npm install --legacy-peer-deps
-```
+\`\`\`
 
 This is required because React 19 has peer dependency conflicts with some packages.
 
 ### Tests Fail Locally
 
 1. Clear node_modules and reinstall:
-```bash
+\`\`\`bash
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
-```
+\`\`\`
 
 2. Verify Node.js version (v18 or v20 required)
 
