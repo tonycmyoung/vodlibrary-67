@@ -68,7 +68,9 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowSpinner(false)
   }, [pathname])
 

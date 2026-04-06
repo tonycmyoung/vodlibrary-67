@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { updateSession } from "@/lib/supabase/middleware"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { validateReturnTo } from "@/lib/utils/auth"
@@ -69,8 +69,6 @@ describe("Middleware: updateSession", () => {
 
     vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient)
     vi.mocked(validateReturnTo).mockImplementation((path: string) => path)
-
-    const { NextResponse } = require("next/server")
 
     vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
       (request: NextRequest, type: string, message: string) => {
@@ -395,8 +393,6 @@ describe("Middleware: updateSession", () => {
 
       vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient)
       vi.mocked(validateReturnTo).mockImplementation((path: string) => path)
-
-      const { NextResponse } = require("next/server")
 
       vi.mocked(AuthCookieService.createAuthErrorResponse).mockImplementation(
         (request: NextRequest, type: string, message: string) => {

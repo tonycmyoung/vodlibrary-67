@@ -30,7 +30,7 @@ export default async function AdminViewLogPage() {
       .from("users")
       .upsert({
         id: user.id,
-        email: user.email,
+        email: user.email ?? "",
         full_name: user.user_metadata?.full_name || "Administrator",
         is_approved: true,
         approved_at: new Date().toISOString(),
@@ -43,7 +43,7 @@ export default async function AdminViewLogPage() {
     userProfile = updatedProfile || {
       is_approved: true,
       full_name: "Administrator",
-      email: user.email,
+      email: user.email ?? "",
       profile_image_url: null,
       role: "Admin",
     }
@@ -52,7 +52,7 @@ export default async function AdminViewLogPage() {
   const userWithId = {
     ...userProfile,
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
   }
 
   return (

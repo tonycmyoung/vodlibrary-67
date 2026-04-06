@@ -96,6 +96,7 @@ export function useUserManagementUrl(options: UseUserManagementUrlOptions): UseU
 
   // Ref to track current state for use in callbacks (avoids stale closures and infinite loops)
   const currentStateRef = useRef<UserManagementUrlState>(currentState)
+  // eslint-disable-next-line react-hooks/refs
   currentStateRef.current = currentState
 
   // Refs for debouncing

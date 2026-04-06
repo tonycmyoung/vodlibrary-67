@@ -31,6 +31,8 @@ interface Video {
   video_url: string
   thumbnail_url: string | null
   duration: number | null
+  duration_seconds: number | null
+  recorded: string | null
   views: number
   is_published: boolean
   created_at: string
@@ -104,7 +106,7 @@ export default function VideoPage({ params }: VideoPageProps) {
     async function loadVideo() {
       const [videoResult, favoriteResult, curriculumsResult, categoriesResult, performersResult] = await Promise.all([
         supabase.from("videos").select("*").eq("id", videoId).eq("is_published", true).single(),
-        supabase.from("user_favorites").select("id").eq("user_id", user.id).eq("video_id", videoId).maybeSingle(),
+        supabase.from("user_favorites").select("id").eq("user_id", user!.id).eq("video_id", videoId).maybeSingle(),
         supabase
           .from("video_curriculums")
           .select("curriculums(id, name, color, display_order, curriculum_set_id)")
@@ -136,7 +138,7 @@ export default function VideoPage({ params }: VideoPageProps) {
             .filter((curriculum) => {
               if (!curriculum) return false
               // Filter by user's curriculum set if specified
-              if (user.curriculum_set_id && curriculum.curriculum_set_id !== user.curriculum_set_id) return false
+              if (user!.curriculum_set_id && curriculum.curriculum_set_id !== user!.curriculum_set_id) return false
               return true
             })
             .sort((a, b) => a.display_order - b.display_order) || [],

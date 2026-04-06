@@ -41,9 +41,9 @@ export default function SetupAdminPage() {
             </div>
           )}
 
-          {state?.success && (
+          {state && 'success' in state && !!state.success && (
             <div className="mb-4 bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
-              {state.success}
+              {(state as { success: string }).success}
             </div>
           )}
 

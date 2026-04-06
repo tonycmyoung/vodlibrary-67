@@ -31,7 +31,7 @@ export default async function AdminTracePage() {
   const userWithId = {
     ...userProfile,
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
   }
 
   return (

@@ -54,18 +54,20 @@ export default function SignUpForm() {
 
   const [showPassword, setShowPassword] = useState(false)
 
+  const stateSuccess = state && 'success' in state ? (state as { success: string }).success : null
   useEffect(() => {
-    if (state?.success) {
+    if (stateSuccess) {
       const timer = setTimeout(() => {
         router.push("/auth/login")
       }, 2000) // Redirect after 2 seconds
 
       return () => clearTimeout(timer)
     }
-  }, [state?.success, router])
+  }, [stateSuccess, router])
 
   useEffect(() => {
     if (state?.error) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
         password: "", // Only clear password on error
@@ -142,9 +144,9 @@ export default function SignUpForm() {
             </div>
           )}
 
-          {state?.success && (
+          {state && 'success' in state && !!state.success && (
             <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
-              {state.success} Redirecting to login page...
+              {(state as { success: string }).success} Redirecting to login page...
             </div>
           )}
 

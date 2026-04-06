@@ -55,7 +55,7 @@ async function sendBroadcastNotification(
   await sendEmail(
     process.env.ADMIN_EMAIL!,
     `New notification from the ${siteTitle}`,
-    `New notification from ${sanitizeHtml(senderName)}`,
+    `New notification from ${sanitizeHtml(senderName ?? '')}`,
     buildNotificationEmailHtml(message),
     allEmails,
   )
@@ -116,7 +116,7 @@ async function sendSingleNotification(
   await sendEmail(
     recipient.email,
     `New notification from the ${siteTitle}`,
-    `New notification from ${sanitizeHtml(senderName)}`,
+    `New notification from ${sanitizeHtml(senderName ?? '')}`,
     buildNotificationEmailHtml(message),
   )
 

@@ -43,7 +43,7 @@ export default function UnconfirmedEmailUsers() {
         return
       }
 
-      setUnconfirmedUsers(result.data || [])
+      setUnconfirmedUsers((result.data || []) as UnconfirmedUser[])
     } catch (error) {
       console.error("Error fetching unconfirmed email users:", error)
     } finally {

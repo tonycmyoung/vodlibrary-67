@@ -16,7 +16,7 @@ export default function PrivacyNoticePage() {
             <div className="space-y-6 text-gray-300 leading-relaxed">
               <p className="text-lg font-medium text-white">Okinawa Kobudo Library - Privacy Policy</p>
               <p>
-                TY Kobudo ("we", "us", or "our"), in providing the Okinawa Kobudo Library, is committed to respecting
+                TY Kobudo (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), in providing the Okinawa Kobudo Library, is committed to respecting
                 your privacy and protecting your personal information. This Privacy Policy describes how we collect,
                 use, store, and protect the information you provide when using our platform.
               </p>

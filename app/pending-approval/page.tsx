@@ -154,11 +154,11 @@ export default function PendingApprovalPage() {
                 <div>
                   <p className="font-medium mb-2">Check Your Email</p>
                   <p className="text-sm text-blue-300">
-                    We've sent you a confirmation email. Please click the link in the email to verify your address.
+                    We&apos;ve sent you a confirmation email. Please click the link in the email to verify your address.
                   </p>
                   <p className="text-sm text-blue-300 mt-2">
                     Look for an email from <strong>OKL Admin</strong> with subject{" "}
-                    <strong>"Confirm Your Signup - Okinawa Kobudo Library"</strong>
+                    <strong>&quot;Confirm Your Signup - Okinawa Kobudo Library&quot;</strong>
                   </p>
                   <p className="text-sm text-blue-300 mt-2">
                     After confirming your email, an administrator will review and approve your account.
@@ -181,7 +181,7 @@ export default function PendingApprovalPage() {
                   </p>
                   <p className="text-sm text-orange-300 mt-2">
                     Look for an email from <strong>OKL Admin</strong> with subject{" "}
-                    <strong>"Confirm Your Signup - Okinawa Kobudo Library"</strong>
+                    <strong>&quot;Confirm Your Signup - Okinawa Kobudo Library&quot;</strong>
                   </p>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export default function PendingApprovalPage() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium mb-2">You're all set!</p>
+                    <p className="font-medium mb-2">You&apos;re all set!</p>
                     <p className="text-sm text-green-300">
                       {userStatus.full_name && `Welcome, ${userStatus.full_name}! `}
                       Your account has been approved and you now have full access to the Okinawa Kobudo Library.
@@ -229,7 +229,7 @@ export default function PendingApprovalPage() {
                   <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm text-cyan-300">
-                      An administrator will review and approve your access. You'll receive an email notification once
+                      An administrator will review and approve your access. You&apos;ll receive an email notification once
                       approved.
                     </p>
                     <p className="text-sm text-cyan-300 mt-2">This usually takes 24-48 hours.</p>

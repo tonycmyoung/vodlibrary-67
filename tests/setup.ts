@@ -11,7 +11,10 @@ afterEach(() => {
 })
 
 // Mock Next.js modules
-vi.mock("next/navigation", () => require("./mocks/next-navigation"))
+vi.mock("next/navigation", async () => {
+  const mod = await import("./mocks/next-navigation")
+  return mod
+})
 
 // Mock Supabase - will be customized per test
 vi.mock("@/lib/supabase/client", () => ({

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MessageSquare, Send, Users, User, Search, Trash2, Eye, EyeOff, Loader2 } from "lucide-react"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { sendNotificationWithEmail } from "@/lib/actions"
 import { useSearchParams } from "next/navigation"
 
@@ -24,10 +24,12 @@ interface Notification {
   sender: {
     full_name: string | null
     email: string
+    profile_image_url?: string | null
   } | null
   recipient: {
     full_name: string | null
     email: string
+    profile_image_url?: string | null
   } | null
 }
 
@@ -64,7 +66,7 @@ export default function AdminNotificationManagement() {
     message: "",
   })
 
-  const supabase = createBrowserClient()
+  const supabase = createClient()
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -110,7 +112,7 @@ export default function AdminNotificationManagement() {
         return
       }
 
-      setNotifications(data || [])
+      setNotifications((data || []) as unknown as Notification[])
     } catch (error) {
       console.error("Error fetching notifications:", error)
     } finally {
@@ -322,7 +324,7 @@ export default function AdminNotificationManagement() {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={user.profile_image_url || "/placeholder.svg"} />
                             <AvatarFallback className="bg-purple-600 text-white text-xs">
-                              {getUserInitials(user.email, user.full_name)}
+                              {getUserInitials(user.email, user.full_name ?? undefined)}
                             </AvatarFallback>
                           </Avatar>
                           <span>{user.full_name || user.email}</span>
@@ -465,7 +467,7 @@ export default function AdminNotificationManagement() {
                               <Avatar className="h-6 w-6">
                                 <AvatarImage src={notification.sender?.profile_image_url || "/placeholder.svg"} />
                                 <AvatarFallback className="bg-gray-600 text-white text-xs">
-                                  {getUserInitials(notification.sender?.email || "", notification.sender?.full_name)}
+                                  {getUserInitials(notification.sender?.email || "", notification.sender?.full_name ?? undefined)}
                                 </AvatarFallback>
                               </Avatar>
                               <span className="text-sm font-medium text-gray-300">
@@ -479,7 +481,7 @@ export default function AdminNotificationManagement() {
                                 <AvatarFallback className="bg-gray-600 text-white text-xs">
                                   {getUserInitials(
                                     notification.recipient?.email || "",
-                                    notification.recipient?.full_name,
+                                    notification.recipient?.full_name ?? undefined,
                                   )}
                                 </AvatarFallback>
                               </Avatar>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Pencil, Trash2 } from "lucide-react"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { addPerformer, updatePerformer, deletePerformer } from "@/lib/actions"
 
 interface Performer {
@@ -23,7 +23,7 @@ export default function PerformerManagement() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  const supabase = createBrowserClient()
+  const supabase = createClient()
 
   useEffect(() => {
     fetchPerformers()
@@ -75,7 +75,7 @@ export default function PerformerManagement() {
       await fetchPerformers()
     } catch (error) {
       console.error("Error adding performer:", error)
-      setMessage({ type: "error", text: `Error adding performer: ${error.message}` })
+      setMessage({ type: "error", text: `Error adding performer: ${error instanceof Error ? error.message : String(error)}` })
     }
   }
 
@@ -88,7 +88,7 @@ export default function PerformerManagement() {
     if (!editingPerformer || !editName.trim()) return
 
     try {
-      const result = await updatePerformer(editingPerformer, editName)
+      const result = await updatePerformer(editingPerformer, editName, "")
 
       if (result.error) {
         throw new Error(result.error)

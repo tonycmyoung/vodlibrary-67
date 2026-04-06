@@ -48,12 +48,12 @@ export default async function Home() {
 
   const userWithEmail = {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
     full_name: userProfile?.full_name || null,
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null,
+    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined,
   }
 
   return (

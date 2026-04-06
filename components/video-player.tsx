@@ -166,7 +166,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
         style={{
           width: "100vw",
           minHeight: "100vh", // fallback for older browsers
-          // @ts-ignore - dvh is a valid CSS unit but TypeScript doesn't recognize it yet
           height: "100dvh", // dynamic viewport height for modern mobile browsers
         }}
         onTouchStart={handleTouchStart}
@@ -190,7 +189,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               className="w-full h-full"
               style={{
                 maxWidth: "100vw",
-                // @ts-ignore
                 maxHeight: "100dvh",
               }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

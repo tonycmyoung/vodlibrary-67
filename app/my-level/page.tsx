@@ -53,12 +53,13 @@ export default async function MyLevelPage() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt || null,
-    curriculum_set: userProfile?.curriculum_set || null,
+    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined,
+    curriculum_set: userProfile?.curriculum_set as unknown as { id: string; name: string } | null | undefined,
   }
 
   // Calculate max curriculum order (user's belt + 1 for next level)
-  const maxCurriculumOrder = userProfile?.current_belt ? userProfile.current_belt.display_order + 1 : null
+  const currentBelt = userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined
+  const maxCurriculumOrder = currentBelt ? currentBelt.display_order + 1 : undefined
 
   let nextBeltName = "Next Level"
   if (maxCurriculumOrder) {
@@ -76,9 +77,9 @@ export default async function MyLevelPage() {
 
     if (nextBelt) {
       nextBeltName = nextBelt.name
-    } else if (userProfile?.current_belt) {
+    } else if (currentBelt) {
       // User is at maximum belt level, use current belt name
-      nextBeltName = userProfile.current_belt.name
+      nextBeltName = currentBelt.name
     }
   }
 

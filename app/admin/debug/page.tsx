@@ -30,27 +30,31 @@ export default async function AdminDebugPage() {
       .from("users")
       .upsert({
         id: user.id,
-        email: user.email,
+        email: user.email ?? "",
         full_name: user.user_metadata?.full_name || "Administrator",
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: user.id,
       })
-      .select("is_approved, full_name, email, profile_image_url")
+      .select("is_approved, full_name, email, profile_image_url, role")
       .single()
 
     userProfile = updatedProfile || {
       is_approved: true,
       full_name: "Administrator",
-      email: user.email,
+      email: user.email ?? "",
       profile_image_url: null,
+      role: "Admin",
     }
   }
 
   const userWithId = {
-    ...userProfile,
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
+    full_name: userProfile?.full_name ?? null,
+    is_approved: userProfile?.is_approved ?? false,
+    profile_image_url: userProfile?.profile_image_url ?? null,
+    role: userProfile?.role ?? "Admin",
   }
 
   return (
