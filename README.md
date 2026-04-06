@@ -51,11 +51,11 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 ### Step 1: Clone and Install
 
-```bash
+\`\`\`bash
 git clone https://github.com/tonycmyoung/kobudo-library.git
 cd kobudo-library
 npm install --legacy-peer-deps
-```
+\`\`\`
 
 ### Step 2: Configure Environment Variables
 
