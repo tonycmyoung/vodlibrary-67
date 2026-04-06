@@ -11,19 +11,8 @@ afterEach(() => {
 })
 
 // Mock Next.js modules
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-    refresh: vi.fn(),
-  }),
-  usePathname: vi.fn(() => "/"),
-  useSearchParams: vi.fn(() => new URLSearchParams()),
-  useParams: vi.fn(() => ({})),
-}))
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+vi.mock("next/navigation", () => require("./mocks/next-navigation"))
 
 // Mock Supabase - will be customized per test
 vi.mock("@/lib/supabase/client", () => ({
