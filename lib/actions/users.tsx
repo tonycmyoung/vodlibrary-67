@@ -731,9 +731,10 @@ export async function fetchStudentsForHeadTeacher(headTeacherSchool: string, hea
     const { data: usersData, error: usersError } = await serviceSupabase
       .from("users")
       .select(`
-        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id,
+        id, email, full_name, teacher, school, role, created_at, is_approved, approved_at, profile_image_url, current_belt_id, curriculum_set_id,
         inviter:invited_by(full_name),
-        current_belt:curriculums!current_belt_id(id, name, color, display_order)
+        current_belt:curriculums!current_belt_id(id, name, color, display_order),
+        curriculum_set:curriculum_sets!curriculum_set_id(id, name)
       `)
       .eq("is_approved", true)
       .or(`school.eq.${headTeacherSchool},school.ilike.${headTeacherSchool} %`)
