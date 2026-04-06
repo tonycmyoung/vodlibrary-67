@@ -102,6 +102,7 @@
     "rolldown": "latest",
     "sass": "latest",
     "sass-embedded": "latest",
+    "sharp": "0.34.5",
     "sonner": "^1.7.4",
     "stripe": "21.0.1",
     "stylus": "latest",
