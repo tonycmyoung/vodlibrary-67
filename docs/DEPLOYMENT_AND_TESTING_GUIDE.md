@@ -35,10 +35,24 @@ See `/env.template` for a fully documented template with all variables and descr
 
 ### Supabase Configuration
 
-1. Set **Site URL** to your production domain
-2. Add **Redirect URLs** for auth callbacks:
-   - `https://your-domain.com/auth/callback`
-   - `https://your-domain.com/auth/confirm/callback`
+For both local development and production:
+
+1. Set **Site URL** to the value of your `NEXT_PUBLIC_SITE_URL` environment variable:
+   - Local development: `http://localhost:3000`
+   - Production: `https://your-domain.com`
+
+2. Add **Redirect URLs** appropriate for your environment:
+   - Local:
+     - `http://localhost:3000/auth/callback`
+     - `http://localhost:3000/auth/confirm/callback`
+   - Production:
+     - `https://your-domain.com/auth/callback`
+     - `https://your-domain.com/auth/confirm/callback`
+
+3. Set up the initial admin user:
+   - Use the `/setup-admin` endpoint to create the first admin, OR
+   - Insert an admin user directly into the database via SQL with `role: 'Admin'` and `is_approved: true`
+   - Note: The `ADMIN_USER` environment variable is a fallback bypass mechanism only; it does not automatically grant admin privileges via the registration flow
 
 ## Testing
 
