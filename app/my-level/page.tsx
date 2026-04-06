@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import VideoLibrary from "@/components/video-library"
 import Header from "@/components/header"
+import type { CurrentBelt } from "@/lib/utils/admin-header-user"
 
 export default async function MyLevelPage() {
   // If Supabase is not configured, show setup message directly
@@ -53,12 +54,12 @@ export default async function MyLevelPage() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined,
+    current_belt: userProfile?.current_belt as unknown as CurrentBelt | null | undefined,
     curriculum_set: userProfile?.curriculum_set as unknown as { id: string; name: string } | null | undefined,
   }
 
   // Calculate max curriculum order (user's belt + 1 for next level)
-  const currentBelt = userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined
+  const currentBelt = userProfile?.current_belt as unknown as CurrentBelt | null | undefined
   const maxCurriculumOrder = currentBelt ? currentBelt.display_order + 1 : undefined
 
   let nextBeltName = "Next Level"

@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import Header from "@/components/header"
 import VideoLibrary from "@/components/video-library"
+import type { CurrentBelt } from "@/lib/utils/admin-header-user"
 
 export default async function FavoritesPage() {
   // If Supabase is not configured, show setup message directly
@@ -46,7 +47,7 @@ export default async function FavoritesPage() {
     profile_image_url: userProfile?.profile_image_url || null,
     role: userProfile?.role || null,
     is_approved: userProfile?.is_approved || false,
-    current_belt: userProfile?.current_belt as unknown as { id: string; name: string; display_order: number; color: string } | null | undefined,
+    current_belt: userProfile?.current_belt as unknown as CurrentBelt | null | undefined,
   }
 
   return (

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import AuditLogDashboard from "@/components/audit-log-dashboard"
+import { buildAdminHeaderUser } from "@/lib/utils/admin-header-user"
 
 export default async function AdminAuditPage() {
   const supabase = await createClient()
@@ -49,11 +50,7 @@ export default async function AdminAuditPage() {
     }
   }
 
-  const userWithId = {
-    ...userProfile,
-    id: user.id,
-    email: user.email ?? "",
-  }
+  const userWithId = buildAdminHeaderUser(user, userProfile)
 
   return (
     <div className="min-h-screen bg-gray-900">

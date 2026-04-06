@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import AdminHeader from "@/components/admin-header"
 import ViewLogDashboard from "@/components/view-log-dashboard"
+import { buildAdminHeaderUser } from "@/lib/utils/admin-header-user"
 
 export default async function AdminViewLogPage() {
   const supabase = await createClient()
@@ -49,11 +50,7 @@ export default async function AdminViewLogPage() {
     }
   }
 
-  const userWithId = {
-    ...userProfile,
-    id: user.id,
-    email: user.email ?? "",
-  }
+  const userWithId = buildAdminHeaderUser(user, userProfile)
 
   return (
     <div className="min-h-screen bg-gray-900">
