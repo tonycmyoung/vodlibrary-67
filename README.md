@@ -114,7 +114,7 @@ The initial admin user must be created with full admin privileges and pre-approv
 **Option B: Direct Database Setup**
 1. Connect to your Supabase database directly
 2. Execute SQL to insert an admin user:
-   ```sql
+   \`\`\`sql
    INSERT INTO users (id, email, full_name, role, is_approved, approved_at, created_at, updated_at)
    VALUES (
      gen_random_uuid(),
@@ -126,7 +126,7 @@ The initial admin user must be created with full admin privileges and pre-approv
      NOW(),
      NOW()
    );
-   ```
+   \`\`\`
 3. The `ADMIN_USER` environment variable serves as a fallback bypass for admin access in case of database issues, but does not automatically grant privileges
 
 **Note**: Regular user registration goes through an approval flow—new users are created with `is_approved: false` and must be approved by an admin before gaining access.
