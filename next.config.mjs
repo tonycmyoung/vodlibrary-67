@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // TODO: Remove these once follow-up PRs are complete:
+  // - eslint: migrate .eslintrc.json to ESLint 9 flat config (eslint.config.mjs),
+  //   then remove ignoreDuringBuilds
+  // - typescript: fix ~83 pre-existing type errors across ~20 files (see memory),
+  //   then remove ignoreBuildErrors
   eslint: {
     ignoreDuringBuilds: true,
   },
