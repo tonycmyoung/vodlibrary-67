@@ -525,8 +525,22 @@ describe("User Actions", () => {
             neq: vi.fn().mockReturnThis(),
             order: vi.fn().mockResolvedValue({
               data: [
-                { id: "student-1", full_name: "Student One", school: "School A", role: "Student" },
-                { id: "student-2", full_name: "Student Two", school: "School A", role: "Student" },
+                {
+                  id: "student-1",
+                  full_name: "Student One",
+                  school: "School A",
+                  role: "Student",
+                  curriculum_set_id: "set-1",
+                  curriculum_set: { id: "set-1", name: "Okinawa Kobudo" },
+                },
+                {
+                  id: "student-2",
+                  full_name: "Student Two",
+                  school: "School A",
+                  role: "Student",
+                  curriculum_set_id: "set-2",
+                  curriculum_set: { id: "set-2", name: "Matayoshi" },
+                },
               ],
               error: null,
             }),
@@ -556,6 +570,9 @@ describe("User Actions", () => {
       const result = await fetchStudentsForHeadTeacher("School A", "head-123")
 
       expect(result.data).toHaveLength(2)
+      expect(result.data[0]).toHaveProperty("curriculum_set_id")
+      expect(result.data[0]).toHaveProperty("curriculum_set")
+      expect(result.data[0].curriculum_set).toEqual({ id: "set-1", name: "Okinawa Kobudo" })
       expect(result.data[0]).toHaveProperty("last_login")
       expect(result.data[0]).toHaveProperty("login_count")
       expect(result.data[0]).toHaveProperty("view_count")
