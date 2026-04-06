@@ -144,7 +144,7 @@
     "postcss": "^8.5",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
-    "sonarqube-scanner": "^5.0.1",
+    "sonarqube-scanner": "^4.3.5",
     "tailwindcss": "^4.1.9",
     "typescript": "^5",
     "vitest": "^2.1.8"
