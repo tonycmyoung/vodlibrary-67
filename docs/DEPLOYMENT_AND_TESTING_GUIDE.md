@@ -15,34 +15,24 @@ The application is deployed to Vercel with automatic deployments on push to the 
 
 ### Environment Variables
 
-Required environment variables (configure in Vercel dashboard):
+Required environment variables (configure in Vercel dashboard).
 
-\`\`\`
-# Supabase
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_ANON_KEY
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+See \`/.env.local.tmpl\` for a fully documented template with all variables and descriptions.
 
-# Email (Resend)
-RESEND_API_KEY
-FROM_EMAIL
-ADMIN_EMAIL                    # Admin notification recipient email
+**Required Variables:**
+- \`SUPABASE_URL\`, \`SUPABASE_SERVICE_ROLE_KEY\`, \`SUPABASE_ANON_KEY\`
+- \`NEXT_PUBLIC_SUPABASE_URL\`, \`NEXT_PUBLIC_SUPABASE_ANON_KEY\`
+- \`SUPABASE_JWT_SECRET\`
+- \`RESEND_API_KEY\`, \`FROM_EMAIL\`, \`ADMIN_EMAIL\`
+- \`BLOB_READ_WRITE_TOKEN\`
+- \`NEXT_PUBLIC_FULL_SITE_URL\`, \`NEXT_PUBLIC_SITE_URL\`
+- \`ADMIN_USER\` (super admin email for bootstrap access)
 
-# Storage
-BLOB_READ_WRITE_TOKEN
-
-# Site URLs
-NEXT_PUBLIC_FULL_SITE_URL
-NEXT_PUBLIC_SITE_URL
-
-# Admin & Authorization
-ADMIN_USER                     # Super admin email for bootstrap/fallback access
-
-# Donations
-NEXT_PUBLIC_DONATE_PAYID       # PayID displayed in donation modal
-\`\`\`
+**Optional Variables:**
+- \`POSTGRES_*\` variables (auto-populated when connecting Supabase to Vercel)
+- \`STRIPE_*\` variables (for donations/subscriptions)
+- \`NEXT_PUBLIC_DONATE_PAYID\` (PayID for donations)
+- \`NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL\` (dev-specific auth redirects)
 
 ### Supabase Configuration
 

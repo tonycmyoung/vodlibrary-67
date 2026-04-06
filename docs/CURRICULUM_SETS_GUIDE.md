@@ -24,11 +24,11 @@ Individual belt levels or training stages within a curriculum set. Example: "Yel
 - `id` - UUID (primary key)
 - `name` - Unique within its curriculum_set (not globally unique)
 - `description` - Training stage or level description
-- `level_order` - Integer for ordering within the set (1, 2, 3, ...)
-- `is_active` - Visibility flag
+- `display_order` - Integer for ordering within the set (1, 2, 3, ...)
+- `color` - Display color for UI representation (e.g., belt color)
 - `curriculum_set_id` - Foreign key to curriculum_sets
 - `created_by` - Creator admin
-- `created_at`, `updated_at` - Timestamps
+- `created_at` - Creation timestamp
 
 ### User Assignment
 Students are assigned a single curriculum set, which determines:
@@ -36,7 +36,9 @@ Students are assigned a single curriculum set, which determines:
 - Their available belt levels for progression
 - Content organization in their library view
 
-**Implementation: `users.curriculum_set_id`** - Foreign key to curriculum_sets (nullable for unassigned users)
+**Implementation:**
+- `users.curriculum_set_id` - Foreign key to curriculum_sets (nullable for unassigned users)
+- `users.current_belt_id` - Foreign key to curriculums, indicating the student's current training level within their set
 
 ## User Access Patterns
 
@@ -68,18 +70,20 @@ Students are assigned a single curriculum set, which determines:
 ```
 curriculum_sets (1) ──────── (n) curriculums
                               │
-                              └──── (n) videos (via curriculum_id in videos table)
+                              └──── (n) videos (via video_curriculums junction table)
 
 curriculum_sets (1) ──────── (n) users (via curriculum_set_id in users table)
+
+users ──────── curriculums (via current_belt_id - user's current training level)
 ```
 
-**Video Association**: Videos reference `curriculum_id`, which in turn belongs to a `curriculum_set_id`.
+**Video Association**: Videos are linked to curricula via the `video_curriculums` junction table, allowing a video to belong to multiple curricula.
 
 ## Admin Workflows
 
 ### Creating a New Curriculum Set
 
-1. Navigate to Admin → Categories (Curriculum Sets tab)
+1. Navigate to Admin → Metadata (Curriculum Sets management)
 2. Click "Create New Curriculum Set"
 3. Enter:
    - **Name** (unique): E.g., "Okinawa Kobudo"
@@ -90,22 +94,22 @@ curriculum_sets (1) ──────── (n) users (via curriculum_set_id in
 
 ### Adding Curricula to a Set
 
-1. Navigate to Admin → Categories (Curriculum Sets tab)
+1. Navigate to Admin → Metadata (Curriculum Sets management)
 2. Select the curriculum set
 3. Click "Add Curriculum"
 4. Enter:
    - **Name**: E.g., "Yellow Belt"
    - **Description**: Training objectives or content scope
-   - **Level Order**: Position in progression (1 for first, 2 for second, etc.)
-   - **Active**: Toggle visibility
+   - **Display Order**: Position in progression (1 for first, 2 for second, etc.)
+   - **Color**: Belt color for visual representation
 5. Save
 6. Curriculum now appears in the set
 
 ### Organizing Curricula
 
 1. From curriculum set management view
-2. Reorder curricula by editing `level_order` values
-3. System displays curricula sorted by `level_order` ascending
+2. Reorder curricula by editing `display_order` values
+3. System displays curricula sorted by `display_order` ascending
 4. Gaps in ordering are acceptable (1, 2, 5 displays in correct order)
 
 ### Assigning Curriculum Set to a Student

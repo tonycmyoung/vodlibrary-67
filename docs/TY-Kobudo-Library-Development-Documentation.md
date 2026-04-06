@@ -41,7 +41,7 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 
 ### Architecture Layers
 
-1. **Presentation Layer**: Next.js 14 with App Router, React components, Tailwind CSS
+1. **Presentation Layer**: Next.js 15 with App Router, React components, Tailwind CSS
 2. **Business Logic Layer**: Server Actions, API routes, authentication middleware
 3. **Data Layer**: Supabase PostgreSQL database with Row Level Security
 4. **External Services**: Resend for emails, Vercel Blob for file storage
@@ -86,9 +86,11 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - teacher: text
 - role: text (Student/Teacher/Head Teacher/Admin)
 - curriculum_set_id: uuid (foreign key to curriculum_sets.id, nullable)
+- current_belt_id: uuid (foreign key to curriculums.id, nullable)
 - is_approved: boolean
 - approved_by: uuid (foreign key to users.id)
 - approved_at: timestamp
+- invited_by: uuid (foreign key to users.id, nullable)
 - created_at: timestamp
 - updated_at: timestamp
 \`\`\`
@@ -132,12 +134,11 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - id: uuid (primary key)
 - name: text (unique within curriculum_set)
 - description: text
-- level_order: integer (display order within set)
-- is_active: boolean
+- display_order: integer (display order within set)
+- color: text (display color for UI)
 - curriculum_set_id: uuid (foreign key to curriculum_sets.id)
 - created_by: uuid (foreign key to users.id)
 - created_at: timestamp
-- updated_at: timestamp
 \`\`\`
 
 #### curriculum_sets
@@ -163,7 +164,19 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - updated_at: timestamp
 \`\`\`
 
-### Additional Tables
+### Logging & Audit Tables
+
+#### audit_logs
+\`\`\`sql
+- id: uuid (primary key)
+- actor_id: uuid (foreign key to users.id)
+- actor_email: text
+- action: text (action performed)
+- target_id: uuid (affected entity)
+- target_email: text (for user-related actions)
+- additional_data: jsonb (extra context)
+- created_at: timestamp with time zone
+\`\`\`
 
 #### auth_debug_logs
 \`\`\`sql
@@ -211,6 +224,53 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - user_agent: text
 \`\`\`
 
+#### trace_logs
+\`\`\`sql
+- id: uuid (primary key)
+- level: text (log level: debug, info, warn, error)
+- category: text (categorization of log)
+- message: text
+- payload: jsonb (structured data)
+- user_id: uuid (foreign key to users.id, nullable)
+- user_email: text
+- session_id: text
+- request_id: text
+- source_file: text
+- source_line: integer
+- function_name: text
+- ip_address: text
+- user_agent: text
+- environment: text
+- is_client: boolean
+- created_at: timestamp with time zone
+\`\`\`
+
+#### trace_settings
+\`\`\`sql
+- id: text (primary key)
+- enabled: boolean
+- retention_days: integer
+- updated_at: timestamp with time zone
+\`\`\`
+
+#### video_views
+\`\`\`sql
+- id: uuid (primary key)
+- video_id: uuid (foreign key to videos.id)
+- user_id: uuid (foreign key to users.id)
+- viewed_at: timestamp with time zone
+- ip_address: text
+- user_agent: text
+\`\`\`
+
+#### user_video_views
+\`\`\`sql
+- id: uuid (primary key)
+- video_id: uuid (foreign key to videos.id)
+- user_id: uuid (foreign key to users.id)
+- viewed_at: timestamp with time zone
+\`\`\`
+
 ### Junction Tables
 
 #### video_categories
@@ -237,15 +297,39 @@ The TY Kobudo Library is a private, invite-only video library system designed fo
 - created_at: timestamp
 \`\`\`
 
+#### video_curriculums
+\`\`\`sql
+- id: uuid (primary key)
+- video_id: uuid (foreign key to videos.id)
+- curriculum_id: uuid (foreign key to curriculums.id)
+- created_at: timestamp
+\`\`\`
+
 ### Database Relationships
-- Users can create multiple videos (one-to-many)
+
+**User Relationships:**
+- Users can create multiple videos (one-to-many via created_by)
 - Users can be assigned to a curriculum set (many-to-one via curriculum_set_id)
-- Curriculum sets contain multiple curriculums (one-to-many via curriculum_set_id)
-- Videos are associated with curriculums within a curriculum set (many-to-one via curriculum_id)
-- Videos can have multiple categories (many-to-many via video_categories)
-- Videos can have multiple performers (many-to-many via video_performers)
+- Users can have a current belt level (many-to-one via current_belt_id to curriculums)
+- Users can be invited by other users (self-referential via invited_by)
+- Users can approve other users (self-referential via approved_by)
 - Users can favorite multiple videos (many-to-many via user_favorites)
 - Users can send/receive multiple notifications (many-to-many via notifications)
+
+**Curriculum Relationships:**
+- Curriculum sets contain multiple curriculums (one-to-many via curriculum_set_id)
+- Videos can belong to multiple curriculums (many-to-many via video_curriculums)
+
+**Video Relationships:**
+- Videos can have multiple categories (many-to-many via video_categories)
+- Videos can have multiple performers (many-to-many via video_performers)
+- Videos can have multiple curriculums (many-to-many via video_curriculums)
+- Video views are tracked per user (one-to-many via video_views, user_video_views)
+
+**Audit/Logging Relationships:**
+- Audit logs reference actor and target users (many-to-one via actor_id, target_id)
+- Trace logs can reference users (many-to-one via user_id)
+- User logins track login history (one-to-many via user_id)
 
 ## Authentication & Authorization
 
@@ -280,6 +364,7 @@ app/
 ├── auth/
 │   ├── login/page.tsx (Login page)
 │   ├── sign-up/page.tsx (Registration page)
+│   ├── reset-password/page.tsx (Password reset request)
 │   ├── callback/route.ts (Auth callback handler)
 │   └── confirm/
 │       ├── page.tsx (Email confirmation page)
@@ -291,7 +376,13 @@ app/
 │   ├── categories/page.tsx (Category management)
 │   ├── performers/page.tsx (Performer management)
 │   ├── notifications/page.tsx (Notification management)
+│   ├── audit/page.tsx (Audit log dashboard)
+│   ├── metadata/page.tsx (Curriculum sets management)
+│   ├── trace/page.tsx (Trace log viewer)
+│   ├── viewlog/page.tsx (Video view log dashboard)
 │   └── debug/page.tsx (Admin debug tools)
+├── students/page.tsx (Teacher/Head Teacher student management)
+├── my-level/page.tsx (User's current curriculum level)
 ├── profile/page.tsx (User profile)
 ├── favorites/page.tsx (User favorites)
 ├── pending-approval/page.tsx (Pending approval status)
@@ -306,7 +397,7 @@ app/
 ├── video/[id]/page.tsx (Individual video page)
 └── api/
     ├── upload-profile-image/route.ts (Profile image upload)
-    └── robots.txt/route.ts (SEO robots.txt)
+    └── trace/route.ts (Trace logging endpoint)
 \`\`\`
 
 ### Component Hierarchy
@@ -314,61 +405,117 @@ app/
 Header/AdminHeader
 ├── NotificationBell
 ├── InviteUserModal
-└── DonationModal
+├── DonationModal
+├── ContributeModal
+└── AboutModal
 
 VideoLibrary
 ├── CategoryFilter
+├── CurriculumFilter
+├── FilterModeToggle
+├── FilterSection
+├── MobileFilterDialog
+├── SearchInput
 ├── SortControl
 ├── ViewToggle
 ├── VideoCard/VideoCardList
+├── VideoModal
 └── VideoPlayer
 
 Admin Components
 ├── AdminStats
+├── AdminDashboardClient
+├── AdminRefreshButton
 ├── PendingUsers
+├── UnconfirmedEmailUsers
 ├── UserManagement
+├── StudentManagement (for Teachers/Head Teachers)
 ├── VideoManagement
+├── VideoManagementPanel
 ├── CategoryManagement
 ├── PerformerManagement
+├── CurriculumManagement
+├── CurriculumSetsManagement
+├── CurriculumModal
+├── MetadataManagement
 ├── AdminNotificationManagement
-└── DebugTools
+├── AuditLogDashboard
+├── TraceDashboard
+├── ViewLogDashboard
+└── DebugDashboard
+
+User Components
+├── UserFilter
+├── UserSortControl
+├── PaginationControls
+├── TrainingBanner
 
 Legal & Utility Components
 ├── LoadingProvider
+├── LoadingSkeleton
 ├── LegalFooter
-└── ConsentTracking
+├── SessionTimeoutWarning
+└── ThemeProvider
 \`\`\`
 
 ### Key Components
 
 #### Header Components
-- **Header**: Main navigation for authenticated users
+- **Header**: Main navigation for authenticated users with role-based menu items
 - **AdminHeader**: Specialized navigation for admin panel
-- **NotificationBell**: Real-time notification dropdown
+- **NotificationBell**: Real-time notification dropdown with unread counts
+- **InviteUserModal**: Modal for inviting new users via email
+- **DonationModal**: PayPal/PayID donation interface
+- **ContributeModal**: Information about contributing to the organization
+- **AboutModal**: About the organization information
 
 #### Video Components
-- **VideoLibrary**: Main video browsing interface with search and filtering
-- **VideoCard**: Individual video display with favorites and metadata
+- **VideoLibrary**: Main video browsing interface with search, filtering, and curriculum set awareness
+- **VideoCard/VideoCardList**: Individual video display with favorites, metadata, and curriculum info
+- **VideoModal**: Detailed video view modal with full metadata
 - **VideoPlayer**: Video playback with controls
 - **CategoryFilter**: Multi-select category filtering
+- **CurriculumFilter**: Filter videos by curriculum/belt level
+- **FilterModeToggle**: Toggle between filter modes
+- **FilterSection**: Collapsible filter section container
+- **MobileFilterDialog**: Mobile-responsive filter interface
+- **SearchInput**: Full-text search input component
 - **SortControl**: Video sorting options (date, title, duration)
+- **ViewToggle**: Grid/list view toggle
 
 #### Admin Components
 - **AdminStats**: Dashboard metrics and statistics
-- **UserManagement**: User approval, editing, and deletion
-- **VideoManagement**: Video CRUD operations
+- **AdminDashboardClient**: Client-side admin dashboard wrapper
+- **UserManagement**: User approval, editing, role assignment, and deletion
+- **StudentManagement**: Teacher/Head Teacher interface for managing students in their school
+- **VideoManagement/VideoManagementPanel**: Video CRUD operations with curriculum assignment
 - **CategoryManagement**: Category creation and management
 - **PerformerManagement**: Performer database management
+- **CurriculumManagement**: Belt level/curriculum management within sets
+- **CurriculumSetsManagement**: Curriculum set CRUD operations
+- **CurriculumModal**: Modal for creating/editing curriculum entries
+- **MetadataManagement**: Combined curriculum sets and curricula management
+- **AuditLogDashboard**: View admin action audit logs
+- **TraceDashboard**: Application trace log viewer
+- **ViewLogDashboard**: Video view statistics and logs
+- **DebugDashboard**: Admin debug tools and diagnostics
+- **PendingUsers**: Display and manage pending user approvals
+- **UnconfirmedEmailUsers**: Manage users with unconfirmed emails
 
 #### User Components
 - **UserProfile**: Profile editing with image upload
-- **FavoritesLibrary**: User's favorited videos
 - **ChangePasswordForm**: Secure password updates
+- **UserFilter**: Filter users by various criteria
+- **UserSortControl**: Sort user listings
+- **PaginationControls**: Paginated list navigation
+- **TrainingBanner**: Display user's current training level/belt
 
-#### Legal Components
-- **LoadingProvider**: Provides loading state for asynchronous operations
+#### Utility Components
+- **LoadingProvider**: Global loading state management
+- **LoadingSkeleton**: Skeleton loading placeholders
 - **LegalFooter**: Footer with links to EULA and Privacy Policy
-- **ConsentTracking**: Tracks user consent for legal compliance
+- **SessionTimeoutWarning**: Warning modal for session expiration
+- **ThemeProvider**: Dark/light theme management
 
 ## API & Server Actions
 
@@ -510,8 +657,15 @@ NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 
 ### Debug and Monitoring Features
 - **Admin Debug Tools**: Comprehensive debugging interface for administrators
+- **Trace Logging System**: Structured application logging with TraceLogger utility
+  - Configurable log levels (debug, info, warn, error)
+  - Client and server-side logging support
+  - Session and request ID tracking
+  - Retention policy management via trace_settings
+- **Audit Logging**: All admin actions logged with actor, target, and action details
 - **Authentication Logging**: Detailed logs of authentication events and errors
 - **User Login Tracking**: IP address and user agent logging for security
+- **Video View Analytics**: Track video views per user with timestamps
 - **Error Monitoring**: Centralized error tracking and reporting
 
 ## Development Setup
@@ -528,16 +682,18 @@ NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=
 git clone <repository-url>
 cd ty-kobudo-library
 
-# Install dependencies
-npm install
+# Install dependencies (--legacy-peer-deps required for React 19)
+npm install --legacy-peer-deps
 
 # Set up environment variables
-cp .env.example .env.local
-# Configure all required environment variables
+cp .env.local.tmpl .env.local
+# Edit .env.local with your values - see template for full documentation
 
 # Run development server
 npm run dev
 \`\`\`
+
+See the README.md "Local Development Setup" section for detailed step-by-step instructions including Supabase configuration, database migrations, and external service setup.
 
 ### Database Setup
 1. Create Supabase project

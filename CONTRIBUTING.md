@@ -16,13 +16,21 @@ Thank you for your interest in contributing to the TY Kobudo Library project.
 1. Fork and clone the repository
 2. Install dependencies:
    \`\`\`bash
-   npm install
+   npm install --legacy-peer-deps
    \`\`\`
-3. Set up environment variables (see README.md for required variables)
+   Note: The `--legacy-peer-deps` flag is required due to React 19 peer dependency conflicts.
+3. Set up environment variables:
+   \`\`\`bash
+   cp .env.local.tmpl .env.local
+   # Edit .env.local with your values
+   \`\`\`
+   See \`.env.local.tmpl\` for a fully documented template with all required and optional variables.
 4. Run the development server:
    \`\`\`bash
    npm run dev
    \`\`\`
+
+For detailed setup instructions including Supabase configuration and database migrations, see the [Local Development Setup](README.md#local-development-setup) section in the README.
 
 ## Development Workflow
 
