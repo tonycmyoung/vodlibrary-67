@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "audit:check": "npx npm-audit-resolver --check",
+    "audit:resolve": "npx npm-audit-resolver",
     "build": "next build",
     "build:skip-tests": "next build",
     "build:with-checks": "npm run type-check && npm run test:ci && next build",

@@ -1,0 +1,52 @@
+{
+  "decisions": {
+    "GHSA-67mh-4wv8-2f99|esbuild": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (vitest/vite). Does not affect production code."
+    },
+    "GHSA-37j7-fg3j-429f|happy-dom": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (test environment). Does not affect production code."
+    },
+    "GHSA-w4gp-fjgq-3q4g|happy-dom": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (test environment). Does not affect production code."
+    },
+    "GHSA-6q6h-j7hj-3r64|happy-dom": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (test environment). Does not affect production code."
+    },
+    "GHSA-2328-f5f3-gj25|node-forge": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (sonarqube-scanner). Does not affect production code."
+    },
+    "GHSA-q67f-28xg-22rw|node-forge": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (sonarqube-scanner). Does not affect production code."
+    },
+    "GHSA-5m6q-g25r-mvwx|node-forge": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (sonarqube-scanner). Does not affect production code."
+    },
+    "GHSA-ppp5-5v6c-4jwp|node-forge": {
+      "decision": "ignore",
+      "madeAt": 1712419200000,
+      "expiresAt": null,
+      "reason": "Dev dependency only (sonarqube-scanner). Does not affect production code."
+    }
+  }
+}
