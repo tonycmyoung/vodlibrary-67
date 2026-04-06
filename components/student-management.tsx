@@ -497,6 +497,8 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                 teacher: editValues.teacher.trim(),
                 school: fullSchool,
                 current_belt_id: editValues.current_belt_id,
+                curriculum_set_id: editValues.curriculum_set_id,
+                curriculum_set: curriculumSets.find((s) => s.id === editValues.curriculum_set_id) ?? null,
               }
             : user,
         ),
@@ -840,37 +842,42 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
                         </select>
                       )}
 
-                      <select
-                        value={isEditing ? editValues.curriculum_set_id || "" : student.curriculum_set_id || ""}
-                        onChange={(e) => {
-                          if (isEditing) {
-                            setEditValues({
-                              ...editValues,
-                              curriculum_set_id: e.target.value || null,
-                            })
-                          } else {
-                            assignCurriculumSetToUser(student.id, e.target.value || "")
-                              .then(() => {
-                                // Refetch to update the UI
-                                fetchStudents()
-                                toast.success("Curriculum set assigned successfully")
+                      {userRole === "Head Teacher" ? (
+                        <select
+                          value={isEditing ? editValues.curriculum_set_id || "" : student.curriculum_set_id || ""}
+                          onChange={(e) => {
+                            if (isEditing) {
+                              setEditValues({
+                                ...editValues,
+                                curriculum_set_id: e.target.value || null,
                               })
-                              .catch((error) => {
-                                console.error("Error assigning curriculum set:", error)
-                                toast.error("Failed to assign curriculum set")
-                              })
-                          }
-                        }}
-                        disabled={isProcessing}
-                        className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">No curriculum set</option>
-                        {curriculumSets.map((set) => (
-                          <option key={set.id} value={set.id}>
-                            {set.name}
-                          </option>
-                        ))}
-                      </select>
+                            } else {
+                              assignCurriculumSetToUser(student.id, e.target.value || "")
+                                .then(() => {
+                                  fetchStudents()
+                                  toast.success("Curriculum set assigned successfully")
+                                })
+                                .catch((error) => {
+                                  console.error("Error assigning curriculum set:", error)
+                                  toast.error("Failed to assign curriculum set")
+                                })
+                            }
+                          }}
+                          disabled={isProcessing}
+                          className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-xs focus:border-red-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="">No curriculum set</option>
+                          {curriculumSets.map((set) => (
+                            <option key={set.id} value={set.id}>
+                              {set.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="px-2 py-1 bg-gray-800/50 border border-gray-700 rounded text-gray-400 text-xs">
+                          {student.curriculum_set?.name || "No curriculum set"}
+                        </div>
+                      )}
 
                       <select
                         value={isEditing ? editValues.current_belt_id || "" : student.current_belt_id || ""}
