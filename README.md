@@ -72,9 +72,11 @@ Edit `.env.local` and fill in your values. See [Environment Variables](#environm
 3. Run database migrations:
    - Navigate to **SQL Editor** in Supabase dashboard
    - Execute the SQL scripts from `/scripts` folder in order
-4. Configure authentication:
-   - **Site URL**: Set to `http://localhost:3000`
-   - **Redirect URLs**: Add `http://localhost:3000/auth/callback` and `http://localhost:3000/auth/confirm/callback`
+4. Configure authentication in **Auth > Providers > Email**:
+   - **Site URL**: Set to the value of `NEXT_PUBLIC_SITE_URL` (e.g., `http://localhost:3000` for local development)
+   - **Redirect URLs**: Add the values corresponding to your environment:
+     - For local: `http://localhost:3000/auth/callback` and `http://localhost:3000/auth/confirm/callback`
+     - For production: Use your domain (e.g., `https://your-domain.com/auth/callback` and `https://your-domain.com/auth/confirm/callback`)
 
 ### Step 4: Set Up External Services
 
@@ -102,10 +104,32 @@ The application will be available at `http://localhost:3000`
 
 ### Step 6: Create Initial Admin User
 
-1. Navigate to `http://localhost:3000/auth/sign-up`
-2. Register with the email specified in `ADMIN_USER` environment variable
-3. Confirm your email (check Resend logs or Supabase Auth dashboard)
-4. This user will automatically have admin privileges
+The initial admin user must be created with full admin privileges and pre-approved status. There are two approaches:
+
+**Option A: Using the Setup Admin Page (Recommended)**
+1. Navigate to `http://localhost:3000/setup-admin`
+2. Use the form to create the first admin user
+3. This user will be created with `role: Admin` and `is_approved: true`
+
+**Option B: Direct Database Setup**
+1. Connect to your Supabase database directly
+2. Execute SQL to insert an admin user:
+   ```sql
+   INSERT INTO users (id, email, full_name, role, is_approved, approved_at, created_at, updated_at)
+   VALUES (
+     gen_random_uuid(),
+     'admin@example.com',
+     'Admin User',
+     'Admin',
+     true,
+     NOW(),
+     NOW(),
+     NOW()
+   );
+   ```
+3. The `ADMIN_USER` environment variable serves as a fallback bypass for admin access in case of database issues, but does not automatically grant privileges
+
+**Note**: Regular user registration goes through an approval flow—new users are created with `is_approved: false` and must be approved by an admin before gaining access.
 
 ## Available Scripts
 
