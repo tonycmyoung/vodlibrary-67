@@ -5,16 +5,16 @@ import Link from "next/link"
 import { createClient } from "@supabase/supabase-js"
 
 interface ConfirmPageProps {
-  searchParams: {
+  searchParams: Promise<{
     error?: string
     error_code?: string
     error_description?: string
     success?: string
-  }
+  }>
 }
 
 export default async function ConfirmPage({ searchParams }: ConfirmPageProps) {
-  const { error, error_code, error_description, success } = searchParams
+  const { error, error_code, error_description, success } = await searchParams
 
   const isSuccess = success === "true" && !error && !error_code
   const isExpired = error_code === "otp_expired" || error_description?.includes("expired")

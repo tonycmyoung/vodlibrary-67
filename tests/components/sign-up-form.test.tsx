@@ -109,7 +109,7 @@ describe("SignUpForm", () => {
   })
 
   it("should update form data when inputs change", async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(<SignUpForm />)
 
     const fullNameInput = screen.getByLabelText("Full Name")

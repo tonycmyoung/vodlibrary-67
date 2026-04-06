@@ -68,10 +68,12 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsLoading(false)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowSpinner(false)
+    // Defer the reset to avoid synchronous setState in effect body
+    const id = setTimeout(() => {
+      setIsLoading(false)
+      setShowSpinner(false)
+    }, 0)
+    return () => clearTimeout(id)
   }, [pathname])
 
   // Callback to show spinner if still loading (extracted to reduce nesting)

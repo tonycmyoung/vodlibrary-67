@@ -24,7 +24,9 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Run tests with coverage
-        run: npm run test:coverage 2>&1 | tee test-output.txt
+        run: |
+          set -o pipefail
+          npm run test:coverage 2>&1 | tee test-output.txt
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

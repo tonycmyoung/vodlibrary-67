@@ -21,6 +21,7 @@ export const formatDate = (dateString: string | null | undefined): string => {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false, // switched from 12-hour to 24-hour format
+      timeZone: "UTC",
     })
 
     return result
@@ -47,6 +48,7 @@ export const formatShortDate = (dateString: string | null | undefined): string =
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     })
   } catch {
     return "Invalid date"

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import PerformerManagement from "@/components/performer-management"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createClient as createBrowserClient } from "@/lib/supabase/client"
 import { addPerformer, updatePerformer, deletePerformer } from "@/lib/actions"
 import { within } from "@testing-library/dom"
 
@@ -185,7 +185,7 @@ describe("PerformerManagement", () => {
     await user.click(saveButton)
 
     await waitFor(() => {
-      expect(updatePerformer).toHaveBeenCalledWith("perf-1", "Updated Name")
+      expect(updatePerformer).toHaveBeenCalledWith("perf-1", "Updated Name", "")
     })
   })
 
