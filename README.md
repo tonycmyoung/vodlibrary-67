@@ -184,3 +184,6 @@ See `env.template` for a complete list with descriptions.
 ## License
 
 This project is proprietary software. See [LICENSE.md](LICENSE.md) for full license terms and usage restrictions.
+
+---
+*Last updated: April 2026*
