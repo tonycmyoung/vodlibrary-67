@@ -75,6 +75,37 @@ interface Performer {
   name: string
 }
 
+// Helper function to group curriculums by set - reduces nesting complexity
+const groupCurriculumsBySet = (curriculums: Video["curriculums"]) => {
+  return curriculums.reduce(
+    (acc, curr) => {
+      const setId = curr.curriculum_set_id || "unknown"
+      const setName = curr.curriculum_set?.name || "Unknown"
+      if (!acc[setId]) {
+        acc[setId] = { name: setName, curriculums: [] }
+      }
+      acc[setId].curriculums.push(curr)
+      return acc
+    },
+    {} as Record<string, { name: string; curriculums: Video["curriculums"] }>,
+  )
+}
+
+// Component rendering function to avoid deep nesting
+const renderCurriculumBadges = (curriculum: Curriculum) => (
+  <Badge
+    key={curriculum.id}
+    variant="outline"
+    className="text-xs"
+    style={{
+      borderColor: curriculum.color,
+      color: curriculum.color,
+    }}
+  >
+    {curriculum.name}
+  </Badge>
+)
+
 export default function VideoManagement() {
   const [videos, setVideos] = useState<Video[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -528,40 +559,14 @@ export default function VideoManagement() {
 
                       <div className="space-y-1">
                         {/* Group curriculums by set */}
-                        {(() => {
-                          const curriculumsBySet = video.curriculums.reduce(
-                            (acc, curr) => {
-                              const setId = curr.curriculum_set_id || "unknown"
-                              const setName = curr.curriculum_set?.name || "Unknown"
-                              if (!acc[setId]) {
-                                acc[setId] = { name: setName, curriculums: [] }
-                              }
-                              acc[setId].curriculums.push(curr)
-                              return acc
-                            },
-                            {} as Record<string, { name: string; curriculums: typeof video.curriculums }>,
-                          )
-                          return Object.entries(curriculumsBySet).map(([setId, { name, curriculums: setCurriculums }]) => (
+                        {Object.entries(groupCurriculumsBySet(video.curriculums)).map(
+                          ([setId, { name, curriculums: setCurriculums }]) => (
                             <div key={setId} className="flex flex-wrap items-center gap-1">
                               <span className="text-xs text-gray-500 font-medium">{name}:</span>
-                              {setCurriculums
-                                .toSorted((a, b) => a.display_order - b.display_order)
-                                .map((curriculum) => (
-                                  <Badge
-                                    key={curriculum.id}
-                                    variant="outline"
-                                    className="text-xs"
-                                    style={{
-                                      borderColor: curriculum.color,
-                                      color: curriculum.color,
-                                    }}
-                                  >
-                                    {curriculum.name}
-                                  </Badge>
-                                ))}
+                              {setCurriculums.toSorted((a, b) => a.display_order - b.display_order).map(renderCurriculumBadges)}
                             </div>
-                          ))
-                        })()}
+                          ),
+                        )}
                         {/* Categories row */}
                         {video.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1">
