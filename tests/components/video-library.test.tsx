@@ -762,7 +762,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()
@@ -782,7 +782,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
@@ -817,7 +817,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for the URL filter to be loaded and applied (Filters: 1)
       await waitFor(() => {
@@ -1050,7 +1050,7 @@ describe("VideoLibrary", () => {
         return null
       })
 
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       // Wait for initial filter to be applied from URL params
       await waitFor(() => {
@@ -1226,7 +1226,7 @@ describe("VideoLibrary", () => {
   describe("Curriculum Toggle", () => {
     it("should handle curriculum toggle and update selected curriculums", async () => {
       const user = userEvent.setup()
-      render(<VideoLibrary />)
+      render(<VideoLibrary userProfile={{ curriculum_set_id: "set-1" }} />)
 
       await waitFor(() => {
         expect(screen.getByTestId("category-filter")).toBeTruthy()
