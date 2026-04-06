@@ -70,6 +70,17 @@ const groupCurriculumsBySet = (curriculums: Curriculum[]) => {
   )
 }
 
+const toggleCurriculumId = (
+  currentIds: string[],
+  curriculumId: string,
+  checked: boolean,
+): string[] => {
+  if (checked) {
+    return [...currentIds, curriculumId]
+  }
+  return currentIds.filter((id) => id !== curriculumId)
+}
+
 export default function VideoModal({
   isOpen,
   onClose,
@@ -305,19 +316,12 @@ export default function VideoModal({
                             id={`curriculum-${curriculum.id}`}
                             type="checkbox"
                             checked={formData.curriculum_ids.includes(curriculum.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  curriculum_ids: [...formData.curriculum_ids, curriculum.id],
-                                })
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  curriculum_ids: formData.curriculum_ids.filter((id) => id !== curriculum.id),
-                                })
-                              }
-                            }}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                curriculum_ids: toggleCurriculumId(formData.curriculum_ids, curriculum.id, e.target.checked),
+                              })
+                            }
                             className="rounded"
                           />
                           <span className="text-sm font-medium" style={{ color: curriculum.color || "#9ca3af" }}>
