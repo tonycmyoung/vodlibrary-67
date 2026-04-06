@@ -36,6 +36,27 @@ import { fetchStudentsForHeadTeacher, updateStudentForHeadTeacher, assignCurricu
 import InviteUserModal from "@/components/invite-user-modal"
 import { toast } from "react-toastify"
 
+const updateUserInList = (
+  user: UserInterface,
+  editingUser: string,
+  editValues: { full_name: string; teacher: string; school: string; current_belt_id: string; curriculum_set_id: string | null },
+  fullSchool: string,
+  curriculumSets: CurriculumSet[],
+): UserInterface => {
+  if (user.id !== editingUser) {
+    return user
+  }
+  return {
+    ...user,
+    full_name: editValues.full_name.trim(),
+    teacher: editValues.teacher.trim(),
+    school: fullSchool,
+    current_belt_id: editValues.current_belt_id,
+    curriculum_set_id: editValues.curriculum_set_id,
+    curriculum_set: curriculumSets.find((s) => s.id === editValues.curriculum_set_id) ?? null,
+  }
+}
+
 interface UserInterface {
   id: string
   email: string
@@ -488,21 +509,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
         throw new Error(result.error)
       }
 
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === editingUser
-            ? {
-                ...user,
-                full_name: editValues.full_name.trim(),
-                teacher: editValues.teacher.trim(),
-                school: fullSchool,
-                current_belt_id: editValues.current_belt_id,
-                curriculum_set_id: editValues.curriculum_set_id,
-                curriculum_set: curriculumSets.find((s) => s.id === editValues.curriculum_set_id) ?? null,
-              }
-            : user,
-        ),
-      )
+      setUsers((prev) => prev.map((user) => updateUserInList(user, editingUser, editValues, fullSchool, curriculumSets)))
 
       setEditingUser(null)
       setEditValues({
