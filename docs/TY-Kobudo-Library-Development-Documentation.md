@@ -686,7 +686,7 @@ cd ty-kobudo-library
 npm install --legacy-peer-deps
 
 # Set up environment variables
-cp .env.local.tmpl .env.local
+cp .env.template .env.local
 # Edit .env.local with your values - see template for full documentation
 
 # Run development server

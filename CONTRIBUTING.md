@@ -21,10 +21,10 @@ Thank you for your interest in contributing to the TY Kobudo Library project.
    Note: The `--legacy-peer-deps` flag is required due to React 19 peer dependency conflicts.
 3. Set up environment variables:
    \`\`\`bash
-   cp .env.local.tmpl .env.local
+   cp .env.template .env.local
    # Edit .env.local with your values
    \`\`\`
-   See \`.env.local.tmpl\` for a fully documented template with all required and optional variables.
+   See \`.env.template\` for a fully documented template with all required and optional variables.
 4. Run the development server:
    \`\`\`bash
    npm run dev

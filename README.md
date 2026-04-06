@@ -64,7 +64,7 @@ npm install --legacy-peer-deps
 
 \`\`\`bash
 # Copy the template file
-cp .env.local.tmpl .env.local
+cp .env.template .env.local
 \`\`\`
 
 Edit \`.env.local\` and fill in your values. See [Environment Variables](#environment-variables) for details on each variable.
@@ -128,7 +128,7 @@ npm run type-check    # Run TypeScript type checking
 
 ## Environment Variables
 
-Copy \`.env.local.tmpl\` to \`.env.local\` for a fully documented template. Key variables:
+Copy \`.env.template\` to \`.env.local\` for a fully documented template. Key variables:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -150,7 +150,7 @@ Copy \`.env.local.tmpl\` to \`.env.local\` for a fully documented template. Key 
 
 *Profile image uploads will fail without blob storage configured.
 
-See \`.env.local.tmpl\` for a complete list with descriptions.
+See \`.env.template\` for a complete list with descriptions.
 
 ## Documentation
 

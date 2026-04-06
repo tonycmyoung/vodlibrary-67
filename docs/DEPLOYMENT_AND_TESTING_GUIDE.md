@@ -17,7 +17,7 @@ The application is deployed to Vercel with automatic deployments on push to the 
 
 Required environment variables (configure in Vercel dashboard).
 
-See \`/.env.local.tmpl\` for a fully documented template with all variables and descriptions.
+See \`/.env.template\` for a fully documented template with all variables and descriptions.
 
 **Required Variables:**
 - \`SUPABASE_URL\`, \`SUPABASE_SERVICE_ROLE_KEY\`, \`SUPABASE_ANON_KEY\`
