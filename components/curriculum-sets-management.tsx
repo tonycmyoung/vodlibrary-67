@@ -147,6 +147,7 @@ export default function CurriculumSetsManagement() {
 
   useEffect(() => {
     fetchSets()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only data fetch
   }, [])
 
   const fetchSets = async () => {

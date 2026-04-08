@@ -103,7 +103,7 @@ export async function updateCurriculum(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const updateData: any = {
+    const updateData: { name: string; description: string | null; color: string; display_order?: number } = {
       name: curriculumData.name,
       description: curriculumData.description || null,
       color: curriculumData.color,
@@ -433,7 +433,7 @@ export async function updateLevelInCurriculumSet(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const updateData: any = {
+    const updateData: { name: string; description: string | null; color: string; display_order?: number } = {
       name: levelData.name,
       description: levelData.description || null,
       color: levelData.color,
@@ -553,7 +553,7 @@ export async function getVideosForLevel(levelId: string): Promise<Array<{
       return []
     }
 
-    return (data || []).map((row: any) => row.videos).filter(Boolean)
+    return (data || []).map((row) => (row as Record<string, unknown>).videos as { id: string; title: string; thumbnail_url: string | null; duration_seconds: number | null; recorded: string | null }).filter(Boolean)
   } catch (error) {
     console.error("Error in getVideosForLevel:", error)
     return []

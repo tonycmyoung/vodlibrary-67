@@ -283,7 +283,7 @@ export async function updateUserFields(
   try {
     const serviceSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-    const updateData: any = {
+    const updateData: { full_name: string; teacher: string; school: string; current_belt_id?: string | null } = {
       full_name: fullName.trim(),
       teacher: teacher.trim(),
       school: school.trim(),

@@ -68,7 +68,7 @@ export default function CategoryManagement() {
       if (error) throw error
 
       const categoriesWithCount = await Promise.all(
-        (data || []).map(async (category: any) => {
+        (data || []).map(async (category: { id: string; name: string; description: string | null; color: string; created_at: string }) => {
           const { count } = await supabase
             .from("video_categories")
             .select("*", { count: "exact", head: true })

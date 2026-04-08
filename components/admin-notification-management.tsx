@@ -72,10 +72,12 @@ export default function AdminNotificationManagement() {
   useEffect(() => {
     fetchNotifications()
     fetchUsers()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only data fetch
   }, [])
 
   useEffect(() => {
     filterNotifications()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- re-filter when data or query changes
   }, [notifications, searchQuery])
 
   useEffect(() => {

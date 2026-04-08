@@ -64,7 +64,7 @@ interface VideoLibraryProps {
   readonly maxCurriculumOrder?: number // Added optional curriculum filtering for My Level page
   readonly storagePrefix?: string // Allow custom storage prefix for separate UI state
   readonly nextBeltName?: string // Add prop for next belt name
-  readonly userProfile?: any // Added prop for user profile
+  readonly userProfile?: { curriculum_set_id?: string | null } // Added prop for user profile
 }
 
 
@@ -257,7 +257,7 @@ let lastFailureTime = 0
 let failureCount = 0
 const CIRCUIT_BREAKER_THRESHOLD = 3
 const CIRCUIT_BREAKER_TIMEOUT = 30000 // 30 seconds
-const cache = new Map<string, { data: any; timestamp: number }>()
+const cache = new Map<string, { data: unknown; timestamp: number }>()
 const CACHE_DURATION = 60000 // 1 minute
 
 // Circuit breaker helper functions - extracted to reduce cognitive complexity
@@ -291,7 +291,7 @@ function isCircuitBreakerOpen(): boolean {
 }
 
 // Cache helper functions
-function setCachedData(key: string, data: any) {
+function setCachedData(key: string, data: unknown) {
   cache.set(key, { data, timestamp: Date.now() })
 }
 
@@ -501,7 +501,7 @@ export default function VideoLibrary({
   })
 
   const [paginatedVideos, setPaginatedVideos] = useState<Video[]>([])
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
   const [userLoading, setUserLoading] = useState(true)
 
   const supabase = createClient()
@@ -543,6 +543,7 @@ export default function VideoLibrary({
     return () => {
       mounted = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only auth check
   }, [])
 
   useEffect(() => {
@@ -634,12 +635,13 @@ export default function VideoLibrary({
     return () => {
       mounted = false
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFromCache/saveToCache/supabase are stable refs; effect triggers on user/favoritesOnly
   }, [user, favoritesOnly])
 
   const loadFromCache = () => {
     const cachedVideos = getCachedData(favoritesOnly ? "favoriteVideos" : "videos")
     if (cachedVideos) {
-      setAllVideos(cachedVideos)
+      setAllVideos(cachedVideos as Video[])
     }
   }
 
@@ -667,6 +669,7 @@ export default function VideoLibrary({
       setSelectedCategories(separatedCategories)
       setSelectedCurriculums(separatedCurriculums)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- urlState.filters is read but not a trigger; effect re-runs when processedData changes
   }, [processedData])
 
   const [sortBy, setSortBy] = useState<VideoLibrarySortBy>(() => {

@@ -293,6 +293,7 @@ export default function StudentManagement({ headTeacherSchool, headTeacherId, us
   useEffect(() => {
     fetchStudents()
     fetchCurriculums()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only data fetch
   }, [])
 
   const fetchStudents = async () => {

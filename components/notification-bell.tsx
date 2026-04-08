@@ -157,7 +157,7 @@ export default function NotificationBell({ userId, isAdmin = false, userRole: _u
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch on mount, setState is in the resolved callback
     void fetchNotifications()
-  }, [fetchNotifications]) // Now properly depends on memoized function
+  }, [fetchNotifications, userId]) // Now properly depends on memoized function
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

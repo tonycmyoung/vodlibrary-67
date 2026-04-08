@@ -134,7 +134,7 @@ export default function VideoPage({ params }: VideoPageProps) {
         views: viewCount,
         curriculums:
           videoCurriculums
-            ?.map((vc: any) => vc.curriculums)
+            ?.map((vc) => (vc as unknown as { curriculums: Video["curriculums"][number] }).curriculums)
             .filter((curriculum) => {
               if (!curriculum) return false
               // Filter by user's curriculum set if specified
@@ -142,8 +142,8 @@ export default function VideoPage({ params }: VideoPageProps) {
               return true
             })
             .sort((a, b) => a.display_order - b.display_order) || [],
-        categories: videoCategories?.map((vc: any) => vc.categories) || [],
-        performers: videoPerformers?.map((vp: any) => vp.performers) || [],
+        categories: videoCategories?.map((vc) => (vc as unknown as { categories: Video["categories"][number] }).categories) || [],
+        performers: videoPerformers?.map((vp) => (vp as unknown as { performers: Video["performers"][number] }).performers) || [],
         isFavorited: !!favorite,
       }
 

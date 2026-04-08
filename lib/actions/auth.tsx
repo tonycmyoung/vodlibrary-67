@@ -342,7 +342,7 @@ export async function signIn(formData: FormData) {
   revalidatePath("/auth/login")
 }
 
-export async function signUp(prevState: any, formData: FormData) {
+export async function signUp(prevState: { error?: string } | null, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const fullName = formData.get("fullName") as string
@@ -440,7 +440,7 @@ export async function signUp(prevState: any, formData: FormData) {
   redirect("/pending-approval?from=signup")
 }
 
-export async function createAdminUser(prevState: any, formData: FormData) {
+export async function createAdminUser(prevState: { error?: string } | null, formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const fullName = formData.get("fullName") as string
@@ -515,7 +515,7 @@ export async function signOutServerAction() {
   return { success: true }
 }
 
-export async function updatePassword(prevState: any, formData: FormData) {
+export async function updatePassword(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
 

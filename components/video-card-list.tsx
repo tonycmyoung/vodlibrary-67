@@ -52,7 +52,7 @@ export default function VideoCardList({
   userCurriculumSetId,
 }: VideoCardListProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
 
   useEffect(() => {
     const getUser = async () => {
@@ -129,6 +129,7 @@ export default function VideoCardList({
           {/* Small thumbnail */}
           <div className="relative w-16 h-12 bg-gray-900 rounded overflow-hidden flex-shrink-0">
             {video.thumbnail_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element -- external Supabase thumbnails with dynamic sizing */
               <img
                 src={video.thumbnail_url || "/placeholder.svg"}
                 alt={video.title}

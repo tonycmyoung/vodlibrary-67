@@ -9,7 +9,7 @@ interface AuditLogEntry {
   action: "user_signup" | "user_approval" | "user_deletion" | "user_invitation" | "password_reset"
   target_id?: string
   target_email?: string
-  additional_data?: Record<string, any>
+  additional_data?: Record<string, unknown>
 }
 
 export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {

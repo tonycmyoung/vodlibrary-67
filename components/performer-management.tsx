@@ -27,6 +27,7 @@ export default function PerformerManagement() {
 
   useEffect(() => {
     fetchPerformers()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only data fetch
   }, [])
 
   const fetchPerformers = async () => {

@@ -21,7 +21,7 @@ interface LevelFormData {
 
 export function useLevelManagement({ selectedSetId, PRESET_COLORS, onSuccess }: UseLevelManagementProps) {
   const { toast } = useToast()
-  const [editingLevel, setEditingLevel] = useState<any>(null)
+  const [editingLevel, setEditingLevel] = useState<{ id: string; name: string; description: string | null; color: string } | null>(null)
   const [levelFormData, setLevelFormData] = useState<LevelFormData>({
     name: "",
     description: "",
@@ -91,7 +91,7 @@ export function useLevelManagement({ selectedSetId, PRESET_COLORS, onSuccess }: 
     }
   }
 
-  const handleMoveLevel = async (levels: any[], level: any, direction: "up" | "down") => {
+  const handleMoveLevel = async (levels: { id: string }[], level: { id: string }, direction: "up" | "down") => {
     const currentIndex = levels.findIndex((l) => l.id === level.id)
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
 
