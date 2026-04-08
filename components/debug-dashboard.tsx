@@ -14,7 +14,7 @@ interface DebugLog {
   user_email: string
   success: boolean
   error_message: string | null
-  additional_data: any
+  additional_data: Record<string, string | boolean> | null
   created_at: string
 }
 
@@ -117,7 +117,7 @@ export default function DebugDashboard() {
     )
   }
 
-  const getKeyAdditionalData = (additionalData: any) => {
+  const getKeyAdditionalData = (additionalData: Record<string, string | boolean> | null) => {
     if (!additionalData) return null
 
     if (additionalData.failure_reason) {

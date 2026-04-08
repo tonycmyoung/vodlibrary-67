@@ -355,7 +355,7 @@ export async function getVideosWithViewCounts(): Promise<
   }
 
   // Aggregate the data in JavaScript
-  const aggregated = data?.reduce((acc: any, view: any) => {
+  const aggregated = data?.reduce((acc: Record<string, { video_id: string; total_views: number; last_viewed: string; unique_user_views: number }>, view: { video_id: string; viewed_at: string }) => {
     const videoId = view.video_id
     if (!acc[videoId]) {
       acc[videoId] = {
@@ -389,7 +389,7 @@ export async function getBatchVideoViewCounts(videoIds: string[]): Promise<Recor
 
   // Aggregate the counts by video_id
   const viewCounts =
-    data?.reduce((acc: Record<string, number>, view: any) => {
+    data?.reduce((acc: Record<string, number>, view: { video_id: string }) => {
       const videoId = view.video_id
       acc[videoId] = (acc[videoId] || 0) + 1
       return acc
@@ -478,15 +478,20 @@ export async function fetchVideoViewLogs(): Promise<VideoViewLog[]> {
   }
 
   // Transform the data
-  const transformedData: VideoViewLog[] = (viewLogs || []).map((log: any) => ({
-    id: log.id,
-    video_id: log.video_id,
-    video_title: log.videos?.title || "Unknown Video",
-    user_id: log.user_id,
-    user_name: log.users?.full_name || null,
-    user_email: log.users?.email || null,
-    viewed_at: log.viewed_at,
-  }))
+  const transformedData: VideoViewLog[] = (viewLogs || []).map((log) => {
+    const logRecord = log as Record<string, unknown>
+    const videos = logRecord.videos as { title?: string } | null
+    const users = logRecord.users as { full_name?: string; email?: string } | null
+    return {
+      id: logRecord.id as string,
+      video_id: logRecord.video_id as string,
+      video_title: videos?.title || "Unknown Video",
+      user_id: logRecord.user_id as string,
+      user_name: users?.full_name || null,
+      user_email: users?.email || null,
+      viewed_at: logRecord.viewed_at as string,
+    }
+  })
 
   return transformedData
 }

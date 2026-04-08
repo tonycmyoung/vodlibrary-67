@@ -10,8 +10,8 @@ interface LoadingSkeletonProps {
 export function LoadingSkeleton({
   showFilters = true,
   showTitle = false,
-  titleText,
-  subtitleText,
+  titleText: _titleText,
+  subtitleText: _subtitleText,
   gridCount = 12,
   filterCount = 6,
 }: Readonly<LoadingSkeletonProps>) {

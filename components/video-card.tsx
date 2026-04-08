@@ -54,7 +54,7 @@ const VideoCard = memo(function VideoCard({
   userCurriculumSetId,
 }: VideoCardProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
   const isMobile = useIsMobile()
 
   useEffect(() => {
@@ -123,7 +123,7 @@ const VideoCard = memo(function VideoCard({
     })
     .sort((a, b) => a.display_order - b.display_order)
 
-  const handleVideoClick = async (e: React.MouseEvent) => {
+  const handleVideoClick = async (_e: React.MouseEvent) => {
     // Click handler without debug logs
   }
 
@@ -146,6 +146,7 @@ const VideoCard = memo(function VideoCard({
       >
         <div className="relative h-48 bg-gray-900">
           {video.thumbnail_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- external Supabase thumbnails with onError fallback */
             <img
               src={video.thumbnail_url || "/placeholder.svg"}
               alt={video.title}

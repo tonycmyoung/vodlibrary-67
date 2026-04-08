@@ -24,13 +24,6 @@ function getContrastColor(hexColor: string): string {
   return luminance > 0.5 ? "#000000" : "#ffffff"
 }
 
-function addTransparency(color: string, alpha: string): string | null {
-  if (!color || !color.startsWith("#") || color.length < 7) {
-    return null
-  }
-  return color + alpha
-}
-
 interface Category {
   id: string
   name: string
@@ -41,13 +34,6 @@ interface Category {
 interface Performer {
   id: string
   name: string
-}
-
-interface FilterItem {
-  id: string
-  name: string
-  color: string
-  type: "category" | "recorded" | "performer"
 }
 
 interface CategoryFilterProps {

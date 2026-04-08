@@ -14,7 +14,7 @@ interface SendMessageFormProps {
   readonly userName: string | null
 }
 
-export default function SendMessageForm({ userId, userName }: SendMessageFormProps) {
+export default function SendMessageForm({ userId: _userId, userName }: SendMessageFormProps) {
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({

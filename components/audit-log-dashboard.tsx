@@ -16,7 +16,7 @@ interface AuditLog {
   action: string
   target_id: string | null
   target_email: string | null
-  additional_data: any
+  additional_data: Record<string, string> | null
 }
 
 export default function AuditLogDashboard() {

@@ -18,7 +18,7 @@ interface SubscriptionCheckoutProps {
   readonly onBack?: () => void
 }
 
-export function SubscriptionCheckout({ email, onSuccess, onCancel, onBack }: Readonly<SubscriptionCheckoutProps>) {
+export function SubscriptionCheckout({ email, onSuccess: _onSuccess, onCancel, onBack }: Readonly<SubscriptionCheckoutProps>) {
   const [selectedTier, setSelectedTier] = useState<string>("supporter")
   const [interval, setInterval] = useState<"monthly" | "annual">("monthly")
   const [clientSecret, setClientSecret] = useState<string | null>(null)

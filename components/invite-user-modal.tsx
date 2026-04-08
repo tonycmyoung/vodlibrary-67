@@ -59,7 +59,7 @@ export default function InviteUserModal({ isOpen, onClose }: InviteUserModalProp
           setMessageType("")
         }, 2000)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error inviting user:", error)
       setMessage("Failed to send invitation")
       setMessageType("error")

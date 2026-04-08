@@ -1,4 +1,4 @@
-const requestCache = new Map<string, Promise<any>>()
+const requestCache = new Map<string, Promise<unknown>>()
 
 export function deduplicateRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
   // If request is already in progress, return the existing promise

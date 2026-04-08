@@ -163,20 +163,26 @@ export default function VideoManagement() {
         .order("created_at", { ascending: false })
 
       if (videosData) {
-        const videosWithMetadata = videosData.map((video: any) => ({
+        const videosWithMetadata = videosData.map((video) => ({
           ...video,
-          views: 0,
-          last_viewed_at: null,
-          categories: video.video_categories?.map((vc: any) => vc.categories) || [],
-          curriculums: video.video_curriculums?.map((vc: any) => vc.curriculums) || [],
-          performers: video.video_performers?.map((vp: any) => vp.performers) || [],
+          views: 0 as number | null,
+          last_viewed_at: null as string | null,
+          categories: (video as Record<string, unknown>).video_categories
+            ? ((video as Record<string, unknown>).video_categories as Array<{ categories: Video["categories"][number] }>).map((vc) => vc.categories)
+            : [] as Video["categories"],
+          curriculums: (video as Record<string, unknown>).video_curriculums
+            ? ((video as Record<string, unknown>).video_curriculums as Array<{ curriculums: Video["curriculums"][number] }>).map((vc) => vc.curriculums)
+            : [] as Video["curriculums"],
+          performers: (video as Record<string, unknown>).video_performers
+            ? ((video as Record<string, unknown>).video_performers as Array<{ performers: Video["performers"][number] }>).map((vp) => vp.performers)
+            : [] as Video["performers"],
         }))
 
-        const videoIds = videosWithMetadata.map((video: any) => video.id)
+        const videoIds = videosWithMetadata.map((video) => video.id)
         const viewCounts = await getBatchVideoViewCounts(videoIds)
         const lastViewedDates = await getBatchVideoLastViewed(videoIds)
 
-        const videosWithViewData = videosWithMetadata.map((video: any) => ({
+        const videosWithViewData = videosWithMetadata.map((video) => ({
           ...video,
           views: viewCounts[video.id] || 0,
           last_viewed_at: lastViewedDates[video.id] || null,
@@ -185,7 +191,7 @@ export default function VideoManagement() {
         setVideos(videosWithViewData)
 
         const uniqueRecorded = Array.from(
-          new Set(videosWithViewData.map((v: any) => v.recorded).filter(Boolean)),
+          new Set(videosWithViewData.map((v) => v.recorded).filter(Boolean)),
         ).sort((a, b) =>
           String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" }),
         ) as string[]
@@ -534,6 +540,7 @@ export default function VideoManagement() {
               >
                 {/* Thumbnail */}
                 <div className="flex-shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail preview with fixed dimensions */}
                   <img
                     src={video.thumbnail_url || "/placeholder.svg"}
                     alt={video.title}

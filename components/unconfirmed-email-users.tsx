@@ -342,7 +342,3 @@ export default function UnconfirmedEmailUsers() {
     </Card>
   )
 }
-
-const getBadgeClassName = (isError?: boolean) => {
-  return isError ? "border-red-600 text-red-400" : "border-green-600 text-green-400"
-}

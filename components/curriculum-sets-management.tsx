@@ -95,13 +95,6 @@ interface CurriculumSetWithLevels extends CurriculumSet {
   levels: CurriculumLevel[]
 }
 
-interface VideoItem {
-  id: string
-  title: string
-  thumbnail_url: string | null
-  duration_seconds: number | null
-}
-
 const PRESET_COLORS = ["#DC2626", "#EA580C", "#CA8A04", "#16A34A", "#2563EB", "#7C3AED", "#DB2777", "#059669", "#0891B2", "#7C2D12"]
 
 export default function CurriculumSetsManagement() {
@@ -154,6 +147,7 @@ export default function CurriculumSetsManagement() {
 
   useEffect(() => {
     fetchSets()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only data fetch
   }, [])
 
   const fetchSets = async () => {
