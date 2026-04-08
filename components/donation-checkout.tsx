@@ -18,7 +18,7 @@ interface DonationCheckoutProps {
   readonly onCancel?: () => void
 }
 
-export function DonationCheckout({ email, onSuccess, onCancel }: DonationCheckoutProps) {
+export function DonationCheckout({ email, onSuccess: _onSuccess, onCancel }: DonationCheckoutProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>("donation-10")
   const [customAmount, setCustomAmount] = useState<string>("")
   const [useCustom, setUseCustom] = useState(false)

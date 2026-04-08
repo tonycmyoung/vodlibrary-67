@@ -67,11 +67,13 @@ export default function SignUpForm() {
 
   useEffect(() => {
     if (state?.error) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFormData((prev) => ({
-        ...prev,
-        password: "", // Only clear password on error
-      }))
+      const id = setTimeout(() => {
+        setFormData((prev) => ({
+          ...prev,
+          password: "", // Only clear password on error
+        }))
+      }, 0)
+      return () => clearTimeout(id)
     }
   }, [state?.error])
 

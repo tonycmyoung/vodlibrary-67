@@ -31,7 +31,7 @@ interface NotificationBellProps {
   readonly userEmail?: string
 }
 
-export default function NotificationBell({ userId, isAdmin = false, userRole, userEmail }: NotificationBellProps) {
+export default function NotificationBell({ userId, isAdmin = false, userRole: _userRole, userEmail: _userEmail }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
@@ -155,8 +155,8 @@ export default function NotificationBell({ userId, isAdmin = false, userRole, us
       return
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifications()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetch on mount, setState is in the resolved callback
+    void fetchNotifications()
   }, [fetchNotifications]) // Now properly depends on memoized function
 
   return (

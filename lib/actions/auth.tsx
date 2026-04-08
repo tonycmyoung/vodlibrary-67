@@ -10,11 +10,6 @@ import { validateReturnTo } from "../utils/auth"
 import { sendEmail } from "./email"
 import { logAuditEvent } from "./audit"
 
-type SignInResult = {
-  success: boolean
-  redirectTo?: string
-  error?: string
-}
 
 // Helper function to create a service client (reduces repeated code)
 function getServiceClient() {

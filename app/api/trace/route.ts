@@ -23,8 +23,7 @@ const getEnvironment = (): string => {
 let writeCounter = 0
 
 // Cleanup old logs based on retention settings
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function cleanupOldLogs(client: SupabaseClient<any, any, any>, retentionDays: number): Promise<void> {
+async function cleanupOldLogs(client: SupabaseClient, retentionDays: number): Promise<void> {
   if (retentionDays <= 0) return
   
   const cutoffDate = new Date()

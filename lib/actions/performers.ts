@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 
 export async function addPerformer(
   nameOrFormData: string | FormData,
-  formData?: FormData,
+  _formData?: FormData,
 ): Promise<{ success?: string; error?: string }> {
   let name: string
 

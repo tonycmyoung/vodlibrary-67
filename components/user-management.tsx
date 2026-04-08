@@ -257,7 +257,7 @@ const UserInfoFields = ({
   isEditing,
   editValues,
   setEditValues,
-  curriculums,
+  curriculums: _curriculums,
 }: {
   user: UserInterface
   isEditing: boolean

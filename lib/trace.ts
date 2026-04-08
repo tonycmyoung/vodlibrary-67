@@ -151,6 +151,7 @@ function consoleOutput(
   const prefix = "[" + timestamp + "] [" + level.toUpperCase() + "]"
   const location = formatLocation(sourceFile, sourceLine, functionName)
   const payloadStr = payload ? " " + JSON.stringify(payload) : ""
+  // eslint-disable-next-line no-console -- trace logging intentionally writes to console
   console.log(prefix + " " + location + " " + message + payloadStr)
 }
 

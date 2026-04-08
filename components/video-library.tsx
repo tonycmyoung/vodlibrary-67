@@ -552,6 +552,7 @@ export default function VideoLibrary({
       setLoading(true)
 
       if (isCircuitBreakerOpen()) {
+        // eslint-disable-next-line no-console -- intentional diagnostic log for circuit breaker state
         console.log("Circuit breaker is open, using cached data if available")
         loadFromCache()
         if (mounted) setLoading(false)

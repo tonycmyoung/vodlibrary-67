@@ -123,7 +123,7 @@ const VideoCard = memo(function VideoCard({
     })
     .sort((a, b) => a.display_order - b.display_order)
 
-  const handleVideoClick = async (e: React.MouseEvent) => {
+  const handleVideoClick = async (_e: React.MouseEvent) => {
     // Click handler without debug logs
   }
 

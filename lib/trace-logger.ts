@@ -251,6 +251,7 @@ function logToConsole(
   }
   const locationStr = "[" + location + "]"
   const payloadStr = payload ? " " + JSON.stringify(payload) : ""
+  // eslint-disable-next-line no-console -- trace logging intentionally writes to console
   console.log(prefix + " " + locationStr + " " + message + payloadStr)
 }
 
