@@ -69,7 +69,7 @@ describe("CategoryManagement", () => {
 
     vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
-    } as any)
+    } as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render loading state initially", async () => {
@@ -236,7 +236,7 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeTruthy()
     })
 
-    const allButtons = screen.getAllByRole("button")
+    const _allButtons = screen.getAllByRole("button")
     const basicsText = screen.getByText("Basics")
     const basicsCard = basicsText.closest(".space-y-6, .grid > *") // Find the parent card element
 
@@ -262,7 +262,7 @@ describe("CategoryManagement", () => {
       expect(screen.getByText("Basics")).toBeTruthy()
     })
 
-    const allButtons = screen.getAllByRole("button")
+    const _allButtons = screen.getAllByRole("button")
     const basicsText = screen.getByText("Basics")
     const basicsCard = basicsText.closest(".space-y-6, .grid > *") // Find the parent card element
 

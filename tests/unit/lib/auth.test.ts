@@ -28,7 +28,7 @@ describe("lib/auth", () => {
     vi.clearAllMocks()
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co"
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key"
-    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
   })
 
   describe("getCurrentUser", () => {

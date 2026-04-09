@@ -52,11 +52,11 @@ describe("PerformerManagement", () => {
 
     vi.mocked(createBrowserClient).mockReturnValue({
       from: mockFrom,
-    } as any)
+    } as unknown as ReturnType<typeof createBrowserClient>)
 
-    vi.mocked(addPerformer).mockResolvedValue({ error: null } as any)
-    vi.mocked(updatePerformer).mockResolvedValue({ error: null } as any)
-    vi.mocked(deletePerformer).mockResolvedValue({ error: null } as any)
+    vi.mocked(addPerformer).mockResolvedValue({ error: null } as unknown as Awaited<ReturnType<typeof addPerformer>>)
+    vi.mocked(updatePerformer).mockResolvedValue({ error: null } as unknown as Awaited<ReturnType<typeof updatePerformer>>)
+    vi.mocked(deletePerformer).mockResolvedValue({ error: null } as unknown as Awaited<ReturnType<typeof deletePerformer>>)
   })
 
   it("should render loading state initially", async () => {
@@ -143,7 +143,7 @@ describe("PerformerManagement", () => {
       expect(screen.getByText("John Doe")).toBeTruthy()
     })
 
-    const allButtons = screen.getAllByRole("button")
+    const _allButtons = screen.getAllByRole("button")
     const johnDoeText = screen.getByText("John Doe")
     const performerCard = johnDoeText.closest("div.p-3")
 
@@ -290,7 +290,7 @@ describe("PerformerManagement", () => {
   })
 
   it("should display error message when add fails", async () => {
-    vi.mocked(addPerformer).mockResolvedValue({ error: "Database error" } as any)
+    vi.mocked(addPerformer).mockResolvedValue({ error: "Database error" } as unknown as Awaited<ReturnType<typeof addPerformer>>)
 
     render(<PerformerManagement />)
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import type { TraceLogEntry } from "@/lib/trace-logger"
 import {
   fetchTraceLogs,
   clearTraceLogs,
@@ -88,12 +89,12 @@ describe("Trace Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockReturnValue(mockServiceClient as any)
+    vi.mocked(createClient).mockReturnValue(mockServiceClient as unknown as ReturnType<typeof createClient>)
   })
 
   describe("fetchTraceLogs", () => {
     it("should fetch trace logs for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: mockTraceLogs, error: null })
       const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -101,7 +102,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await fetchTraceLogs()
 
@@ -113,7 +114,7 @@ describe("Trace Actions", () => {
     })
 
     it("should apply level filter", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: [], error: null })
       const mockEq = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -122,7 +123,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       await fetchTraceLogs({ level: "error" })
 
@@ -130,7 +131,7 @@ describe("Trace Actions", () => {
     })
 
     it("should apply search filter", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: [], error: null })
       const mockOr = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -139,7 +140,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       await fetchTraceLogs({ search: "test" })
 
@@ -149,14 +150,14 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(fetchTraceLogs()).rejects.toThrow("Unauthorized")
       expect(mockServiceClient.from).not.toHaveBeenCalled()
     })
 
     it("should throw error when database query fails", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: null, error: { message: "Query failed" } })
       const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -164,7 +165,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       await expect(fetchTraceLogs()).rejects.toThrow("Failed to fetch trace logs")
     })
@@ -172,14 +173,14 @@ describe("Trace Actions", () => {
 
   describe("clearTraceLogs", () => {
     it("should clear all trace logs for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockNeq = vi.fn().mockResolvedValue({ error: null })
       const mockDelete = vi.fn().mockReturnValue({ neq: mockNeq })
 
       mockServiceClient.from.mockReturnValue({
         delete: mockDelete,
-      } as any)
+      })
 
       await clearTraceLogs()
 
@@ -189,14 +190,14 @@ describe("Trace Actions", () => {
     })
 
     it("should clear logs before specific date", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLt = vi.fn().mockResolvedValue({ error: null })
       const mockDelete = vi.fn().mockReturnValue({ lt: mockLt })
 
       mockServiceClient.from.mockReturnValue({
         delete: mockDelete,
-      } as any)
+      })
 
       const beforeDate = "2024-01-01T00:00:00Z"
       await clearTraceLogs(beforeDate)
@@ -205,20 +206,20 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(clearTraceLogs()).rejects.toThrow("Unauthorized")
     })
 
     it("should throw error when delete fails", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockNeq = vi.fn().mockResolvedValue({ error: { message: "Delete failed" } })
       const mockDelete = vi.fn().mockReturnValue({ neq: mockNeq })
 
       mockServiceClient.from.mockReturnValue({
         delete: mockDelete,
-      } as any)
+      })
 
       await expect(clearTraceLogs()).rejects.toThrow("Failed to clear trace logs")
     })
@@ -226,7 +227,7 @@ describe("Trace Actions", () => {
 
   describe("fetchTraceSettings", () => {
     it("should fetch trace settings for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockSettings = { id: "default", enabled: true, retention_days: 7 }
       const mockSingle = vi.fn().mockResolvedValue({ data: mockSettings, error: null })
@@ -235,7 +236,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await fetchTraceSettings()
 
@@ -245,7 +246,7 @@ describe("Trace Actions", () => {
     })
 
     it("should return default settings when not found", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "Not found" } })
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle })
@@ -253,7 +254,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await fetchTraceSettings()
 
@@ -266,7 +267,7 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(fetchTraceSettings()).rejects.toThrow("Unauthorized")
     })
@@ -274,13 +275,13 @@ describe("Trace Actions", () => {
 
   describe("updateTraceSettings", () => {
     it("should update trace settings for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockUpsert = vi.fn().mockResolvedValue({ error: null })
 
       mockServiceClient.from.mockReturnValue({
         upsert: mockUpsert,
-      } as any)
+      })
 
       await updateTraceSettings({ enabled: false, retention_days: 14 })
 
@@ -293,19 +294,19 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(updateTraceSettings({ enabled: false })).rejects.toThrow("Unauthorized")
     })
 
     it("should throw error when update fails", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockUpsert = vi.fn().mockResolvedValue({ error: { message: "Update failed" } })
 
       mockServiceClient.from.mockReturnValue({
         upsert: mockUpsert,
-      } as any)
+      })
 
       await expect(updateTraceSettings({ enabled: false })).rejects.toThrow(
         "Failed to update trace settings"
@@ -315,7 +316,7 @@ describe("Trace Actions", () => {
 
   describe("getTraceCategories", () => {
     it("should return unique categories for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockData = [{ category: "auth" }, { category: "video" }, { category: "auth" }, { category: null }]
       const mockNot = vi.fn().mockResolvedValue({ data: mockData, error: null })
@@ -323,7 +324,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await getTraceCategories()
 
@@ -332,20 +333,20 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(getTraceCategories()).rejects.toThrow("Unauthorized")
     })
 
     it("should return empty array on error", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockNot = vi.fn().mockResolvedValue({ data: null, error: { message: "Query failed" } })
       const mockSelect = vi.fn().mockReturnValue({ not: mockNot })
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await getTraceCategories()
 
@@ -355,7 +356,7 @@ describe("Trace Actions", () => {
 
   describe("getTraceSourceFiles", () => {
     it("should return unique source files for admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockData = [
         { source_file: "components/test.tsx" },
@@ -366,7 +367,7 @@ describe("Trace Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await getTraceSourceFiles()
 
@@ -374,7 +375,7 @@ describe("Trace Actions", () => {
     })
 
     it("should throw error for non-admin user", async () => {
-      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as any)
+      vi.mocked(getCurrentUser).mockResolvedValue(mockNonAdminUser as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(getTraceSourceFiles()).rejects.toThrow("Unauthorized")
     })
@@ -382,7 +383,7 @@ describe("Trace Actions", () => {
 
   describe("formatTraceLogsForClipboard", () => {
     it("should format logs as JSON", async () => {
-      const result = await formatTraceLogsForClipboard(mockTraceLogs as any)
+      const result = await formatTraceLogsForClipboard(mockTraceLogs as unknown as TraceLogEntry[])
       const parsed = JSON.parse(result)
 
       expect(parsed).toHaveLength(2)
@@ -420,7 +421,7 @@ describe("Trace Actions", () => {
         is_client: false,
       }
 
-      const result = await formatTraceLogsForClipboard([minimalLog as any])
+      const result = await formatTraceLogsForClipboard([minimalLog as unknown as TraceLogEntry])
       const parsed = JSON.parse(result)
 
       expect(parsed[0].source).toBe("test.ts")

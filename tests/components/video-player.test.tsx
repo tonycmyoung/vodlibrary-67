@@ -58,7 +58,7 @@ describe("VideoPlayer", () => {
       from: mockFrom,
     }
 
-    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render video title and description", async () => {

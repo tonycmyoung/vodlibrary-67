@@ -31,7 +31,7 @@ describe("Admin Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockReturnValue(mockServiceClient as any)
+    vi.mocked(createClient).mockReturnValue(mockServiceClient as unknown as ReturnType<typeof createClient>)
   })
 
   describe("getTelemetryData", () => {
@@ -90,8 +90,9 @@ describe("Admin Actions", () => {
     it("should handle database errors gracefully", async () => {
       mockServiceClient.from.mockImplementation(() => {
         const errorResult = { count: null, error: { message: "Database error" } }
-        const selectResult: any = Promise.resolve(errorResult)
-        selectResult.eq = vi.fn(() => Promise.resolve(errorResult))
+        const selectResult = Object.assign(Promise.resolve(errorResult), {
+          eq: vi.fn(() => Promise.resolve(errorResult)),
+        })
 
         return {
           select: vi.fn(() => selectResult),
@@ -123,9 +124,9 @@ describe("Admin Actions", () => {
           return {
             select: vi.fn(() => {
               const baseResult = { count: 100, error: null }
-              const selectResult: any = Promise.resolve(baseResult)
-              selectResult.eq = vi.fn().mockResolvedValue({ count: 5, error: null })
-              return selectResult
+              return Object.assign(Promise.resolve(baseResult), {
+                eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
+              })
             }),
           }
         }
@@ -158,9 +159,9 @@ describe("Admin Actions", () => {
           return {
             select: vi.fn(() => {
               const baseResult = { count: null, error: null }
-              const selectResult: any = Promise.resolve(baseResult)
-              selectResult.eq = vi.fn().mockResolvedValue({ count: null, error: null })
-              return selectResult
+              return Object.assign(Promise.resolve(baseResult), {
+                eq: vi.fn().mockResolvedValue({ count: null, error: null }),
+              })
             }),
           }
         }
@@ -203,7 +204,7 @@ describe("Admin Actions", () => {
         email: "admin@test.com",
         role: "Admin",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockDelete = vi.fn().mockReturnThis()
       const mockNeq = vi.fn().mockResolvedValue({ error: null })
@@ -211,7 +212,7 @@ describe("Admin Actions", () => {
       mockServiceClient.from.mockReturnValue({
         delete: mockDelete,
         neq: mockNeq,
-      } as any)
+      })
 
       mockDelete.mockReturnValue({ neq: mockNeq })
 
@@ -228,7 +229,7 @@ describe("Admin Actions", () => {
         email: "user@test.com",
         role: "Student",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(clearAuthDebugLogs()).rejects.toThrow("Unauthorized")
 
@@ -241,7 +242,7 @@ describe("Admin Actions", () => {
         email: "admin@test.com",
         role: "Admin",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockDelete = vi.fn().mockReturnThis()
       const mockNeq = vi.fn().mockResolvedValue({ error: { message: "Delete failed" } })
@@ -249,7 +250,7 @@ describe("Admin Actions", () => {
       mockServiceClient.from.mockReturnValue({
         delete: mockDelete,
         neq: mockNeq,
-      } as any)
+      })
 
       mockDelete.mockReturnValue({ neq: mockNeq })
 
@@ -270,7 +271,7 @@ describe("Admin Actions", () => {
         email: "admin@test.com",
         role: "Admin",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLogs = [
         { id: "log-1", event_type: "login", created_at: new Date().toISOString() },
@@ -283,7 +284,7 @@ describe("Admin Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await fetchAuthDebugLogs()
 
@@ -300,7 +301,7 @@ describe("Admin Actions", () => {
         email: "user@test.com",
         role: "Student",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       await expect(fetchAuthDebugLogs()).rejects.toThrow("Unauthorized")
 
@@ -313,7 +314,7 @@ describe("Admin Actions", () => {
         email: "admin@test.com",
         role: "Admin",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: null, error: { message: "Query failed" } })
       const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -321,7 +322,7 @@ describe("Admin Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       await expect(fetchAuthDebugLogs()).rejects.toThrow("Failed to fetch debug logs")
     })
@@ -338,7 +339,7 @@ describe("Admin Actions", () => {
         email: "admin@test.com",
         role: "Admin",
         is_approved: true,
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof getCurrentUser>>)
 
       const mockLimit = vi.fn().mockResolvedValue({ data: [], error: null })
       const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit })
@@ -346,7 +347,7 @@ describe("Admin Actions", () => {
 
       mockServiceClient.from.mockReturnValue({
         select: mockSelect,
-      } as any)
+      })
 
       const result = await fetchAuthDebugLogs()
 

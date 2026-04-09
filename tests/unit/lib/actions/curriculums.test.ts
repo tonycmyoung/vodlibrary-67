@@ -27,11 +27,11 @@ const mockDelete = vi.fn()
 const mockEq = vi.fn()
 const mockGt = vi.fn()
 const mockOrder = vi.fn()
-const mockLimit = vi.fn()
+const _mockLimit = vi.fn()
 const mockSingle = vi.fn()
-const mockMaybeSingle = vi.fn()
-const mockUpsert = vi.fn()
-const mockIlike = vi.fn()
+const _mockMaybeSingle = vi.fn()
+const _mockUpsert = vi.fn()
+const _mockIlike = vi.fn()
 
 const mockFrom = vi.fn()
 
@@ -68,7 +68,7 @@ describe("Curriculum Actions", () => {
       ]
 
       let fromCallCount = 0
-      mockFrom.mockImplementation((table: string) => {
+      mockFrom.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
           return {

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type MockInstance } from "vitest"
 import { AuthCookieService } from "@/lib/auth/cookie-service"
 import { type NextRequest, NextResponse } from "next/server"
 
 describe("AuthCookieService", () => {
-  let mockResponse: any
-  let mockRequest: any
+  let mockResponse: { cookies: { set: MockInstance }; headers: Map<string, string> }
+  let mockRequest: { url: string; cookies: { has: MockInstance } }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -98,7 +98,7 @@ describe("AuthCookieService", () => {
       AuthCookieService.clearAuthCookies(mockResponse as unknown as NextResponse)
 
       const calls = mockResponse.cookies.set.mock.calls
-      calls.forEach((call: any) => {
+      calls.forEach((call: unknown[]) => {
         const options = call[2]
         expect(options.expires).toBeInstanceOf(Date)
         expect(options.expires.getTime()).toBeLessThan(Date.now())
@@ -113,7 +113,7 @@ describe("AuthCookieService", () => {
       expect(calls).toHaveLength(9)
 
       // Verify all calls have correct options structure
-      calls.forEach((call: any) => {
+      calls.forEach((call: unknown[]) => {
         const options = call[2]
         expect(options).toHaveProperty("httpOnly", true)
         expect(options).toHaveProperty("sameSite", "lax")
@@ -179,7 +179,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       const result = AuthCookieService.createSignOutResponse(mockRequest as unknown as NextRequest)
 
@@ -195,7 +195,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createSignOutResponse(mockRequest as unknown as NextRequest, "/auth/login")
 
@@ -214,7 +214,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createSignOutResponse(mockRequest as unknown as NextRequest)
 
@@ -233,7 +233,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createSignOutResponse(mockRequest as unknown as NextRequest)
 
@@ -253,7 +253,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createAuthErrorResponse(mockRequest as unknown as NextRequest, "session", "Session expired")
 
@@ -274,7 +274,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createAuthErrorResponse(
         mockRequest as unknown as NextRequest,
@@ -299,7 +299,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createAuthErrorResponse(mockRequest as unknown as NextRequest, "auth", "Error")
 
@@ -318,7 +318,7 @@ describe("AuthCookieService", () => {
         },
       }
 
-      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as any)
+      vi.spyOn(NextResponse, "redirect").mockReturnValue(mockNextResponse as unknown as ReturnType<typeof NextResponse.redirect>)
 
       AuthCookieService.createAuthErrorResponse(mockRequest as unknown as NextRequest, "permission", "Access denied")
 

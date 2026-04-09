@@ -3,7 +3,7 @@ import { createServerClient, createClient, isSupabaseConfigured } from "@/lib/su
 
 // Mock @supabase/ssr
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn((url, key, options) => ({
+  createServerClient: vi.fn((_url, _key, _options) => ({
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: "test-user" } }, error: null }),
       getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "token" } }, error: null }),

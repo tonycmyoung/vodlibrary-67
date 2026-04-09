@@ -11,7 +11,7 @@ vi.mock("@/lib/supabase/client")
 vi.mock("@/lib/actions")
 vi.mock("next/navigation")
 vi.mock("@/lib/utils/date", () => ({
-  formatTimeAgo: (date: string) => "2 hours ago",
+  formatTimeAgo: (_date: string) => "2 hours ago",
 }))
 vi.mock("@/lib/trace-logger", () => ({
   traceError: vi.fn(),
@@ -57,7 +57,7 @@ describe("NotificationBell", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
+    vi.mocked(useRouter).mockReturnValue({ push: mockPush } as unknown as ReturnType<typeof useRouter>)
     vi.mocked(fetchNotificationsWithSenders).mockResolvedValue({
       data: mockNotifications,
       error: null,
@@ -76,7 +76,7 @@ describe("NotificationBell", () => {
 
     vi.mocked(createClient).mockReturnValue({
       from: mockFrom,
-    } as any)
+    } as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render notification bell button", async () => {

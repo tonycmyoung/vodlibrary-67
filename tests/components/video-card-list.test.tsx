@@ -45,7 +45,7 @@ describe("VideoCardList", () => {
       })),
     }
 
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabase as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render video title and description", async () => {

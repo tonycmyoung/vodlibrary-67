@@ -75,7 +75,7 @@ describe("DonationModal", () => {
         getUser: vi.fn().mockResolvedValue({ data: { user: { email: "test@example.com" } }, error: null }),
       },
     }
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabase as unknown as ReturnType<typeof createClient>)
 
     // Set up environment variable
     process.env.NEXT_PUBLIC_DONATE_PAYID = testPayId

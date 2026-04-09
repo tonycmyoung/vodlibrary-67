@@ -1,3 +1,4 @@
+import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -6,16 +7,16 @@ import MobileFilterDialog from "@/components/mobile-filter-dialog"
 // Mock Dialog components from shadcn/ui
 // Always render all content - we're testing component logic, not Dialog behavior
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children }: any) => <div data-testid="dialog">{children}</div>,
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-  DialogTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
-  DialogTrigger: ({ children }: any) => <div data-testid="dialog-trigger">{children}</div>,
+  Dialog: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog">{children}</div>,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-content">{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-header">{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2 data-testid="dialog-title">{children}</h2>,
+  DialogTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-trigger">{children}</div>,
 }))
 
 // Mock Button component
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, disabled, className }: any) => (
+  Button: ({ children, onClick, disabled, className }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) => (
     <button onClick={onClick} disabled={disabled} className={className} data-testid="button">
       {children}
     </button>
@@ -31,17 +32,22 @@ vi.mock("lucide-react", () => ({
 
 // Mock CategoryFilter component
 vi.mock("@/components/category-filter", () => ({
-  default: ({ categories, curriculums, onCategoryToggle, onCurriculumToggle }: any) => (
+  default: ({ categories, curriculums, onCategoryToggle, onCurriculumToggle }: {
+    categories?: { id: string; name: string }[];
+    curriculums?: { id: string; name: string }[];
+    onCategoryToggle: (id: string) => void;
+    onCurriculumToggle: (id: string) => void;
+  }) => (
     <div data-testid="category-filter">
       <div data-testid="categories-section">
-        {categories?.map((cat: any) => (
+        {categories?.map((cat) => (
           <button key={cat.id} onClick={() => onCategoryToggle(cat.id)} data-testid={`category-${cat.id}`}>
             {cat.name}
           </button>
         ))}
       </div>
       <div data-testid="curriculums-section">
-        {curriculums?.map((curr: any) => (
+        {curriculums?.map((curr) => (
           <button key={curr.id} onClick={() => onCurriculumToggle(curr.id)} data-testid={`curriculum-${curr.id}`}>
             {curr.name}
           </button>

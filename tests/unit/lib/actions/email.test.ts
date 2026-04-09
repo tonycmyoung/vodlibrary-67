@@ -20,7 +20,7 @@ describe("sendEmail", () => {
           emails: {
             send: mockSend,
           },
-        }) as any,
+        }) as unknown as InstanceType<typeof Resend>,
     )
 
     process.env.RESEND_API_KEY = "test-api-key"

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { GET } from "@/app/auth/callback/route"
 import { createServerClient } from "@supabase/ssr"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 
 // Mock Supabase
 vi.mock("@supabase/ssr", () => ({
@@ -23,7 +23,7 @@ describe("Auth Callback Route", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
   })
 
   function createMockRequest(url: string): NextRequest {

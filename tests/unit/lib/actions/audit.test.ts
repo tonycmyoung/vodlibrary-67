@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type MockInstance } from "vitest"
 import { logAuditEvent, fetchAuditLogs, clearAuditLogs } from "@/lib/actions/audit"
 import { createClient } from "@supabase/supabase-js"
 
@@ -20,7 +20,7 @@ vi.mock("@/lib/trace-logger", () => ({
 import { serverTrace } from "@/lib/trace-logger"
 
 describe("audit.ts", () => {
-  let mockSupabaseClient: any
+  let mockSupabaseClient: { from: MockInstance; insert: MockInstance; select: MockInstance; order: MockInstance; limit: MockInstance; delete: MockInstance; neq: MockInstance }
 
   beforeEach(() => {
     vi.clearAllMocks()

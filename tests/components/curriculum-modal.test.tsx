@@ -96,7 +96,7 @@ describe("CurriculumModal", () => {
   })
 
   it("should display both buttons with proper icons", () => {
-    const { container } = render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
+    const { container: _container } = render(<CurriculumModal isOpen={true} onClose={mockOnClose} />)
 
     const buttons = screen.getAllByRole("button")
     const contentButtons = buttons.filter(

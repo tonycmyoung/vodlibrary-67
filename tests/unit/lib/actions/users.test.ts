@@ -64,8 +64,8 @@ describe("User Actions", () => {
     vi.clearAllMocks()
     mockSupabaseClient = createMockSupabaseClient()
     mockServiceClient = createMockSupabaseClient()
-    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
-    vi.mocked(createSupabaseClient).mockReturnValue(mockServiceClient as any)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
+    vi.mocked(createSupabaseClient).mockReturnValue(mockServiceClient as unknown as ReturnType<typeof createSupabaseClient>)
   })
 
   describe("updatePendingUserFields", () => {
@@ -279,7 +279,7 @@ describe("User Actions", () => {
         admin: {
           listUsers: vi.fn().mockResolvedValue({ data: mockAuthUsers, error: null }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       mockServiceClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -308,7 +308,7 @@ describe("User Actions", () => {
             error: null,
           }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await fetchUnconfirmedEmailUsers()
 
@@ -320,7 +320,7 @@ describe("User Actions", () => {
         admin: {
           listUsers: vi.fn().mockResolvedValue({ data: null, error: { message: "Auth error" } }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await fetchUnconfirmedEmailUsers()
 
@@ -337,7 +337,7 @@ describe("User Actions", () => {
     }
 
     beforeEach(() => {
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
     })
 
     it("should successfully approve user", async () => {
@@ -411,7 +411,7 @@ describe("User Actions", () => {
         admin: {
           deleteUser: vi.fn().mockResolvedValue({ error: null }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await rejectUserServerAction("user-123")
 
@@ -446,7 +446,7 @@ describe("User Actions", () => {
         admin: {
           deleteUser: vi.fn().mockResolvedValue({ error: { message: "Auth delete failed" } }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await rejectUserServerAction("user-123")
 
@@ -645,12 +645,12 @@ describe("User Actions", () => {
     }
 
     beforeEach(() => {
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
     })
 
     it("should successfully reset user password", async () => {
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
           // First call: admin profile check
@@ -691,7 +691,7 @@ describe("User Actions", () => {
             error: null,
           }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await adminResetUserPassword("user-123", "NewPassword123!")
 
@@ -724,7 +724,7 @@ describe("User Actions", () => {
 
     it("should return error when user not found", async () => {
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
           // First call: admin profile check
@@ -765,7 +765,7 @@ describe("User Actions", () => {
 
     it("should return error when password update fails", async () => {
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
           return {
@@ -804,7 +804,7 @@ describe("User Actions", () => {
             error: { message: "Update failed" },
           }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await adminResetUserPassword("user-123", "NewPassword123!")
 
@@ -902,7 +902,7 @@ describe("User Actions", () => {
         from: vi.fn(),
       }
 
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
 
       const result = await inviteUser("user@example.com")
 
@@ -920,7 +920,7 @@ describe("User Actions", () => {
         from: vi.fn(),
       }
 
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -929,7 +929,7 @@ describe("User Actions", () => {
           data: { full_name: "Admin User", email: "admin@example.com" },
           error: null,
         }),
-      } as any)
+      })
 
       mockServiceClient.from.mockImplementation((table: string) => {
         if (table === "users") {
@@ -940,9 +940,9 @@ describe("User Actions", () => {
               data: { id: "existing-123", email: "user@example.com", is_approved: true },
               error: null,
             }),
-          } as any
+          }
         }
-        return {} as any
+        return {}
       })
 
       const result = await inviteUser("user@example.com")
@@ -961,7 +961,7 @@ describe("User Actions", () => {
         from: vi.fn(),
       }
 
-      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+      vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -970,7 +970,7 @@ describe("User Actions", () => {
           data: { full_name: "Admin User", email: "admin@example.com" },
           error: null,
         }),
-      } as any)
+      })
 
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + 3)
@@ -981,7 +981,7 @@ describe("User Actions", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-          } as any
+          }
         }
         if (table === "invitations") {
           return {
@@ -992,9 +992,9 @@ describe("User Actions", () => {
               data: { id: "inv-123", expires_at: futureDate.toISOString() },
               error: null,
             }),
-          } as any
+          }
         }
-        return {} as any
+        return {}
       })
 
       const result = await inviteUser("user@example.com")
@@ -1006,7 +1006,7 @@ describe("User Actions", () => {
   describe("deleteUserCompletely", () => {
     it("should successfully delete user from both database and auth", async () => {
       let fromCallCount = 0
-      mockServiceClient.from.mockImplementation((table: string) => {
+      mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           // First call: fetch user to delete
@@ -1043,13 +1043,13 @@ describe("User Actions", () => {
           data: { user: { id: "admin-123", email: "admin@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockServiceClient.auth = {
         admin: {
           deleteUser: vi.fn().mockResolvedValue({ error: null }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await deleteUserCompletely("user-123")
 
@@ -1059,7 +1059,7 @@ describe("User Actions", () => {
 
     it("should return error if database deletion fails", async () => {
       let fromCallCount = 0
-      mockServiceClient.from.mockImplementation((table: string) => {
+      mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1) {
           return {
@@ -1099,7 +1099,7 @@ describe("User Actions", () => {
 
     it("should handle auth deletion errors gracefully", async () => {
       let fromCallCount = 0
-      mockServiceClient.from.mockImplementation((table: string) => {
+      mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           return {
@@ -1133,13 +1133,13 @@ describe("User Actions", () => {
           data: { user: { id: "admin-123", email: "admin@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockServiceClient.auth = {
         admin: {
           deleteUser: vi.fn().mockResolvedValue({ error: { message: "Auth error" } }),
         },
-      } as any
+      } as unknown as typeof mockServiceClient.auth
 
       const result = await deleteUserCompletely("user-123")
 
@@ -1155,7 +1155,7 @@ describe("User Actions", () => {
           data: { user: null },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       const result = await updateUserBelt("user-123", "belt-456")
 
@@ -1168,10 +1168,10 @@ describe("User Actions", () => {
           data: { user: { id: "admin-123", email: "admin@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           // Current user profile check
@@ -1218,10 +1218,10 @@ describe("User Actions", () => {
           data: { user: { id: "user-123", email: "user@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           return {
@@ -1266,10 +1266,10 @@ describe("User Actions", () => {
           data: { user: { id: "teacher-123", email: "teacher@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           return {
@@ -1314,10 +1314,10 @@ describe("User Actions", () => {
           data: { user: { id: "teacher-123", email: "teacher@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           return {
@@ -1352,10 +1352,10 @@ describe("User Actions", () => {
           data: { user: { id: "admin-123", email: "admin@example.com" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       let fromCallCount = 0
-      mockSupabaseClient.from.mockImplementation((table: string) => {
+      mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
         if (fromCallCount === 1 && table === "users") {
           return {
@@ -1402,7 +1402,7 @@ describe("User Actions", () => {
           data: { user: null },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       const result = await updateStudentForHeadTeacher("student-123", "John Doe", "Teacher", "BBMA Gosford")
 
@@ -1415,7 +1415,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1434,7 +1434,7 @@ describe("User Actions", () => {
           data: { user: { id: "teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1456,7 +1456,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1478,7 +1478,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1506,7 +1506,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1537,7 +1537,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1575,7 +1575,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1614,7 +1614,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1661,7 +1661,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1708,7 +1708,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1756,7 +1756,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1797,7 +1797,7 @@ describe("User Actions", () => {
           data: { user: { id: "head-teacher-123" } },
           error: null,
         }),
-      } as any
+      } as unknown as typeof mockSupabaseClient.auth
 
       mockSupabaseClient.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -1840,9 +1840,9 @@ describe("User Actions", () => {
 
   describe("assignCurriculumSetToUser", () => {
     it("should successfully assign a curriculum set to a user", async () => {
-      let callCount = 0
-      mockServiceClient.from.mockImplementation((table: string) => {
-        callCount++
+      let _callCount = 0
+      mockServiceClient.from.mockImplementation((_table: string) => {
+        _callCount++
         if (table === "curriculum_sets") {
           return {
             select: vi.fn().mockReturnThis(),

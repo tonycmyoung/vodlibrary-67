@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type MockInstance } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import StudentManagement from "@/components/student-management"
@@ -37,7 +37,7 @@ describe("StudentManagement", () => {
   }
 
   const mockSearchParams = {
-    get: vi.fn((param: string) => null),
+    get: vi.fn((_param: string) => null),
   }
 
   const mockStudents = [
@@ -107,17 +107,17 @@ describe("StudentManagement", () => {
     { id: "belt-2", name: "Yellow Belt", color: "#ffff00", display_order: 2 },
   ]
 
-  let mockFrom: any
-  let mockSelect: any
-  let mockOrder: any
-  let mockUpdate: any
-  let mockEq: any
-  let mockSingle: any
+  let mockFrom: MockInstance
+  let mockSelect: MockInstance
+  let mockOrder: MockInstance
+  let mockUpdate: MockInstance
+  let mockEq: MockInstance
+  let mockSingle: MockInstance
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useRouter).mockReturnValue(mockRouter as any)
-    vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
+    vi.mocked(useRouter).mockReturnValue(mockRouter as unknown as ReturnType<typeof useRouter>)
+    vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as unknown as ReturnType<typeof useSearchParams>)
 
     mockSingle = vi.fn().mockResolvedValue({
       data: { ...mockStudents[0], current_belt: mockCurriculums[0] },
@@ -155,7 +155,7 @@ describe("StudentManagement", () => {
       return { select: mockSelect }
     })
 
-    vi.mocked(createBrowserClient).mockReturnValue({ from: mockFrom } as any)
+    vi.mocked(createBrowserClient).mockReturnValue({ from: mockFrom } as unknown as ReturnType<typeof createBrowserClient>)
     vi.mocked(fetchStudentsForHeadTeacher).mockResolvedValue({ data: mockStudents, error: null })
   })
 

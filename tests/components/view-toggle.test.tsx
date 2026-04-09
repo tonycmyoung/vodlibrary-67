@@ -14,7 +14,7 @@ describe("ViewToggle", () => {
 
   it("should highlight grid button when view is grid", () => {
     const onViewChange = vi.fn()
-    const { container } = render(<ViewToggle view="grid" onViewChange={onViewChange} />)
+    const { container: _container } = render(<ViewToggle view="grid" onViewChange={onViewChange} />)
 
     const gridButton = screen.getAllByRole("button")[0]
     expect(gridButton).toHaveClass("bg-red-600")
@@ -22,7 +22,7 @@ describe("ViewToggle", () => {
 
   it("should highlight list button when view is list", () => {
     const onViewChange = vi.fn()
-    const { container } = render(<ViewToggle view="list" onViewChange={onViewChange} />)
+    const { container: _container } = render(<ViewToggle view="list" onViewChange={onViewChange} />)
 
     const listButton = screen.getAllByRole("button")[1]
     expect(listButton).toHaveClass("bg-red-600")

@@ -50,8 +50,8 @@ describe("Notification Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockReturnValue(mockServiceClient as any)
-    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockReturnValue(mockServiceClient as unknown as ReturnType<typeof createClient>)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
   })
 
   describe("fetchNotificationsWithSenders", () => {
@@ -187,7 +187,7 @@ describe("Notification Actions", () => {
       ]
 
       let fromCallCount = 0
-      mockServiceClient.from.mockImplementation((table: string) => {
+      mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
 
         if (fromCallCount === 1) {

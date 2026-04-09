@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type MockInstance } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import UserManagement from "@/components/user-management"
@@ -33,7 +33,7 @@ describe("UserManagement", () => {
   }
 
   const mockSearchParams = {
-    get: vi.fn((param: string) => null),
+    get: vi.fn((_param: string) => null),
   }
 
   const mockUsers = [
@@ -104,18 +104,18 @@ describe("UserManagement", () => {
     { user_id: "user-2", viewed_at: "2024-01-13T00:00:00Z" },
   ]
 
-  let mockFrom: any
-  let mockSelect: any
-  let mockOrder: any
-  let mockUpdate: any
-  let mockEq: any
+  let mockFrom: MockInstance
+  let mockSelect: MockInstance
+  let mockOrder: MockInstance
+  let mockUpdate: MockInstance
+  let mockEq: MockInstance
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useRouter).mockReturnValue(mockRouter as any)
+    vi.mocked(useRouter).mockReturnValue(mockRouter as unknown as ReturnType<typeof useRouter>)
     // Reset mockSearchParams.get to return null for all params
-    mockSearchParams.get = vi.fn((param: string) => null)
-    vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as any)
+    mockSearchParams.get = vi.fn((_param: string) => null)
+    vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as unknown as ReturnType<typeof useSearchParams>)
 
     mockEq = vi.fn().mockReturnValue({ 
       select: vi.fn().mockResolvedValue({ data: null, error: null }) 
@@ -166,7 +166,7 @@ describe("UserManagement", () => {
       return { select: mockSelect }
     })
 
-    vi.mocked(createClient).mockReturnValue({ from: mockFrom } as any)
+    vi.mocked(createClient).mockReturnValue({ from: mockFrom } as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render loading state initially", async () => {
@@ -943,7 +943,7 @@ describe("UserManagement", () => {
       // The belt select should be visible in edit mode
       // Find the belt dropdown and change it
       const beltSelects = screen.getAllByRole("combobox")
-      const beltSelect = beltSelects.find((s: any) => s.querySelector?.('option[value="belt-2"]'))
+      const beltSelect = beltSelects.find((s) => s.querySelector?.('option[value="belt-2"]'))
       
       if (beltSelect) {
         await user.selectOptions(beltSelect, "belt-2")

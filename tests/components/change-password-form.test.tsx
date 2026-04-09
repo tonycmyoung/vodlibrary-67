@@ -24,7 +24,7 @@ describe("ChangePasswordForm", () => {
       },
     }
 
-    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render the form with all fields", () => {

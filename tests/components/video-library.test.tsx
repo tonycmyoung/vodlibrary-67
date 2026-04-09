@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -21,7 +22,7 @@ const mockCommitUrl = vi.fn()
 vi.mock("@/hooks/use-video-library-url", () => ({
   useVideoLibraryUrl: () => {
     // Get the current mockSearchParams from the mocked useSearchParams
-    const searchParams = (useSearchParams as any)()
+    const searchParams = (useSearchParams as unknown as () => ReturnType<typeof useSearchParams>)()
     
     // Parse URL state the same way the real hook does
     const filtersParam = searchParams?.get?.("filters")
@@ -69,13 +70,13 @@ vi.mock("@/lib/actions/videos", () => ({
 
 // Mock child components to isolate VideoLibrary logic
 vi.mock("@/components/video-card", () => ({
-  default: ({ video }: any) => <div data-testid={`video-card-${video.id}`}>{video.title}</div>,
+  default: ({ video }: { video: { id: string; title: string } }) => <div data-testid={`video-card-${video.id}`}>{video.title}</div>,
 }))
 
 vi.mock("@/components/video-card-list", () => ({
-  default: ({ videos = [] }: any) => (
+  default: ({ videos = [] }: { videos?: { id: string; title: string }[] }) => (
     <div data-testid="video-list">
-      {videos.map((video: any) => (
+      {videos.map((video) => (
         <div key={video.id} data-testid={`video-list-item-${video.id}`}>
           {video.title}
         </div>
@@ -85,7 +86,7 @@ vi.mock("@/components/video-card-list", () => ({
 }))
 
 vi.mock("@/components/view-toggle", () => ({
-  default: ({ view, onViewChange }: any) => (
+  default: ({ view, onViewChange }: { view: string; onViewChange: (v: string) => void }) => (
     <div data-testid="view-toggle">
       <button onClick={() => onViewChange("grid")}>Grid</button>
       <button onClick={() => onViewChange("list")}>List</button>
@@ -97,7 +98,13 @@ vi.mock("@/components/view-toggle", () => ({
 // CategoryFilter mock is kept for any direct usage, but FilterSection mock below
 // provides the same testid for tests that access category-filter through FilterSection
 vi.mock("@/components/category-filter", () => ({
-  default: ({ onCategoryToggle, onCurriculumToggle, videoCount, selectedCategories, selectedCurriculums }: any) => (
+  default: ({ onCategoryToggle, onCurriculumToggle, videoCount, selectedCategories, selectedCurriculums }: {
+    onCategoryToggle: (id: string) => void;
+    onCurriculumToggle?: (id: string) => void;
+    videoCount: number;
+    selectedCategories: unknown[];
+    selectedCurriculums?: unknown[];
+  }) => (
     <div data-testid="category-filter">
       <span data-testid="video-count">Videos: {videoCount}</span>
       <button onClick={() => onCategoryToggle("cat-1")}>Toggle Category</button>
@@ -110,7 +117,7 @@ vi.mock("@/components/category-filter", () => ({
 }))
 
 vi.mock("@/components/sort-control", () => ({
-  default: ({ sortBy, sortOrder, onSortChange }: any) => (
+  default: ({ sortBy, sortOrder, onSortChange }: { sortBy: string; sortOrder: string; onSortChange: (by: string, order: string) => void }) => (
     <div data-testid="sort-control">
       <button data-testid="sort-by-button" onClick={() => onSortChange("title", sortOrder)}>
         Change Sort
@@ -129,7 +136,7 @@ vi.mock("@/components/sort-control", () => ({
 }))
 
 vi.mock("@/components/search-input", () => ({
-  default: ({ value, onChange }: any) => (
+  default: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
     <div data-testid="search-input">
       <input
         type="text"
@@ -150,7 +157,13 @@ vi.mock("@/components/mobile-filter-dialog", () => ({
 // Mock dynamically imported FilterSection
 // Since it's now lazy loaded, we need to mock it like MobileFilterDialog
 vi.mock("@/components/filter-section", () => ({
-  default: (props: any) => (
+  default: (props: {
+    videoCount: number;
+    onCategoryToggle: (id: string) => void;
+    onCurriculumToggle?: (id: string) => void;
+    selectedCategories: unknown[];
+    selectedCurriculums?: unknown[];
+  }) => (
     <div data-testid="filter-section">
       {/* Render the mocked CategoryFilter through the props */}
       <div data-testid="category-filter">
@@ -172,10 +185,10 @@ vi.mock("@/components/filter-section", () => ({
 
 // Mock dynamically imported TrainingBanner components
 vi.mock("@/components/training-banner", () => ({
-  MobileTrainingBanner: ({ nextBeltName }: any) => (
+  MobileTrainingBanner: ({ nextBeltName }: { nextBeltName: string }) => (
     <div data-testid="mobile-training-banner">Next: {nextBeltName}</div>
   ),
-  DesktopTrainingBanner: ({ nextBeltName }: any) => (
+  DesktopTrainingBanner: ({ nextBeltName }: { nextBeltName: string }) => (
     <div data-testid="desktop-training-banner">Next: {nextBeltName}</div>
   ),
 }))
@@ -269,10 +282,10 @@ describe("VideoLibrary", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUpdateUrl.mockClear()
-    ;(useRouter as any).mockReturnValue(mockRouter)
-    ;(useSearchParams as any).mockReturnValue(mockSearchParams)
-    ;(createClient as any).mockReturnValue(mockSupabase)
-    ;(getBatchVideoViewCounts as any).mockResolvedValue({
+    vi.mocked(useRouter).mockReturnValue(mockRouter as unknown as ReturnType<typeof useRouter>)
+    vi.mocked(useSearchParams).mockReturnValue(mockSearchParams as unknown as ReturnType<typeof useSearchParams>)
+    vi.mocked(createClient).mockReturnValue(mockSupabase as unknown as ReturnType<typeof createClient>)
+    vi.mocked(getBatchVideoViewCounts).mockResolvedValue({
       "video-1": 10,
       "video-2": 25,
       "video-3": 5,
@@ -361,7 +374,7 @@ describe("VideoLibrary", () => {
         expect(mockSupabase.from).toHaveBeenCalledWith("videos")
       })
 
-      const videosCall = mockSupabase.from.mock.results.find((result: any) =>
+      const videosCall = mockSupabase.from.mock.results.find((result: { value: { select: { mock: { calls: string[][] } } } }) =>
         result.value.select.mock.calls[0]?.[0].includes("id, title"),
       )
       expect(videosCall).toBeDefined()
@@ -415,7 +428,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary favoritesOnly={true} />)
 
       await waitFor(() => {
-        const favoritesCalls = mockSupabase.from.mock.calls.filter((call: any) => call[0] === "user_favorites")
+        const favoritesCalls = mockSupabase.from.mock.calls.filter((call: unknown[]) => call[0] === "user_favorites")
         expect(favoritesCalls.length).toBeGreaterThan(0)
       })
 
@@ -430,7 +443,7 @@ describe("VideoLibrary", () => {
       render(<VideoLibrary maxCurriculumOrder={1} />)
 
       await waitFor(() => {
-        const videosCalls = mockSupabase.from.mock.calls.filter((call: any) => call[0] === "videos")
+        const videosCalls = mockSupabase.from.mock.calls.filter((call: unknown[]) => call[0] === "videos")
         expect(videosCalls.length).toBeGreaterThan(0)
       })
 

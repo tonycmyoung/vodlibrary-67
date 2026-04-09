@@ -88,7 +88,7 @@ describe("video-utils", () => {
               duration: 120,
               videoWidth: 640,
               videoHeight: 480,
-              addEventListener: vi.fn((event: string, callback: (...args: unknown[]) => unknown, options?: unknown) => {
+              addEventListener: vi.fn((event: string, callback: (...args: unknown[]) => unknown, _options?: unknown) => {
                 if (!listeners[event]) listeners[event] = []
                 listeners[event].push(callback)
 
@@ -122,7 +122,7 @@ describe("video-utils", () => {
           }
           return {}
         }),
-      } as any
+      } as unknown as typeof global.document
     })
 
     afterEach(() => {

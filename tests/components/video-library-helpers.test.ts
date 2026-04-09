@@ -7,7 +7,6 @@ import {
   checkFilterMatch,
   checkViewsMatch,
   type SortableVideo,
-  type VideoLibrarySortBy,
 } from "@/lib/video-sorting"
 
 // Interface extensions for test data - these remain local for video data processing tests
