@@ -1008,7 +1008,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           // First call: fetch user to delete
           return {
             select: vi.fn().mockReturnThis(),
@@ -1018,7 +1018,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           // Second call: fetch actor name
           return {
             select: vi.fn().mockReturnThis(),
@@ -1028,7 +1028,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 3 && table === "users") {
+        } else if (fromCallCount === 3) {
           // Third call: delete user
           return {
             delete: vi.fn().mockReturnThis(),
@@ -1101,7 +1101,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockServiceClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1110,7 +1110,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1119,7 +1119,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 3 && table === "users") {
+        } else if (fromCallCount === 3) {
           return {
             delete: vi.fn().mockReturnThis(),
             eq: vi.fn().mockResolvedValue({ error: null }),
@@ -1173,7 +1173,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           // Current user profile check
           return {
             select: vi.fn().mockReturnThis(),
@@ -1183,7 +1183,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           // Target user check
           return {
             select: vi.fn().mockReturnThis(),
@@ -1223,7 +1223,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1232,7 +1232,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1271,7 +1271,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1280,7 +1280,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1319,7 +1319,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1328,7 +1328,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1357,7 +1357,7 @@ describe("User Actions", () => {
       let fromCallCount = 0
       mockSupabaseClient.from.mockImplementation((_table: string) => {
         fromCallCount++
-        if (fromCallCount === 1 && table === "users") {
+        if (fromCallCount === 1) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1366,7 +1366,7 @@ describe("User Actions", () => {
               error: null,
             }),
           }
-        } else if (fromCallCount === 2 && table === "users") {
+        } else if (fromCallCount === 2) {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
@@ -1840,9 +1840,7 @@ describe("User Actions", () => {
 
   describe("assignCurriculumSetToUser", () => {
     it("should successfully assign a curriculum set to a user", async () => {
-      let _callCount = 0
-      mockServiceClient.from.mockImplementation((_table: string) => {
-        _callCount++
+      mockServiceClient.from.mockImplementation((table: string) => {
         if (table === "curriculum_sets") {
           return {
             select: vi.fn().mockReturnThis(),
