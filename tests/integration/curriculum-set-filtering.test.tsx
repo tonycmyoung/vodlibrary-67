@@ -1,3 +1,4 @@
+import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import VideoLibrary from "@/components/video-library"
@@ -33,13 +34,13 @@ vi.mock("@/hooks/use-video-library-url", () => ({
 }))
 
 vi.mock("@/components/video-card", () => ({
-  default: ({ video }: any) => <div data-testid={`video-card-${video.id}`}>{video.title}</div>,
+  default: ({ video }: { video: { id: string; title: string } }) => <div data-testid={`video-card-${video.id}`}>{video.title}</div>,
 }))
 
 vi.mock("@/components/video-card-list", () => ({
-  default: ({ videos = [] }: any) => (
+  default: ({ videos = [] }: { videos?: { id: string; title: string }[] }) => (
     <div data-testid="video-list">
-      {videos.map((video: any) => (
+      {videos.map((video) => (
         <div key={video.id}>{video.title}</div>
       ))}
     </div>
@@ -94,13 +95,13 @@ describe("Curriculum Set Filtering", () => {
   const mockVideoCategories = []
   const mockVideoPerformers = []
 
-  let mockSupabase: any
+  let mockSupabase: { auth: { getUser: ReturnType<typeof vi.fn> }; from: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useRouter as any).mockReturnValue({ push: vi.fn() })
-    ;(useSearchParams as any).mockReturnValue(new URLSearchParams())
-    ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-1": 10, "video-2": 20 })
+    vi.mocked(useRouter).mockReturnValue({ push: vi.fn() } as unknown as ReturnType<typeof useRouter>)
+    vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as unknown as ReturnType<typeof useSearchParams>)
+    vi.mocked(getBatchVideoViewCounts).mockResolvedValue({ "video-1": 10, "video-2": 20 })
 
     const mockFromImplementation = (table: string) => {
       if (table === "videos") {
@@ -145,7 +146,7 @@ describe("Curriculum Set Filtering", () => {
       from: vi.fn(mockFromImplementation),
     }
 
-    ;(createClient as any).mockReturnValue(mockSupabase)
+    vi.mocked(createClient).mockReturnValue(mockSupabase as unknown as ReturnType<typeof createClient>)
 
     Storage.prototype.getItem = vi.fn(() => null)
     Storage.prototype.setItem = vi.fn()

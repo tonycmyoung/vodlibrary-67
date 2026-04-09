@@ -80,7 +80,7 @@ describe("videos actions", () => {
 
     it("should continue even if user_video_views insert fails", async () => {
       let callCount = 0
-      mockFrom.mockImplementation((table: string) => {
+      mockFrom.mockImplementation((_table: string) => {
         callCount++
         return {
           insert: vi.fn().mockResolvedValue({

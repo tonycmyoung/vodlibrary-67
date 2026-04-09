@@ -26,7 +26,7 @@ describe("Auth Utilities", () => {
     })
 
     it("should reject non-string input", () => {
-      expect(validateReturnTo(123 as any)).toBeNull()
+      expect(validateReturnTo(123 as unknown as string)).toBeNull()
     })
 
     it("should reject paths not starting with /", () => {

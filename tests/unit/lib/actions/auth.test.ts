@@ -82,8 +82,8 @@ describe("Auth Actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as any)
-    vi.mocked(createClient).mockReturnValue(mockServiceClient as any)
+    vi.mocked(createServerClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createServerClient>)
+    vi.mocked(createClient).mockReturnValue(mockServiceClient as unknown as ReturnType<typeof createClient>)
   })
 
   describe("signUp", () => {
@@ -113,9 +113,9 @@ describe("Auth Actions", () => {
 
       try {
         await signUp(null, formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Expect redirect
-        expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
+        expect((error as Error).message).toContain("REDIRECT: /pending-approval?from=signup")
       }
 
       expect(mockSupabaseClient.auth.signUp).toHaveBeenCalledWith(
@@ -306,8 +306,8 @@ describe("Auth Actions", () => {
 
       try {
         await signUp(null, formData)
-      } catch (error: any) {
-        expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("REDIRECT: /pending-approval?from=signup")
       }
     })
 
@@ -327,7 +327,7 @@ describe("Auth Actions", () => {
         error: null,
       })
 
-      const mockDelete = vi.fn().mockReturnThis()
+      const _mockDelete = vi.fn().mockReturnThis()
       const mockEqForDelete = vi.fn().mockReturnThis()
       const mockDeleteSelect = vi.fn().mockResolvedValue({
         data: [{ id: "inv-123", email: "invited@example.com" }], // Return data that should be ignored
@@ -358,9 +358,9 @@ describe("Auth Actions", () => {
 
       try {
         await signUp(null, formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Should redirect successfully regardless of delete return data
-        expect(error.message).toContain("REDIRECT: /pending-approval?from=signup")
+        expect((error as Error).message).toContain("REDIRECT: /pending-approval?from=signup")
       }
     })
 
@@ -456,9 +456,9 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Expect error thrown by mocked redirect
-        expect(error.message).toContain("REDIRECT")
+        expect((error as Error).message).toContain("REDIRECT")
       }
 
       expect(mockSupabaseClient.auth.signInWithPassword).toHaveBeenCalledWith({
@@ -473,8 +473,8 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
-        expect(error.message).toContain("REDIRECT: /auth/login?error=auth_error")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("REDIRECT: /auth/login?error=auth_error")
       }
 
       expect(mockSupabaseClient.auth.signInWithPassword).not.toHaveBeenCalled()
@@ -486,8 +486,8 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
-        expect(error.message).toContain("REDIRECT: /auth/login?error=auth_error")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("REDIRECT: /auth/login?error=auth_error")
       }
 
       expect(mockSupabaseClient.auth.signInWithPassword).not.toHaveBeenCalled()
@@ -512,8 +512,8 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
-        expect(error.message).toContain("REDIRECT: /auth/login?error=invalid_credentials")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("REDIRECT: /auth/login?error=invalid_credentials")
       }
     })
 
@@ -537,8 +537,8 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
-        expect(error.message).toContain("REDIRECT: /auth/login?error=email_not_confirmed")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("REDIRECT: /auth/login?error=email_not_confirmed")
       }
     })
 
@@ -563,8 +563,8 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
-        expect(error.message).toContain("returnTo=%2Fdashboard")
+      } catch (error: unknown) {
+        expect((error as Error).message).toContain("returnTo=%2Fdashboard")
       }
     })
 
@@ -595,7 +595,7 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch {
         // Expect redirect
       }
 
@@ -647,7 +647,7 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch {
         // Expect redirect
       }
 
@@ -687,9 +687,9 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Should still redirect successfully
-        expect(error.message).toContain("REDIRECT")
+        expect((error as Error).message).toContain("REDIRECT")
       }
     })
 
@@ -713,7 +713,7 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch {
         // Expect redirect
       }
 
@@ -766,9 +766,9 @@ describe("Auth Actions", () => {
 
       try {
         await signIn(formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Should still redirect successfully even if tracking initially failed
-        expect(error.message).toContain("REDIRECT")
+        expect((error as Error).message).toContain("REDIRECT")
       }
     })
   })
@@ -791,9 +791,9 @@ describe("Auth Actions", () => {
 
       try {
         await createAdminUser(null, formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Expect redirect to home
-        expect(error.message).toContain("REDIRECT: /")
+        expect((error as Error).message).toContain("REDIRECT: /")
       }
 
       expect(mockSupabaseClient.auth.signUp).toHaveBeenCalledWith({
@@ -881,9 +881,9 @@ describe("Auth Actions", () => {
 
       try {
         await updatePassword(null, formData)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Expect redirect
-        expect(error.message).toContain("REDIRECT: /auth/login?reset=success")
+        expect((error as Error).message).toContain("REDIRECT: /auth/login?reset=success")
       }
 
       expect(mockSupabaseClient.auth.updateUser).toHaveBeenCalledWith({

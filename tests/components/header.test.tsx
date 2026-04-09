@@ -16,23 +16,23 @@ vi.mock("@/components/notification-bell", () => ({
 }))
 
 vi.mock("@/components/invite-user-modal", () => ({
-  default: ({ isOpen }: any) => isOpen && <div data-testid="invite-modal">Invite User Modal</div>,
+  default: ({ isOpen }: { isOpen: boolean }) => isOpen && <div data-testid="invite-modal">Invite User Modal</div>,
 }))
 
 vi.mock("@/components/donation-modal", () => ({
-  default: ({ isOpen }: any) => isOpen && <div data-testid="donation-modal">Donation Modal</div>,
+  default: ({ isOpen }: { isOpen: boolean }) => isOpen && <div data-testid="donation-modal">Donation Modal</div>,
 }))
 
 vi.mock("@/components/curriculum-modal", () => ({
-  default: ({ isOpen }: any) => isOpen && <div data-testid="curriculum-modal">Curriculum Modal</div>,
+  default: ({ isOpen }: { isOpen: boolean }) => isOpen && <div data-testid="curriculum-modal">Curriculum Modal</div>,
 }))
 
 vi.mock("@/components/contribute-modal", () => ({
-  default: ({ isOpen }: any) => isOpen && <div data-testid="contribute-modal">Contribute Modal</div>,
+  default: ({ isOpen }: { isOpen: boolean }) => isOpen && <div data-testid="contribute-modal">Contribute Modal</div>,
 }))
 
 vi.mock("@/components/about-modal", () => ({
-  default: ({ isOpen }: any) => isOpen && <div data-testid="about-modal">About Modal</div>,
+  default: ({ isOpen }: { isOpen: boolean }) => isOpen && <div data-testid="about-modal">About Modal</div>,
 }))
 
 describe("Header", () => {

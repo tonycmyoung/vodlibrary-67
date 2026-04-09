@@ -10,7 +10,7 @@ vi.mock("next/server", async () => {
   return {
     ...actual,
     NextResponse: {
-      next: vi.fn((options) => ({
+      next: vi.fn((_options) => ({
         status: 200,
         headers: new Headers(),
         cookies: {
@@ -43,7 +43,10 @@ vi.mock("@/lib/auth/cookie-service")
 vi.mock("@/lib/utils/auth")
 
 describe("Middleware: updateSession", () => {
-  let mockSupabaseClient: any
+  let mockSupabaseClient: {
+    auth: { getSession: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> }
+    from: ReturnType<typeof vi.fn>
+  }
   let originalEnv: NodeJS.ProcessEnv
 
   beforeEach(() => {
@@ -114,7 +117,7 @@ describe("Middleware: updateSession", () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       const request = createMockRequest("/dashboard")
 
-      const result = await updateSession(request)
+      const _result = await updateSession(request)
 
       expect(createServerClient).not.toHaveBeenCalled()
     })
@@ -448,12 +451,12 @@ describe("Middleware: updateSession", () => {
         error: null,
       })
 
-      let callCount = 0
+      let _callCount = 0
       mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockImplementation(async () => {
-          callCount++
+          _callCount++
           // Both approval check and admin check return Admin role
           return {
             data: { role: "Admin", is_approved: true },
@@ -480,12 +483,12 @@ describe("Middleware: updateSession", () => {
         error: null,
       })
 
-      let callCount = 0
+      let _callCount = 0
       mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockImplementation(async () => {
-          callCount++
+          _callCount++
           return {
             data: { role: "Student", is_approved: true },
             error: null,
@@ -606,7 +609,7 @@ describe("Middleware: updateSession", () => {
 
       mockSupabaseClient.auth.getSession.mockRejectedValue(new Error("Unexpected error"))
 
-      const result = await updateSession(request)
+      const _result = await updateSession(request)
 
       expect(AuthCookieService.createAuthErrorResponse).toHaveBeenCalledWith(
         expect.any(NextRequest),

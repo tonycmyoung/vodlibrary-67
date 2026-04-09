@@ -27,7 +27,7 @@ vi.mock("react-dom", async () => {
   const actual = await vi.importActual("react-dom")
   return {
     ...actual,
-    useFormState: vi.fn((action, initialState) => [null, vi.fn()]),
+    useFormState: vi.fn((_action, _initialState) => [null, vi.fn()]),
     useFormStatus: vi.fn(() => ({ pending: false })),
   }
 })
@@ -44,7 +44,7 @@ describe("ResetPasswordForm", () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 
     // Capture the callback when onAuthStateChange is called
-    let authStateCallback: ((event: string, session: any) => void) | null = null
+    let authStateCallback: ((event: string, session: unknown) => void) | null = null
     mockOnAuthStateChange.mockImplementation((callback) => {
       authStateCallback = callback
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
@@ -77,7 +77,7 @@ describe("ResetPasswordForm", () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
 
     // Capture the callback when onAuthStateChange is called
-    let authStateCallback: ((event: string, session: any) => void) | null = null
+    let authStateCallback: ((event: string, session: unknown) => void) | null = null
     mockOnAuthStateChange.mockImplementation((callback) => {
       authStateCallback = callback
       return { data: { subscription: { unsubscribe: mockUnsubscribe } } }

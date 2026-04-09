@@ -1,6 +1,7 @@
 "use client"
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import type React from "react"
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import VideoManagement from "@/components/video-management"
@@ -10,7 +11,7 @@ import { getBatchVideoViewCounts, getBatchVideoLastViewed } from "@/lib/actions/
 vi.mock("@/lib/supabase/client")
 vi.mock("@/lib/actions/videos")
 vi.mock("@/components/video-modal", () => ({
-  default: ({ isOpen, onClose, onSave }: any) =>
+  default: ({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: () => void }) =>
     isOpen ? (
       <div data-testid="video-modal">
         <button onClick={onClose}>Close</button>
@@ -19,7 +20,7 @@ vi.mock("@/components/video-modal", () => ({
     ) : null,
 }))
 vi.mock("@/components/category-filter", () => ({
-  default: ({ onCategoryToggle, onCurriculumToggle }: any) => (
+  default: ({ onCategoryToggle, onCurriculumToggle }: { onCategoryToggle: (id: string) => void; onCurriculumToggle: (id: string) => void }) => (
     <div data-testid="category-filter">
       <button onClick={() => onCategoryToggle("cat-1")}>Toggle Category</button>
       <button onClick={() => onCurriculumToggle("curr-1")}>Toggle Curriculum</button>
@@ -58,8 +59,16 @@ const mockVideosData = [
   },
 ]
 
+interface MockSupabaseClient {
+  from: MockInstance;
+  select: MockInstance;
+  order: MockInstance;
+  eq: MockInstance;
+  delete: MockInstance;
+}
+
 describe("VideoManagement", () => {
-  let mockSupabaseClient: any
+  let mockSupabaseClient: MockSupabaseClient
 
   beforeEach(() => {
     mockSupabaseClient = {
@@ -71,9 +80,9 @@ describe("VideoManagement", () => {
         eq: vi.fn().mockResolvedValue({ error: null }),
       }),
     }
-    ;(createClient as any).mockReturnValue(mockSupabaseClient)
-    ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-1": 100, "video-2": 50 })
-    ;(getBatchVideoLastViewed as any).mockResolvedValue({ "video-1": "2024-01-15T00:00:00Z", "video-2": null })
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createClient>)
+    vi.mocked(getBatchVideoViewCounts).mockResolvedValue({ "video-1": 100, "video-2": 50 })
+    vi.mocked(getBatchVideoLastViewed).mockResolvedValue({ "video-1": "2024-01-15T00:00:00Z", "video-2": null })
 
     // Clear localStorage
     localStorage.clear()
@@ -189,7 +198,7 @@ describe("VideoManagement", () => {
   })
 
   it("should open add video modal", async () => {
-    mockSupabaseClient.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((_query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -296,7 +305,7 @@ describe("VideoManagement", () => {
   })
 
   it("should display empty state when no videos", async () => {
-    mockSupabaseClient.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((_query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -308,7 +317,7 @@ describe("VideoManagement", () => {
   })
 
   it("should toggle filters open/closed", async () => {
-    mockSupabaseClient.select.mockImplementation((query: string) => {
+    mockSupabaseClient.select.mockImplementation((_query: string) => {
       return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
     })
 
@@ -404,7 +413,7 @@ describe("VideoManagement", () => {
       })
 
       localStorage.setItem("adminVideoManagement_sortBy", "recorded")
-      const user = userEvent.setup()
+      const _user = userEvent.setup()
       render(<VideoManagement />)
 
       await waitFor(() => {
@@ -456,7 +465,7 @@ describe("VideoManagement", () => {
     })
 
     it("should sort videos by view count", async () => {
-      ;(getBatchVideoViewCounts as any).mockResolvedValue({ "video-a": 50, "video-b": 100, "video-c": 25 })
+      vi.mocked(getBatchVideoViewCounts).mockResolvedValue({ "video-a": 50, "video-b": 100, "video-c": 25 })
 
       mockSupabaseClient.select.mockImplementation((query: string) => {
         if (query.includes("video_categories")) {
@@ -478,7 +487,7 @@ describe("VideoManagement", () => {
     })
 
     it("should sort videos by last viewed date", async () => {
-      ;(getBatchVideoLastViewed as any).mockResolvedValue({
+      vi.mocked(getBatchVideoLastViewed).mockResolvedValue({
         "video-a": "2024-01-20T00:00:00Z",
         "video-b": null,
         "video-c": "2024-01-10T00:00:00Z",

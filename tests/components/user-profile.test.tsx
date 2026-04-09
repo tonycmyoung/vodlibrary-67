@@ -63,7 +63,7 @@ describe("UserProfile", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useRouter).mockReturnValue(mockRouter as any)
+    vi.mocked(useRouter).mockReturnValue(mockRouter as unknown as ReturnType<typeof useRouter>)
     vi.mocked(updateProfile).mockResolvedValue({ success: true })
   })
 

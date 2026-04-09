@@ -77,7 +77,7 @@ describe("SortControl", () => {
   })
 
   it("should render sort control with selectable options", async () => {
-    const user = userEvent.setup()
+    const _user = userEvent.setup()
     const onSortChange = vi.fn()
     render(<SortControl {...defaultProps} sortBy="title" onSortChange={onSortChange} />)
 
@@ -85,7 +85,7 @@ describe("SortControl", () => {
     expect(trigger).toHaveTextContent("Name")
 
     // Verify the component renders with different initial values
-    const { rerender } = render(
+    const { rerender: _rerender } = render(
       <SortControl {...defaultProps} sortBy="category" onSortChange={onSortChange} />
     )
 

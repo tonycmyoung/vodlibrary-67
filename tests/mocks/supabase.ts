@@ -5,8 +5,28 @@ import { vi } from "vitest"
  * Returns chainable methods that can be configured per test
  */
 export const createMockSupabaseClient = () => {
-  const createChainableMock = (finalResult: any = { data: null, error: null }) => {
-    const chain: any = {
+  const createChainableMock = (finalResult: unknown = { data: null, error: null }) => {
+    type ChainType = {
+      select: ReturnType<typeof vi.fn>
+      insert: ReturnType<typeof vi.fn>
+      update: ReturnType<typeof vi.fn>
+      delete: ReturnType<typeof vi.fn>
+      eq: ReturnType<typeof vi.fn>
+      neq: ReturnType<typeof vi.fn>
+      gt: ReturnType<typeof vi.fn>
+      lt: ReturnType<typeof vi.fn>
+      gte: ReturnType<typeof vi.fn>
+      lte: ReturnType<typeof vi.fn>
+      in: ReturnType<typeof vi.fn>
+      is: ReturnType<typeof vi.fn>
+      order: ReturnType<typeof vi.fn>
+      limit: ReturnType<typeof vi.fn>
+      range: ReturnType<typeof vi.fn>
+      single: ReturnType<typeof vi.fn>
+      maybeSingle: ReturnType<typeof vi.fn>
+      then: (resolve: (value: unknown) => unknown) => Promise<unknown>
+    }
+    const chain: ChainType = {
       select: vi.fn(),
       insert: vi.fn(),
       update: vi.fn(),
@@ -25,7 +45,7 @@ export const createMockSupabaseClient = () => {
       single: vi.fn().mockResolvedValue(finalResult),
       maybeSingle: vi.fn().mockResolvedValue(finalResult),
       // When chain ends without single/maybeSingle, return a promise
-      then: (resolve: any) => Promise.resolve(finalResult).then(resolve),
+      then: (resolve: (value: unknown) => unknown) => Promise.resolve(finalResult).then(resolve),
     }
     chain.select.mockReturnValue(chain)
     chain.insert.mockReturnValue(chain)
@@ -45,7 +65,7 @@ export const createMockSupabaseClient = () => {
     return chain
   }
 
-  const mockFrom = vi.fn((table: string) => createChainableMock())
+  const mockFrom = vi.fn((_table: string) => createChainableMock())
 
   const mockAuth = {
     getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),

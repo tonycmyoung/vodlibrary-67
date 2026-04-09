@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 vi.mock("@/lib/supabase/server")
 
 describe("My Level Page with Curriculum Sets", () => {
-  let mockSupabase: any
+  let mockSupabase: { from: ReturnType<typeof vi.fn>; auth: { getUser: ReturnType<typeof vi.fn> } }
 
   beforeEach(() => {
     mockSupabase = {
@@ -96,13 +96,13 @@ describe("My Level Page with Curriculum Sets", () => {
         },
       }
 
-      const mockEmptyLevels: any[] = []
+      const mockEmptyLevels: unknown[] = []
 
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: "user-789" } } })
 
-      let fromCallCount = 0
+      let _fromCallCount = 0
       mockSupabase.from.mockImplementation((table: string) => {
-        fromCallCount++
+        _fromCallCount++
         if (table === "users") {
           return {
             select: vi.fn().mockReturnThis(),

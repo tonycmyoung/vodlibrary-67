@@ -92,7 +92,7 @@ describe("Loading Pages", () => {
         { name: "My Level", component: <MyLevelLoading /> },
       ]
 
-      pages.forEach(({ name, component }) => {
+      pages.forEach(({ name: _name, component }) => {
         const { container } = render(component)
         const grid = container.querySelector(".grid")
 

@@ -1,9 +1,11 @@
+import type React from "react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import VideoCard from "@/components/video-card"
 import { createClient } from "@/lib/supabase/client"
 import { useIsMobile } from "@/hooks/use-mobile"
+import type { Video } from "@/types/video"
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
@@ -14,7 +16,7 @@ vi.mock("@/hooks/use-mobile", () => ({
 }))
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
     <a href={href} {...props}>
       {children}
     </a>
@@ -71,7 +73,7 @@ describe("VideoCard", () => {
       from: mockFrom,
     }
 
-    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabaseClient as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render video card with all information", () => {
@@ -220,7 +222,7 @@ describe("VideoCard", () => {
         { id: null, name: null, color: null }, // Invalid
       ],
     }
-    render(<VideoCard video={videoWithInvalidCategories as any} />)
+    render(<VideoCard video={videoWithInvalidCategories as unknown as Video} />)
 
     expect(screen.getByText("Bo")).toBeTruthy()
     expect(screen.queryByText("null")).toBeNull()

@@ -30,7 +30,7 @@ describe("LoginForm", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createClient).mockReturnValue(mockSupabase as any)
+    vi.mocked(createClient).mockReturnValue(mockSupabase as unknown as ReturnType<typeof createClient>)
   })
 
   it("should render login form with all fields", () => {
